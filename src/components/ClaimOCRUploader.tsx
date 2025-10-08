@@ -30,9 +30,9 @@ export const ClaimOCRUploader = ({ onDataExtracted, claimType }: ClaimOCRUploade
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => {
+        // Return the full data URL (data:image/jpeg;base64,XXXXX)
         const base64String = reader.result as string;
-        const base64Data = base64String.split(',')[1];
-        resolve(base64Data);
+        resolve(base64String);
       };
       reader.onerror = (error) => reject(error);
     });
@@ -47,6 +47,8 @@ export const ClaimOCRUploader = ({ onDataExtracted, claimType }: ClaimOCRUploade
 
     try {
       const base64Image = await fileToBase64(file);
+      
+      console.log('Sending OCR request for:', claimType);
 
       const { data, error } = await supabase.functions.invoke('ocr-claim', {
         body: { 
@@ -55,11 +57,21 @@ export const ClaimOCRUploader = ({ onDataExtracted, claimType }: ClaimOCRUploade
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       if (data) {
+        console.log('OCR data received:', data);
         toast.success("Document analysé avec succès");
         onDataExtracted(data);
+      } else {
+        throw new Error("Aucune donnée reçue");
       }
     } catch (error) {
       console.error('Error processing document:', error);

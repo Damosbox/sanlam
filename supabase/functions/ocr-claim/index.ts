@@ -14,9 +14,22 @@ serve(async (req) => {
     const { imageBase64, documentType } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
+    console.log('OCR request received for type:', documentType);
+
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY not configured');
     }
+
+    if (!imageBase64) {
+      throw new Error('No image provided');
+    }
+
+    // Ensure proper data URL format
+    const imageUrl = imageBase64.startsWith('data:') 
+      ? imageBase64 
+      : `data:image/jpeg;base64,${imageBase64}`;
+
+    console.log('Image URL format check:', imageUrl.substring(0, 50));
 
     const systemPrompt = `Tu es un assistant OCR expert pour extraire des informations de documents d'assurance.
 Analyse le document et extrait les informations structurées pertinentes.
@@ -35,7 +48,7 @@ Type de document: ${documentType || 'inconnu'}`;
             role: 'user',
             content: [
               { type: 'text', text: systemPrompt },
-              { type: 'image_url', image_url: { url: imageBase64 } }
+              { type: 'image_url', image_url: { url: imageUrl } }
             ]
           }
         ],
@@ -70,13 +83,17 @@ Type de document: ${documentType || 'inconnu'}`;
     }
 
     const data = await response.json();
+    console.log('AI response received');
+    
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     
     if (!toolCall) {
+      console.error('No tool call in response:', JSON.stringify(data, null, 2));
       throw new Error('No data extracted');
     }
 
     const extractedData = JSON.parse(toolCall.function.arguments);
+    console.log('Data extracted successfully:', Object.keys(extractedData));
 
     return new Response(JSON.stringify(extractedData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

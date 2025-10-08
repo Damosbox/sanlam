@@ -1,10 +1,11 @@
 import { Header } from "@/components/Header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, FileText, TrendingUp, MessageSquare, Brain } from "lucide-react";
+import { Users, FileText, MessageSquare } from "lucide-react";
 import { BrokerClaimsTable } from "@/components/BrokerClaimsTable";
 import { BrokerAnalytics } from "@/components/BrokerAnalytics";
-import { Button } from "@/components/ui/button";
+import { BrokerClients } from "@/components/BrokerClients";
+import { BrokerAIInsights } from "@/components/BrokerAIInsights";
 
 const B2B = () => {
   return (
@@ -15,21 +16,16 @@ const B2B = () => {
         {/* Welcome Banner */}
         <Card className="p-8 mb-8 gradient-activated text-white">
           <h1 className="text-3xl font-bold mb-2">Espace Courtier 🤝</h1>
-          <p className="text-white/90 mb-6">Gérez vos clients et leurs sinistres avec des outils intelligents</p>
-          <div className="flex flex-wrap gap-3">
-            <Button variant="secondary" size="lg">
-              <Brain className="w-4 h-4 mr-2" />
-              Recommandations IA
-            </Button>
-            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-              <TrendingUp className="w-4 h-4 mr-2" />
-              Rapports
-            </Button>
-          </div>
+          <p className="text-white/90 mb-4">Gérez vos clients et leurs sinistres avec des outils intelligents</p>
         </Card>
 
         {/* Analytics Overview */}
         <BrokerAnalytics />
+
+        {/* AI Insights */}
+        <div className="mt-8">
+          <BrokerAIInsights />
+        </div>
 
         {/* Main Management Tabs */}
         <div className="mt-12">
@@ -66,9 +62,7 @@ const B2B = () => {
                   <CardTitle>Portfolio Clients</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-center text-muted-foreground py-8">
-                    Vue clients - En cours de développement
-                  </p>
+                  <BrokerClients />
                 </CardContent>
               </Card>
             </TabsContent>

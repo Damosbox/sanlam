@@ -10,6 +10,7 @@ import Admin from "./pages/Admin";
 import ClaimNew from "./pages/ClaimNew";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -22,10 +23,10 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/b2c" element={<B2C />} />
-          <Route path="/b2c/claims/new" element={<ClaimNew />} />
-          <Route path="/b2b" element={<B2B />} />
-          <Route path="/admin" element={<Admin />} />
+          <Route path="/b2c" element={<ProtectedRoute><B2C /></ProtectedRoute>} />
+          <Route path="/b2c/claims/new" element={<ProtectedRoute><ClaimNew /></ProtectedRoute>} />
+          <Route path="/b2b" element={<ProtectedRoute><B2B /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -20,6 +20,9 @@ interface DamageFormProps {
   zone: string;
   onSave: (detail: DamageDetail) => void;
   onCancel: () => void;
+  initialDamageType?: string;
+  initialSeverity?: number;
+  initialNotes?: string;
 }
 
 const damageTypes = [
@@ -32,10 +35,10 @@ const damageTypes = [
   "Autre"
 ];
 
-export const DamageForm = ({ zone, onSave, onCancel }: DamageFormProps) => {
-  const [damageType, setDamageType] = useState("");
-  const [severity, setSeverity] = useState([3]);
-  const [notes, setNotes] = useState("");
+export const DamageForm = ({ zone, onSave, onCancel, initialDamageType, initialSeverity, initialNotes }: DamageFormProps) => {
+  const [damageType, setDamageType] = useState(initialDamageType || "");
+  const [severity, setSeverity] = useState([initialSeverity || 3]);
+  const [notes, setNotes] = useState(initialNotes || "");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {

@@ -35,10 +35,14 @@ serve(async (req) => {
 Analyse attentivement l'image fournie et:
 1. Extrait toutes les informations textuelles pertinentes
 2. IDENTIFIE VISUELLEMENT les zones endommagées visibles sur l'image
-3. Pour un véhicule (Auto), identifie les parties endommagées parmi: Pare-chocs avant, Capot, Pare-brise, Toit, Portière avant gauche, Portière avant droite, Portière arrière gauche, Portière arrière droite, Coffre, Pare-chocs arrière
-4. Pour une habitation, identifie les parties endommagées parmi: Toiture, Façade, Fenêtres, Portes, Garage, Jardin
+3. Pour chaque zone endommagée, détermine:
+   - Le type de dommage (Choc, Bris de vitre, Rayure, Feu, Inondation, Vol, Autre)
+   - La gravité estimée de 1 (léger) à 5 (très grave)
+   - Une description détaillée des dégâts observés
+4. Pour un véhicule (Auto), identifie les parties endommagées parmi: Pare-chocs avant, Capot, Pare-brise, Toit, Portière avant gauche, Portière avant droite, Portière arrière gauche, Portière arrière droite, Coffre, Pare-chocs arrière
+5. Pour une habitation, identifie les parties endommagées parmi: Toiture, Façade, Fenêtres, Portes, Garage, Jardin
 
-IMPORTANT: Analyse visuellement les dégâts visibles dans l'image et liste TOUTES les zones qui montrent des dommages.
+IMPORTANT: Analyse visuellement les dégâts visibles dans l'image et fournis des détails complets pour chaque zone endommagée.
 Type de document: ${documentType || 'inconnu'}`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -79,9 +83,23 @@ Type de document: ${documentType || 'inconnu'}`;
                   description: documentType === 'Auto' 
                     ? 'Liste des zones endommagées parmi: Pare-chocs avant, Capot, Pare-brise, Toit, Portière avant gauche, Portière avant droite, Portière arrière gauche, Portière arrière droite, Coffre, Pare-chocs arrière'
                     : 'Liste des zones endommagées parmi: Toiture, Façade, Fenêtres, Portes, Garage, Jardin'
+                },
+                damageDetails: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      zone: { type: 'string', description: 'Nom de la zone endommagée' },
+                      damageType: { type: 'string', enum: ['Choc', 'Bris de vitre', 'Rayure', 'Feu', 'Inondation', 'Vol', 'Autre'], description: 'Type de dommage observé' },
+                      severity: { type: 'number', minimum: 1, maximum: 5, description: 'Gravité estimée de 1 (léger) à 5 (très grave)' },
+                      notes: { type: 'string', description: 'Description détaillée des dégâts observés sur cette zone' }
+                    },
+                    required: ['zone', 'damageType', 'severity', 'notes']
+                  },
+                  description: 'Détails complets pour chaque zone endommagée avec type, gravité et notes'
                 }
               },
-              required: ['extractedText', 'damageZones']
+              required: ['extractedText', 'damageZones', 'damageDetails']
             }
           }
         }],

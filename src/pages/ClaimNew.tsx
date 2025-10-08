@@ -12,6 +12,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
+interface DamageDetailFromAI {
+  zone: string;
+  damageType: string;
+  severity: number;
+  notes: string;
+}
+
 interface ExtractedData {
   policy_number?: string;
   date?: string;
@@ -22,6 +29,7 @@ interface ExtractedData {
   estimated_cost?: number;
   full_text?: string;
   damageZones?: string[];
+  damageDetails?: DamageDetailFromAI[];
 }
 
 interface DamageDetail {
@@ -84,6 +92,10 @@ export default function ClaimNew() {
       const mappedZones = data.damageZones.map(mapZoneNameToId);
       setSelectedZones(mappedZones);
       console.log('Zones pré-sélectionnées:', mappedZones);
+    }
+    // Log des détails de dommages pré-analysés
+    if (data.damageDetails) {
+      console.log('Détails de dommages pré-analysés:', data.damageDetails);
     }
     setCurrentStep(1);
   };
@@ -235,15 +247,25 @@ export default function ClaimNew() {
             />
           )}
 
-          {currentStep === 2 && (
+           {currentStep === 2 && (
             <div className="space-y-4">
-              {editingZone ? (
-                <DamageForm
-                  zone={editingZone}
-                  onSave={handleDamageDetailSave}
-                  onCancel={() => setEditingZone(null)}
-                />
-              ) : (
+              {editingZone ? (() => {
+                // Chercher les détails pré-analysés par l'IA pour cette zone
+                const aiDetail = ocrData?.damageDetails?.find(d => 
+                  mapZoneNameToId(d.zone) === editingZone
+                );
+                
+                return (
+                  <DamageForm
+                    zone={editingZone}
+                    initialDamageType={aiDetail?.damageType}
+                    initialSeverity={aiDetail?.severity}
+                    initialNotes={aiDetail?.notes}
+                    onSave={handleDamageDetailSave}
+                    onCancel={() => setEditingZone(null)}
+                  />
+                );
+              })() : (
                 <Card>
                   <CardContent className="pt-6 text-center">
                     <p className="text-muted-foreground mb-4">

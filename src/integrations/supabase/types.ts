@@ -17,6 +17,7 @@ export type Database = {
       claims: {
         Row: {
           ai_confidence: number | null
+          assigned_broker_id: string | null
           claim_type: Database["public"]["Enums"]["claim_type"]
           cost_estimation: number | null
           created_at: string
@@ -34,6 +35,7 @@ export type Database = {
         }
         Insert: {
           ai_confidence?: number | null
+          assigned_broker_id?: string | null
           claim_type: Database["public"]["Enums"]["claim_type"]
           cost_estimation?: number | null
           created_at?: string
@@ -51,6 +53,7 @@ export type Database = {
         }
         Update: {
           ai_confidence?: number | null
+          assigned_broker_id?: string | null
           claim_type?: Database["public"]["Enums"]["claim_type"]
           cost_estimation?: number | null
           created_at?: string

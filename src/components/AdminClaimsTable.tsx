@@ -10,8 +10,15 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Eye, DollarSign } from "lucide-react";
+import { CheckCircle, XCircle, Eye, DollarSign, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -32,14 +39,22 @@ interface Claim {
   incident_date: string | null;
   created_at: string;
   policy_id: string;
+  assigned_broker_id: string | null;
   profiles: {
     display_name: string | null;
     email: string | null;
   } | null;
 }
 
+interface Broker {
+  id: string;
+  display_name: string | null;
+  email: string | null;
+}
+
 export const AdminClaimsTable = () => {
   const [claims, setClaims] = useState<Claim[]>([]);
+  const [brokers, setBrokers] = useState<Broker[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
   const [costEstimation, setCostEstimation] = useState("");
@@ -48,6 +63,7 @@ export const AdminClaimsTable = () => {
 
   useEffect(() => {
     fetchClaims();
+    fetchBrokers();
   }, []);
 
   const fetchClaims = async () => {
@@ -85,6 +101,37 @@ export const AdminClaimsTable = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchBrokers = async () => {
+    try {
+      // Get all users with broker role
+      const { data: brokerRoles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "broker");
+
+      if (rolesError) throw rolesError;
+
+      const brokerIds = brokerRoles?.map(r => r.user_id) || [];
+
+      if (brokerIds.length === 0) {
+        setBrokers([]);
+        return;
+      }
+
+      // Fetch broker profiles
+      const { data: brokerProfiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, display_name, email")
+        .in("id", brokerIds);
+
+      if (profilesError) throw profilesError;
+
+      setBrokers(brokerProfiles || []);
+    } catch (error) {
+      console.error("Error fetching brokers:", error);
     }
   };
 
@@ -146,6 +193,31 @@ export const AdminClaimsTable = () => {
     }
   };
 
+  const assignBroker = async (claimId: string, brokerId: string | null) => {
+    try {
+      const { error } = await supabase
+        .from("claims")
+        .update({ assigned_broker_id: brokerId })
+        .eq("id", claimId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: brokerId ? "Courtier assigné" : "Assignation supprimée",
+      });
+      
+      fetchClaims();
+    } catch (error) {
+      console.error("Error assigning broker:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'assigner le courtier",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       Draft: "outline",
@@ -172,6 +244,7 @@ export const AdminClaimsTable = () => {
               <TableHead>Police</TableHead>
               <TableHead>Date incident</TableHead>
               <TableHead>Statut</TableHead>
+              <TableHead>Courtier</TableHead>
               <TableHead>Estimation</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -197,6 +270,26 @@ export const AdminClaimsTable = () => {
                     : "N/A"}
                 </TableCell>
                 <TableCell>{getStatusBadge(claim.status)}</TableCell>
+                <TableCell>
+                  <Select
+                    value={claim.assigned_broker_id || "unassigned"}
+                    onValueChange={(value) =>
+                      assignBroker(claim.id, value === "unassigned" ? null : value)
+                    }
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Non assigné" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">Non assigné</SelectItem>
+                      {brokers.map((broker) => (
+                        <SelectItem key={broker.id} value={broker.id}>
+                          {broker.display_name || broker.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
                 <TableCell>
                   {claim.cost_estimation
                     ? `${claim.cost_estimation.toLocaleString()} FCFA`

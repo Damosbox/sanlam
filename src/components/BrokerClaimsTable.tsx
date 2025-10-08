@@ -51,9 +51,22 @@ export const BrokerClaimsTable = () => {
 
   const fetchClaims = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Erreur",
+          description: "Non authentifié",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("claims")
         .select("*")
+        .eq("assigned_broker_id", user.id)
         .in("status", ["Submitted", "Reviewed"])
         .order("created_at", { ascending: false });
 

@@ -24,9 +24,14 @@ export const BrokerAnalytics = () => {
 
   const fetchStats = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) return;
+
       const { data: claims } = await supabase
         .from("claims")
-        .select("status, cost_estimation, created_at");
+        .select("status, cost_estimation, created_at")
+        .eq("assigned_broker_id", user.id);
 
       if (claims) {
         const pending = claims.filter((c) => c.status === "Submitted").length;

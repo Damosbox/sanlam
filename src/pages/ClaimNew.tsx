@@ -21,6 +21,7 @@ interface ExtractedData {
   location?: string;
   estimated_cost?: number;
   full_text?: string;
+  damageZones?: string[];
 }
 
 interface DamageDetail {
@@ -51,6 +52,10 @@ export default function ClaimNew() {
 
   const handleOCRDataExtracted = (data: ExtractedData) => {
     setOcrData(data);
+    // Pré-sélectionner les zones identifiées par l'IA
+    if (data.damageZones && data.damageZones.length > 0) {
+      setSelectedZones(data.damageZones);
+    }
     setCurrentStep(1);
   };
 

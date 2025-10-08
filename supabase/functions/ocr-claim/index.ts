@@ -32,7 +32,13 @@ serve(async (req) => {
     console.log('Image URL format check:', imageUrl.substring(0, 50));
 
     const systemPrompt = `Tu es un assistant OCR expert pour extraire des informations de documents d'assurance.
-Analyse le document et extrait les informations structurées pertinentes.
+Analyse attentivement l'image fournie et:
+1. Extrait toutes les informations textuelles pertinentes
+2. IDENTIFIE VISUELLEMENT les zones endommagées visibles sur l'image
+3. Pour un véhicule (Auto), identifie les parties endommagées parmi: Pare-chocs avant, Capot, Pare-brise, Toit, Portière avant gauche, Portière avant droite, Portière arrière gauche, Portière arrière droite, Coffre, Pare-chocs arrière
+4. Pour une habitation, identifie les parties endommagées parmi: Toiture, Façade, Fenêtres, Portes, Garage, Jardin
+
+IMPORTANT: Analyse visuellement les dégâts visibles dans l'image et liste TOUTES les zones qui montrent des dommages.
 Type de document: ${documentType || 'inconnu'}`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -56,7 +62,7 @@ Type de document: ${documentType || 'inconnu'}`;
           type: 'function',
           function: {
             name: 'extract_claim_data',
-            description: 'Extraire les données d\'un document de sinistre',
+            description: 'Extraire les données d\'un document de sinistre et identifier les zones endommagées visibles sur l\'image',
             parameters: {
               type: 'object',
               properties: {
@@ -66,9 +72,16 @@ Type de document: ${documentType || 'inconnu'}`;
                 description: { type: 'string' },
                 estimatedAmount: { type: 'string' },
                 parties: { type: 'array', items: { type: 'string' } },
-                extractedText: { type: 'string' }
+                extractedText: { type: 'string' },
+                damageZones: { 
+                  type: 'array', 
+                  items: { type: 'string' },
+                  description: documentType === 'Auto' 
+                    ? 'Liste des zones endommagées parmi: Pare-chocs avant, Capot, Pare-brise, Toit, Portière avant gauche, Portière avant droite, Portière arrière gauche, Portière arrière droite, Coffre, Pare-chocs arrière'
+                    : 'Liste des zones endommagées parmi: Toiture, Façade, Fenêtres, Portes, Garage, Jardin'
+                }
               },
-              required: ['extractedText']
+              required: ['extractedText', 'damageZones']
             }
           }
         }],

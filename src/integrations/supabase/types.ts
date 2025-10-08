@@ -14,7 +14,101 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      claims: {
+        Row: {
+          ai_confidence: number | null
+          claim_type: Database["public"]["Enums"]["claim_type"]
+          cost_estimation: number | null
+          created_at: string
+          damages: Json | null
+          description: string | null
+          id: string
+          incident_date: string | null
+          location: string | null
+          ocr_data: Json | null
+          photos: string[] | null
+          policy_id: string
+          status: Database["public"]["Enums"]["claim_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_confidence?: number | null
+          claim_type: Database["public"]["Enums"]["claim_type"]
+          cost_estimation?: number | null
+          created_at?: string
+          damages?: Json | null
+          description?: string | null
+          id?: string
+          incident_date?: string | null
+          location?: string | null
+          ocr_data?: Json | null
+          photos?: string[] | null
+          policy_id: string
+          status?: Database["public"]["Enums"]["claim_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_confidence?: number | null
+          claim_type?: Database["public"]["Enums"]["claim_type"]
+          cost_estimation?: number | null
+          created_at?: string
+          damages?: Json | null
+          description?: string | null
+          id?: string
+          incident_date?: string | null
+          location?: string | null
+          ocr_data?: Json | null
+          photos?: string[] | null
+          policy_id?: string
+          status?: Database["public"]["Enums"]["claim_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      damage_zones: {
+        Row: {
+          claim_id: string
+          created_at: string
+          damage_type: Database["public"]["Enums"]["damage_type"]
+          id: string
+          image_url: string | null
+          notes: string | null
+          severity: number | null
+          zone: string
+        }
+        Insert: {
+          claim_id: string
+          created_at?: string
+          damage_type: Database["public"]["Enums"]["damage_type"]
+          id?: string
+          image_url?: string | null
+          notes?: string | null
+          severity?: number | null
+          zone: string
+        }
+        Update: {
+          claim_id?: string
+          created_at?: string
+          damage_type?: Database["public"]["Enums"]["damage_type"]
+          id?: string
+          image_url?: string | null
+          notes?: string | null
+          severity?: number | null
+          zone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "damage_zones_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +117,22 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      claim_status:
+        | "Draft"
+        | "Submitted"
+        | "Reviewed"
+        | "Approved"
+        | "Rejected"
+        | "Closed"
+      claim_type: "Auto" | "Habitation" | "Santé"
+      damage_type:
+        | "Choc"
+        | "Bris de vitre"
+        | "Rayure"
+        | "Feu"
+        | "Inondation"
+        | "Vol"
+        | "Autre"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +259,25 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      claim_status: [
+        "Draft",
+        "Submitted",
+        "Reviewed",
+        "Approved",
+        "Rejected",
+        "Closed",
+      ],
+      claim_type: ["Auto", "Habitation", "Santé"],
+      damage_type: [
+        "Choc",
+        "Bris de vitre",
+        "Rayure",
+        "Feu",
+        "Inondation",
+        "Vol",
+        "Autre",
+      ],
+    },
   },
 } as const

@@ -50,11 +50,40 @@ export default function ClaimNew() {
 
   const progress = ((currentStep + 1) / steps.length) * 100;
 
+  // Mapping des noms de zones vers les IDs
+  const mapZoneNameToId = (zoneName: string): string => {
+    const mapping: Record<string, string> = {
+      // Auto
+      "Pare-brise": "pare-brise",
+      "Capot": "capot",
+      "Aile gauche": "aile-gauche",
+      "Aile droite": "aile-droite",
+      "Portière gauche": "portiere-gauche",
+      "Portière droite": "portiere-droite",
+      "Pare-choc avant": "pare-choc-avant",
+      "Pare-choc arrière": "pare-choc-arriere",
+      "Toit": "toit",
+      "Coffre": "coffre",
+      // Habitation
+      "Façade": "facade",
+      "Toiture": "toiture",
+      "Murs": "murs",
+      "Fenêtres": "fenetres",
+      "Portes": "portes",
+      "Plomberie": "plomberie",
+      "Électricité": "electricite",
+      "Sol": "sol"
+    };
+    return mapping[zoneName] || zoneName.toLowerCase().replace(/\s+/g, '-');
+  };
+
   const handleOCRDataExtracted = (data: ExtractedData) => {
     setOcrData(data);
     // Pré-sélectionner les zones identifiées par l'IA
     if (data.damageZones && data.damageZones.length > 0) {
-      setSelectedZones(data.damageZones);
+      const mappedZones = data.damageZones.map(mapZoneNameToId);
+      setSelectedZones(mappedZones);
+      console.log('Zones pré-sélectionnées:', mappedZones);
     }
     setCurrentStep(1);
   };

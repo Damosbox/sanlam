@@ -1,0 +1,207 @@
+import { Header } from "@/components/Header";
+import { StatCard } from "@/components/StatCard";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Shield, FileText, AlertCircle, Sparkles, MessageCircle, CreditCard, TrendingUp, Clock } from "lucide-react";
+import dashboardImage from "@/assets/dashboard-preview.jpg";
+
+const B2C = () => {
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      
+      <main className="container py-12">
+        {/* Welcome Banner */}
+        <Card className="p-8 mb-8 gradient-activated text-white relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10">
+            <img src={dashboardImage} alt="" className="w-full h-full object-cover" />
+          </div>
+          <div className="relative z-10">
+            <h1 className="text-3xl font-bold mb-2">Bonjour, Marie 👋</h1>
+            <p className="text-white/90 mb-6">Bienvenue sur votre espace assuré personnalisé</p>
+            <div className="flex flex-wrap gap-3">
+              <Button variant="secondary" size="lg">
+                <Sparkles className="w-4 h-4 mr-2" />
+                Diagnostic IA gratuit
+              </Button>
+              <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Support 24/7
+              </Button>
+            </div>
+          </div>
+        </Card>
+
+        {/* Stats Overview */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <StatCard
+            label="Polices actives"
+            value="3"
+            icon={Shield}
+            trend="Toutes à jour"
+            variant="success"
+          />
+          <StatCard
+            label="Économies annuelles"
+            value="24 500 FCFA"
+            icon={TrendingUp}
+            trend="+12% vs année dernière"
+            variant="success"
+          />
+          <StatCard
+            label="Sinistres en cours"
+            value="1"
+            icon={AlertCircle}
+            trend="Traitement en cours"
+            variant="warning"
+          />
+          <StatCard
+            label="Prochain paiement"
+            value="15 jours"
+            icon={Clock}
+            trend="Auto. Mobile Money"
+            variant="default"
+          />
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Left Column - Policies */}
+          <div className="lg:col-span-2 space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-4">Mes polices</h2>
+              <div className="space-y-4">
+                <Card className="p-6 transition-base hover:shadow-medium">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <Shield className="w-6 h-6 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">Assurance Auto</h3>
+                        <p className="text-sm text-muted-foreground">Police #ASA-2024-1582</p>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-[hsl(var(--bright-green))]/10 text-[hsl(var(--bright-green))]">
+                      Active
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground mb-1">Prime mensuelle</p>
+                      <p className="font-semibold">15 000 FCFA</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Échéance</p>
+                      <p className="font-semibold">20 Déc 2025</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1">
+                      <FileText className="w-4 h-4 mr-2" />
+                      Détails
+                    </Button>
+                    <Button size="sm" className="flex-1">
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Payer
+                    </Button>
+                  </div>
+                </Card>
+
+                <Card className="p-6 transition-base hover:shadow-medium">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center">
+                        <Shield className="w-6 h-6 text-secondary" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">Assurance Habitation</h3>
+                        <p className="text-sm text-muted-foreground">Police #ASH-2024-3421</p>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-[hsl(var(--bright-green))]/10 text-[hsl(var(--bright-green))]">
+                      Active
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground mb-1">Prime mensuelle</p>
+                      <p className="font-semibold">8 500 FCFA</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground mb-1">Échéance</p>
+                      <p className="font-semibold">15 Jan 2026</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1">
+                      <FileText className="w-4 h-4 mr-2" />
+                      Détails
+                    </Button>
+                    <Button size="sm" className="flex-1">
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Payer
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - Recommendations & Actions */}
+          <div className="space-y-6">
+            <Card className="p-6 bg-gradient-to-br from-primary/5 to-accent/5">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="w-5 h-5 text-primary" />
+                <h3 className="font-semibold">Recommandations IA</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Nous avons analysé votre profil et identifié des opportunités pour vous
+              </p>
+              <div className="space-y-3">
+                <div className="p-3 rounded-lg bg-background border">
+                  <p className="font-medium text-sm mb-1">Assurance Santé Famille</p>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Économisez 15% avec notre offre famille
+                  </p>
+                  <Button size="sm" variant="outline" className="w-full">
+                    En savoir plus
+                  </Button>
+                </div>
+                <div className="p-3 rounded-lg bg-background border">
+                  <p className="font-medium text-sm mb-1">Protection Mobile</p>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Complétez votre couverture pour 2 500 FCFA/mois
+                  </p>
+                  <Button size="sm" variant="outline" className="w-full">
+                    Découvrir
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <h3 className="font-semibold mb-4">Actions rapides</h3>
+              <div className="space-y-2">
+                <Button variant="outline" className="w-full justify-start">
+                  <AlertCircle className="w-4 h-4 mr-2" />
+                  Déclarer un sinistre
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <FileText className="w-4 h-4 mr-2" />
+                  Télécharger attestations
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Contacter un conseiller
+                </Button>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default B2C;

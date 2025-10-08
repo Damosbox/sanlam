@@ -2,95 +2,99 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Allianz SanlamAllianz IA-First Design System */
 
 @layer base {
   :root {
+    /* Brand Colors - Allianz/Sanlam Playbook */
+    --sanlam-blue: 203 100% 39%; /* #0075C9 */
+    --allianz-blue: 212 100% 25%; /* #003781 */
+    --grey: 207 17% 25%; /* #333E48 */
+    
+    /* Accent Colors */
+    --bright-green: 149 61% 59%; /* #5FCD8A */
+    --purple: 325 58% 40%; /* #A6276F */
+    --red: 343 91% 55%; /* #F62459 */
+    --orange: 28 100% 49%; /* #F86200 */
+    --yellow: 42 100% 49%; /* #FAB600 */
+    
+    /* Semantic Tokens */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
+    --foreground: 207 17% 25%;
+    
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
+    --card-foreground: 207 17% 25%;
+    
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --popover-foreground: 207 17% 25%;
+    
+    --primary: 203 100% 39%; /* Sanlam Blue */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 212 100% 25%; /* Allianz Blue */
+    --secondary-foreground: 0 0% 100%;
+    
+    --muted: 210 40% 96%;
+    --muted-foreground: 207 17% 55%;
+    
+    --accent: 28 100% 49%; /* Orange */
+    --accent-foreground: 0 0% 100%;
+    
+    --success: 149 61% 59%; /* Bright Green */
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 42 100% 49%; /* Yellow */
+    --warning-foreground: 207 17% 25%;
+    
+    --destructive: 343 91% 55%; /* Red */
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 203 100% 39%;
+    
+    --radius: 1rem;
+    
+    /* Gradients */
+    --gradient-activated: linear-gradient(135deg, hsl(var(--sanlam-blue)), hsl(var(--allianz-blue)));
+    --gradient-warm: linear-gradient(135deg, hsl(var(--orange)), hsl(var(--yellow)));
+    --gradient-success: linear-gradient(135deg, hsl(var(--bright-green)), hsl(var(--sanlam-blue)));
+    
+    /* Shadows */
+    --shadow-soft: 0 4px 16px rgba(0, 0, 0, 0.08);
+    --shadow-medium: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --shadow-strong: 0 12px 32px rgba(0, 0, 0, 0.16);
+    
+    /* Transitions */
+    --transition-base: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --background: 207 17% 15%;
+    --foreground: 0 0% 98%;
+    
+    --card: 207 17% 18%;
+    --card-foreground: 0 0% 98%;
+    
+    --popover: 207 17% 18%;
+    --popover-foreground: 0 0% 98%;
+    
+    --primary: 203 100% 45%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 212 100% 35%;
+    --secondary-foreground: 0 0% 100%;
+    
+    --muted: 207 17% 25%;
+    --muted-foreground: 210 40% 70%;
+    
+    --accent: 28 100% 55%;
+    --accent-foreground: 0 0% 100%;
+    
+    --border: 207 17% 25%;
+    --input: 207 17% 25%;
+    --ring: 203 100% 45%;
   }
 }
 
@@ -101,5 +105,52 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Allianz Neo', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer utilities {
+  .gradient-activated {
+    background: linear-gradient(135deg, hsl(var(--sanlam-blue)), hsl(var(--allianz-blue)));
+  }
+  
+  .gradient-warm {
+    background: linear-gradient(135deg, hsl(var(--orange)), hsl(var(--yellow)));
+  }
+  
+  .gradient-success {
+    background: linear-gradient(135deg, hsl(var(--bright-green)), hsl(var(--sanlam-blue)));
+  }
+  
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  
+  .shadow-medium {
+    box-shadow: var(--shadow-medium);
+  }
+  
+  .shadow-strong {
+    box-shadow: var(--shadow-strong);
+  }
+  
+  .transition-base {
+    transition: var(--transition-base);
+  }
+  
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+  
+  .text-gradient-activated {
+    background: linear-gradient(135deg, hsl(var(--sanlam-blue)), hsl(var(--allianz-blue)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 }

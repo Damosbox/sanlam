@@ -59,6 +59,7 @@ export const AdminClaimsTable = () => {
   const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
   const [costEstimation, setCostEstimation] = useState("");
   const [showCostDialog, setShowCostDialog] = useState(false);
+  const [filterUnassigned, setFilterUnassigned] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -229,12 +230,40 @@ export const AdminClaimsTable = () => {
     return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
   };
 
+  const getBrokerBadge = (claim: Claim) => {
+    if (!claim.assigned_broker_id) {
+      return <Badge variant="outline" className="text-orange-500 border-orange-500">Non assigné</Badge>;
+    }
+    const broker = brokers.find(b => b.id === claim.assigned_broker_id);
+    return broker?.display_name || broker?.email || "Courtier assigné";
+  };
+
+  const filteredClaims = filterUnassigned 
+    ? claims.filter(c => !c.assigned_broker_id) 
+    : claims;
+
   if (loading) {
     return <div className="text-center py-8">Chargement...</div>;
   }
 
   return (
     <>
+      <div className="mb-4 flex items-center gap-4">
+        <Button
+          variant={filterUnassigned ? "default" : "outline"}
+          size="sm"
+          onClick={() => setFilterUnassigned(!filterUnassigned)}
+        >
+          <UserPlus className="w-4 h-4 mr-2" />
+          {filterUnassigned ? "Afficher tous" : "Non assignés uniquement"}
+        </Button>
+        {filterUnassigned && (
+          <span className="text-sm text-muted-foreground">
+            {filteredClaims.length} sinistre(s) non assigné(s)
+          </span>
+        )}
+      </div>
+      
       <div className="rounded-lg border bg-card">
         <Table>
           <TableHeader>
@@ -250,7 +279,7 @@ export const AdminClaimsTable = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {claims.map((claim) => (
+            {filteredClaims.map((claim) => (
               <TableRow key={claim.id}>
                 <TableCell>
                   <div>
@@ -271,24 +300,31 @@ export const AdminClaimsTable = () => {
                 </TableCell>
                 <TableCell>{getStatusBadge(claim.status)}</TableCell>
                 <TableCell>
-                  <Select
-                    value={claim.assigned_broker_id || "unassigned"}
-                    onValueChange={(value) =>
-                      assignBroker(claim.id, value === "unassigned" ? null : value)
-                    }
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Non assigné" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Non assigné</SelectItem>
-                      {brokers.map((broker) => (
-                        <SelectItem key={broker.id} value={broker.id}>
-                          {broker.display_name || broker.email}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2">
+                    {!claim.assigned_broker_id && (
+                      <Badge variant="outline" className="text-orange-500 border-orange-500">
+                        Non assigné
+                      </Badge>
+                    )}
+                    <Select
+                      value={claim.assigned_broker_id || "unassigned"}
+                      onValueChange={(value) =>
+                        assignBroker(claim.id, value === "unassigned" ? null : value)
+                      }
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Non assigné" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unassigned">Non assigné</SelectItem>
+                        {brokers.map((broker) => (
+                          <SelectItem key={broker.id} value={broker.id}>
+                            {broker.display_name || broker.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </TableCell>
                 <TableCell>
                   {claim.cost_estimation

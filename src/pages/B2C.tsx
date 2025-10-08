@@ -4,14 +4,17 @@ import { StatCard } from "@/components/StatCard";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, FileText, AlertCircle, Sparkles, MessageCircle, CreditCard, TrendingUp, Clock } from "lucide-react";
+import { Shield, FileText, AlertCircle, Sparkles, MessageCircle, CreditCard, TrendingUp, Clock, Plus } from "lucide-react";
 import dashboardImage from "@/assets/dashboard-preview.jpg";
 import { AIDiagnostic } from "@/components/AIDiagnostic";
 import { TwoStepSubscription } from "@/components/TwoStepSubscription";
 import { ClaimOCR } from "@/components/ClaimOCR";
 import { OmnichannelChat } from "@/components/OmnichannelChat";
+import { useNavigate } from "react-router-dom";
 
 const B2C = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -89,7 +92,40 @@ const B2C = () => {
           </TabsContent>
 
           <TabsContent value="claim" className="mt-6">
-            <ClaimOCR />
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">Déclaration de sinistre</h3>
+                  <p className="text-muted-foreground">
+                    Déclarez un sinistre en quelques étapes avec l'aide de l'IA
+                  </p>
+                </div>
+                <Button onClick={() => navigate('/b2c/claims/new')}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nouvelle déclaration
+                </Button>
+              </div>
+              <div className="grid md:grid-cols-3 gap-4 text-sm">
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <p className="font-medium mb-1">📸 Scanner OCR</p>
+                  <p className="text-muted-foreground text-xs">
+                    Extrais automatiquement les infos de vos documents
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <p className="font-medium mb-1">🎯 Zones interactives</p>
+                  <p className="text-muted-foreground text-xs">
+                    Sélectionnez visuellement les zones endommagées
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <p className="font-medium mb-1">📄 Rapport auto</p>
+                  <p className="text-muted-foreground text-xs">
+                    Génération automatique de votre pré-déclaration
+                  </p>
+                </div>
+              </div>
+            </Card>
           </TabsContent>
 
           <TabsContent value="dashboard" className="mt-6">

@@ -7,6 +7,7 @@ import Home from "./pages/Home";
 import B2C from "./pages/B2C";
 import B2B from "./pages/B2B";
 import Admin from "./pages/Admin";
+import ClaimNew from "./pages/ClaimNew";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/b2c" element={<B2C />} />
+          <Route path="/b2c/claims/new" element={<ClaimNew />} />
           <Route path="/b2b" element={<B2B />} />
           <Route path="/admin" element={<Admin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

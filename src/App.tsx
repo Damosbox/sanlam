@@ -8,6 +8,7 @@ import B2C from "./pages/B2C";
 import B2B from "./pages/B2B";
 import Admin from "./pages/Admin";
 import ClaimNew from "./pages/ClaimNew";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/auth" element={<Auth />} />
           <Route path="/b2c" element={<B2C />} />
           <Route path="/b2c/claims/new" element={<ClaimNew />} />
           <Route path="/b2b" element={<B2B />} />

@@ -11,6 +11,7 @@ import ClaimNew from "./pages/ClaimNew";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import RoleProtectedRoute from "./components/RoleProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -23,10 +24,26 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/b2c" element={<ProtectedRoute><B2C /></ProtectedRoute>} />
-          <Route path="/b2c/claims/new" element={<ProtectedRoute><ClaimNew /></ProtectedRoute>} />
-          <Route path="/b2b" element={<ProtectedRoute><B2B /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+          <Route path="/b2c" element={
+            <RoleProtectedRoute allowedRoles={["customer", "admin"]}>
+              <B2C />
+            </RoleProtectedRoute>
+          } />
+          <Route path="/b2c/claims/new" element={
+            <RoleProtectedRoute allowedRoles={["customer", "admin"]}>
+              <ClaimNew />
+            </RoleProtectedRoute>
+          } />
+          <Route path="/b2b" element={
+            <RoleProtectedRoute allowedRoles={["broker", "admin"]}>
+              <B2B />
+            </RoleProtectedRoute>
+          } />
+          <Route path="/admin" element={
+            <RoleProtectedRoute allowedRoles={["admin"]}>
+              <Admin />
+            </RoleProtectedRoute>
+          } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

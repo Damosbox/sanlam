@@ -43,62 +43,55 @@ export const BrokerClients = () => {
         return;
       }
 
-      // Get all claims assigned to this broker
+      // Single optimized query with JOIN
       const { data: claims, error } = await supabase
         .from("claims")
-        .select("user_id, created_at")
+        .select(`
+          user_id,
+          created_at,
+          profiles!inner (
+            id,
+            display_name,
+            email,
+            phone
+          )
+        `)
         .eq("assigned_broker_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      // Group by user_id to get unique clients
-      const clientMap = new Map<string, { count: number; lastDate: string }>();
-      
-      claims?.forEach(claim => {
-        const existing = clientMap.get(claim.user_id);
-        if (existing) {
-          existing.count++;
-          if (claim.created_at > existing.lastDate) {
-            existing.lastDate = claim.created_at;
-          }
-        } else {
-          clientMap.set(claim.user_id, {
-            count: 1,
-            lastDate: claim.created_at,
-          });
-        }
-      });
-
-      // Fetch profiles for all unique clients
-      const userIds = Array.from(clientMap.keys());
-      
-      if (userIds.length === 0) {
+      if (!claims || claims.length === 0) {
         setClients([]);
         setLoading(false);
         return;
       }
 
-      const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, display_name, email, phone")
-        .in("id", userIds);
-
-      if (profilesError) throw profilesError;
-
-      const clientsData: Client[] = (profiles || []).map(profile => {
-        const stats = clientMap.get(profile.id);
-        return {
-          id: profile.id,
-          display_name: profile.display_name,
-          email: profile.email,
-          phone: profile.phone,
-          claimsCount: stats?.count || 0,
-          lastClaimDate: stats?.lastDate || null,
-        };
+      // Group by user_id to get unique clients with aggregated data
+      const clientMap = new Map<string, Client>();
+      
+      claims.forEach(claim => {
+        const profile = claim.profiles as any;
+        const existing = clientMap.get(claim.user_id);
+        
+        if (existing) {
+          existing.claimsCount++;
+          if (claim.created_at > (existing.lastClaimDate || "")) {
+            existing.lastClaimDate = claim.created_at;
+          }
+        } else {
+          clientMap.set(claim.user_id, {
+            id: profile.id,
+            display_name: profile.display_name,
+            email: profile.email,
+            phone: profile.phone,
+            claimsCount: 1,
+            lastClaimDate: claim.created_at,
+          });
+        }
       });
 
-      setClients(clientsData);
+      setClients(Array.from(clientMap.values()));
     } catch (error) {
       console.error("Error fetching clients:", error);
       toast({

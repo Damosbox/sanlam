@@ -1,9 +1,15 @@
+import { useState } from "react";
 import { Header } from "@/components/Header";
 import { StatCard } from "@/components/StatCard";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, FileText, AlertCircle, Sparkles, MessageCircle, CreditCard, TrendingUp, Clock } from "lucide-react";
 import dashboardImage from "@/assets/dashboard-preview.jpg";
+import { AIDiagnostic } from "@/components/AIDiagnostic";
+import { TwoStepSubscription } from "@/components/TwoStepSubscription";
+import { ClaimOCR } from "@/components/ClaimOCR";
+import { OmnichannelChat } from "@/components/OmnichannelChat";
 
 const B2C = () => {
   return (
@@ -64,8 +70,38 @@ const B2C = () => {
           />
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid lg:grid-cols-3 gap-8">
+        {/* Features Tabs */}
+        <Tabs defaultValue="dashboard" className="mb-8">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
+            <TabsTrigger value="diagnostic">Diagnostic IA</TabsTrigger>
+            <TabsTrigger value="subscribe">Souscrire</TabsTrigger>
+            <TabsTrigger value="claim">Sinistre OCR</TabsTrigger>
+            <TabsTrigger value="policies">Mes polices</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="diagnostic" className="mt-6">
+            <AIDiagnostic />
+          </TabsContent>
+
+          <TabsContent value="subscribe" className="mt-6">
+            <TwoStepSubscription />
+          </TabsContent>
+
+          <TabsContent value="claim" className="mt-6">
+            <ClaimOCR />
+          </TabsContent>
+
+          <TabsContent value="dashboard" className="mt-6">
+            <Card className="p-6">
+              <h3 className="text-xl font-semibold mb-4">Vue d'ensemble</h3>
+              <p className="text-muted-foreground">Accédez rapidement à toutes vos fonctionnalités via les onglets ci-dessus.</p>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="policies" className="mt-6">
+            {/* Main Content Grid */}
+            <div className="grid lg:grid-cols-3 gap-8">
           {/* Left Column - Policies */}
           <div className="lg:col-span-2 space-y-6">
             <div>
@@ -199,7 +235,12 @@ const B2C = () => {
             </Card>
           </div>
         </div>
+          </TabsContent>
+        </Tabs>
       </main>
+      
+      {/* Omnichannel Chat Widget */}
+      <OmnichannelChat />
     </div>
   );
 };

@@ -35,21 +35,51 @@ export const BrokerAIInsights = () => {
         return;
       }
 
-      // Call AI edge function for insights
-      const { data, error } = await supabase.functions.invoke('ai-diagnostic', {
-        body: {
-          profile: {
-            claimsCount: claims.length,
-            avgConfidence: claims.reduce((sum, c) => sum + (c.ai_confidence || 0), 0) / claims.length,
-            types: [...new Set(claims.map(c => c.claim_type))],
-            pending: claims.filter(c => c.status === "Submitted").length,
-          }
+      // Calculate enriched statistics
+      const byType = claims.reduce((acc: any[], claim) => {
+        const existing = acc.find(item => item.type === claim.claim_type);
+        if (existing) {
+          existing.count++;
+          existing.totalCost += claim.cost_estimation || 0;
+        } else {
+          acc.push({
+            type: claim.claim_type,
+            count: 1,
+            totalCost: claim.cost_estimation || 0
+          });
         }
+        return acc;
+      }, []);
+
+      const byStatus = claims.reduce((acc: any[], claim) => {
+        const existing = acc.find(item => item.status === claim.status);
+        if (existing) {
+          existing.count++;
+        } else {
+          acc.push({ status: claim.status, count: 1 });
+        }
+        return acc;
+      }, []);
+
+      const claimsData = {
+        total: claims.length,
+        pending: claims.filter(c => c.status === "Submitted").length,
+        reviewed: claims.filter(c => c.status === "Reviewed").length,
+        totalCost: claims.reduce((sum, c) => sum + (c.cost_estimation || 0), 0),
+        avgConfidence: claims.reduce((sum, c) => sum + (c.ai_confidence || 0), 0) / claims.length,
+        byType,
+        byStatus,
+        highValueCount: claims.filter(c => (c.cost_estimation || 0) > 5000).length
+      };
+
+      // Call new broker-insights edge function
+      const { data, error } = await supabase.functions.invoke('broker-insights', {
+        body: { claimsData }
       });
 
       if (error) throw error;
 
-      setInsights(JSON.stringify(data.recommendations, null, 2));
+      setInsights(JSON.stringify(data, null, 2));
       toast({
         title: "Succès",
         description: "Analyse IA générée",

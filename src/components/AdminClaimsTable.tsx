@@ -107,11 +107,11 @@ export const AdminClaimsTable = () => {
 
   const fetchBrokers = async () => {
     try {
-      // Get all users with broker role
+      // Get all users with broker or admin role
       const { data: brokerRoles, error: rolesError } = await supabase
         .from("user_roles")
         .select("user_id")
-        .eq("role", "broker");
+        .in("role", ["broker", "admin"]);
 
       if (rolesError) throw rolesError;
 

@@ -1,29 +1,75 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, ArrowRight, ArrowLeft } from "lucide-react";
+import { CheckCircle2, ArrowRight, ArrowLeft, Shield, Loader2 } from "lucide-react";
+import { CoverageCustomizer } from "@/components/CoverageCustomizer";
+import { Badge } from "@/components/ui/badge";
+
+interface Coverage {
+  included: boolean;
+  limit?: string;
+  description?: string;
+  optional?: boolean;
+  price_modifier?: number;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  category: string;
+  base_premium: number;
+  description: string;
+  coverages: Record<string, Coverage>;
+}
 
 export const TwoStepSubscription = () => {
   const { toast } = useToast();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [customizedCoverages, setCustomizedCoverages] = useState<Record<string, Coverage>>({});
   const [formData, setFormData] = useState({
-    // Step 1
-    productType: "",
     name: "",
     phone: "",
     email: "",
-    // Step 2
-    coverage: "",
-    monthlyPremium: "",
     paymentMethod: ""
   });
 
-  const handleNext = () => {
-    if (step === 1 && formData.name && formData.phone && formData.productType) {
-      setStep(2);
+  // Fetch all products
+  const { data: products, isLoading } = useQuery({
+    queryKey: ["all-products"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("is_active", true);
+      
+      if (error) throw error;
+      return data?.map(product => ({
+        ...product,
+        coverages: product.coverages as unknown as Record<string, Coverage>
+      })) as Product[];
+    },
+  });
+
+  const handleProductSelect = (product: Product) => {
+    setSelectedProduct(product);
+    setStep(1);
+  };
+
+  const handleCustomizationComplete = (customizedProduct: Product, coverages: Record<string, Coverage>) => {
+    setSelectedProduct(customizedProduct);
+    setCustomizedCoverages(coverages);
+    setStep(2);
+  };
+
+  const handlePersonalInfoNext = () => {
+    if (formData.name && formData.phone) {
+      setStep(3);
     } else {
       toast({
         title: "Informations manquantes",
@@ -34,136 +80,237 @@ export const TwoStepSubscription = () => {
   };
 
   const handleSubmit = () => {
-    if (formData.coverage && formData.paymentMethod) {
+    if (formData.paymentMethod) {
       toast({
         title: "Souscription réussie",
         description: "Votre demande a été enregistrée. Un conseiller vous contactera sous 24h.",
       });
       // Reset form
-      setStep(1);
+      setStep(0);
+      setSelectedProduct(null);
+      setCustomizedCoverages({});
       setFormData({
-        productType: "",
         name: "",
         phone: "",
         email: "",
-        coverage: "",
-        monthlyPremium: "",
         paymentMethod: ""
       });
     } else {
       toast({
         title: "Informations manquantes",
-        description: "Veuillez compléter toutes les informations",
+        description: "Veuillez sélectionner un mode de paiement",
         variant: "destructive"
       });
     }
   };
 
-  return (
-    <Card className="p-6 max-w-2xl mx-auto">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">Souscription en 2 étapes</h2>
-        <div className="flex items-center gap-2 mb-4">
-          <div className={`flex items-center gap-2 ${step >= 1 ? 'text-primary' : 'text-muted-foreground'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-primary text-white' : 'bg-muted'}`}>
-              {step > 1 ? <CheckCircle2 className="w-5 h-5" /> : '1'}
-            </div>
-            <span className="font-medium">Informations</span>
-          </div>
-          <div className="h-px bg-border flex-1" />
-          <div className={`flex items-center gap-2 ${step >= 2 ? 'text-primary' : 'text-muted-foreground'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-primary text-white' : 'bg-muted'}`}>
-              2
-            </div>
-            <span className="font-medium">Couverture</span>
-          </div>
-        </div>
-      </div>
+  const calculateTotalPremium = () => {
+    if (!selectedProduct) return 0;
+    let total = selectedProduct.base_premium;
+    Object.values(customizedCoverages).forEach((coverage) => {
+      if (coverage.price_modifier) {
+        total += coverage.price_modifier;
+      }
+    });
+    return total;
+  };
 
-      {step === 1 && (
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="productType">Type de produit *</Label>
-            <Input
-              id="productType"
-              value={formData.productType}
-              onChange={(e) => setFormData({ ...formData, productType: e.target.value })}
-              placeholder="Auto, Habitation, Santé..."
-            />
-          </div>
-          <div>
-            <Label htmlFor="name">Nom complet *</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Jean Dupont"
-            />
-          </div>
-          <div>
-            <Label htmlFor="phone">Téléphone *</Label>
-            <Input
-              id="phone"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              placeholder="+225 07 XX XX XX XX"
-            />
-          </div>
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="jean.dupont@example.com"
-            />
-          </div>
-          <Button onClick={handleNext} className="w-full">
-            Continuer <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
+  if (isLoading) {
+    return (
+      <Card className="p-12">
+        <div className="flex flex-col items-center justify-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Chargement des produits...</p>
         </div>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      {/* Progress Steps */}
+      {step > 0 && (
+        <Card className="p-6 mb-6">
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-2 ${step >= 1 ? 'text-primary' : 'text-muted-foreground'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-primary text-white' : 'bg-muted'}`}>
+                {step > 1 ? <CheckCircle2 className="w-5 h-5" /> : '1'}
+              </div>
+              <span className="font-medium text-sm">Personnalisation</span>
+            </div>
+            <div className="h-px bg-border flex-1" />
+            <div className={`flex items-center gap-2 ${step >= 2 ? 'text-primary' : 'text-muted-foreground'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-primary text-white' : 'bg-muted'}`}>
+                {step > 2 ? <CheckCircle2 className="w-5 h-5" /> : '2'}
+              </div>
+              <span className="font-medium text-sm">Informations</span>
+            </div>
+            <div className="h-px bg-border flex-1" />
+            <div className={`flex items-center gap-2 ${step >= 3 ? 'text-primary' : 'text-muted-foreground'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 3 ? 'bg-primary text-white' : 'bg-muted'}`}>
+                3
+              </div>
+              <span className="font-medium text-sm">Confirmation</span>
+            </div>
+          </div>
+        </Card>
       )}
 
-      {step === 2 && (
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="coverage">Niveau de couverture *</Label>
-            <Input
-              id="coverage"
-              value={formData.coverage}
-              onChange={(e) => setFormData({ ...formData, coverage: e.target.value })}
-              placeholder="Basique, Standard, Premium"
-            />
+      {/* Step 0: Product Selection */}
+      {step === 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Choisissez votre produit</CardTitle>
+            <CardDescription>Sélectionnez le produit d'assurance qui vous intéresse</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {products?.map((product) => (
+                <Card
+                  key={product.id}
+                  className="cursor-pointer transition-all hover:shadow-md hover:border-primary"
+                  onClick={() => handleProductSelect(product)}
+                >
+                  <CardHeader>
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Shield className="w-5 h-5 text-primary" />
+                      </div>
+                      <Badge variant="secondary">{product.category}</Badge>
+                    </div>
+                    <CardTitle className="text-lg">{product.name}</CardTitle>
+                    <CardDescription className="text-sm">{product.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="mb-3">
+                      <div className="text-2xl font-bold text-primary">
+                        {product.base_premium.toLocaleString()} FCFA
+                      </div>
+                      <div className="text-xs text-muted-foreground">par mois</div>
+                    </div>
+                    <Button className="w-full" size="sm">
+                      Personnaliser <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 1: Coverage Customization */}
+      {step === 1 && selectedProduct && (
+        <CoverageCustomizer
+          product={selectedProduct}
+          onCustomizationComplete={handleCustomizationComplete}
+          onBack={() => setStep(0)}
+        />
+      )}
+
+      {/* Step 2: Personal Information */}
+      {step === 2 && selectedProduct && (
+        <Card className="p-6">
+          <h2 className="text-2xl font-bold mb-6">Vos informations</h2>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="name">Nom complet *</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Jean Dupont"
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone">Téléphone *</Label>
+              <Input
+                id="phone"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="+225 07 XX XX XX XX"
+              />
+            </div>
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="jean.dupont@example.com"
+              />
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
+                <ArrowLeft className="w-4 h-4 mr-2" /> Retour
+              </Button>
+              <Button onClick={handlePersonalInfoNext} className="flex-1">
+                Continuer <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
           </div>
-          <div>
-            <Label htmlFor="monthlyPremium">Prime mensuelle estimée</Label>
-            <Input
-              id="monthlyPremium"
-              value={formData.monthlyPremium}
-              onChange={(e) => setFormData({ ...formData, monthlyPremium: e.target.value })}
-              placeholder="15 000 FCFA"
-            />
+        </Card>
+      )}
+
+      {/* Step 3: Confirmation & Payment */}
+      {step === 3 && selectedProduct && (
+        <Card className="p-6">
+          <h2 className="text-2xl font-bold mb-6">Confirmation</h2>
+          
+          {/* Summary */}
+          <Card className="mb-6 bg-muted/50">
+            <CardHeader>
+              <CardTitle className="text-lg">Récapitulatif de votre souscription</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Produit</p>
+                <p className="font-semibold">{selectedProduct.name}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Garanties sélectionnées</p>
+                <div className="space-y-1">
+                  {Object.entries(customizedCoverages).map(([key, coverage]) => (
+                    <div key={key} className="flex items-center gap-2 text-sm">
+                      <CheckCircle2 className="h-4 w-4 text-primary" />
+                      <span>{coverage.description || key}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="pt-4 border-t">
+                <p className="text-sm text-muted-foreground mb-1">Prime mensuelle</p>
+                <p className="text-2xl font-bold text-primary">
+                  {calculateTotalPremium().toLocaleString()} FCFA
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Payment Method */}
+          <div className="space-y-4 mb-6">
+            <div>
+              <Label htmlFor="paymentMethod">Mode de paiement *</Label>
+              <Input
+                id="paymentMethod"
+                value={formData.paymentMethod}
+                onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+                placeholder="Mobile Money, Visa, Prélèvement auto"
+              />
+            </div>
           </div>
-          <div>
-            <Label htmlFor="paymentMethod">Mode de paiement *</Label>
-            <Input
-              id="paymentMethod"
-              value={formData.paymentMethod}
-              onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-              placeholder="Mobile Money, Visa, Prélèvement auto"
-            />
-          </div>
+
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
+            <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
               <ArrowLeft className="w-4 h-4 mr-2" /> Retour
             </Button>
             <Button onClick={handleSubmit} className="flex-1">
-              <CheckCircle2 className="w-4 h-4 mr-2" /> Souscrire
+              <CheckCircle2 className="w-4 h-4 mr-2" /> Confirmer la souscription
             </Button>
           </div>
-        </div>
+        </Card>
       )}
-    </Card>
+    </div>
   );
 };

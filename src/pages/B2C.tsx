@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { StatCard } from "@/components/StatCard";
 import { Card } from "@/components/ui/card";
@@ -12,11 +12,63 @@ import { ClaimOCR } from "@/components/ClaimOCR";
 import { OmnichannelChat } from "@/components/OmnichannelChat";
 import { ProductComparator } from "@/components/ProductComparator";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { User } from "@supabase/supabase-js";
 
 const B2C = () => {
   const navigate = useNavigate();
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [activeSubscribeTab, setActiveSubscribeTab] = useState("compare");
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Get current user
+    const fetchUserAndProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+
+      if (user) {
+        // Fetch profile from profiles table
+        const { data: profileData, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (!error && profileData) {
+          setProfile(profileData);
+        }
+      }
+      setLoading(false);
+    };
+
+    fetchUserAndProfile();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        setTimeout(() => {
+          supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single()
+            .then(({ data }) => {
+              if (data) setProfile(data);
+            });
+        }, 0);
+      } else {
+        setProfile(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const displayName = profile?.display_name || user?.email?.split('@')[0] || "Utilisateur";
 
   const handleProductSelect = (product: any) => {
     setSelectedProduct(product);
@@ -34,7 +86,7 @@ const B2C = () => {
             <img src={dashboardImage} alt="" className="w-full h-full object-cover" />
           </div>
           <div className="relative z-10">
-            <h1 className="text-3xl font-bold mb-2">Bonjour, Marie 👋</h1>
+            <h1 className="text-3xl font-bold mb-2">Bonjour, {displayName} 👋</h1>
             <p className="text-white/90 mb-6">Bienvenue sur votre espace assuré personnalisé</p>
             <div className="flex flex-wrap gap-3">
               <Button variant="secondary" size="lg">

@@ -1,9 +1,16 @@
 import { Header } from "@/components/Header";
-import { PortalCard } from "@/components/PortalCard";
-import { Users, Briefcase, Shield, TrendingUp } from "lucide-react";
+import { ProductCard } from "@/components/ProductCard";
+import { Car, Heart, Smartphone, Sprout, PiggyBank, Home as HomeIcon, TrendingUp, Shield } from "lucide-react";
 import heroImage from "@/assets/hero-woman.jpg";
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
+  const navigate = useNavigate();
+
+  const handleSubscribe = (productType: string) => {
+    navigate('/b2c', { state: { activeTab: 'subscribe', productType } });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -57,59 +64,101 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Portal Selection */}
+      {/* Produits d'assurance */}
       <section className="py-20 bg-muted/30">
         <div className="container">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Choisissez votre portail
+              Nos produits d'assurance
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Trois interfaces dédiées pour une expérience optimale selon votre profil
+              Des solutions adaptées à tous vos besoins de protection
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <PortalCard
-              title="Espace Assurés"
-              description="Interface B2C pour gérer vos polices, déclarer des sinistres et bénéficier de recommandations IA personnalisées."
-              icon={Users}
-              href="/b2c"
+            <ProductCard
+              title="Assurance Auto"
+              description="Protection complète pour votre véhicule avec assistance 24/7 et indemnisation rapide."
+              icon={Car}
               gradient="activated"
               features={[
-                "Diagnostic IA en 2 minutes",
-                "Souscription simplifiée",
-                "Gestion des polices et sinistres",
-                "Support omnicanal 24/7"
+                "Responsabilité civile",
+                "Tous risques disponible",
+                "Assistance dépannage 24/7",
+                "Indemnisation sous 48h"
               ]}
+              onSubscribe={() => handleSubscribe('auto')}
             />
 
-            <PortalCard
-              title="Espace Courtiers"
-              description="Plateforme B2B pour gérer votre portefeuille clients, vos commissions et votre formation continue."
-              icon={Briefcase}
-              href="/b2b"
+            <ProductCard
+              title="Assurance Santé"
+              description="Couverture médicale complète pour vous et votre famille avec accès au réseau de soins."
+              icon={Heart}
               gradient="warm"
               features={[
-                "Vue 360° clients",
-                "Scoring IA et upsell",
-                "Suivi commissions temps réel",
-                "Gamification et incentives"
+                "Consultation & hospitalisation",
+                "Médicaments remboursés",
+                "Réseau de soins agréés",
+                "Téléconsultation incluse"
               ]}
+              onSubscribe={() => handleSubscribe('sante')}
             />
 
-            <PortalCard
-              title="Espace Admin"
-              description="Interface de supervision IA, conformité RGPD, NPS et configuration des produits et APIs."
-              icon={Shield}
-              href="/admin"
+            <ProductCard
+              title="Assurance Habitation"
+              description="Protégez votre logement contre les risques d'incendie, vol et dégâts des eaux."
+              icon={HomeIcon}
               gradient="success"
               features={[
-                "Supervision IA et drift",
-                "Dashboard NPS et conformité",
-                "Configuration produits",
-                "Gestion APIs et marketplace"
+                "Incendie & dégâts des eaux",
+                "Vol & vandalisme",
+                "Responsabilité civile",
+                "Assistance serrurerie"
               ]}
+              onSubscribe={() => handleSubscribe('habitation')}
+            />
+
+            <ProductCard
+              title="Assurance Électronique"
+              description="Protégez vos appareils électroniques contre le vol, la casse et les pannes."
+              icon={Smartphone}
+              gradient="info"
+              features={[
+                "Smartphones & tablettes",
+                "Ordinateurs & TV",
+                "Vol & casse accidentelle",
+                "Remplacement rapide"
+              ]}
+              onSubscribe={() => handleSubscribe('electronique')}
+            />
+
+            <ProductCard
+              title="Assurance Agricole"
+              description="Solutions adaptées aux exploitants agricoles pour protéger récoltes et équipements."
+              icon={Sprout}
+              gradient="success"
+              features={[
+                "Protection des récoltes",
+                "Équipements & machines",
+                "Bétail & cheptel",
+                "Catastrophes naturelles"
+              ]}
+              onSubscribe={() => handleSubscribe('agricole')}
+            />
+
+            <ProductCard
+              title="Épargne & Retraite"
+              description="Constituez votre épargne et préparez votre retraite avec des solutions avantageuses."
+              icon={PiggyBank}
+              gradient="accent"
+              features={[
+                "Épargne progressive",
+                "Rendement attractif",
+                "Retraite complémentaire",
+                "Avantages fiscaux"
+              ]}
+              onSubscribe={() => handleSubscribe('epargne')}
             />
           </div>
         </div>

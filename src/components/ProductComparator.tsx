@@ -157,6 +157,27 @@ export function ProductComparator() {
                   ))}
                 </div>
 
+                {/* Help Message */}
+                {productsToCompare.length === 0 && (
+                  <Card className="bg-muted/50">
+                    <CardContent className="pt-6">
+                      <p className="text-center text-muted-foreground">
+                        💡 Sélectionnez au moins 2 produits en cochant les cases pour les comparer
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {productsToCompare.length === 1 && (
+                  <Card className="bg-primary/5">
+                    <CardContent className="pt-6">
+                      <p className="text-center text-sm">
+                        ✨ Sélectionnez encore 1 ou 2 produits pour afficher le tableau comparatif
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Comparison Table */}
                 {comparedProducts.length >= 2 && (
                   <Card>

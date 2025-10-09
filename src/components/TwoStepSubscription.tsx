@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -27,10 +27,10 @@ interface Product {
   coverages: Record<string, Coverage>;
 }
 
-export const TwoStepSubscription = () => {
+export const TwoStepSubscription = ({ selectedProduct: preSelectedProduct }: { selectedProduct?: Product | null } = {}) => {
   const { toast } = useToast();
   const [step, setStep] = useState(0);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(preSelectedProduct || null);
   const [customizedCoverages, setCustomizedCoverages] = useState<Record<string, Coverage>>({});
   const [formData, setFormData] = useState({
     name: "",
@@ -38,6 +38,14 @@ export const TwoStepSubscription = () => {
     email: "",
     paymentMethod: ""
   });
+
+  // Update selected product when preSelectedProduct changes
+  useEffect(() => {
+    if (preSelectedProduct) {
+      setSelectedProduct(preSelectedProduct);
+      setStep(1); // Go directly to customization step
+    }
+  }, [preSelectedProduct]);
 
   // Fetch all products
   const { data: products, isLoading } = useQuery({

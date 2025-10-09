@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Check, X, Loader2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 interface Product {
   id: string;
@@ -17,6 +16,10 @@ interface Product {
   base_premium: number;
   description: string;
   coverages: Record<string, { included: boolean; limit?: string; description?: string }>;
+}
+
+interface ProductComparatorProps {
+  onProductSelect?: (product: Product) => void;
 }
 
 const categories = [
@@ -28,10 +31,9 @@ const categories = [
   { value: "Épargne", label: "Épargne" },
 ];
 
-export function ProductComparator() {
+export function ProductComparator({ onProductSelect }: ProductComparatorProps = {}) {
   const [selectedCategory, setSelectedCategory] = useState("Auto");
   const [productsToCompare, setProductsToCompare] = useState<string[]>([]);
-  const navigate = useNavigate();
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["products", selectedCategory],
@@ -72,7 +74,10 @@ export function ProductComparator() {
   );
 
   const handleSubscribe = (productId: string) => {
-    navigate("/b2c", { state: { productId, tab: "subscribe" } });
+    const product = products?.find(p => p.id === productId);
+    if (product && onProductSelect) {
+      onProductSelect(product);
+    }
   };
 
   return (

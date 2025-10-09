@@ -15,6 +15,13 @@ import { useNavigate } from "react-router-dom";
 
 const B2C = () => {
   const navigate = useNavigate();
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [activeSubscribeTab, setActiveSubscribeTab] = useState("compare");
+
+  const handleProductSelect = (product: any) => {
+    setSelectedProduct(product);
+    setActiveSubscribeTab("subscribe");
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -89,16 +96,16 @@ const B2C = () => {
           </TabsContent>
 
           <TabsContent value="subscribe" className="mt-6">
-            <Tabs defaultValue="compare" className="w-full">
+            <Tabs value={activeSubscribeTab} onValueChange={setActiveSubscribeTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="compare">Comparer les offres</TabsTrigger>
                 <TabsTrigger value="subscribe">Souscrire directement</TabsTrigger>
               </TabsList>
               <TabsContent value="compare" className="mt-6">
-                <ProductComparator />
+                <ProductComparator onProductSelect={handleProductSelect} />
               </TabsContent>
               <TabsContent value="subscribe" className="mt-6">
-                <TwoStepSubscription />
+                <TwoStepSubscription selectedProduct={selectedProduct} />
               </TabsContent>
             </Tabs>
           </TabsContent>

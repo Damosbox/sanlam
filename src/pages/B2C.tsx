@@ -21,6 +21,7 @@ const B2C = () => {
   const [activeSubscribeTab, setActiveSubscribeTab] = useState("compare");
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,6 +40,24 @@ const B2C = () => {
 
         if (!error && profileData) {
           setProfile(profileData);
+        }
+
+        // Fetch user subscriptions with product details
+        const { data: subsData, error: subsError } = await supabase
+          .from('subscriptions')
+          .select(`
+            *,
+            products (
+              id,
+              name,
+              category
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (!subsError && subsData) {
+          setSubscriptions(subsData);
         }
       }
       setLoading(false);
@@ -59,9 +78,26 @@ const B2C = () => {
             .then(({ data }) => {
               if (data) setProfile(data);
             });
+
+          supabase
+            .from('subscriptions')
+            .select(`
+              *,
+              products (
+                id,
+                name,
+                category
+              )
+            `)
+            .eq('user_id', session.user.id)
+            .order('created_at', { ascending: false })
+            .then(({ data }) => {
+              if (data) setSubscriptions(data);
+            });
         }, 0);
       } else {
         setProfile(null);
+        setSubscriptions([]);
       }
     });
 
@@ -69,6 +105,49 @@ const B2C = () => {
   }, []);
 
   const displayName = profile?.display_name || user?.email?.split('@')[0] || "Utilisateur";
+
+  // Calculate dynamic stats
+  const activeSubscriptionsCount = subscriptions.filter(sub => sub.status === 'active').length;
+  const totalMonthlySavings = subscriptions
+    .filter(sub => sub.status === 'active')
+    .reduce((sum, sub) => sum + (parseFloat(sub.monthly_premium) || 0), 0);
+
+  // Format date helper
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  // Get status badge color
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'bg-[hsl(var(--bright-green))]/10 text-[hsl(var(--bright-green))]';
+      case 'pending':
+        return 'bg-[hsl(var(--warning))]/10 text-[hsl(var(--warning))]';
+      case 'expired':
+      case 'cancelled':
+        return 'bg-[hsl(var(--destructive))]/10 text-[hsl(var(--destructive))]';
+      default:
+        return 'bg-muted text-muted-foreground';
+    }
+  };
+
+  // Get status text
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'Active';
+      case 'pending':
+        return 'En attente';
+      case 'expired':
+        return 'Expirée';
+      case 'cancelled':
+        return 'Annulée';
+      default:
+        return status;
+    }
+  };
 
   const handleProductSelect = (product: any) => {
     setSelectedProduct(product);
@@ -105,16 +184,16 @@ const B2C = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           <StatCard
             label="Polices actives"
-            value="3"
+            value={activeSubscriptionsCount.toString()}
             icon={Shield}
-            trend="Toutes à jour"
-            variant="success"
+            trend={activeSubscriptionsCount > 0 ? "Toutes à jour" : "Aucune police"}
+            variant={activeSubscriptionsCount > 0 ? "success" : "default"}
           />
           <StatCard
-            label="Économies annuelles"
-            value="24 500 FCFA"
+            label="Montant mensuel"
+            value={`${totalMonthlySavings.toLocaleString('fr-FR')} FCFA`}
             icon={TrendingUp}
-            trend="+12% vs année dernière"
+            trend="Total de vos primes"
             variant="success"
           />
           <StatCard
@@ -212,82 +291,73 @@ const B2C = () => {
           {/* Left Column - Policies */}
           <div className="lg:col-span-2 space-y-6">
             <div>
-              <h2 className="text-2xl font-bold mb-4">Mes polices</h2>
-              <div className="space-y-4">
-                <Card className="p-6 transition-base hover:shadow-medium">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                        <Shield className="w-6 h-6 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold">Assurance Auto</h3>
-                        <p className="text-sm text-muted-foreground">Police #ASA-2024-1582</p>
-                      </div>
-                    </div>
-                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-[hsl(var(--bright-green))]/10 text-[hsl(var(--bright-green))]">
-                      Active
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground mb-1">Prime mensuelle</p>
-                      <p className="font-semibold">15 000 FCFA</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground mb-1">Échéance</p>
-                      <p className="font-semibold">20 Déc 2025</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-4 border-t flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <FileText className="w-4 h-4 mr-2" />
-                      Détails
-                    </Button>
-                    <Button size="sm" className="flex-1">
-                      <CreditCard className="w-4 h-4 mr-2" />
-                      Payer
-                    </Button>
-                  </div>
-                </Card>
-
-                <Card className="p-6 transition-base hover:shadow-medium">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center">
-                        <Shield className="w-6 h-6 text-secondary" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold">Assurance Habitation</h3>
-                        <p className="text-sm text-muted-foreground">Police #ASH-2024-3421</p>
-                      </div>
-                    </div>
-                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-[hsl(var(--bright-green))]/10 text-[hsl(var(--bright-green))]">
-                      Active
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground mb-1">Prime mensuelle</p>
-                      <p className="font-semibold">8 500 FCFA</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground mb-1">Échéance</p>
-                      <p className="font-semibold">15 Jan 2026</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-4 border-t flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <FileText className="w-4 h-4 mr-2" />
-                      Détails
-                    </Button>
-                    <Button size="sm" className="flex-1">
-                      <CreditCard className="w-4 h-4 mr-2" />
-                      Payer
-                    </Button>
-                  </div>
-                </Card>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold">Mes polices</h2>
+                <Button onClick={() => setActiveSubscribeTab("compare")} variant="outline">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nouvelle souscription
+                </Button>
               </div>
+              {subscriptions.length === 0 ? (
+                <Card className="p-8 text-center">
+                  <Shield className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-lg font-semibold mb-2">Aucune police active</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Souscrivez à votre première assurance pour protéger ce qui compte le plus
+                  </p>
+                  <Button onClick={() => setActiveSubscribeTab("compare")}>
+                    Découvrir nos offres
+                  </Button>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {subscriptions.map((subscription) => (
+                    <Card key={subscription.id} className="p-6 transition-base hover:shadow-medium">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                            <Shield className="w-6 h-6 text-primary" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">{subscription.products?.name || 'Assurance'}</h3>
+                            <p className="text-sm text-muted-foreground">Police #{subscription.policy_number}</p>
+                          </div>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(subscription.status)}`}>
+                          {getStatusText(subscription.status)}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground mb-1">Prime mensuelle</p>
+                          <p className="font-semibold">{parseFloat(subscription.monthly_premium).toLocaleString('fr-FR')} FCFA</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground mb-1">Échéance</p>
+                          <p className="font-semibold">{formatDate(subscription.end_date)}</p>
+                        </div>
+                      </div>
+                      {subscription.payment_method && (
+                        <div className="mt-3 text-sm">
+                          <p className="text-muted-foreground">Mode de paiement : <span className="font-medium text-foreground">{subscription.payment_method}</span></p>
+                        </div>
+                      )}
+                      <div className="mt-4 pt-4 border-t flex gap-2">
+                        <Button variant="outline" size="sm" className="flex-1">
+                          <FileText className="w-4 h-4 mr-2" />
+                          Détails
+                        </Button>
+                        {subscription.status === 'active' && (
+                          <Button size="sm" className="flex-1">
+                            <CreditCard className="w-4 h-4 mr-2" />
+                            Payer
+                          </Button>
+                        )}
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

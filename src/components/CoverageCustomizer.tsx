@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Shield, Info } from "lucide-react";
+import { Shield, Info, Loader2, TrendingDown, TrendingUp } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Coverage {
@@ -42,6 +44,45 @@ export function CoverageCustomizer({ product, onCustomizationComplete, onBack }:
     return initial;
   });
 
+  const [calculatedPremium, setCalculatedPremium] = useState<{
+    monthly: number;
+    annual: number;
+    breakdown?: any;
+  } | null>(null);
+
+  // Mutation for calculating premium via edge function
+  const calculatePremiumMutation = useMutation({
+    mutationFn: async (coverages: Record<string, Coverage>) => {
+      const { data, error } = await supabase.functions.invoke('calculate-premium', {
+        body: {
+          product_id: product.id,
+          base_premium: product.base_premium,
+          selected_coverages: coverages,
+          // user_profile can be added later for more accurate pricing
+        }
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      setCalculatedPremium({
+        monthly: data.monthly_premium,
+        annual: data.annual_premium,
+        breakdown: data.breakdown
+      });
+    },
+  });
+
+  // Debounced calculation trigger
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      calculatePremiumMutation.mutate(selectedCoverages);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [selectedCoverages]);
+
   const toggleCoverage = (key: string, coverage: Coverage) => {
     setSelectedCoverages((prev) => {
       const newCoverages = { ...prev };
@@ -58,8 +99,8 @@ export function CoverageCustomizer({ product, onCustomizationComplete, onBack }:
     });
   };
 
-  // Calculate estimated premium (will be replaced by API call in step 3)
-  const calculateEstimatedPremium = () => {
+  // Calculate estimated premium (fallback if API fails)
+  const calculateEstimatedPremium = useCallback(() => {
     let total = product.base_premium;
     Object.values(selectedCoverages).forEach((coverage) => {
       if (coverage.price_modifier) {
@@ -67,7 +108,7 @@ export function CoverageCustomizer({ product, onCustomizationComplete, onBack }:
       }
     });
     return total;
-  };
+  }, [product.base_premium, selectedCoverages]);
 
   const handleContinue = () => {
     const customizedProduct: Product = {
@@ -77,9 +118,11 @@ export function CoverageCustomizer({ product, onCustomizationComplete, onBack }:
     onCustomizationComplete(customizedProduct, selectedCoverages);
   };
 
-  const estimatedPremium = calculateEstimatedPremium();
+  const estimatedPremium = calculatedPremium?.monthly || calculateEstimatedPremium();
+  const annualPremium = calculatedPremium?.annual || (estimatedPremium * 12);
   const selectedCount = Object.keys(selectedCoverages).length;
   const totalCount = Object.keys(product.coverages).length;
+  const isCalculating = calculatePremiumMutation.isPending;
 
   return (
     <div className="grid lg:grid-cols-3 gap-6">
@@ -189,17 +232,69 @@ export function CoverageCustomizer({ product, onCustomizationComplete, onBack }:
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Premium Display */}
-            <div className="text-center py-4">
+            <div className="text-center py-4 relative">
+              {isCalculating && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-lg">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              )}
               <div className="text-4xl font-bold text-primary mb-2">
                 {estimatedPremium.toLocaleString()} FCFA
               </div>
               <p className="text-sm text-muted-foreground">par mois</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Soit {(estimatedPremium * 12).toLocaleString()} FCFA/an
+                Soit {annualPremium.toLocaleString()} FCFA/an
               </p>
             </div>
 
             <Separator />
+
+            {/* Breakdown Details */}
+            {calculatedPremium?.breakdown && (
+              <>
+                <div>
+                  <h4 className="font-semibold mb-3 text-sm">Détail du calcul</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Prime de base</span>
+                      <span className="font-medium">
+                        {calculatedPremium.breakdown.base_premium.toLocaleString()} FCFA
+                      </span>
+                    </div>
+                    
+                    {calculatedPremium.breakdown.coverage_adjustments.map((adj: any, idx: number) => (
+                      <div key={idx} className="flex justify-between items-center">
+                        <span className="text-muted-foreground flex items-center gap-1">
+                          <TrendingUp className="h-3 w-3 text-primary" />
+                          {adj.description}
+                        </span>
+                        <span className="text-primary font-medium">
+                          +{adj.amount.toLocaleString()} FCFA
+                        </span>
+                      </div>
+                    ))}
+
+                    {calculatedPremium.breakdown.profile_adjustments.map((adj: any, idx: number) => (
+                      <div key={idx} className="flex justify-between items-center">
+                        <span className="text-muted-foreground flex items-center gap-1">
+                          {adj.amount > 0 ? (
+                            <TrendingUp className="h-3 w-3 text-orange-500" />
+                          ) : (
+                            <TrendingDown className="h-3 w-3 text-green-500" />
+                          )}
+                          {adj.description}
+                        </span>
+                        <span className={adj.amount > 0 ? "text-orange-500 font-medium" : "text-green-500 font-medium"}>
+                          {adj.amount > 0 ? '+' : ''}{adj.amount.toLocaleString()} FCFA
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <Separator />
+              </>
+            )}
 
             {/* Coverage Count */}
             <div>
@@ -234,7 +329,14 @@ export function CoverageCustomizer({ product, onCustomizationComplete, onBack }:
 
             {/* Info Note */}
             <div className="p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
-              💡 Le prix final sera calculé en fonction de votre profil et validé lors de la souscription
+              {isCalculating ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Calcul en cours...
+                </span>
+              ) : (
+                <>💡 Prix calculé en temps réel selon vos garanties sélectionnées</>
+              )}
             </div>
           </CardContent>
         </Card>

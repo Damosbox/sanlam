@@ -22,6 +22,7 @@ const B2C = () => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
+  const [claims, setClaims] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -59,6 +60,17 @@ const B2C = () => {
         if (!subsError && subsData) {
           setSubscriptions(subsData);
         }
+
+        // Fetch user claims
+        const { data: claimsData, error: claimsError } = await supabase
+          .from('claims')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (!claimsError && claimsData) {
+          setClaims(claimsData);
+        }
       }
       setLoading(false);
     };
@@ -94,10 +106,20 @@ const B2C = () => {
             .then(({ data }) => {
               if (data) setSubscriptions(data);
             });
+
+          supabase
+            .from('claims')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .order('created_at', { ascending: false })
+            .then(({ data }) => {
+              if (data) setClaims(data);
+            });
         }, 0);
       } else {
         setProfile(null);
         setSubscriptions([]);
+        setClaims([]);
       }
     });
 
@@ -108,9 +130,55 @@ const B2C = () => {
 
   // Calculate dynamic stats
   const activeSubscriptionsCount = subscriptions.filter(sub => sub.status === 'active').length;
-  const totalMonthlySavings = subscriptions
+  const totalMonthlyPremium = subscriptions
     .filter(sub => sub.status === 'active')
     .reduce((sum, sub) => sum + (parseFloat(sub.monthly_premium) || 0), 0);
+
+  // Count pending/in-progress claims (not Draft, not Closed, not Rejected)
+  const pendingClaimsCount = claims.filter(
+    claim => !['Draft', 'Closed', 'Rejected'].includes(claim.status)
+  ).length;
+
+  // Calculate next payment date from active subscriptions
+  const getNextPaymentInfo = () => {
+    const activeSubscriptions = subscriptions.filter(sub => sub.status === 'active');
+    if (activeSubscriptions.length === 0) return { days: 0, text: 'Aucune échéance' };
+
+    const now = new Date();
+    let nearestDate: Date | null = null;
+    let nearestDays = Infinity;
+
+    activeSubscriptions.forEach(sub => {
+      const endDate = new Date(sub.end_date);
+      const diffTime = endDate.getTime() - now.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays > 0 && diffDays < nearestDays) {
+        nearestDays = diffDays;
+        nearestDate = endDate;
+      }
+    });
+
+    if (!nearestDate) return { days: 0, text: 'Aucune échéance' };
+
+    if (nearestDays === 1) return { days: 1, text: '1 jour' };
+    if (nearestDays <= 30) return { days: nearestDays, text: `${nearestDays} jours` };
+    
+    const months = Math.floor(nearestDays / 30);
+    return { days: nearestDays, text: `${months} mois` };
+  };
+
+  const nextPayment = getNextPaymentInfo();
+
+  // Calculate annual savings (example: 10% discount for multiple active policies)
+  const calculateAnnualSavings = () => {
+    if (activeSubscriptionsCount <= 1) return 0;
+    const annualPremium = totalMonthlyPremium * 12;
+    const discount = 0.10; // 10% discount for multiple policies
+    return Math.round(annualPremium * discount);
+  };
+
+  const annualSavings = calculateAnnualSavings();
 
   // Format date helper
   const formatDate = (dateString: string) => {
@@ -190,25 +258,25 @@ const B2C = () => {
             variant={activeSubscriptionsCount > 0 ? "success" : "default"}
           />
           <StatCard
-            label="Montant mensuel"
-            value={`${totalMonthlySavings.toLocaleString('fr-FR')} FCFA`}
+            label={annualSavings > 0 ? "Économies annuelles" : "Montant mensuel"}
+            value={annualSavings > 0 ? `${annualSavings.toLocaleString('fr-FR')} FCFA` : `${totalMonthlyPremium.toLocaleString('fr-FR')} FCFA`}
             icon={TrendingUp}
-            trend="Total de vos primes"
+            trend={annualSavings > 0 ? "Multi-polices (-10%)" : "Total de vos primes"}
             variant="success"
           />
           <StatCard
             label="Sinistres en cours"
-            value="1"
+            value={pendingClaimsCount.toString()}
             icon={AlertCircle}
-            trend="Traitement en cours"
-            variant="warning"
+            trend={pendingClaimsCount > 0 ? "Traitement en cours" : "Aucun sinistre"}
+            variant={pendingClaimsCount > 0 ? "warning" : "success"}
           />
           <StatCard
             label="Prochain paiement"
-            value="15 jours"
+            value={nextPayment.text}
             icon={Clock}
-            trend="Auto. Mobile Money"
-            variant="default"
+            trend={subscriptions.some(sub => sub.payment_method) ? `Auto. ${subscriptions.find(sub => sub.payment_method)?.payment_method}` : "À configurer"}
+            variant={nextPayment.days > 0 && nextPayment.days <= 7 ? "warning" : "default"}
           />
         </div>
 

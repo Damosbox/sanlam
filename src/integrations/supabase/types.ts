@@ -120,6 +120,45 @@ export type Database = {
           },
         ]
       }
+      products: {
+        Row: {
+          base_premium: number
+          category: string
+          coverages: Json
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          terms: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          base_premium: number
+          category: string
+          coverages: Json
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          terms?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          base_premium?: number
+          category?: string
+          coverages?: Json
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          terms?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

@@ -10,6 +10,7 @@ import { AIDiagnostic } from "@/components/AIDiagnostic";
 import { TwoStepSubscription } from "@/components/TwoStepSubscription";
 import { ClaimOCR } from "@/components/ClaimOCR";
 import { OmnichannelChat } from "@/components/OmnichannelChat";
+import { ProductComparator } from "@/components/ProductComparator";
 import { useNavigate } from "react-router-dom";
 
 const B2C = () => {
@@ -88,7 +89,18 @@ const B2C = () => {
           </TabsContent>
 
           <TabsContent value="subscribe" className="mt-6">
-            <TwoStepSubscription />
+            <Tabs defaultValue="compare" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="compare">Comparer les offres</TabsTrigger>
+                <TabsTrigger value="subscribe">Souscrire directement</TabsTrigger>
+              </TabsList>
+              <TabsContent value="compare" className="mt-6">
+                <ProductComparator />
+              </TabsContent>
+              <TabsContent value="subscribe" className="mt-6">
+                <TwoStepSubscription />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           <TabsContent value="claim" className="mt-6">

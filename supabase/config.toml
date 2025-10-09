@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.ai-diagnostic]
 verify_jwt = true
+
+[functions.get-recommendations]
+verify_jwt = true

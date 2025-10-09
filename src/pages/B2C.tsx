@@ -11,6 +11,8 @@ import { TwoStepSubscription } from "@/components/TwoStepSubscription";
 import { ClaimOCR } from "@/components/ClaimOCR";
 import { OmnichannelChat } from "@/components/OmnichannelChat";
 import { ProductComparator } from "@/components/ProductComparator";
+import { PeopleLikeYouRecommendations } from "@/components/PeopleLikeYouRecommendations";
+import { UserAttributesForm } from "@/components/UserAttributesForm";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -431,35 +433,24 @@ const B2C = () => {
 
           {/* Right Column - Recommendations & Actions */}
           <div className="space-y-6">
-            <Card className="p-6 bg-gradient-to-br from-primary/5 to-accent/5">
-              <div className="flex items-center gap-2 mb-4">
-                <Sparkles className="w-5 h-5 text-primary" />
-                <h3 className="font-semibold">Recommandations IA</h3>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">
-                Nous avons analysé votre profil et identifié des opportunités pour vous
-              </p>
-              <div className="space-y-3">
-                <div className="p-3 rounded-lg bg-background border">
-                  <p className="font-medium text-sm mb-1">Assurance Santé Famille</p>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Économisez 15% avec notre offre famille
-                  </p>
-                  <Button size="sm" variant="outline" className="w-full">
-                    En savoir plus
-                  </Button>
-                </div>
-                <div className="p-3 rounded-lg bg-background border">
-                  <p className="font-medium text-sm mb-1">Protection Mobile</p>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Complétez votre couverture pour 2 500 FCFA/mois
-                  </p>
-                  <Button size="sm" variant="outline" className="w-full">
-                    Découvrir
-                  </Button>
-                </div>
-              </div>
-            </Card>
+            <UserAttributesForm />
+            
+            <PeopleLikeYouRecommendations 
+              onSubscribe={(productId) => {
+                // Find the product and set it as selected
+                supabase
+                  .from('products')
+                  .select('*')
+                  .eq('id', productId)
+                  .single()
+                  .then(({ data }) => {
+                    if (data) {
+                      setSelectedProduct(data);
+                      setActiveSubscribeTab("subscribe");
+                    }
+                  });
+              }}
+            />
 
             <Card className="p-6">
               <h3 className="font-semibold mb-4">Actions rapides</h3>

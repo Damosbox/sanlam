@@ -252,6 +252,42 @@ export type Database = {
           },
         ]
       }
+      user_attributes: {
+        Row: {
+          age_range: string | null
+          created_at: string
+          family_status: string | null
+          id: string
+          income_range: string | null
+          location: string | null
+          occupation_category: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age_range?: string | null
+          created_at?: string
+          family_status?: string | null
+          id?: string
+          income_range?: string | null
+          location?: string | null
+          occupation_category?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age_range?: string | null
+          created_at?: string
+          family_status?: string | null
+          id?: string
+          income_range?: string | null
+          location?: string | null
+          occupation_category?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

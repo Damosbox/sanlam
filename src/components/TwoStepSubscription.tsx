@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2, ArrowRight, ArrowLeft, Shield, Loader2 } from "lucide-react";
 import { CoverageCustomizer } from "@/components/CoverageCustomizer";
 import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
 
 interface Coverage {
   included: boolean;
@@ -29,9 +30,11 @@ interface Product {
 
 export const TwoStepSubscription = ({ selectedProduct: preSelectedProduct }: { selectedProduct?: Product | null } = {}) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(preSelectedProduct || null);
   const [customizedCoverages, setCustomizedCoverages] = useState<Record<string, Coverage>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -87,13 +90,74 @@ export const TwoStepSubscription = ({ selectedProduct: preSelectedProduct }: { s
     }
   };
 
-  const handleSubmit = () => {
-    if (formData.paymentMethod) {
+  const handleSubmit = async () => {
+    if (!formData.paymentMethod) {
+      toast({
+        title: "Informations manquantes",
+        description: "Veuillez sélectionner un mode de paiement",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!selectedProduct) {
+      toast({
+        title: "Erreur",
+        description: "Aucun produit sélectionné",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        toast({
+          title: "Erreur d'authentification",
+          description: "Vous devez être connecté pour souscrire",
+          variant: "destructive"
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Generate unique policy number
+      const policyNumber = `POL-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+      
+      // Calculate dates
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setFullYear(endDate.getFullYear() + 1);
+
+      // Insert subscription
+      const { error: insertError } = await supabase
+        .from('subscriptions')
+        .insert({
+          user_id: user.id,
+          product_id: selectedProduct.id,
+          policy_number: policyNumber,
+          monthly_premium: calculateTotalPremium(),
+          start_date: startDate.toISOString(),
+          end_date: endDate.toISOString(),
+          status: 'active',
+          selected_coverages: customizedCoverages as any,
+          payment_method: formData.paymentMethod
+        } as any);
+
+      if (insertError) {
+        throw insertError;
+      }
+
       toast({
         title: "Souscription réussie",
-        description: "Votre demande a été enregistrée. Un conseiller vous contactera sous 24h.",
+        description: `Votre police ${policyNumber} a été créée avec succès.`,
       });
-      // Reset form
+
+      // Reset form and redirect to policies tab
       setStep(0);
       setSelectedProduct(null);
       setCustomizedCoverages({});
@@ -103,12 +167,21 @@ export const TwoStepSubscription = ({ selectedProduct: preSelectedProduct }: { s
         email: "",
         paymentMethod: ""
       });
-    } else {
+
+      // Refresh the page to show new subscription
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+
+    } catch (error: any) {
+      console.error('Subscription error:', error);
       toast({
-        title: "Informations manquantes",
-        description: "Veuillez sélectionner un mode de paiement",
+        title: "Erreur",
+        description: error.message || "Une erreur est survenue lors de la souscription",
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -310,11 +383,19 @@ export const TwoStepSubscription = ({ selectedProduct: preSelectedProduct }: { s
           </div>
 
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
+            <Button variant="outline" onClick={() => setStep(2)} className="flex-1" disabled={isSubmitting}>
               <ArrowLeft className="w-4 h-4 mr-2" /> Retour
             </Button>
-            <Button onClick={handleSubmit} className="flex-1">
-              <CheckCircle2 className="w-4 h-4 mr-2" /> Confirmer la souscription
+            <Button onClick={handleSubmit} className="flex-1" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Création...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4 mr-2" /> Confirmer la souscription
+                </>
+              )}
             </Button>
           </div>
         </Card>

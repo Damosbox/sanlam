@@ -194,6 +194,7 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          assigned_broker_id: string | null
           created_at: string
           end_date: string
           id: string
@@ -208,6 +209,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_broker_id?: string | null
           created_at?: string
           end_date: string
           id?: string
@@ -222,6 +224,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_broker_id?: string | null
           created_at?: string
           end_date?: string
           id?: string

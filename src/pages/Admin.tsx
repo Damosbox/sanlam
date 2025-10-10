@@ -7,6 +7,7 @@ import { Brain, Shield, TrendingUp, AlertCircle, Database, Zap, FileText, Users 
 import { AdminClaimsTable } from "@/components/AdminClaimsTable";
 import { AdminUsersTable } from "@/components/AdminUsersTable";
 import { AdminAnalytics } from "@/components/AdminAnalytics";
+import { AdminSubscriptionsTable } from "@/components/AdminSubscriptionsTable";
 
 const Admin = () => {
   return (
@@ -36,10 +37,14 @@ const Admin = () => {
         {/* Main Management Tabs */}
         <div className="mt-12">
           <Tabs defaultValue="claims" className="space-y-6">
-            <TabsList className="grid w-full max-w-[600px] grid-cols-3">
+            <TabsList className="grid w-full max-w-[800px] grid-cols-4">
               <TabsTrigger value="claims" className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
                 Sinistres
+              </TabsTrigger>
+              <TabsTrigger value="subscriptions" className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4" />
+                Souscriptions
               </TabsTrigger>
               <TabsTrigger value="users" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
@@ -58,6 +63,17 @@ const Admin = () => {
                 </CardHeader>
                 <CardContent>
                   <AdminClaimsTable />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="subscriptions" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Gestion des Souscriptions B2C</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <AdminSubscriptionsTable />
                 </CardContent>
               </Card>
             </TabsContent>

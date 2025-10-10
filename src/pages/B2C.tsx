@@ -21,6 +21,7 @@ const B2C = () => {
   const navigate = useNavigate();
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [activeSubscribeTab, setActiveSubscribeTab] = useState("compare");
+  const [activeMainTab, setActiveMainTab] = useState("dashboard");
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
@@ -283,7 +284,7 @@ const B2C = () => {
         </div>
 
         {/* Features Tabs */}
-        <Tabs defaultValue="dashboard" className="mb-8">
+        <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="mb-8">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
             <TabsTrigger value="diagnostic">Diagnostic IA</TabsTrigger>
@@ -363,7 +364,10 @@ const B2C = () => {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold">Mes polices</h2>
-                <Button onClick={() => setActiveSubscribeTab("compare")} variant="outline">
+                <Button onClick={() => {
+                  setActiveMainTab("subscribe");
+                  setActiveSubscribeTab("compare");
+                }} variant="outline">
                   <Plus className="w-4 h-4 mr-2" />
                   Nouvelle souscription
                 </Button>
@@ -375,7 +379,10 @@ const B2C = () => {
                   <p className="text-muted-foreground mb-4">
                     Souscrivez à votre première assurance pour protéger ce qui compte le plus
                   </p>
-                  <Button onClick={() => setActiveSubscribeTab("compare")}>
+                  <Button onClick={() => {
+                    setActiveMainTab("subscribe");
+                    setActiveSubscribeTab("compare");
+                  }}>
                     Découvrir nos offres
                   </Button>
                 </Card>

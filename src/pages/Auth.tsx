@@ -20,6 +20,7 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [isBrokerSignup, setIsBrokerSignup] = useState(false);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -47,7 +48,7 @@ export default function Auth() {
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -58,6 +59,21 @@ export default function Auth() {
           }
         });
         if (error) throw error;
+        
+        // Si inscription broker, ajouter le rôle broker
+        if (isBrokerSignup && data.user) {
+          const { error: roleError } = await supabase
+            .from('user_roles')
+            .insert({
+              user_id: data.user.id,
+              role: 'broker'
+            });
+          
+          if (roleError) {
+            console.error('Erreur lors de l\'ajout du rôle broker:', roleError);
+          }
+        }
+        
         toast.success("Compte créé ! Vérifiez votre email pour confirmer.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -158,17 +174,31 @@ export default function Auth() {
             <>
               <form onSubmit={handleEmailAuth} className="space-y-4">
                 {isSignUp && (
-                  <div className="space-y-2">
-                    <Label htmlFor="displayName">Nom complet</Label>
-                    <Input
-                      id="displayName"
-                      type="text"
-                      placeholder="Jean Dupont"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      required={isSignUp}
-                    />
-                  </div>
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="displayName">Nom complet</Label>
+                      <Input
+                        id="displayName"
+                        type="text"
+                        placeholder="Jean Dupont"
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        required={isSignUp}
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="brokerSignup"
+                        checked={isBrokerSignup}
+                        onChange={(e) => setIsBrokerSignup(e.target.checked)}
+                        className="rounded border-border"
+                      />
+                      <Label htmlFor="brokerSignup" className="text-sm font-normal cursor-pointer">
+                        Je suis un courtier (Inscription B2B)
+                      </Label>
+                    </div>
+                  </>
                 )}
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>

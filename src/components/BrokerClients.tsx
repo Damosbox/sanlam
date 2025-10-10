@@ -17,6 +17,7 @@ interface Client {
   email: string | null;
   phone: string | null;
   claimsCount: number;
+  subscriptionsCount: number;
   lastClaimDate: string | null;
 }
 
@@ -43,8 +44,8 @@ export const BrokerClients = () => {
         return;
       }
 
-      // Single optimized query with JOIN
-      const { data: claims, error } = await supabase
+      // Fetch claims assigned to this broker
+      const { data: claims, error: claimsError } = await supabase
         .from("claims")
         .select(`
           user_id,
@@ -59,18 +60,29 @@ export const BrokerClients = () => {
         .eq("assigned_broker_id", user.id)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (claimsError) throw claimsError;
 
-      if (!claims || claims.length === 0) {
-        setClients([]);
-        setLoading(false);
-        return;
-      }
+      // Fetch subscriptions assigned to this broker
+      const { data: subscriptions, error: subsError } = await supabase
+        .from("subscriptions")
+        .select(`
+          user_id,
+          profiles!inner (
+            id,
+            display_name,
+            email,
+            phone
+          )
+        `)
+        .eq("assigned_broker_id", user.id);
 
-      // Group by user_id to get unique clients with aggregated data
+      if (subsError) throw subsError;
+
+      // Group by user_id to merge claims and subscriptions data
       const clientMap = new Map<string, Client>();
       
-      claims.forEach(claim => {
+      // Process claims
+      claims?.forEach(claim => {
         const profile = claim.profiles as any;
         const existing = clientMap.get(claim.user_id);
         
@@ -86,7 +98,28 @@ export const BrokerClients = () => {
             email: profile.email,
             phone: profile.phone,
             claimsCount: 1,
+            subscriptionsCount: 0,
             lastClaimDate: claim.created_at,
+          });
+        }
+      });
+
+      // Process subscriptions
+      subscriptions?.forEach(sub => {
+        const profile = sub.profiles as any;
+        const existing = clientMap.get(sub.user_id);
+        
+        if (existing) {
+          existing.subscriptionsCount++;
+        } else {
+          clientMap.set(sub.user_id, {
+            id: profile.id,
+            display_name: profile.display_name,
+            email: profile.email,
+            phone: profile.phone,
+            claimsCount: 0,
+            subscriptionsCount: 1,
+            lastClaimDate: null,
           });
         }
       });
@@ -116,13 +149,14 @@ export const BrokerClients = () => {
             <TableHead>Client</TableHead>
             <TableHead>Contact</TableHead>
             <TableHead>Sinistres</TableHead>
+            <TableHead>Polices</TableHead>
             <TableHead>Dernier sinistre</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {clients.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                 Aucun client assigné
               </TableCell>
             </TableRow>
@@ -142,6 +176,9 @@ export const BrokerClients = () => {
                 </TableCell>
                 <TableCell>
                   <Badge variant="secondary">{client.claimsCount}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="default">{client.subscriptionsCount}</Badge>
                 </TableCell>
                 <TableCell>
                   {client.lastClaimDate

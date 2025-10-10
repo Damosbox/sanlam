@@ -1,21 +1,21 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, TrendingUp, Clock, DollarSign } from "lucide-react";
+import { FileText, TrendingUp, Clock, Shield } from "lucide-react";
 
 interface BrokerStats {
   pendingClaims: number;
   reviewedClaims: number;
-  avgReviewTime: string;
-  totalValue: number;
+  totalPolicies: number;
+  monthlyRevenue: number;
 }
 
 export const BrokerAnalytics = () => {
   const [stats, setStats] = useState<BrokerStats>({
     pendingClaims: 0,
     reviewedClaims: 0,
-    avgReviewTime: "N/A",
-    totalValue: 0,
+    totalPolicies: 0,
+    monthlyRevenue: 0,
   });
 
   useEffect(() => {
@@ -28,26 +28,32 @@ export const BrokerAnalytics = () => {
       
       if (!user) return;
 
+      // Fetch claims stats
       const { data: claims } = await supabase
         .from("claims")
         .select("status, cost_estimation, created_at")
         .eq("assigned_broker_id", user.id);
 
-      if (claims) {
-        const pending = claims.filter((c) => c.status === "Submitted").length;
-        const reviewed = claims.filter((c) => c.status === "Reviewed").length;
-        const totalValue = claims.reduce(
-          (sum, claim) => sum + (claim.cost_estimation || 0),
-          0
-        );
+      // Fetch subscriptions stats
+      const { data: subscriptions } = await supabase
+        .from("subscriptions")
+        .select("status, monthly_premium")
+        .eq("assigned_broker_id", user.id);
 
-        setStats({
-          pendingClaims: pending,
-          reviewedClaims: reviewed,
-          avgReviewTime: "24h",
-          totalValue,
-        });
-      }
+      const pending = claims?.filter((c) => c.status === "Submitted").length || 0;
+      const reviewed = claims?.filter((c) => c.status === "Reviewed").length || 0;
+      const totalPolicies = subscriptions?.length || 0;
+      const monthlyRevenue = subscriptions?.reduce(
+        (sum, sub) => sum + (sub.monthly_premium || 0),
+        0
+      ) || 0;
+
+      setStats({
+        pendingClaims: pending,
+        reviewedClaims: reviewed,
+        totalPolicies,
+        monthlyRevenue,
+      });
     } catch (error) {
       console.error("Error fetching stats:", error);
     }
@@ -83,28 +89,28 @@ export const BrokerAnalytics = () => {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium">Temps moyen</CardTitle>
-          <TrendingUp className="w-4 h-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium">Polices actives</CardTitle>
+          <Shield className="w-4 h-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.avgReviewTime}</div>
+          <div className="text-2xl font-bold">{stats.totalPolicies}</div>
           <p className="text-xs text-muted-foreground mt-1">
-            Par sinistre
+            Assignées au courtier
           </p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium">Valeur totale</CardTitle>
-          <DollarSign className="w-4 h-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium">Revenus mensuels</CardTitle>
+          <TrendingUp className="w-4 h-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            {stats.totalValue.toLocaleString()} FCFA
+            {stats.monthlyRevenue.toLocaleString()} FCFA
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Portefeuille actif
+            Primes totales
           </p>
         </CardContent>
       </Card>

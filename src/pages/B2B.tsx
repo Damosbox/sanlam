@@ -1,11 +1,12 @@
 import { Header } from "@/components/Header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, FileText, MessageSquare } from "lucide-react";
+import { Users, FileText, MessageSquare, Shield } from "lucide-react";
 import { BrokerClaimsTable } from "@/components/BrokerClaimsTable";
 import { BrokerAnalytics } from "@/components/BrokerAnalytics";
 import { BrokerClients } from "@/components/BrokerClients";
 import { BrokerAIInsights } from "@/components/BrokerAIInsights";
+import { BrokerSubscriptions } from "@/components/BrokerSubscriptions";
 
 const B2B = () => {
   return (
@@ -30,10 +31,14 @@ const B2B = () => {
         {/* Main Management Tabs */}
         <div className="mt-12">
           <Tabs defaultValue="claims" className="space-y-6">
-            <TabsList className="grid w-full max-w-[600px] grid-cols-3">
+            <TabsList className="grid w-full max-w-[800px] grid-cols-4">
               <TabsTrigger value="claims" className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
                 Sinistres
+              </TabsTrigger>
+              <TabsTrigger value="policies" className="flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                Polices
               </TabsTrigger>
               <TabsTrigger value="clients" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
@@ -52,6 +57,17 @@ const B2B = () => {
                 </CardHeader>
                 <CardContent>
                   <BrokerClaimsTable />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="policies" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Polices assignées</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <BrokerSubscriptions />
                 </CardContent>
               </Card>
             </TabsContent>

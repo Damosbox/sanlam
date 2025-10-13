@@ -192,14 +192,36 @@ const b2bFlows = [
 export const AdminUXFlows = () => {
   const [isExporting, setIsExporting] = useState(false);
 
+  const generateMermaidDiagram = (flow: typeof b2cFlows[0]) => {
+    let mermaid = "```mermaid\nflowchart TD\n";
+    
+    flow.steps.forEach((step, idx) => {
+      const nodeId = `S${idx + 1}`;
+      const nextNodeId = `S${idx + 2}`;
+      const cleanStep = step.replace(/"/g, "'");
+      
+      mermaid += `    ${nodeId}["${cleanStep}"]\n`;
+      
+      if (idx < flow.steps.length - 1) {
+        mermaid += `    ${nodeId} --> ${nextNodeId}\n`;
+      }
+    });
+    
+    mermaid += "```\n\n";
+    return mermaid;
+  };
+
   const exportToMarkdown = (type: 'b2c' | 'b2b' | 'all') => {
     let content = "# Parcours UX - Documentation\n\n";
     content += `Date de génération: ${new Date().toLocaleDateString('fr-FR')}\n\n`;
+    content += "Visualisez ces diagrammes sur [mermaid.live](https://mermaid.live)\n\n";
 
     if (type === 'b2c' || type === 'all') {
       content += "## Parcours B2C (Client)\n\n";
       b2cFlows.forEach((flow, idx) => {
         content += `### ${idx + 1}. ${flow.title}\n\n`;
+        content += generateMermaidDiagram(flow);
+        content += "**Détails des étapes:**\n\n";
         flow.steps.forEach((step, stepIdx) => {
           content += `${stepIdx + 1}. ${step}\n`;
         });
@@ -211,6 +233,8 @@ export const AdminUXFlows = () => {
       content += "## Parcours B2B (Courtier)\n\n";
       b2bFlows.forEach((flow, idx) => {
         content += `### ${idx + 1}. ${flow.title}\n\n`;
+        content += generateMermaidDiagram(flow);
+        content += "**Détails des étapes:**\n\n";
         flow.steps.forEach((step, stepIdx) => {
           content += `${stepIdx + 1}. ${step}\n`;
         });
@@ -226,7 +250,7 @@ export const AdminUXFlows = () => {
     a.download = fileName;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("Documentation téléchargée !");
+    toast.success("Documentation téléchargée avec diagrammes Mermaid !");
   };
 
   return (

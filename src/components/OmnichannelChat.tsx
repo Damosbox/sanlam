@@ -13,7 +13,7 @@ interface Message {
 }
 
 interface Action {
-  type: 'subscribe' | 'contact_broker' | 'view_policy' | 'view_claim' | 'faq';
+  type: 'subscribe' | 'contact_broker' | 'view_policy' | 'view_claim' | 'faq' | 'navigate' | 'view_product_details' | 'track_claim' | 'optimize_premium' | 'recommend_coverage' | 'renew_policy';
   label: string;
   data?: any;
 }
@@ -47,24 +47,44 @@ export const OmnichannelChat = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch user's subscriptions
+      // Fetch detailed subscriptions with product info
       const { data: subscriptions } = await supabase
         .from('subscriptions')
-        .select('*')
+        .select(`
+          id,
+          policy_number,
+          monthly_premium,
+          status,
+          start_date,
+          end_date,
+          selected_coverages,
+          assigned_broker_id,
+          products (
+            name,
+            category
+          )
+        `)
         .eq('user_id', user.id);
 
-      // Fetch user's claims
+      // Fetch detailed claims
       const { data: claims } = await supabase
         .from('claims')
-        .select('*')
+        .select('id, claim_type, status, cost_estimation, ai_confidence, incident_date')
         .eq('user_id', user.id);
+
+      // Fetch user attributes
+      const { data: userAttrs } = await supabase
+        .from('user_attributes')
+        .select('age_range, location, occupation_category, family_status, income_range')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
       // Fetch broker assignment
       const { data: brokerClient } = await supabase
         .from('broker_clients')
         .select('broker_id')
         .eq('client_id', user.id)
-        .single();
+        .maybeSingle();
 
       let broker = null;
       if (brokerClient) {
@@ -72,9 +92,22 @@ export const OmnichannelChat = () => {
           .from('profiles')
           .select('display_name, email, phone')
           .eq('id', brokerClient.broker_id)
-          .single();
+          .maybeSingle();
         broker = brokerProfile;
       }
+
+      // Transform subscriptions data
+      const enrichedSubscriptions = subscriptions?.map(sub => ({
+        id: sub.id,
+        policy_number: sub.policy_number,
+        product_name: (sub.products as any)?.name || 'Produit',
+        category: (sub.products as any)?.category || '',
+        monthly_premium: sub.monthly_premium,
+        status: sub.status,
+        start_date: sub.start_date,
+        end_date: sub.end_date,
+        selected_coverages: sub.selected_coverages,
+      }));
 
       setUserContext({
         hasSubscriptions: (subscriptions?.length || 0) > 0,
@@ -83,6 +116,9 @@ export const OmnichannelChat = () => {
         claimsCount: claims?.length || 0,
         hasBroker: !!broker,
         broker,
+        subscriptions: enrichedSubscriptions,
+        claims: claims || [],
+        userAttributes: userAttrs || undefined,
       });
     } catch (error) {
       console.error('Error loading user context:', error);
@@ -113,7 +149,8 @@ export const OmnichannelChat = () => {
         if (userContext?.broker) {
           toast({
             title: "Votre agent",
-            description: `${userContext.broker.display_name} - ${userContext.broker.email}`,
+            description: `${userContext.broker.display_name}\n📧 ${userContext.broker.email}\n📞 ${userContext.broker.phone || 'Non renseigné'}`,
+            duration: 8000,
           });
         }
         break;
@@ -124,7 +161,40 @@ export const OmnichannelChat = () => {
         window.location.href = '/b2c#claims';
         break;
       case 'faq':
-        // Could open FAQ section
+        window.location.href = '/b2c#faq';
+        break;
+      case 'navigate':
+        if (action.data?.path) {
+          window.location.href = action.data.path;
+          setIsOpen(false);
+        }
+        break;
+      case 'view_product_details':
+        if (action.data?.productId) {
+          window.location.href = `/b2c?product=${action.data.productId}`;
+          setIsOpen(false);
+        }
+        break;
+      case 'track_claim':
+        if (action.data?.claimId) {
+          window.location.href = `/b2c?claim=${action.data.claimId}`;
+          setIsOpen(false);
+        }
+        break;
+      case 'optimize_premium':
+        toast({
+          title: "💰 Optimisation de prime",
+          description: "Votre courtier peut vous aider à optimiser vos primes. Contactez-le pour en discuter !",
+          duration: 5000,
+        });
+        break;
+      case 'recommend_coverage':
+        window.location.href = '/b2c#products';
+        toast({ title: "📋 Recommandations", description: "Découvrez nos produits recommandés pour vous" });
+        break;
+      case 'renew_policy':
+        window.location.href = '/b2c#subscriptions';
+        toast({ title: "🔄 Renouvellement", description: "Gérez vos renouvellements de polices" });
         break;
     }
   };
@@ -227,19 +297,60 @@ export const OmnichannelChat = () => {
     const actions: Action[] = [];
     const lowerContent = content.toLowerCase();
 
-    if (lowerContent.includes('souscrire') || lowerContent.includes('produit')) {
-      actions.push({ type: 'subscribe', label: 'Voir nos produits' });
+    // Recommandations
+    if (lowerContent.includes('recommand') || lowerContent.includes('suggère') || lowerContent.includes('complément')) {
+      actions.push({ type: 'recommend_coverage', label: '📋 Voir recommandations' });
     }
-    if (lowerContent.includes('agent') || lowerContent.includes('courtier') || lowerContent.includes('broker')) {
+
+    // Souscrire
+    if (lowerContent.includes('souscrire') || lowerContent.includes('produit')) {
+      actions.push({ type: 'subscribe', label: '🛒 Explorer produits' });
+    }
+
+    // Sinistres
+    if (lowerContent.includes('sinistre') || lowerContent.includes('claim')) {
+      actions.push({ type: 'view_claim', label: '📄 Mes sinistres' });
+    }
+
+    // Suivi sinistre spécifique
+    if (lowerContent.includes('suivre') && userContext?.claims && userContext.claims.length > 0) {
+      actions.push({ 
+        type: 'track_claim', 
+        label: '🔍 Suivre mon sinistre',
+        data: { claimId: userContext.claims[0].id }
+      });
+    }
+
+    // Polices
+    if (lowerContent.includes('police') || lowerContent.includes('contrat')) {
+      actions.push({ type: 'view_policy', label: '📋 Mes polices' });
+    }
+
+    // Renouvellement
+    if (lowerContent.includes('renouveler') || lowerContent.includes('expiration')) {
+      actions.push({ type: 'renew_policy', label: '🔄 Renouveler' });
+    }
+
+    // Optimisation prime
+    if (lowerContent.includes('optim') || lowerContent.includes('économ') || lowerContent.includes('réduire')) {
+      actions.push({ type: 'optimize_premium', label: '💰 Optimiser prime' });
+    }
+
+    // Courtier
+    if (lowerContent.includes('agent') || lowerContent.includes('courtier') || lowerContent.includes('broker') || lowerContent.includes('appel')) {
       if (userContext?.hasBroker) {
-        actions.push({ type: 'contact_broker', label: 'Contacter mon agent' });
+        actions.push({ type: 'contact_broker', label: '📞 Contacter agent' });
       }
     }
-    if (lowerContent.includes('police') || lowerContent.includes('contrat')) {
-      actions.push({ type: 'view_policy', label: 'Mes polices' });
+
+    // Coverage gap
+    if (lowerContent.includes('couverture') || lowerContent.includes('protection') || lowerContent.includes('gap')) {
+      actions.push({ type: 'recommend_coverage', label: '🛡️ Compléter couverture' });
     }
-    if (lowerContent.includes('sinistre') || lowerContent.includes('claim')) {
-      actions.push({ type: 'view_claim', label: 'Mes sinistres' });
+
+    // FAQ
+    if (lowerContent.includes('faq') || lowerContent.includes('question')) {
+      actions.push({ type: 'faq', label: '❓ FAQ' });
     }
 
     return actions;

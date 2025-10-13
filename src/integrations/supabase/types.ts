@@ -234,6 +234,86 @@ export type Database = {
           },
         ]
       }
+      form_deployments: {
+        Row: {
+          channel: Database["public"]["Enums"]["deployment_channel"]
+          deployed_at: string
+          deployed_by: string | null
+          form_template_id: string
+          id: string
+          is_active: boolean
+        }
+        Insert: {
+          channel: Database["public"]["Enums"]["deployment_channel"]
+          deployed_at?: string
+          deployed_by?: string | null
+          form_template_id: string
+          id?: string
+          is_active?: boolean
+        }
+        Update: {
+          channel?: Database["public"]["Enums"]["deployment_channel"]
+          deployed_at?: string
+          deployed_by?: string | null
+          form_template_id?: string
+          id?: string
+          is_active?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_deployments_form_template_id_fkey"
+            columns: ["form_template_id"]
+            isOneToOne: false
+            referencedRelation: "form_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      form_templates: {
+        Row: {
+          category: Database["public"]["Enums"]["form_category"]
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          premium_calculation: Json | null
+          product_type: string
+          steps: Json
+          target_channels: Json
+          updated_at: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["form_category"]
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          premium_calculation?: Json | null
+          product_type: string
+          steps?: Json
+          target_channels?: Json
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["form_category"]
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          premium_calculation?: Json | null
+          product_type?: string
+          steps?: Json
+          target_channels?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           base_premium: number
@@ -461,6 +541,8 @@ export type Database = {
         | "Inondation"
         | "Vol"
         | "Autre"
+      deployment_channel: "B2C" | "B2B"
+      form_category: "vie" | "non-vie"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -607,6 +689,8 @@ export const Constants = {
         "Vol",
         "Autre",
       ],
+      deployment_channel: ["B2C", "B2B"],
+      form_category: ["vie", "non-vie"],
     },
   },
 } as const

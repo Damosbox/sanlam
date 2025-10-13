@@ -10,8 +10,19 @@ import { AdminAnalytics } from "@/components/AdminAnalytics";
 import { AdminSubscriptionsTable } from "@/components/AdminSubscriptionsTable";
 import { AdminUXFlows } from "@/components/AdminUXFlows";
 import { AdminDataGenerator } from "@/components/AdminDataGenerator";
+import { AdminFormBuilder } from "@/components/admin/AdminFormBuilder";
+import { FormTemplatesList } from "@/components/admin/FormTemplatesList";
+import { useState } from "react";
 
 const Admin = () => {
+  const [showFormBuilder, setShowFormBuilder] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<any>(null);
+
+  const handleEditTemplate = (template: any) => {
+    setEditingTemplate(template);
+    setShowFormBuilder(true);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -39,7 +50,7 @@ const Admin = () => {
         {/* Main Management Tabs */}
         <div className="mt-12">
           <Tabs defaultValue="claims" className="space-y-6">
-            <TabsList className="grid w-full max-w-[1200px] grid-cols-6">
+            <TabsList className="grid w-full max-w-[1200px] grid-cols-7">
               <TabsTrigger value="claims" className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
                 Sinistres
@@ -63,6 +74,10 @@ const Admin = () => {
               <TabsTrigger value="ux-flows" className="flex items-center gap-2">
                 <GitBranch className="w-4 h-4" />
                 Parcours UX
+              </TabsTrigger>
+              <TabsTrigger value="forms" className="flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Formulaires Produits
               </TabsTrigger>
             </TabsList>
 
@@ -263,6 +278,34 @@ const Admin = () => {
 
             <TabsContent value="ux-flows" className="space-y-4">
               <AdminUXFlows />
+            </TabsContent>
+
+            <TabsContent value="forms" className="space-y-4">
+              {!showFormBuilder ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold">Générateur de formulaires produits</h2>
+                      <p className="text-muted-foreground">Créez et gérez des formulaires personnalisés pour vos produits d'assurance</p>
+                    </div>
+                    <Button onClick={() => setShowFormBuilder(true)}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Créer un formulaire
+                    </Button>
+                  </div>
+                  <FormTemplatesList onEdit={handleEditTemplate} />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <Button variant="outline" onClick={() => {
+                    setShowFormBuilder(false);
+                    setEditingTemplate(null);
+                  }}>
+                    ← Retour à la liste
+                  </Button>
+                  <AdminFormBuilder />
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </div>

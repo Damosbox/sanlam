@@ -110,7 +110,7 @@ export function ProductComparator({ onProductSelect }: ProductComparatorProps = 
             ) : (
               <>
                 {/* Product Selection Grid */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-6">
                   {products?.map((product) => (
                     <Card key={product.id} className={productsToCompare.includes(product.id) ? "ring-2 ring-primary" : ""}>
                       <CardHeader>

@@ -33,7 +33,7 @@ export const Header = () => {
           <img 
             src={sanlamLogo} 
             alt="Sanlam Allianz" 
-            className="h-10 w-auto"
+            className="h-6 w-auto sm:h-8"
           />
         </Link>
 

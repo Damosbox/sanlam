@@ -247,11 +247,25 @@ const B2C = () => {
             <h1 className="text-3xl font-bold mb-2">Bonjour, {displayName} 👋</h1>
             <p className="text-white/90 mb-6">Bienvenue sur votre espace assuré personnalisé</p>
             <div className="flex flex-wrap gap-3">
-              <Button variant="secondary" size="lg">
+              <Button 
+                variant="secondary" 
+                size="lg"
+                onClick={() => setActiveMainTab("diagnostic")}
+              >
                 <Sparkles className="w-4 h-4 mr-2" />
                 Diagnostic IA gratuit
               </Button>
-              <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+              <Button 
+                variant="outline" 
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                onClick={() => {
+                  // Ouvre le chat omnicanal qui est toujours disponible en bas de page
+                  const chatWidget = document.querySelector('[data-chat-widget]');
+                  if (chatWidget) {
+                    (chatWidget as HTMLElement).click();
+                  }
+                }}
+              >
                 <MessageCircle className="w-4 h-4 mr-2" />
                 Support 24/7
               </Button>

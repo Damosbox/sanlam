@@ -60,7 +60,16 @@ export const DynamicFormRenderer = ({
           .single();
 
         if (error) throw error;
-        setTemplate(data as unknown as FormTemplate);
+        
+        // Validate and parse the template data
+        const templateData = data as unknown as FormTemplate;
+        
+        // Ensure steps is an array
+        if (!templateData.steps || !Array.isArray(templateData.steps) || templateData.steps.length === 0) {
+          throw new Error('Le formulaire ne contient aucune étape');
+        }
+        
+        setTemplate(templateData);
       } catch (error) {
         console.error('Error fetching template:', error);
         toast({
@@ -237,10 +246,12 @@ export const DynamicFormRenderer = ({
     );
   }
 
-  if (!template) {
+  if (!template || !template.steps || template.steps.length === 0) {
     return (
       <Card className="p-8">
-        <p className="text-center text-muted-foreground">Formulaire introuvable</p>
+        <p className="text-center text-muted-foreground">
+          {!template ? 'Formulaire introuvable' : 'Le formulaire ne contient aucune étape'}
+        </p>
       </Card>
     );
   }
@@ -263,6 +274,16 @@ export const DynamicFormRenderer = ({
   }
 
   const currentStepData = template.steps[currentStep];
+  
+  // Safety check - should never happen due to earlier checks, but prevents crash
+  if (!currentStepData) {
+    return (
+      <Card className="p-8">
+        <p className="text-center text-muted-foreground">Étape non trouvée</p>
+      </Card>
+    );
+  }
+  
   const progress = ((currentStep + 1) / template.steps.length) * 100;
 
   return (

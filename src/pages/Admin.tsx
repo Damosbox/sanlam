@@ -3,11 +3,12 @@ import { StatCard } from "@/components/StatCard";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, Shield, TrendingUp, AlertCircle, Database, Zap, FileText, Users } from "lucide-react";
+import { Brain, Shield, TrendingUp, AlertCircle, Database, Zap, FileText, Users, GitBranch } from "lucide-react";
 import { AdminClaimsTable } from "@/components/AdminClaimsTable";
 import { AdminUsersTable } from "@/components/AdminUsersTable";
 import { AdminAnalytics } from "@/components/AdminAnalytics";
 import { AdminSubscriptionsTable } from "@/components/AdminSubscriptionsTable";
+import { AdminUXFlows } from "@/components/AdminUXFlows";
 
 const Admin = () => {
   return (
@@ -37,7 +38,7 @@ const Admin = () => {
         {/* Main Management Tabs */}
         <div className="mt-12">
           <Tabs defaultValue="claims" className="space-y-6">
-            <TabsList className="grid w-full max-w-[800px] grid-cols-4">
+            <TabsList className="grid w-full max-w-[1000px] grid-cols-5">
               <TabsTrigger value="claims" className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
                 Sinistres
@@ -53,6 +54,10 @@ const Admin = () => {
               <TabsTrigger value="ai" className="flex items-center gap-2">
                 <Brain className="w-4 h-4" />
                 IA & Conformité
+              </TabsTrigger>
+              <TabsTrigger value="ux-flows" className="flex items-center gap-2">
+                <GitBranch className="w-4 h-4" />
+                Parcours UX
               </TabsTrigger>
             </TabsList>
 
@@ -245,6 +250,10 @@ const Admin = () => {
                   </div>
                 </div>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="ux-flows" className="space-y-4">
+              <AdminUXFlows />
             </TabsContent>
           </Tabs>
         </div>

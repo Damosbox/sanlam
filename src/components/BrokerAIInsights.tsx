@@ -42,10 +42,18 @@ export const BrokerAIInsights = () => {
         return;
       }
 
-      // Fetch broker's claims data
+      // Fetch broker's assigned clients
+      const { data: brokerClients } = await supabase
+        .from("broker_clients")
+        .select("client_id")
+        .eq("broker_id", user.id);
+
+      const clientIds = brokerClients?.map(bc => bc.client_id) || [];
+
+      // Fetch broker's claims with client profiles
       const { data: claims } = await supabase
         .from("claims")
-        .select("claim_type, status, cost_estimation, ai_confidence, created_at")
+        .select("claim_type, status, cost_estimation, ai_confidence, created_at, user_id, policy_id")
         .eq("assigned_broker_id", user.id);
 
       if (!claims || claims.length === 0) {
@@ -56,6 +64,19 @@ export const BrokerAIInsights = () => {
         setLoading(false);
         return;
       }
+
+      // Fetch subscriptions for assigned clients
+      const { data: subscriptions } = await supabase
+        .from("subscriptions")
+        .select("user_id, monthly_premium, status, product_id, start_date, end_date")
+        .eq("assigned_broker_id", user.id);
+
+      // Fetch client profiles
+      const userIds = [...new Set(claims.map(c => c.user_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, display_name, email")
+        .in("id", userIds);
 
       // Calculate enriched statistics
       const byType = claims.reduce((acc: any[], claim) => {
@@ -83,20 +104,54 @@ export const BrokerAIInsights = () => {
         return acc;
       }, []);
 
-      const claimsData = {
-        total: claims.length,
+      // Portfolio metrics
+      const totalClients = clientIds.length;
+      const activeSubscriptions = subscriptions?.filter(s => s.status === 'active').length || 0;
+      const totalMonthlyRevenue = subscriptions
+        ?.filter(s => s.status === 'active')
+        .reduce((sum, s) => sum + (s.monthly_premium || 0), 0) || 0;
+
+      const portfolioData = {
+        // Client metrics
+        totalClients,
+        activeSubscriptions,
+        totalMonthlyRevenue,
+        
+        // Claims metrics
+        totalClaims: claims.length,
         pending: claims.filter(c => c.status === "Submitted").length,
         reviewed: claims.filter(c => c.status === "Reviewed").length,
-        totalCost: claims.reduce((sum, c) => sum + (c.cost_estimation || 0), 0),
-        avgConfidence: claims.reduce((sum, c) => sum + (c.ai_confidence || 0), 0) / claims.length,
+        approved: claims.filter(c => c.status === "Approved").length,
+        rejected: claims.filter(c => c.status === "Rejected").length,
+        
+        // Financial metrics (in FCFA)
+        totalClaimsCost: claims.reduce((sum, c) => sum + (c.cost_estimation || 0), 0),
+        avgClaimCost: claims.length > 0 
+          ? claims.reduce((sum, c) => sum + (c.cost_estimation || 0), 0) / claims.length 
+          : 0,
+        highValueClaimsCount: claims.filter(c => (c.cost_estimation || 0) > 500000).length,
+        
+        // AI metrics
+        avgAiConfidence: claims.reduce((sum, c) => sum + (c.ai_confidence || 0), 0) / claims.length,
+        claimsWithAI: claims.filter(c => c.ai_confidence && c.ai_confidence > 0).length,
+        
+        // Distribution
         byType,
         byStatus,
-        highValueCount: claims.filter(c => (c.cost_estimation || 0) > 5000).length
+        
+        // Top clients by claims
+        topClients: profiles?.slice(0, 5).map(p => ({
+          name: p.display_name,
+          claimsCount: claims.filter(c => c.user_id === p.id).length,
+          totalCost: claims
+            .filter(c => c.user_id === p.id)
+            .reduce((sum, c) => sum + (c.cost_estimation || 0), 0)
+        })) || []
       };
 
-      // Call new broker-insights edge function
+      // Call broker-insights edge function with real portfolio data
       const { data, error } = await supabase.functions.invoke('broker-insights', {
-        body: { claimsData }
+        body: { portfolioData }
       });
 
       if (error) throw error;
@@ -104,7 +159,7 @@ export const BrokerAIInsights = () => {
       setInsights(data as InsightData);
       toast({
         title: "Succès",
-        description: "Analyse IA générée",
+        description: "Analyse IA générée avec vos données réelles",
       });
     } catch (error) {
       console.error("Error generating insights:", error);

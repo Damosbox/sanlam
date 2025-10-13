@@ -12,43 +12,66 @@ serve(async (req) => {
   }
 
   try {
-    const { claimsData } = await req.json();
-    console.log('Received claims data:', claimsData);
+    const { portfolioData } = await req.json();
+    console.log('Received portfolio data:', portfolioData);
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    const systemPrompt = `Tu es un analyste expert en assurance qui aide les courtiers à optimiser la gestion de leur portefeuille de sinistres.
-Ton rôle est d'analyser les données des sinistres assignés à un courtier et de fournir des insights stratégiques concrets.
+    const systemPrompt = `Tu es un analyste expert en assurance spécialisé dans le marché africain et la zone FCFA.
+Ton rôle est d'analyser les données du portefeuille d'un courtier en assurance pour fournir des insights stratégiques concrets et actionnables.
+
+Tous les montants sont en FCFA (Franc CFA).
 
 Concentre-toi sur :
-- L'identification des tendances (types de sinistres récurrents, coûts élevés)
-- Les risques potentiels (sinistres en attente trop longtemps, estimations élevées)
-- Les opportunités d'amélioration (optimisation du processus, priorisation)
-- Les recommandations actionnables pour améliorer l'efficacité
+- L'analyse du portefeuille clients et de leur rentabilité
+- Les tendances de sinistralité par type et par client
+- Les risques financiers et opérationnels
+- Les opportunités de croissance et d'optimisation
+- Les recommandations actionnables pour améliorer la performance du portefeuille
 
-Sois précis, professionnel et orienté solution.`;
+Contexte du marché FCFA :
+- Un sinistre > 500,000 FCFA est considéré comme important
+- Revenu mensuel moyen des primes : indicateur clé de rentabilité
+- Taux de sinistralité optimal : < 70%
 
-    const userPrompt = `Analyse le portefeuille de sinistres suivant :
+Sois précis, professionnel et orienté solution avec des chiffres en FCFA.`;
 
-**Statistiques globales :**
-- Nombre total de sinistres : ${claimsData.total}
-- Sinistres en attente : ${claimsData.pending}
-- Sinistres traités : ${claimsData.reviewed}
-- Coût total estimé : ${claimsData.totalCost}€
-- Confiance IA moyenne : ${claimsData.avgConfidence}%
+    const userPrompt = `Analyse complète du portefeuille courtier :
 
-**Distribution par type :**
-${claimsData.byType.map((t: any) => `- ${t.type}: ${t.count} sinistres (${t.totalCost}€)`).join('\n')}
+**CLIENTS & PORTEFEUILLE :**
+- Nombre total de clients : ${portfolioData.totalClients}
+- Polices actives : ${portfolioData.activeSubscriptions}
+- Revenu mensuel total : ${portfolioData.totalMonthlyRevenue.toLocaleString()} FCFA
 
-**Distribution par statut :**
-${claimsData.byStatus.map((s: any) => `- ${s.status}: ${s.count} sinistres`).join('\n')}
+**SINISTRALITÉ :**
+- Nombre total de sinistres : ${portfolioData.totalClaims}
+- En attente de traitement : ${portfolioData.pending}
+- Examinés (en cours) : ${portfolioData.reviewed}
+- Approuvés : ${portfolioData.approved}
+- Rejetés : ${portfolioData.rejected}
 
-**Sinistres prioritaires (coût > 5000€) :** ${claimsData.highValueCount}
+**FINANCIER (FCFA) :**
+- Coût total des sinistres : ${portfolioData.totalClaimsCost.toLocaleString()} FCFA
+- Coût moyen par sinistre : ${Math.round(portfolioData.avgClaimCost).toLocaleString()} FCFA
+- Sinistres à fort impact (> 500k FCFA) : ${portfolioData.highValueClaimsCount}
 
-Fournis une analyse structurée avec des insights clés et des recommandations actionnables.`;
+**INTELLIGENCE ARTIFICIELLE :**
+- Confiance IA moyenne : ${(portfolioData.avgAiConfidence * 100).toFixed(1)}%
+- Sinistres analysés par IA : ${portfolioData.claimsWithAI}/${portfolioData.totalClaims}
+
+**DISTRIBUTION PAR TYPE :**
+${portfolioData.byType.map((t: any) => `- ${t.type}: ${t.count} sinistres (${t.totalCost.toLocaleString()} FCFA)`).join('\n')}
+
+**DISTRIBUTION PAR STATUT :**
+${portfolioData.byStatus.map((s: any) => `- ${s.status}: ${s.count} sinistres`).join('\n')}
+
+**TOP CLIENTS PAR SINISTRES :**
+${portfolioData.topClients.map((c: any) => `- ${c.name}: ${c.claimsCount} sinistres (${c.totalCost.toLocaleString()} FCFA)`).join('\n')}
+
+Fournis une analyse stratégique détaillée avec insights clés et recommandations concrètes pour optimiser ce portefeuille.`;
 
     const body: any = {
       model: "google/gemini-2.5-flash",

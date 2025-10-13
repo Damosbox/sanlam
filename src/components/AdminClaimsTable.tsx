@@ -49,6 +49,7 @@ interface Claim {
   profiles: {
     display_name: string | null;
     email: string | null;
+    phone: string | null;
   } | null;
 }
 
@@ -88,7 +89,7 @@ export const AdminClaimsTable = () => {
         (data || []).map(async (claim) => {
           const { data: profile } = await supabase
             .from("profiles")
-            .select("display_name, email")
+            .select("display_name, email, phone")
             .eq("id", claim.user_id)
             .single();
 
@@ -394,7 +395,7 @@ export const AdminClaimsTable = () => {
       </div>
 
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Détails du sinistre #{selectedClaim?.policy_id}</DialogTitle>
             <DialogDescription>
@@ -429,14 +430,18 @@ export const AdminClaimsTable = () => {
                       : "Non estimé"}
                   </p>
                 </div>
-                {selectedClaim.ai_confidence && (
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Confiance IA</p>
-                    <p className="text-base font-semibold">
-                      {(selectedClaim.ai_confidence * 100).toFixed(0)}%
-                    </p>
-                  </div>
-                )}
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Confiance IA</p>
+                  <p className="text-base font-semibold">
+                    {selectedClaim.ai_confidence
+                      ? `${(selectedClaim.ai_confidence * 100).toFixed(0)}%`
+                      : "N/A"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Téléphone</p>
+                  <p className="text-base">{selectedClaim.profiles?.phone || "N/A"}</p>
+                </div>
                 {selectedClaim.reviewed_at && (
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Examiné le</p>
@@ -473,9 +478,18 @@ export const AdminClaimsTable = () => {
 
               {selectedClaim.ocr_data && (
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-2">Analyse OCR</p>
-                  <div className="bg-muted p-3 rounded text-sm max-h-48 overflow-auto">
-                    <pre className="whitespace-pre-wrap">{JSON.stringify(selectedClaim.ocr_data, null, 2)}</pre>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Analyse OCR du document</p>
+                  <div className="bg-muted p-4 rounded space-y-2">
+                    {typeof selectedClaim.ocr_data === 'object' ? (
+                      Object.entries(selectedClaim.ocr_data).map(([key, value]) => (
+                        <div key={key} className="border-b border-border pb-2 last:border-0">
+                          <span className="font-medium capitalize">{key.replace(/_/g, ' ')}: </span>
+                          <span>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p>{String(selectedClaim.ocr_data)}</p>
+                    )}
                   </div>
                 </div>
               )}

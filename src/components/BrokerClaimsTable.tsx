@@ -270,7 +270,7 @@ export const BrokerClaimsTable = () => {
       </div>
 
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Détails du sinistre</DialogTitle>
             <DialogDescription>
@@ -315,8 +315,12 @@ export const BrokerClaimsTable = () => {
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Contact</p>
+                  <p className="text-sm font-medium text-muted-foreground">Téléphone</p>
                   <p className="text-base">{selectedClaim.profiles?.phone || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Email</p>
+                  <p className="text-base">{selectedClaim.profiles?.email || "N/A"}</p>
                 </div>
               </div>
               
@@ -345,9 +349,18 @@ export const BrokerClaimsTable = () => {
 
               {selectedClaim.ocr_data && (
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-2">Données OCR</p>
-                  <div className="bg-muted p-3 rounded text-sm">
-                    <pre className="whitespace-pre-wrap">{JSON.stringify(selectedClaim.ocr_data, null, 2)}</pre>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Analyse OCR du document</p>
+                  <div className="bg-muted p-4 rounded space-y-2">
+                    {typeof selectedClaim.ocr_data === 'object' ? (
+                      Object.entries(selectedClaim.ocr_data).map(([key, value]) => (
+                        <div key={key} className="border-b border-border pb-2 last:border-0">
+                          <span className="font-medium capitalize">{key.replace(/_/g, ' ')}: </span>
+                          <span>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p>{String(selectedClaim.ocr_data)}</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -380,7 +393,7 @@ export const BrokerClaimsTable = () => {
       </Dialog>
 
       <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Examen du sinistre</DialogTitle>
             <DialogDescription>

@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, Loader2, ExternalLink } from "lucide-react";
+import { Download, Loader2, FileText, Image as ImageIcon, Globe } from "lucide-react";
 import { toast } from "sonner";
+import mermaid from "mermaid";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import JSZip from "jszip";
 
 const b2cFlows = [
   {
@@ -189,69 +193,196 @@ const b2bFlows = [
   }
 ];
 
+// Composant pour afficher un diagramme Mermaid
+const MermaidDiagram = ({ chart, id }: { chart: string; id: string }) => {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.innerHTML = chart;
+      mermaid.run({ nodes: [ref.current] });
+    }
+  }, [chart]);
+
+  return <div ref={ref} id={id} className="mermaid-diagram my-4" />;
+};
+
 export const AdminUXFlows = () => {
   const [isExporting, setIsExporting] = useState(false);
 
-  const generateMermaidDiagram = (flow: typeof b2cFlows[0]) => {
-    let mermaid = "```mermaid\nflowchart TD\n";
+  useEffect(() => {
+    mermaid.initialize({ 
+      startOnLoad: true, 
+      theme: 'neutral',
+      flowchart: { curve: 'basis' }
+    });
+  }, []);
+
+  const generateMermaidCode = (flow: typeof b2cFlows[0]) => {
+    let code = "flowchart TD\n";
     
     flow.steps.forEach((step, idx) => {
       const nodeId = `S${idx + 1}`;
       const nextNodeId = `S${idx + 2}`;
       const cleanStep = step.replace(/"/g, "'");
       
-      mermaid += `    ${nodeId}["${cleanStep}"]\n`;
+      code += `    ${nodeId}["${cleanStep}"]\n`;
       
       if (idx < flow.steps.length - 1) {
-        mermaid += `    ${nodeId} --> ${nextNodeId}\n`;
+        code += `    ${nodeId} --> ${nextNodeId}\n`;
       }
     });
     
-    mermaid += "```\n\n";
-    return mermaid;
+    return code;
   };
 
-  const exportToMarkdown = (type: 'b2c' | 'b2b' | 'all') => {
-    let content = "# Parcours UX - Documentation\n\n";
-    content += `Date de génération: ${new Date().toLocaleDateString('fr-FR')}\n\n`;
-    content += "Visualisez ces diagrammes sur [mermaid.live](https://mermaid.live)\n\n";
+  // Export .mmd files in ZIP
+  const exportMermaidFiles = async (type: 'b2c' | 'b2b' | 'all') => {
+    setIsExporting(true);
+    try {
+      const zip = new JSZip();
+      const flows = type === 'b2c' ? b2cFlows : type === 'b2b' ? b2bFlows : [...b2cFlows, ...b2bFlows];
+      const prefix = type === 'b2c' ? 'B2C' : type === 'b2b' ? 'B2B' : '';
 
-    if (type === 'b2c' || type === 'all') {
-      content += "## Parcours B2C (Client)\n\n";
-      b2cFlows.forEach((flow, idx) => {
-        content += `### ${idx + 1}. ${flow.title}\n\n`;
-        content += generateMermaidDiagram(flow);
-        content += "**Détails des étapes:**\n\n";
-        flow.steps.forEach((step, stepIdx) => {
-          content += `${stepIdx + 1}. ${step}\n`;
-        });
-        content += "\n---\n\n";
+      flows.forEach((flow, idx) => {
+        const mermaidCode = generateMermaidCode(flow);
+        const fileName = `${prefix ? prefix + '-' : ''}${idx + 1}-${flow.id}.mmd`;
+        zip.file(fileName, mermaidCode);
       });
-    }
 
-    if (type === 'b2b' || type === 'all') {
-      content += "## Parcours B2B (Courtier)\n\n";
-      b2bFlows.forEach((flow, idx) => {
-        content += `### ${idx + 1}. ${flow.title}\n\n`;
-        content += generateMermaidDiagram(flow);
-        content += "**Détails des étapes:**\n\n";
-        flow.steps.forEach((step, stepIdx) => {
-          content += `${stepIdx + 1}. ${step}\n`;
-        });
-        content += "\n---\n\n";
-      });
+      const content = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Parcours-UX-${type.toUpperCase()}-Mermaid.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Fichiers Mermaid (.mmd) téléchargés !");
+    } catch (error) {
+      toast.error("Erreur lors de l'export Mermaid");
+    } finally {
+      setIsExporting(false);
     }
-
-    const blob = new Blob([content], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    const fileName = type === 'all' ? 'Parcours-UX-Complet.md' : `Parcours-UX-${type.toUpperCase()}.md`;
-    a.download = fileName;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Documentation téléchargée avec diagrammes Mermaid !");
   };
+
+  // Export PDF with rendered diagrams
+  const exportPDF = async (type: 'b2c' | 'b2b' | 'all') => {
+    setIsExporting(true);
+    try {
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const diagrams = document.querySelectorAll('.mermaid-diagram svg');
+      
+      if (diagrams.length === 0) {
+        toast.error("Veuillez attendre que les diagrammes soient chargés");
+        setIsExporting(false);
+        return;
+      }
+
+      let yOffset = 20;
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      
+      pdf.setFontSize(18);
+      pdf.text('Parcours UX - Documentation', 15, yOffset);
+      yOffset += 15;
+
+      for (let i = 0; i < diagrams.length; i++) {
+        const diagram = diagrams[i] as SVGElement;
+        const parentCard = diagram.closest('.flow-card');
+        const title = parentCard?.querySelector('.flow-title')?.textContent || `Flow ${i + 1}`;
+
+        if (yOffset > pageHeight - 40) {
+          pdf.addPage();
+          yOffset = 20;
+        }
+
+        pdf.setFontSize(14);
+        pdf.text(title, 15, yOffset);
+        yOffset += 10;
+
+        try {
+          const canvas = await html2canvas(diagram.parentElement as HTMLElement, { scale: 2 });
+          const imgData = canvas.toDataURL('image/png');
+          const imgWidth = pageWidth - 30;
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          
+          if (yOffset + imgHeight > pageHeight - 20) {
+            pdf.addPage();
+            yOffset = 20;
+          }
+
+          pdf.addImage(imgData, 'PNG', 15, yOffset, imgWidth, imgHeight);
+          yOffset += imgHeight + 15;
+        } catch (err) {
+          console.error('Error rendering diagram:', err);
+        }
+      }
+
+      pdf.save(`Parcours-UX-${type.toUpperCase()}.pdf`);
+      toast.success("PDF généré avec succès !");
+    } catch (error) {
+      toast.error("Erreur lors de la génération du PDF");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Export HTML standalone
+  const exportHTML = (type: 'b2c' | 'b2b' | 'all') => {
+    setIsExporting(true);
+    try {
+      const flows = type === 'b2c' ? b2cFlows : type === 'b2b' ? b2bFlows : [...b2cFlows, ...b2bFlows];
+      
+      let html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parcours UX - ${type.toUpperCase()}</title>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+  </script>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 1200px; margin: 0 auto; padding: 2rem; background: #f5f5f5; }
+    h1 { color: #333; border-bottom: 3px solid #4f46e5; padding-bottom: 0.5rem; }
+    h2 { color: #4f46e5; margin-top: 2rem; }
+    .flow { background: white; padding: 1.5rem; margin: 1.5rem 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .mermaid { margin: 1rem 0; }
+  </style>
+</head>
+<body>
+  <h1>Parcours UX - Documentation ${type.toUpperCase()}</h1>
+  <p>Date de génération: ${new Date().toLocaleDateString('fr-FR')}</p>
+`;
+
+      flows.forEach((flow, idx) => {
+        html += `
+  <div class="flow">
+    <h2>${idx + 1}. ${flow.title}</h2>
+    <pre class="mermaid">${generateMermaidCode(flow)}</pre>
+  </div>`;
+      });
+
+      html += `
+</body>
+</html>`;
+
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Parcours-UX-${type.toUpperCase()}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Fichier HTML interactif téléchargé !");
+    } catch (error) {
+      toast.error("Erreur lors de l'export HTML");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
 
   return (
     <div className="space-y-6">
@@ -262,19 +393,21 @@ export const AdminUXFlows = () => {
               <CardTitle>Parcours UX & Flow Documentation</CardTitle>
               <CardDescription>Documentation complète des parcours utilisateurs B2C et B2B</CardDescription>
             </div>
-            <div className="flex gap-2">
-              <Button onClick={() => exportToMarkdown('b2c')} disabled={isExporting} variant="outline" size="sm">
-                <Download className="w-4 h-4 mr-2" />
-                Export B2C
-              </Button>
-              <Button onClick={() => exportToMarkdown('b2b')} disabled={isExporting} variant="outline" size="sm">
-                <Download className="w-4 h-4 mr-2" />
-                Export B2B
-              </Button>
-              <Button onClick={() => exportToMarkdown('all')} disabled={isExporting}>
-                <Download className="w-4 h-4 mr-2" />
-                Export Complet
-              </Button>
+            <div className="flex flex-wrap gap-2">
+              <div className="flex gap-2">
+                <Button onClick={() => exportMermaidFiles('all')} disabled={isExporting} variant="outline" size="sm">
+                  <FileText className="w-4 h-4 mr-2" />
+                  Mermaid (.mmd)
+                </Button>
+                <Button onClick={() => exportPDF('all')} disabled={isExporting} variant="outline" size="sm">
+                  <ImageIcon className="w-4 h-4 mr-2" />
+                  PDF
+                </Button>
+                <Button onClick={() => exportHTML('all')} disabled={isExporting}>
+                  <Globe className="w-4 h-4 mr-2" />
+                  HTML Interactif
+                </Button>
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -286,44 +419,62 @@ export const AdminUXFlows = () => {
             </TabsList>
 
             <TabsContent value="b2c" className="space-y-6 mt-6">
-              {b2cFlows.map((flow) => (
-                <Card key={flow.id} className="border-l-4 border-primary">
+              {b2cFlows.map((flow, idx) => (
+                <Card key={flow.id} className="border-l-4 border-primary flow-card">
                   <CardHeader>
-                    <CardTitle className="text-lg">{flow.title}</CardTitle>
+                    <CardTitle className="text-lg flow-title">{flow.title}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ol className="space-y-2">
-                      {flow.steps.map((step, idx) => (
-                        <li key={idx} className="flex items-start gap-3">
-                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold">
-                            {idx + 1}
-                          </span>
-                          <span className="text-sm text-muted-foreground pt-0.5">{step}</span>
-                        </li>
-                      ))}
-                    </ol>
+                    <MermaidDiagram 
+                      chart={generateMermaidCode(flow)} 
+                      id={`b2c-${flow.id}-${idx}`}
+                    />
+                    <details className="mt-4">
+                      <summary className="cursor-pointer text-sm font-semibold text-primary hover:underline">
+                        Voir les étapes détaillées
+                      </summary>
+                      <ol className="space-y-2 mt-3">
+                        {flow.steps.map((step, stepIdx) => (
+                          <li key={stepIdx} className="flex items-start gap-3">
+                            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold">
+                              {stepIdx + 1}
+                            </span>
+                            <span className="text-sm text-muted-foreground pt-0.5">{step}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </details>
                   </CardContent>
                 </Card>
               ))}
             </TabsContent>
 
             <TabsContent value="b2b" className="space-y-6 mt-6">
-              {b2bFlows.map((flow) => (
-                <Card key={flow.id} className="border-l-4 border-primary">
+              {b2bFlows.map((flow, idx) => (
+                <Card key={flow.id} className="border-l-4 border-primary flow-card">
                   <CardHeader>
-                    <CardTitle className="text-lg">{flow.title}</CardTitle>
+                    <CardTitle className="text-lg flow-title">{flow.title}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ol className="space-y-2">
-                      {flow.steps.map((step, idx) => (
-                        <li key={idx} className="flex items-start gap-3">
-                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold">
-                            {idx + 1}
-                          </span>
-                          <span className="text-sm text-muted-foreground pt-0.5">{step}</span>
-                        </li>
-                      ))}
-                    </ol>
+                    <MermaidDiagram 
+                      chart={generateMermaidCode(flow)} 
+                      id={`b2b-${flow.id}-${idx}`}
+                    />
+                    <details className="mt-4">
+                      <summary className="cursor-pointer text-sm font-semibold text-primary hover:underline">
+                        Voir les étapes détaillées
+                      </summary>
+                      <ol className="space-y-2 mt-3">
+                        {flow.steps.map((step, stepIdx) => (
+                          <li key={stepIdx} className="flex items-start gap-3">
+                            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold">
+                              {stepIdx + 1}
+                            </span>
+                            <span className="text-sm text-muted-foreground pt-0.5">{step}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </details>
                   </CardContent>
                 </Card>
               ))}
@@ -332,23 +483,33 @@ export const AdminUXFlows = () => {
 
           <Card className="mt-6 bg-muted/50">
             <CardContent className="pt-6">
-              <div className="flex items-start gap-3">
-                <ExternalLink className="w-5 h-5 text-primary mt-0.5" />
-                <div>
-                  <h4 className="font-semibold mb-1">Diagrammes interactifs</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Pour visualiser ces parcours sous forme de diagrammes interactifs (Mermaid), 
-                    vous pouvez utiliser des outils en ligne comme{" "}
-                    <a 
-                      href="https://mermaid.live" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-primary underline hover:no-underline"
-                    >
-                      mermaid.live
-                    </a>
-                    {" "}avec les fichiers Markdown exportés.
-                  </p>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <FileText className="w-5 h-5 text-primary mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold mb-1">Export Mermaid (.mmd)</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Fichiers sources Mermaid éditables sur <a href="https://mermaid.live" target="_blank" rel="noopener noreferrer" className="text-primary underline">mermaid.live</a>
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <ImageIcon className="w-5 h-5 text-primary mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold mb-1">Export PDF</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Document PDF avec tous les diagrammes rendus (nécessite que les diagrammes soient chargés)
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Globe className="w-5 h-5 text-primary mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold mb-1">Export HTML Interactif</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Fichier HTML standalone avec diagrammes Mermaid interactifs (fonctionne sans connexion Internet après téléchargement)
+                    </p>
+                  </div>
                 </div>
               </div>
             </CardContent>

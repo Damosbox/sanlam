@@ -44,87 +44,61 @@ export const BrokerClients = () => {
         return;
       }
 
-      // Fetch claims assigned to this broker
-      const { data: claims, error: claimsError } = await supabase
-        .from("claims")
+      // Fetch clients assigned to this broker via broker_clients table
+      const { data: brokerClients, error: brokerClientsError } = await supabase
+        .from("broker_clients")
         .select(`
-          user_id,
-          created_at,
-          profiles!inner (
+          client_id,
+          profiles!broker_clients_client_id_fkey (
             id,
             display_name,
             email,
             phone
           )
         `)
-        .eq("assigned_broker_id", user.id)
-        .order("created_at", { ascending: false });
+        .eq("broker_id", user.id);
 
-      if (claimsError) throw claimsError;
+      if (brokerClientsError) throw brokerClientsError;
 
-      // Fetch subscriptions assigned to this broker
-      const { data: subscriptions, error: subsError } = await supabase
-        .from("subscriptions")
-        .select(`
-          user_id,
-          profiles!inner (
-            id,
-            display_name,
-            email,
-            phone
-          )
-        `)
-        .eq("assigned_broker_id", user.id);
+      // For each client, fetch their claims and subscriptions count
+      const clientsWithStats = await Promise.all(
+        (brokerClients || []).map(async (brokerClient) => {
+          const profile = brokerClient.profiles as any;
+          
+          // Count claims
+          const { count: claimsCount } = await supabase
+            .from("claims")
+            .select("*", { count: 'exact', head: true })
+            .eq("user_id", brokerClient.client_id);
 
-      if (subsError) throw subsError;
+          // Get last claim date
+          const { data: lastClaim } = await supabase
+            .from("claims")
+            .select("created_at")
+            .eq("user_id", brokerClient.client_id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
 
-      // Group by user_id to merge claims and subscriptions data
-      const clientMap = new Map<string, Client>();
-      
-      // Process claims
-      claims?.forEach(claim => {
-        const profile = claim.profiles as any;
-        const existing = clientMap.get(claim.user_id);
-        
-        if (existing) {
-          existing.claimsCount++;
-          if (claim.created_at > (existing.lastClaimDate || "")) {
-            existing.lastClaimDate = claim.created_at;
-          }
-        } else {
-          clientMap.set(claim.user_id, {
+          // Count subscriptions
+          const { count: subscriptionsCount } = await supabase
+            .from("subscriptions")
+            .select("*", { count: 'exact', head: true })
+            .eq("user_id", brokerClient.client_id);
+
+          return {
             id: profile.id,
             display_name: profile.display_name,
             email: profile.email,
             phone: profile.phone,
-            claimsCount: 1,
-            subscriptionsCount: 0,
-            lastClaimDate: claim.created_at,
-          });
-        }
-      });
+            claimsCount: claimsCount || 0,
+            subscriptionsCount: subscriptionsCount || 0,
+            lastClaimDate: lastClaim?.created_at || null,
+          };
+        })
+      );
 
-      // Process subscriptions
-      subscriptions?.forEach(sub => {
-        const profile = sub.profiles as any;
-        const existing = clientMap.get(sub.user_id);
-        
-        if (existing) {
-          existing.subscriptionsCount++;
-        } else {
-          clientMap.set(sub.user_id, {
-            id: profile.id,
-            display_name: profile.display_name,
-            email: profile.email,
-            phone: profile.phone,
-            claimsCount: 0,
-            subscriptionsCount: 1,
-            lastClaimDate: null,
-          });
-        }
-      });
-
-      setClients(Array.from(clientMap.values()));
+      setClients(clientsWithStats);
     } catch (error) {
       console.error("Error fetching clients:", error);
       toast({

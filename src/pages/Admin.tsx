@@ -9,6 +9,7 @@ import { AdminUsersTable } from "@/components/AdminUsersTable";
 import { AdminAnalytics } from "@/components/AdminAnalytics";
 import { AdminSubscriptionsTable } from "@/components/AdminSubscriptionsTable";
 import { AdminUXFlows } from "@/components/AdminUXFlows";
+import { AdminDataGenerator } from "@/components/AdminDataGenerator";
 
 const Admin = () => {
   return (
@@ -38,7 +39,7 @@ const Admin = () => {
         {/* Main Management Tabs */}
         <div className="mt-12">
           <Tabs defaultValue="claims" className="space-y-6">
-            <TabsList className="grid w-full max-w-[1000px] grid-cols-5">
+            <TabsList className="grid w-full max-w-[1200px] grid-cols-6">
               <TabsTrigger value="claims" className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
                 Sinistres
@@ -50,6 +51,10 @@ const Admin = () => {
               <TabsTrigger value="users" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
                 Utilisateurs
+              </TabsTrigger>
+              <TabsTrigger value="data" className="flex items-center gap-2">
+                <Database className="w-4 h-4" />
+                Données Test
               </TabsTrigger>
               <TabsTrigger value="ai" className="flex items-center gap-2">
                 <Brain className="w-4 h-4" />
@@ -92,6 +97,10 @@ const Admin = () => {
                   <AdminUsersTable />
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="data" className="space-y-4">
+              <AdminDataGenerator />
             </TabsContent>
 
             <TabsContent value="ai" className="space-y-4">

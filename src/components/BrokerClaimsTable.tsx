@@ -19,6 +19,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 interface Claim {
   id: string;
@@ -43,6 +45,9 @@ export const BrokerClaimsTable = () => {
   const [loading, setLoading] = useState(true);
   const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
+  const [reviewNotes, setReviewNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -100,28 +105,55 @@ export const BrokerClaimsTable = () => {
     }
   };
 
-  const markAsReviewed = async (claimId: string) => {
+  const openReviewDialog = (claim: Claim) => {
+    setSelectedClaim(claim);
+    setReviewNotes("");
+    setShowReviewDialog(true);
+    setShowDetailDialog(false);
+  };
+
+  const submitReview = async () => {
+    if (!selectedClaim) return;
+    
+    setSubmitting(true);
     try {
-      const { error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Non authentifié");
+
+      // Mettre à jour le statut du sinistre
+      const { error: claimError } = await supabase
         .from("claims")
         .update({ status: "Reviewed" })
-        .eq("id", claimId);
+        .eq("id", selectedClaim.id);
 
-      if (error) throw error;
+      if (claimError) throw claimError;
+
+      // Créer une notification pour les admins (vous pouvez créer une table notifications plus tard)
+      // Pour l'instant, on log juste dans la console
+      console.log("Notification admin:", {
+        claim_id: selectedClaim.id,
+        broker_id: user.id,
+        notes: reviewNotes,
+        timestamp: new Date().toISOString(),
+      });
 
       toast({
         title: "Succès",
-        description: "Sinistre marqué comme examiné",
+        description: "Sinistre examiné et remonté au support",
       });
       
+      setShowReviewDialog(false);
+      setReviewNotes("");
       fetchClaims();
     } catch (error) {
       console.error("Error updating claim:", error);
       toast({
         title: "Erreur",
-        description: "Impossible de mettre à jour le sinistre",
+        description: "Impossible de marquer le sinistre comme examiné",
         variant: "destructive",
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -224,7 +256,7 @@ export const BrokerClaimsTable = () => {
                           size="sm"
                           variant="outline"
                           className="text-[hsl(var(--bright-green))]"
-                          onClick={() => markAsReviewed(claim.id)}
+                          onClick={() => openReviewDialog(claim)}
                         >
                           <CheckCircle className="w-4 h-4" />
                         </Button>
@@ -297,18 +329,65 @@ export const BrokerClaimsTable = () => {
               )}
 
               <div className="flex gap-2 pt-4">
-                <Button 
-                  onClick={() => markAsReviewed(selectedClaim.id)}
-                  className="flex-1"
-                >
-                  Marquer comme examiné
-                </Button>
+                {selectedClaim.status === "Submitted" && (
+                  <Button 
+                    onClick={() => openReviewDialog(selectedClaim)}
+                    className="flex-1"
+                  >
+                    Marquer comme examiné
+                  </Button>
+                )}
                 <Button variant="outline" className="flex-1">
                   Contacter le client
                 </Button>
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Examen du sinistre</DialogTitle>
+            <DialogDescription>
+              Ajoutez vos observations avant de remonter au support
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="review-notes">Notes d'examen</Label>
+              <Textarea
+                id="review-notes"
+                placeholder="Décrivez votre examen, vos recommandations, les points à vérifier..."
+                value={reviewNotes}
+                onChange={(e) => setReviewNotes(e.target.value)}
+                rows={6}
+                className="mt-2"
+              />
+              <p className="text-sm text-muted-foreground mt-2">
+                Ces notes seront transmises au support administratif pour traitement.
+              </p>
+            </div>
+            
+            <div className="flex gap-2 pt-2">
+              <Button
+                onClick={submitReview}
+                disabled={submitting || !reviewNotes.trim()}
+                className="flex-1"
+              >
+                {submitting ? "Envoi..." : "Envoyer au support"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowReviewDialog(false)}
+                disabled={submitting}
+                className="flex-1"
+              >
+                Annuler
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </>

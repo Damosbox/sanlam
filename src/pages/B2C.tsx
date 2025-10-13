@@ -17,6 +17,7 @@ import { CustomerSubscriptionsTable } from "@/components/CustomerSubscriptionsTa
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
+import { useUserRole } from "@/hooks/useUserRole";
 
 const B2C = () => {
   const navigate = useNavigate();
@@ -28,6 +29,12 @@ const B2C = () => {
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [claims, setClaims] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Get user role
+  const { role } = useUserRole(user);
+  
+  // Déterminer si l'utilisateur est un customer (B2C uniquement)
+  const isCustomerOnly = role === 'customer';
 
   useEffect(() => {
     // Get current user
@@ -386,7 +393,7 @@ const B2C = () => {
                               <p className="font-semibold">{parseFloat(claim.cost_estimation).toLocaleString('fr-FR')} FCFA</p>
                             </div>
                           )}
-                          {claim.ai_confidence && (
+                          {!isCustomerOnly && claim.ai_confidence && (
                             <div>
                               <p className="text-muted-foreground mb-1">Confiance IA</p>
                               <p className="font-semibold">{Math.round(claim.ai_confidence * 100)}%</p>

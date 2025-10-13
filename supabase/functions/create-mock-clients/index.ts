@@ -23,19 +23,20 @@ serve(async (req) => {
       }
     );
 
-    // Récupérer l'ID du broker
-    const { data: brokerData } = await supabaseAdmin
-      .from('user_roles')
-      .select('user_id')
-      .eq('role', 'broker')
-      .limit(1)
+    // Récupérer l'ID du broker B2B test spécifiquement
+    const { data: brokerProfile, error: brokerError } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('email', 'b2btest@box.africa')
       .single();
 
-    if (!brokerData) {
-      throw new Error('Aucun broker trouvé');
+    if (brokerError || !brokerProfile) {
+      console.error('Erreur récupération broker:', brokerError);
+      throw new Error('Broker B2B test non trouvé (b2btest@box.africa)');
     }
 
-    const brokerId = brokerData.user_id;
+    const brokerId = brokerProfile.id;
+    console.log('Broker ID trouvé:', brokerId);
 
     // Récupérer les produits
     const { data: products } = await supabaseAdmin

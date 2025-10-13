@@ -126,7 +126,32 @@ Type de document: ${documentType || 'inconnu'}`;
     const extractedData = JSON.parse(toolCall.function.arguments);
     console.log('Data extracted successfully:', Object.keys(extractedData));
 
-    return new Response(JSON.stringify(extractedData), {
+    // Calculer la confiance IA basée sur la qualité des données extraites
+    let confidence = 0.5; // Baseline
+    
+    // Augmenter la confiance si on a des données structurées
+    if (extractedData.damageDetails && extractedData.damageDetails.length > 0) {
+      confidence += 0.2;
+    }
+    if (extractedData.damageZones && extractedData.damageZones.length > 0) {
+      confidence += 0.15;
+    }
+    if (extractedData.extractedText && extractedData.extractedText.length > 50) {
+      confidence += 0.1;
+    }
+    if (extractedData.estimatedAmount) {
+      confidence += 0.05;
+    }
+    
+    // S'assurer que la confiance reste entre 0 et 1
+    confidence = Math.min(Math.max(confidence, 0), 1);
+    
+    console.log('Calculated AI confidence:', confidence);
+
+    return new Response(JSON.stringify({
+      ...extractedData,
+      ai_confidence: confidence
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {

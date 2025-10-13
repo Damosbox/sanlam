@@ -30,6 +30,7 @@ interface ExtractedData {
   full_text?: string;
   damageZones?: string[];
   damageDetails?: DamageDetailFromAI[];
+  ai_confidence?: number;
 }
 
 interface DamageDetail {
@@ -130,7 +131,7 @@ export default function ClaimNew() {
         return;
       }
 
-      // Create claim
+      // Create claim with AI confidence from OCR
       const { data: claim, error: claimError } = await supabase
         .from('claims')
         .insert([{
@@ -143,7 +144,8 @@ export default function ClaimNew() {
           cost_estimation: ocrData.estimated_cost,
           description: ocrData.damage,
           location: ocrData.location,
-          incident_date: ocrData.date ? new Date(ocrData.date).toISOString() : new Date().toISOString()
+          incident_date: ocrData.date ? new Date(ocrData.date).toISOString() : new Date().toISOString(),
+          ai_confidence: ocrData.ai_confidence || null
         }])
         .select()
         .single();

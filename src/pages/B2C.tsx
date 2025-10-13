@@ -14,16 +14,19 @@ import { ProductComparator } from "@/components/ProductComparator";
 import { PeopleLikeYouRecommendations } from "@/components/PeopleLikeYouRecommendations";
 import { UserAttributesForm } from "@/components/UserAttributesForm";
 import { CustomerSubscriptionsTable } from "@/components/CustomerSubscriptionsTable";
+import { DynamicFormRenderer } from "@/components/DynamicFormRenderer";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useQuery } from "@tanstack/react-query";
 
 const B2C = () => {
   const navigate = useNavigate();
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [activeSubscribeTab, setActiveSubscribeTab] = useState("compare");
   const [activeMainTab, setActiveMainTab] = useState("dashboard");
+  const [selectedFormTemplate, setSelectedFormTemplate] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
@@ -32,6 +35,32 @@ const B2C = () => {
   
   // Get user role
   const { role } = useUserRole(user);
+
+  // Fetch available form templates for B2C
+  const { data: formTemplates } = useQuery({
+    queryKey: ['form-templates-b2c'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('form_deployments')
+        .select(`
+          id,
+          channel,
+          form_template_id,
+          form_templates (
+            id,
+            name,
+            description,
+            category,
+            product_type
+          )
+        `)
+        .eq('channel', 'B2C')
+        .eq('is_active', true);
+      
+      if (error) throw error;
+      return data;
+    },
+  });
   
   // Déterminer si l'utilisateur est un customer (B2C uniquement)
   const isCustomerOnly = role === 'customer';
@@ -307,10 +336,11 @@ const B2C = () => {
 
         {/* Features Tabs */}
         <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="mb-8">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
             <TabsTrigger value="diagnostic">Diagnostic IA</TabsTrigger>
             <TabsTrigger value="subscribe">Souscrire</TabsTrigger>
+            <TabsTrigger value="forms">Formulaires</TabsTrigger>
             <TabsTrigger value="claim">Sinistre OCR</TabsTrigger>
             <TabsTrigger value="policies">Mes polices</TabsTrigger>
           </TabsList>
@@ -332,6 +362,76 @@ const B2C = () => {
                 <TwoStepSubscription selectedProduct={selectedProduct} />
               </TabsContent>
             </Tabs>
+          </TabsContent>
+
+          <TabsContent value="forms" className="mt-6">
+            {selectedFormTemplate ? (
+              <DynamicFormRenderer
+                templateId={selectedFormTemplate}
+                user={user}
+                channel="B2C"
+                onCancel={() => setSelectedFormTemplate(null)}
+                onSubmit={(data) => {
+                  console.log('Form submitted:', data);
+                  setSelectedFormTemplate(null);
+                  setActiveMainTab('policies');
+                }}
+              />
+            ) : (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-2xl font-bold mb-2">Formulaires de souscription</h2>
+                  <p className="text-muted-foreground">
+                    Sélectionnez un formulaire pour souscrire à une nouvelle assurance
+                  </p>
+                </div>
+
+                {formTemplates && formTemplates.length > 0 ? (
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {formTemplates.map((deployment: any) => (
+                      <Card
+                        key={deployment.id}
+                        className="p-6 hover:shadow-medium transition-base cursor-pointer"
+                        onClick={() => setSelectedFormTemplate(deployment.form_template_id)}
+                      >
+                        <div className="space-y-3">
+                          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <FileText className="w-6 h-6 text-primary" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-lg">
+                              {deployment.form_templates.name}
+                            </h3>
+                            {deployment.form_templates.description && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {deployment.form_templates.description}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="px-2 py-1 rounded-full bg-primary/10 text-primary">
+                              {deployment.form_templates.category}
+                            </span>
+                            <span className="text-muted-foreground">
+                              {deployment.form_templates.product_type}
+                            </span>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <Card className="p-8">
+                    <div className="text-center">
+                      <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-muted-foreground">
+                        Aucun formulaire disponible pour le moment
+                      </p>
+                    </div>
+                  </Card>
+                )}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="claim" className="mt-6">

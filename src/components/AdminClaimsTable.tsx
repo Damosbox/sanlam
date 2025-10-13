@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Eye, DollarSign, UserPlus } from "lucide-react";
+import { CheckCircle, XCircle, Eye, DollarSign, UserPlus, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
@@ -40,6 +40,12 @@ interface Claim {
   created_at: string;
   policy_id: string;
   assigned_broker_id: string | null;
+  description: string | null;
+  ai_confidence: number | null;
+  photos: string[] | null;
+  ocr_data: any;
+  broker_notes: string | null;
+  reviewed_at: string | null;
   profiles: {
     display_name: string | null;
     email: string | null;
@@ -59,6 +65,7 @@ export const AdminClaimsTable = () => {
   const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
   const [costEstimation, setCostEstimation] = useState("");
   const [showCostDialog, setShowCostDialog] = useState(false);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [filterUnassigned, setFilterUnassigned] = useState(false);
   const { toast } = useToast();
 
@@ -338,9 +345,21 @@ export const AdminClaimsTable = () => {
                       variant="outline"
                       onClick={() => {
                         setSelectedClaim(claim);
+                        setShowDetailDialog(true);
+                      }}
+                      title="Voir détails"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedClaim(claim);
                         setCostEstimation(claim.cost_estimation?.toString() || "");
                         setShowCostDialog(true);
                       }}
+                      title="Modifier estimation"
                     >
                       <DollarSign className="w-4 h-4" />
                     </Button>
@@ -350,6 +369,7 @@ export const AdminClaimsTable = () => {
                         variant="outline"
                         className="text-[hsl(var(--bright-green))]"
                         onClick={() => updateClaimStatus(claim.id, "Approved")}
+                        title="Approuver"
                       >
                         <CheckCircle className="w-4 h-4" />
                       </Button>
@@ -360,6 +380,7 @@ export const AdminClaimsTable = () => {
                         variant="outline"
                         className="text-[hsl(var(--red))]"
                         onClick={() => updateClaimStatus(claim.id, "Rejected")}
+                        title="Rejeter"
                       >
                         <XCircle className="w-4 h-4" />
                       </Button>
@@ -371,6 +392,109 @@ export const AdminClaimsTable = () => {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Détails du sinistre #{selectedClaim?.policy_id}</DialogTitle>
+            <DialogDescription>
+              Informations complètes sur le sinistre
+            </DialogDescription>
+          </DialogHeader>
+          {selectedClaim && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Client</p>
+                  <p className="text-base font-medium">{selectedClaim.profiles?.display_name}</p>
+                  <p className="text-sm text-muted-foreground">{selectedClaim.profiles?.email}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Type</p>
+                  <p className="text-base capitalize">{selectedClaim.claim_type}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Date incident</p>
+                  <p className="text-base">
+                    {selectedClaim.incident_date
+                      ? new Date(selectedClaim.incident_date).toLocaleDateString()
+                      : "N/A"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Estimation</p>
+                  <p className="text-base font-semibold">
+                    {selectedClaim.cost_estimation
+                      ? `${selectedClaim.cost_estimation.toLocaleString()} FCFA`
+                      : "Non estimé"}
+                  </p>
+                </div>
+                {selectedClaim.ai_confidence && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Confiance IA</p>
+                    <p className="text-base font-semibold">
+                      {(selectedClaim.ai_confidence * 100).toFixed(0)}%
+                    </p>
+                  </div>
+                )}
+                {selectedClaim.reviewed_at && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Examiné le</p>
+                    <p className="text-base">
+                      {new Date(selectedClaim.reviewed_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {selectedClaim.description && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Description</p>
+                  <p className="text-base bg-muted p-3 rounded">{selectedClaim.description}</p>
+                </div>
+              )}
+
+              {selectedClaim.photos && selectedClaim.photos.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Pièces jointes ({selectedClaim.photos.length})</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {selectedClaim.photos.map((photo, idx) => (
+                      <img 
+                        key={idx} 
+                        src={photo} 
+                        alt={`Photo ${idx + 1}`}
+                        className="w-full h-32 object-cover rounded border cursor-pointer hover:opacity-80"
+                        onClick={() => window.open(photo, '_blank')}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedClaim.ocr_data && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Analyse OCR</p>
+                  <div className="bg-muted p-3 rounded text-sm max-h-48 overflow-auto">
+                    <pre className="whitespace-pre-wrap">{JSON.stringify(selectedClaim.ocr_data, null, 2)}</pre>
+                  </div>
+                </div>
+              )}
+
+              {selectedClaim.broker_notes && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">
+                    <FileText className="w-4 h-4 inline mr-1" />
+                    Notes du courtier
+                  </p>
+                  <div className="bg-primary/5 border border-primary/20 p-4 rounded">
+                    <p className="text-base whitespace-pre-wrap">{selectedClaim.broker_notes}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showCostDialog} onOpenChange={setShowCostDialog}>
         <DialogContent>

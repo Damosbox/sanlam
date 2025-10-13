@@ -67,6 +67,7 @@ export type Database = {
         Row: {
           ai_confidence: number | null
           assigned_broker_id: string | null
+          broker_notes: string | null
           claim_type: Database["public"]["Enums"]["claim_type"]
           cost_estimation: number | null
           created_at: string
@@ -78,6 +79,7 @@ export type Database = {
           ocr_data: Json | null
           photos: string[] | null
           policy_id: string
+          reviewed_at: string | null
           status: Database["public"]["Enums"]["claim_status"]
           updated_at: string
           user_id: string
@@ -85,6 +87,7 @@ export type Database = {
         Insert: {
           ai_confidence?: number | null
           assigned_broker_id?: string | null
+          broker_notes?: string | null
           claim_type: Database["public"]["Enums"]["claim_type"]
           cost_estimation?: number | null
           created_at?: string
@@ -96,6 +99,7 @@ export type Database = {
           ocr_data?: Json | null
           photos?: string[] | null
           policy_id: string
+          reviewed_at?: string | null
           status?: Database["public"]["Enums"]["claim_status"]
           updated_at?: string
           user_id: string
@@ -103,6 +107,7 @@ export type Database = {
         Update: {
           ai_confidence?: number | null
           assigned_broker_id?: string | null
+          broker_notes?: string | null
           claim_type?: Database["public"]["Enums"]["claim_type"]
           cost_estimation?: number | null
           created_at?: string
@@ -114,6 +119,7 @@ export type Database = {
           ocr_data?: Json | null
           photos?: string[] | null
           policy_id?: string
+          reviewed_at?: string | null
           status?: Database["public"]["Enums"]["claim_status"]
           updated_at?: string
           user_id?: string

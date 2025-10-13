@@ -33,6 +33,10 @@ interface Claim {
   policy_id: string;
   description: string | null;
   ai_confidence: number | null;
+  photos: string[] | null;
+  ocr_data: any;
+  broker_notes: string | null;
+  reviewed_at: string | null;
   profiles: {
     display_name: string | null;
     email: string | null;
@@ -120,22 +124,17 @@ export const BrokerClaimsTable = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Non authentifié");
 
-      // Mettre à jour le statut du sinistre
+      // Mettre à jour le statut du sinistre et sauvegarder les notes
       const { error: claimError } = await supabase
         .from("claims")
-        .update({ status: "Reviewed" })
+        .update({ 
+          status: "Reviewed",
+          broker_notes: reviewNotes,
+          reviewed_at: new Date().toISOString()
+        })
         .eq("id", selectedClaim.id);
 
       if (claimError) throw claimError;
-
-      // Créer une notification pour les admins (vous pouvez créer une table notifications plus tard)
-      // Pour l'instant, on log juste dans la console
-      console.log("Notification admin:", {
-        claim_id: selectedClaim.id,
-        broker_id: user.id,
-        notes: reviewNotes,
-        timestamp: new Date().toISOString(),
-      });
 
       toast({
         title: "Succès",
@@ -325,6 +324,40 @@ export const BrokerClaimsTable = () => {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground mb-2">Description</p>
                   <p className="text-base">{selectedClaim.description}</p>
+                </div>
+              )}
+
+              {selectedClaim.photos && selectedClaim.photos.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Pièces jointes</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {selectedClaim.photos.map((photo, idx) => (
+                      <img 
+                        key={idx} 
+                        src={photo} 
+                        alt={`Photo ${idx + 1}`}
+                        className="w-full h-24 object-cover rounded border"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedClaim.ocr_data && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Données OCR</p>
+                  <div className="bg-muted p-3 rounded text-sm">
+                    <pre className="whitespace-pre-wrap">{JSON.stringify(selectedClaim.ocr_data, null, 2)}</pre>
+                  </div>
+                </div>
+              )}
+
+              {selectedClaim.broker_notes && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Notes du courtier</p>
+                  <div className="bg-muted p-3 rounded">
+                    <p className="text-base">{selectedClaim.broker_notes}</p>
+                  </div>
                 </div>
               )}
 

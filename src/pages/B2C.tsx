@@ -314,40 +314,133 @@ const B2C = () => {
           </TabsContent>
 
           <TabsContent value="claim" className="mt-6">
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-xl font-semibold mb-2">Déclaration de sinistre</h3>
-                  <p className="text-muted-foreground">
-                    Déclarez un sinistre en quelques étapes avec l'aide de l'IA
-                  </p>
+            <div className="space-y-6">
+              <Card className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-xl font-semibold mb-2">Déclaration de sinistre</h3>
+                    <p className="text-muted-foreground">
+                      Déclarez un sinistre en quelques étapes avec l'aide de l'IA
+                    </p>
+                  </div>
+                  <Button onClick={() => navigate('/b2c/claims/new')}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nouvelle déclaration
+                  </Button>
                 </div>
-                <Button onClick={() => navigate('/b2c/claims/new')}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouvelle déclaration
-                </Button>
-              </div>
-              <div className="grid md:grid-cols-3 gap-4 text-sm">
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <p className="font-medium mb-1">📸 Scanner OCR</p>
-                  <p className="text-muted-foreground text-xs">
-                    Extrais automatiquement les infos de vos documents
-                  </p>
+                <div className="grid md:grid-cols-3 gap-4 text-sm">
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <p className="font-medium mb-1">📸 Scanner OCR</p>
+                    <p className="text-muted-foreground text-xs">
+                      Extrais automatiquement les infos de vos documents
+                    </p>
+                  </div>
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <p className="font-medium mb-1">🎯 Zones interactives</p>
+                    <p className="text-muted-foreground text-xs">
+                      Sélectionnez visuellement les zones endommagées
+                    </p>
+                  </div>
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <p className="font-medium mb-1">📄 Rapport auto</p>
+                    <p className="text-muted-foreground text-xs">
+                      Génération automatique de votre pré-déclaration
+                    </p>
+                  </div>
                 </div>
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <p className="font-medium mb-1">🎯 Zones interactives</p>
-                  <p className="text-muted-foreground text-xs">
-                    Sélectionnez visuellement les zones endommagées
-                  </p>
-                </div>
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <p className="font-medium mb-1">📄 Rapport auto</p>
-                  <p className="text-muted-foreground text-xs">
-                    Génération automatique de votre pré-déclaration
-                  </p>
-                </div>
-              </div>
-            </Card>
+              </Card>
+
+              {/* Liste des sinistres */}
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4">Mes sinistres déclarés</h3>
+                {claims.length === 0 ? (
+                  <div className="text-center py-8">
+                    <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground">Aucun sinistre déclaré</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {claims.map((claim) => (
+                      <div key={claim.id} className="p-4 border rounded-lg hover:shadow-medium transition-base">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
+                              <AlertCircle className="w-5 h-5 text-warning" />
+                            </div>
+                            <div>
+                              <p className="font-semibold">{claim.claim_type}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {formatDate(claim.incident_date || claim.created_at)}
+                              </p>
+                            </div>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(claim.status)}`}>
+                            {getStatusText(claim.status)}
+                          </span>
+                        </div>
+                        
+                        <div className="grid md:grid-cols-3 gap-4 text-sm mb-3">
+                          {claim.cost_estimation && (
+                            <div>
+                              <p className="text-muted-foreground mb-1">Estimation</p>
+                              <p className="font-semibold">{parseFloat(claim.cost_estimation).toLocaleString('fr-FR')} FCFA</p>
+                            </div>
+                          )}
+                          {claim.ai_confidence && (
+                            <div>
+                              <p className="text-muted-foreground mb-1">Confiance IA</p>
+                              <p className="font-semibold">{Math.round(claim.ai_confidence * 100)}%</p>
+                            </div>
+                          )}
+                          {claim.location && (
+                            <div>
+                              <p className="text-muted-foreground mb-1">Lieu</p>
+                              <p className="font-medium">{claim.location}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {claim.description && (
+                          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                            {claim.description}
+                          </p>
+                        )}
+
+                        {claim.damages && Array.isArray(claim.damages) && claim.damages.length > 0 && (
+                          <div className="mb-3">
+                            <p className="text-xs font-medium text-muted-foreground mb-2">Dommages identifiés:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {claim.damages.slice(0, 3).map((damage: any, idx: number) => (
+                                <span key={idx} className="px-2 py-1 bg-muted rounded text-xs">
+                                  {damage.zone || damage.damageType}
+                                </span>
+                              ))}
+                              {claim.damages.length > 3 && (
+                                <span className="px-2 py-1 bg-muted rounded text-xs">
+                                  +{claim.damages.length - 3} autres
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex gap-2 pt-3 border-t">
+                          <Button variant="outline" size="sm" onClick={() => navigate(`/b2c/claims/${claim.id}`)}>
+                            <FileText className="w-4 h-4 mr-2" />
+                            Voir détails
+                          </Button>
+                          {claim.status === 'Draft' && (
+                            <Button variant="outline" size="sm" onClick={() => navigate(`/b2c/claims/${claim.id}/edit`)}>
+                              Modifier
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="dashboard" className="mt-6">

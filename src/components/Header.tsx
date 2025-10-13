@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
 import LogoutButton from "./LogoutButton";
+import sanlamLogo from "@/assets/logo_sanlam.svg";
 
 export const Header = () => {
   const location = useLocation();
@@ -29,13 +30,11 @@ export const Header = () => {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full gradient-activated flex items-center justify-center">
-            <span className="text-white font-bold text-lg">AS</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="font-bold text-lg leading-none">Allianz Sanlam</span>
-            <span className="text-xs text-muted-foreground">IA-First Platform</span>
-          </div>
+          <img 
+            src={sanlamLogo} 
+            alt="Sanlam Allianz" 
+            className="h-10 w-auto"
+          />
         </Link>
 
         <nav className="flex items-center gap-2">

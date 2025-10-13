@@ -8,7 +8,7 @@ import { AdminClaimsTable } from "@/components/AdminClaimsTable";
 import { AdminUsersTable } from "@/components/AdminUsersTable";
 import { AdminAnalytics } from "@/components/AdminAnalytics";
 import { AdminSubscriptionsTable } from "@/components/AdminSubscriptionsTable";
-import { AdminUXFlows } from "@/components/AdminUXFlows";
+
 import { AdminDataGenerator } from "@/components/AdminDataGenerator";
 import { AdminFormBuilder } from "@/components/admin/AdminFormBuilder";
 import { FormTemplatesList } from "@/components/admin/FormTemplatesList";
@@ -50,7 +50,7 @@ const Admin = () => {
         {/* Main Management Tabs */}
         <div className="mt-12">
           <Tabs defaultValue="claims" className="space-y-6">
-            <TabsList className="grid w-full max-w-[1200px] grid-cols-7">
+            <TabsList className="grid w-full max-w-[1200px] grid-cols-6">
               <TabsTrigger value="claims" className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
                 Sinistres
@@ -70,10 +70,6 @@ const Admin = () => {
               <TabsTrigger value="ai" className="flex items-center gap-2">
                 <Brain className="w-4 h-4" />
                 IA & Conformité
-              </TabsTrigger>
-              <TabsTrigger value="ux-flows" className="flex items-center gap-2">
-                <GitBranch className="w-4 h-4" />
-                Parcours UX
               </TabsTrigger>
               <TabsTrigger value="forms" className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
@@ -274,10 +270,6 @@ const Admin = () => {
                   </div>
                 </div>
               </Card>
-            </TabsContent>
-
-            <TabsContent value="ux-flows" className="space-y-4">
-              <AdminUXFlows />
             </TabsContent>
 
             <TabsContent value="forms" className="space-y-4">

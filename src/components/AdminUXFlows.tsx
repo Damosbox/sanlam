@@ -196,15 +196,27 @@ const b2bFlows = [
 // Composant pour afficher un diagramme Mermaid
 const MermaidDiagram = ({ chart, id }: { chart: string; id: string }) => {
   const ref = useRef<HTMLDivElement>(null);
+  const [svg, setSvg] = useState<string>("");
 
   useEffect(() => {
-    if (ref.current) {
-      ref.current.innerHTML = chart;
-      mermaid.run({ nodes: [ref.current] });
-    }
-  }, [chart]);
+    const renderDiagram = async () => {
+      try {
+        const { svg: renderedSvg } = await mermaid.render(`mermaid-${id}`, chart);
+        setSvg(renderedSvg);
+      } catch (error) {
+        console.error("Erreur rendu Mermaid:", error);
+      }
+    };
+    renderDiagram();
+  }, [chart, id]);
 
-  return <div ref={ref} id={id} className="mermaid-diagram my-4" />;
+  return (
+    <div 
+      ref={ref} 
+      className="mermaid-diagram my-4 flex justify-center"
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
+  );
 };
 
 export const AdminUXFlows = () => {

@@ -78,7 +78,7 @@ const B2B = () => {
         {/* Main Management Tabs */}
         <div className="mt-12">
           <Tabs defaultValue="claims" className="space-y-6">
-            <TabsList className="grid w-full max-w-[1000px] grid-cols-5">
+            <TabsList className="grid w-full max-w-[800px] grid-cols-4">
               <TabsTrigger value="claims" className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
                 Sinistres
@@ -86,10 +86,6 @@ const B2B = () => {
               <TabsTrigger value="policies" className="flex items-center gap-2">
                 <Shield className="w-4 h-4" />
                 Polices
-              </TabsTrigger>
-              <TabsTrigger value="forms" className="flex items-center gap-2">
-                <FormInput className="w-4 h-4" />
-                Formulaires
               </TabsTrigger>
               <TabsTrigger value="clients" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
@@ -121,71 +117,6 @@ const B2B = () => {
                   <BrokerSubscriptions />
                 </CardContent>
               </Card>
-            </TabsContent>
-
-            <TabsContent value="forms" className="space-y-4">
-              {selectedFormTemplate ? (
-                <DynamicFormRenderer
-                  templateId={selectedFormTemplate}
-                  user={user}
-                  channel="B2B"
-                  onCancel={() => setSelectedFormTemplate(null)}
-                  onSubmit={(data) => {
-                    console.log('Form submitted:', data);
-                    setSelectedFormTemplate(null);
-                  }}
-                />
-              ) : (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Formulaires de souscription</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {formTemplates && formTemplates.length > 0 ? (
-                      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {formTemplates.map((deployment: any) => (
-                          <Card
-                            key={deployment.id}
-                            className="p-6 hover:shadow-medium transition-base cursor-pointer border-2"
-                            onClick={() => setSelectedFormTemplate(deployment.form_template_id)}
-                          >
-                            <div className="space-y-3">
-                              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                                <FormInput className="w-6 h-6 text-primary" />
-                              </div>
-                              <div>
-                                <h3 className="font-semibold text-lg">
-                                  {deployment.form_templates.name}
-                                </h3>
-                                {deployment.form_templates.description && (
-                                  <p className="text-sm text-muted-foreground mt-1">
-                                    {deployment.form_templates.description}
-                                  </p>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 text-xs">
-                                <span className="px-2 py-1 rounded-full bg-primary/10 text-primary">
-                                  {deployment.form_templates.category}
-                                </span>
-                                <span className="text-muted-foreground">
-                                  {deployment.form_templates.product_type}
-                                </span>
-                              </div>
-                            </div>
-                          </Card>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <FormInput className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                        <p className="text-muted-foreground">
-                          Aucun formulaire disponible pour le moment
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
             </TabsContent>
 
             <TabsContent value="clients" className="space-y-4">

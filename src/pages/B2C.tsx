@@ -13,6 +13,7 @@ import { OmnichannelChat } from "@/components/OmnichannelChat";
 import { ProductComparator } from "@/components/ProductComparator";
 import { PeopleLikeYouRecommendations } from "@/components/PeopleLikeYouRecommendations";
 import { UserAttributesForm } from "@/components/UserAttributesForm";
+import { CustomerSubscriptionsTable } from "@/components/CustomerSubscriptionsTable";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -357,127 +358,7 @@ const B2C = () => {
           </TabsContent>
 
           <TabsContent value="policies" className="mt-6">
-            {/* Main Content Grid */}
-            <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Column - Policies */}
-          <div className="lg:col-span-2 space-y-6">
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold">Mes polices</h2>
-                <Button onClick={() => {
-                  setActiveMainTab("subscribe");
-                  setActiveSubscribeTab("compare");
-                }} variant="outline">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nouvelle souscription
-                </Button>
-              </div>
-              {subscriptions.length === 0 ? (
-                <Card className="p-8 text-center">
-                  <Shield className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-semibold mb-2">Aucune police active</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Souscrivez à votre première assurance pour protéger ce qui compte le plus
-                  </p>
-                  <Button onClick={() => {
-                    setActiveMainTab("subscribe");
-                    setActiveSubscribeTab("compare");
-                  }}>
-                    Découvrir nos offres
-                  </Button>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {subscriptions.map((subscription) => (
-                    <Card key={subscription.id} className="p-6 transition-base hover:shadow-medium">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                            <Shield className="w-6 h-6 text-primary" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold">{subscription.products?.name || 'Assurance'}</h3>
-                            <p className="text-sm text-muted-foreground">Police #{subscription.policy_number}</p>
-                          </div>
-                        </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(subscription.status)}`}>
-                          {getStatusText(subscription.status)}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="text-muted-foreground mb-1">Prime mensuelle</p>
-                          <p className="font-semibold">{parseFloat(subscription.monthly_premium).toLocaleString('fr-FR')} FCFA</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground mb-1">Échéance</p>
-                          <p className="font-semibold">{formatDate(subscription.end_date)}</p>
-                        </div>
-                      </div>
-                      {subscription.payment_method && (
-                        <div className="mt-3 text-sm">
-                          <p className="text-muted-foreground">Mode de paiement : <span className="font-medium text-foreground">{subscription.payment_method}</span></p>
-                        </div>
-                      )}
-                      <div className="mt-4 pt-4 border-t flex gap-2">
-                        <Button variant="outline" size="sm" className="flex-1">
-                          <FileText className="w-4 h-4 mr-2" />
-                          Détails
-                        </Button>
-                        {subscription.status === 'active' && (
-                          <Button size="sm" className="flex-1">
-                            <CreditCard className="w-4 h-4 mr-2" />
-                            Payer
-                          </Button>
-                        )}
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right Column - Recommendations & Actions */}
-          <div className="space-y-6">
-            <UserAttributesForm />
-            
-            <PeopleLikeYouRecommendations 
-              onSubscribe={(productId) => {
-                // Find the product and set it as selected
-                supabase
-                  .from('products')
-                  .select('*')
-                  .eq('id', productId)
-                  .single()
-                  .then(({ data }) => {
-                    if (data) {
-                      setSelectedProduct(data);
-                      setActiveSubscribeTab("subscribe");
-                    }
-                  });
-              }}
-            />
-
-            <Card className="p-6">
-              <h3 className="font-semibold mb-4">Actions rapides</h3>
-              <div className="space-y-2">
-                <Button variant="outline" className="w-full justify-start">
-                  <AlertCircle className="w-4 h-4 mr-2" />
-                  Déclarer un sinistre
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <FileText className="w-4 h-4 mr-2" />
-                  Télécharger attestations
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Contacter un conseiller
-                </Button>
-              </div>
-            </Card>
-          </div>
-        </div>
+            <CustomerSubscriptionsTable />
           </TabsContent>
         </Tabs>
       </main>

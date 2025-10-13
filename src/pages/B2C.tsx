@@ -351,10 +351,166 @@ const B2C = () => {
           </TabsContent>
 
           <TabsContent value="dashboard" className="mt-6">
-            <Card className="p-6">
-              <h3 className="text-xl font-semibold mb-4">Vue d'ensemble</h3>
-              <p className="text-muted-foreground">Accédez rapidement à toutes vos fonctionnalités via les onglets ci-dessus.</p>
-            </Card>
+            <div className="grid lg:grid-cols-3 gap-8">
+              {/* Left Column - Overview & Quick Actions */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Quick Stats Summary */}
+                <Card className="p-6">
+                  <h3 className="text-xl font-semibold mb-4">Résumé de votre protection</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-primary/5 rounded-lg">
+                      <div className="flex items-center gap-3 mb-2">
+                        <Shield className="w-5 h-5 text-primary" />
+                        <span className="font-semibold">Vos polices</span>
+                      </div>
+                      <p className="text-2xl font-bold mb-1">{activeSubscriptionsCount}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {activeSubscriptionsCount > 0 ? `${totalMonthlyPremium.toLocaleString('fr-FR')} FCFA/mois` : 'Aucune police active'}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-warning/5 rounded-lg">
+                      <div className="flex items-center gap-3 mb-2">
+                        <AlertCircle className="w-5 h-5 text-warning" />
+                        <span className="font-semibold">Sinistres</span>
+                      </div>
+                      <p className="text-2xl font-bold mb-1">{pendingClaimsCount}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {pendingClaimsCount > 0 ? 'En cours de traitement' : 'Aucun sinistre en cours'}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Recent Subscriptions */}
+                {subscriptions.length > 0 && (
+                  <Card className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold">Polices actives récentes</h3>
+                      <Button variant="ghost" size="sm" onClick={() => setActiveMainTab("policies")}>
+                        Voir tout
+                      </Button>
+                    </div>
+                    <div className="space-y-3">
+                      {subscriptions.filter(s => s.status === 'active').slice(0, 3).map((sub) => (
+                        <div key={sub.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Shield className="w-5 h-5 text-primary" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium">{sub.products?.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {parseFloat(sub.monthly_premium).toLocaleString('fr-FR')} FCFA/mois
+                            </p>
+                          </div>
+                          <span className="text-xs px-2 py-1 rounded-full bg-bright-green/10 text-bright-green">
+                            Active
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
+
+                {/* Recent Claims */}
+                {claims.length > 0 && (
+                  <Card className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold">Sinistres récents</h3>
+                      <Button variant="ghost" size="sm" onClick={() => setActiveMainTab("claim")}>
+                        Voir tout
+                      </Button>
+                    </div>
+                    <div className="space-y-3">
+                      {claims.slice(0, 3).map((claim) => (
+                        <div key={claim.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                          <div className="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
+                            <AlertCircle className="w-5 h-5 text-warning" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium">{claim.claim_type}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {formatDate(claim.incident_date || claim.created_at)}
+                            </p>
+                          </div>
+                          <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(claim.status)}`}>
+                            {getStatusText(claim.status)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
+
+                {/* Call to Actions */}
+                {subscriptions.length === 0 && (
+                  <Card className="p-8 text-center">
+                    <Shield className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-xl font-semibold mb-2">Protégez ce qui compte</h3>
+                    <p className="text-muted-foreground mb-6">
+                      Découvrez nos offres d'assurance adaptées à vos besoins
+                    </p>
+                    <Button onClick={() => {
+                      setActiveMainTab("subscribe");
+                      setActiveSubscribeTab("compare");
+                    }}>
+                      Découvrir nos offres
+                    </Button>
+                  </Card>
+                )}
+              </div>
+
+              {/* Right Column - Recommendations & Support */}
+              <div className="space-y-6">
+                <UserAttributesForm />
+                
+                <PeopleLikeYouRecommendations 
+                  onSubscribe={(productId) => {
+                    supabase
+                      .from('products')
+                      .select('*')
+                      .eq('id', productId)
+                      .single()
+                      .then(({ data }) => {
+                        if (data) {
+                          setSelectedProduct(data);
+                          setActiveMainTab("subscribe");
+                          setActiveSubscribeTab("subscribe");
+                        }
+                      });
+                  }}
+                />
+
+                <Card className="p-6">
+                  <h3 className="font-semibold mb-4">Actions rapides</h3>
+                  <div className="space-y-2">
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={() => navigate('/b2c/claims/new')}
+                    >
+                      <AlertCircle className="w-4 h-4 mr-2" />
+                      Déclarer un sinistre
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={() => setActiveMainTab("policies")}
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Mes attestations
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                      onClick={() => setActiveMainTab("diagnostic")}
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Diagnostic IA gratuit
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="policies" className="mt-6">

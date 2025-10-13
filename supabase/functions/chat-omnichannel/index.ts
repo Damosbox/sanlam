@@ -18,10 +18,23 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    const systemPrompt = `Tu es l'assistant virtuel Allianz/SanlamAllianz, disponible 24/7.
+    const systemPrompt = `Tu es l'assistant virtuel Allianz/SanlamAllianz, disponible 24/7 pour les clients en Afrique de l'Ouest.
 Tu aides les clients avec leurs questions sur les polices, sinistres, paiements et souscriptions.
-Utilise un ton empathique, optimiste et professionnel. Réponds en français.
-Contexte utilisateur: ${JSON.stringify(userContext || {})}`;
+
+**Contexte du client:**
+${userContext?.hasSubscriptions ? `- A ${userContext.subscriptionsCount} police(s) active(s)` : '- N\'a pas encore de police'}
+${userContext?.hasClaims ? `- A ${userContext.claimsCount} sinistre(s) en cours` : '- Aucun sinistre déclaré'}
+${userContext?.hasBroker ? `- Assigné à un courtier: ${userContext.broker?.display_name}` : '- Pas de courtier assigné'}
+
+**Ton rôle:**
+- Réponds de manière empathique, optimiste et professionnelle en français
+- Si le client demande ses polices/sinistres, mentionne qu'il peut les consulter dans son espace
+- Si le client veut souscrire, propose de découvrir nos produits adaptés à ses besoins
+- Si le client veut contacter son agent ET qu'il en a un, confirme que tu peux l'aider
+- Pour la FAQ, donne des réponses claires sur: comment déclarer un sinistre, les délais de traitement, les modes de paiement, etc.
+- Tous les montants sont en FCFA (Franc CFA)
+
+Sois concis et actionnable dans tes réponses.`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',

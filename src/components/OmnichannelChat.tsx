@@ -369,22 +369,23 @@ export const OmnichannelChat = () => {
       {!isOpen && (
         <Button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 rounded-full w-14 h-14 shadow-lg"
+          className="fixed bottom-6 right-6 rounded-full w-14 h-14 shadow-lg hover:scale-110 transition-transform"
           size="icon"
+          data-chat-widget
         >
           <MessageCircle className="w-6 h-6" />
         </Button>
       )}
 
-      {/* Chat Window */}
+      {/* Chat Window - Taille réduite et responsive */}
       {isOpen && (
-        <Card className="fixed bottom-6 right-6 w-96 h-[500px] flex flex-col shadow-xl">
-          {/* Header */}
-          <div className="p-4 border-b flex items-center justify-between gradient-activated text-white rounded-t-lg">
+        <Card className="fixed bottom-6 right-6 w-80 sm:w-96 h-[450px] sm:h-[500px] flex flex-col shadow-xl animate-scale-in z-50">
+          {/* Header - Plus compact */}
+          <div className="p-3 border-b flex items-center justify-between gradient-activated text-white rounded-t-lg">
             <div className="flex items-center gap-2">
               <Bot className="w-5 h-5" />
               <div>
-                <h3 className="font-semibold">Assistant Allianz</h3>
+                <h3 className="font-semibold text-sm">Assistant Allianz</h3>
                 <p className="text-xs text-white/80">Support 24/7</p>
               </div>
             </div>
@@ -392,9 +393,9 @@ export const OmnichannelChat = () => {
               variant="ghost"
               size="icon"
               onClick={() => setIsOpen(false)}
-              className="text-white hover:bg-white/20"
+              className="text-white hover:bg-white/20 h-8 w-8"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </Button>
           </div>
 

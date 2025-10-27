@@ -20,3 +20,12 @@ verify_jwt = false
 
 [functions.create-mock-clients]
 verify_jwt = false
+
+[functions.loyalty-ai-missions]
+verify_jwt = true
+
+[functions.loyalty-process-action]
+verify_jwt = false
+
+[functions.loyalty-claim-reward]
+verify_jwt = true

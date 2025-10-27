@@ -4,7 +4,7 @@ import { StatCard } from "@/components/StatCard";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, FileText, AlertCircle, Sparkles, MessageCircle, CreditCard, TrendingUp, Clock, Plus } from "lucide-react";
+import { Shield, FileText, AlertCircle, Sparkles, MessageCircle, CreditCard, TrendingUp, Clock, Plus, Trophy } from "lucide-react";
 import dashboardImage from "@/assets/dashboard-preview.jpg";
 import { AIDiagnostic } from "@/components/AIDiagnostic";
 import { TwoStepSubscription } from "@/components/TwoStepSubscription";
@@ -15,6 +15,10 @@ import { PeopleLikeYouRecommendations } from "@/components/PeopleLikeYouRecommen
 import { UserAttributesForm } from "@/components/UserAttributesForm";
 import { CustomerSubscriptionsTable } from "@/components/CustomerSubscriptionsTable";
 import { DynamicFormRenderer } from "@/components/DynamicFormRenderer";
+import { LoyaltyDashboard } from "@/components/loyalty/LoyaltyDashboard";
+import { MissionsList } from "@/components/loyalty/MissionsList";
+import { RewardsMarketplace } from "@/components/loyalty/RewardsMarketplace";
+import { ReferralProgram } from "@/components/loyalty/ReferralProgram";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -336,13 +340,33 @@ const B2C = () => {
 
         {/* Features Tabs */}
         <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="mb-8">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
+            <TabsTrigger value="loyalty"><Trophy className="w-4 h-4 mr-1" />Fidélité</TabsTrigger>
+            <TabsTrigger value="loyalty-missions">Missions</TabsTrigger>
+            <TabsTrigger value="loyalty-rewards">Récompenses</TabsTrigger>
+            <TabsTrigger value="loyalty-referral">Parrainage</TabsTrigger>
             <TabsTrigger value="diagnostic">Diagnostic IA</TabsTrigger>
             <TabsTrigger value="subscribe">Souscrire</TabsTrigger>
             <TabsTrigger value="claim">Sinistre OCR</TabsTrigger>
             <TabsTrigger value="policies">Mes polices</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="loyalty" className="mt-6">
+            <LoyaltyDashboard />
+          </TabsContent>
+
+          <TabsContent value="loyalty-missions" className="mt-6">
+            <MissionsList />
+          </TabsContent>
+
+          <TabsContent value="loyalty-rewards" className="mt-6">
+            <RewardsMarketplace />
+          </TabsContent>
+
+          <TabsContent value="loyalty-referral" className="mt-6">
+            <ReferralProgram />
+          </TabsContent>
 
           <TabsContent value="diagnostic" className="mt-6">
             <AIDiagnostic />

@@ -368,6 +368,225 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_levels: {
+        Row: {
+          benefits: Json
+          color_theme: string
+          created_at: string
+          display_order: number
+          icon: string | null
+          id: string
+          level_name: Database["public"]["Enums"]["loyalty_level"]
+          min_points_required: number
+        }
+        Insert: {
+          benefits?: Json
+          color_theme: string
+          created_at?: string
+          display_order: number
+          icon?: string | null
+          id?: string
+          level_name: Database["public"]["Enums"]["loyalty_level"]
+          min_points_required: number
+        }
+        Update: {
+          benefits?: Json
+          color_theme?: string
+          created_at?: string
+          display_order?: number
+          icon?: string | null
+          id?: string
+          level_name?: Database["public"]["Enums"]["loyalty_level"]
+          min_points_required?: number
+        }
+        Relationships: []
+      }
+      loyalty_missions: {
+        Row: {
+          badge_reward: Json | null
+          created_at: string
+          description: string
+          id: string
+          is_active: boolean
+          is_recurring: boolean
+          mission_type: Database["public"]["Enums"]["mission_type"]
+          name: string
+          points_reward: number
+          priority: number
+          recurrence_period: Database["public"]["Enums"]["recurrence_period"]
+          requirements: Json
+          target_audience: Json
+          updated_at: string
+        }
+        Insert: {
+          badge_reward?: Json | null
+          created_at?: string
+          description: string
+          id?: string
+          is_active?: boolean
+          is_recurring?: boolean
+          mission_type: Database["public"]["Enums"]["mission_type"]
+          name: string
+          points_reward: number
+          priority?: number
+          recurrence_period?: Database["public"]["Enums"]["recurrence_period"]
+          requirements?: Json
+          target_audience?: Json
+          updated_at?: string
+        }
+        Update: {
+          badge_reward?: Json | null
+          created_at?: string
+          description?: string
+          id?: string
+          is_active?: boolean
+          is_recurring?: boolean
+          mission_type?: Database["public"]["Enums"]["mission_type"]
+          name?: string
+          points_reward?: number
+          priority?: number
+          recurrence_period?: Database["public"]["Enums"]["recurrence_period"]
+          requirements?: Json
+          target_audience?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      loyalty_profiles: {
+        Row: {
+          badges_earned: Json
+          created_at: string
+          current_level: Database["public"]["Enums"]["loyalty_level"]
+          id: string
+          level_progress: number
+          lifetime_points: number
+          points_to_next_level: number
+          referral_code: string
+          referral_count: number
+          total_points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          badges_earned?: Json
+          created_at?: string
+          current_level?: Database["public"]["Enums"]["loyalty_level"]
+          id?: string
+          level_progress?: number
+          lifetime_points?: number
+          points_to_next_level?: number
+          referral_code: string
+          referral_count?: number
+          total_points?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          badges_earned?: Json
+          created_at?: string
+          current_level?: Database["public"]["Enums"]["loyalty_level"]
+          id?: string
+          level_progress?: number
+          lifetime_points?: number
+          points_to_next_level?: number
+          referral_code?: string
+          referral_count?: number
+          total_points?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      loyalty_rewards: {
+        Row: {
+          cost_in_points: number
+          created_at: string
+          description: string
+          expiry_date: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          name: string
+          partner_info: Json | null
+          required_level: Database["public"]["Enums"]["loyalty_level"]
+          reward_type: Database["public"]["Enums"]["reward_type"]
+          reward_value: number | null
+          stock_available: number | null
+          terms_conditions: string | null
+          updated_at: string
+        }
+        Insert: {
+          cost_in_points: number
+          created_at?: string
+          description: string
+          expiry_date?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name: string
+          partner_info?: Json | null
+          required_level?: Database["public"]["Enums"]["loyalty_level"]
+          reward_type: Database["public"]["Enums"]["reward_type"]
+          reward_value?: number | null
+          stock_available?: number | null
+          terms_conditions?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cost_in_points?: number
+          created_at?: string
+          description?: string
+          expiry_date?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name?: string
+          partner_info?: Json | null
+          required_level?: Database["public"]["Enums"]["loyalty_level"]
+          reward_type?: Database["public"]["Enums"]["reward_type"]
+          reward_value?: number | null
+          stock_available?: number | null
+          terms_conditions?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      loyalty_transactions: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          metadata: Json | null
+          points_amount: number
+          source_id: string | null
+          source_type: Database["public"]["Enums"]["transaction_source"]
+          transaction_type: Database["public"]["Enums"]["transaction_type"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          metadata?: Json | null
+          points_amount: number
+          source_id?: string | null
+          source_type: Database["public"]["Enums"]["transaction_source"]
+          transaction_type: Database["public"]["Enums"]["transaction_type"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          metadata?: Json | null
+          points_amount?: number
+          source_id?: string | null
+          source_type?: Database["public"]["Enums"]["transaction_source"]
+          transaction_type?: Database["public"]["Enums"]["transaction_type"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           base_premium: number
@@ -437,6 +656,39 @@ export type Database = {
           phone?: string | null
           provider?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      referral_tracking: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          referral_code: string
+          referred_user_id: string | null
+          referrer_id: string
+          reward_earned: number | null
+          status: Database["public"]["Enums"]["referral_status"]
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          referral_code: string
+          referred_user_id?: string | null
+          referrer_id: string
+          reward_earned?: number | null
+          status?: Database["public"]["Enums"]["referral_status"]
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          referral_code?: string
+          referred_user_id?: string | null
+          referrer_id?: string
+          reward_earned?: number | null
+          status?: Database["public"]["Enums"]["referral_status"]
         }
         Relationships: []
       }
@@ -539,6 +791,97 @@ export type Database = {
         }
         Relationships: []
       }
+      user_missions: {
+        Row: {
+          assigned_at: string
+          completed_at: string | null
+          completion_data: Json | null
+          expires_at: string | null
+          id: string
+          mission_id: string
+          points_earned: number | null
+          progress: number
+          status: Database["public"]["Enums"]["mission_status"]
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          completed_at?: string | null
+          completion_data?: Json | null
+          expires_at?: string | null
+          id?: string
+          mission_id: string
+          points_earned?: number | null
+          progress?: number
+          status?: Database["public"]["Enums"]["mission_status"]
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          completed_at?: string | null
+          completion_data?: Json | null
+          expires_at?: string | null
+          id?: string
+          mission_id?: string
+          points_earned?: number | null
+          progress?: number
+          status?: Database["public"]["Enums"]["mission_status"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_missions_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_missions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_rewards: {
+        Row: {
+          claimed_at: string
+          expires_at: string | null
+          id: string
+          redeemed_at: string | null
+          redemption_code: string
+          redemption_data: Json | null
+          reward_id: string
+          status: Database["public"]["Enums"]["user_reward_status"]
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          expires_at?: string | null
+          id?: string
+          redeemed_at?: string | null
+          redemption_code: string
+          redemption_data?: Json | null
+          reward_id: string
+          status?: Database["public"]["Enums"]["user_reward_status"]
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string
+          expires_at?: string | null
+          id?: string
+          redeemed_at?: string | null
+          redemption_code?: string
+          redemption_data?: Json | null
+          reward_id?: string
+          status?: Database["public"]["Enums"]["user_reward_status"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_rewards_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_rewards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -565,6 +908,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_loyalty_level: {
+        Args: { points: number }
+        Returns: Database["public"]["Enums"]["loyalty_level"]
+      }
+      generate_referral_code: { Args: never; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -597,6 +945,33 @@ export type Database = {
         | "Autre"
       deployment_channel: "B2C" | "B2B"
       form_category: "vie" | "non-vie"
+      loyalty_level: "bronze" | "silver" | "gold" | "platinum"
+      mission_status: "available" | "in_progress" | "completed" | "expired"
+      mission_type:
+        | "payment"
+        | "referral"
+        | "profile_update"
+        | "quiz"
+        | "claim_free"
+        | "social_share"
+        | "document_upload"
+        | "subscription"
+        | "renewal"
+        | "app_download"
+        | "survey"
+      recurrence_period: "daily" | "weekly" | "monthly" | "yearly" | "once"
+      referral_status: "pending" | "completed" | "rewarded"
+      reward_type:
+        | "discount"
+        | "gift_card"
+        | "premium_reduction"
+        | "free_option"
+        | "partner_voucher"
+        | "lottery_entry"
+        | "priority_service"
+      transaction_source: "mission" | "referral" | "bonus" | "admin" | "reward"
+      transaction_type: "earned" | "spent" | "expired" | "adjusted"
+      user_reward_status: "pending" | "active" | "redeemed" | "expired"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -745,6 +1120,35 @@ export const Constants = {
       ],
       deployment_channel: ["B2C", "B2B"],
       form_category: ["vie", "non-vie"],
+      loyalty_level: ["bronze", "silver", "gold", "platinum"],
+      mission_status: ["available", "in_progress", "completed", "expired"],
+      mission_type: [
+        "payment",
+        "referral",
+        "profile_update",
+        "quiz",
+        "claim_free",
+        "social_share",
+        "document_upload",
+        "subscription",
+        "renewal",
+        "app_download",
+        "survey",
+      ],
+      recurrence_period: ["daily", "weekly", "monthly", "yearly", "once"],
+      referral_status: ["pending", "completed", "rewarded"],
+      reward_type: [
+        "discount",
+        "gift_card",
+        "premium_reduction",
+        "free_option",
+        "partner_voucher",
+        "lottery_entry",
+        "priority_service",
+      ],
+      transaction_source: ["mission", "referral", "bonus", "admin", "reward"],
+      transaction_type: ["earned", "spent", "expired", "adjusted"],
+      user_reward_status: ["pending", "active", "redeemed", "expired"],
     },
   },
 } as const

@@ -9,6 +9,7 @@ import { BrokerClients } from "@/components/BrokerClients";
 import { BrokerAIInsights } from "@/components/BrokerAIInsights";
 import { BrokerSubscriptions } from "@/components/BrokerSubscriptions";
 import { DynamicFormRenderer } from "@/components/DynamicFormRenderer";
+import { CompetitiveAnalyzer } from "@/components/CompetitiveAnalyzer";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
@@ -78,7 +79,7 @@ const B2B = () => {
         {/* Main Management Tabs */}
         <div className="mt-12">
           <Tabs defaultValue="claims" className="space-y-6">
-            <TabsList className="grid w-full max-w-[800px] grid-cols-4">
+            <TabsList className="grid w-full max-w-[1000px] grid-cols-5">
               <TabsTrigger value="claims" className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
                 Sinistres
@@ -90,6 +91,10 @@ const B2B = () => {
               <TabsTrigger value="clients" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
                 Clients
+              </TabsTrigger>
+              <TabsTrigger value="competitive" className="flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                Analyse Concurrentielle
               </TabsTrigger>
               <TabsTrigger value="communication" className="flex items-center gap-2">
                 <MessageSquare className="w-4 h-4" />
@@ -128,6 +133,10 @@ const B2B = () => {
                   <BrokerClients />
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="competitive" className="space-y-4">
+              <CompetitiveAnalyzer />
             </TabsContent>
 
             <TabsContent value="communication" className="space-y-4">

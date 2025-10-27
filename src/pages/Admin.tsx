@@ -12,6 +12,7 @@ import { AdminSubscriptionsTable } from "@/components/AdminSubscriptionsTable";
 import { AdminDataGenerator } from "@/components/AdminDataGenerator";
 import { AdminFormBuilder } from "@/components/admin/AdminFormBuilder";
 import { FormTemplatesList } from "@/components/admin/FormTemplatesList";
+import { CompetitiveAnalyzer } from "@/components/CompetitiveAnalyzer";
 import { useState } from "react";
 
 const Admin = () => {
@@ -50,7 +51,7 @@ const Admin = () => {
         {/* Main Management Tabs */}
         <div className="mt-12">
           <Tabs defaultValue="claims" className="space-y-6">
-            <TabsList className="grid w-full max-w-[1200px] grid-cols-6">
+            <TabsList className="grid w-full max-w-[1200px] grid-cols-7">
               <TabsTrigger value="claims" className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
                 Sinistres
@@ -70,6 +71,10 @@ const Admin = () => {
               <TabsTrigger value="ai" className="flex items-center gap-2">
                 <Brain className="w-4 h-4" />
                 IA & Conformité
+              </TabsTrigger>
+              <TabsTrigger value="competitive" className="flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                Analyse Concurrentielle
               </TabsTrigger>
               <TabsTrigger value="forms" className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
@@ -270,6 +275,10 @@ const Admin = () => {
                   </div>
                 </div>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="competitive" className="space-y-4">
+              <CompetitiveAnalyzer />
             </TabsContent>
 
             <TabsContent value="forms" className="space-y-4">

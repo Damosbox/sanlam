@@ -193,6 +193,60 @@ export type Database = {
           },
         ]
       }
+      competitive_analyses: {
+        Row: {
+          commercial_arguments: Json | null
+          comparison_table: Json | null
+          competitor_name: string | null
+          created_at: string
+          created_by: string
+          document_type: string
+          extracted_data: Json
+          id: string
+          original_filename: string
+          positioning_scores: Json
+          recommendations: Json | null
+          status: string
+          strengths: Json | null
+          updated_at: string
+          weaknesses: Json | null
+        }
+        Insert: {
+          commercial_arguments?: Json | null
+          comparison_table?: Json | null
+          competitor_name?: string | null
+          created_at?: string
+          created_by: string
+          document_type: string
+          extracted_data?: Json
+          id?: string
+          original_filename: string
+          positioning_scores?: Json
+          recommendations?: Json | null
+          status?: string
+          strengths?: Json | null
+          updated_at?: string
+          weaknesses?: Json | null
+        }
+        Update: {
+          commercial_arguments?: Json | null
+          comparison_table?: Json | null
+          competitor_name?: string | null
+          created_at?: string
+          created_by?: string
+          document_type?: string
+          extracted_data?: Json
+          id?: string
+          original_filename?: string
+          positioning_scores?: Json
+          recommendations?: Json | null
+          status?: string
+          strengths?: Json | null
+          updated_at?: string
+          weaknesses?: Json | null
+        }
+        Relationships: []
+      }
       damage_zones: {
         Row: {
           claim_id: string

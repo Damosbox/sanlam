@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, Circle, Clock, Sparkles, Loader2 } from "lucide-react";
+import { CheckCircle2, Circle, Clock, Sparkles, Loader2, Brain } from "lucide-react";
+import { QuizPreventionModal } from "./QuizPreventionModal";
 
 interface UserMission {
   id: string;
@@ -26,6 +27,7 @@ export const MissionsList = () => {
   const [missions, setMissions] = useState<UserMission[]>([]);
   const [loading, setLoading] = useState(true);
   const [generatingAI, setGeneratingAI] = useState(false);
+  const [showQuiz, setShowQuiz] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -132,32 +134,43 @@ export const MissionsList = () => {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-lg font-semibold">Vos missions</h3>
-          <p className="text-sm text-muted-foreground">
-            Complétez des missions pour gagner des points
-          </p>
+    <>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h3 className="text-lg font-semibold">Vos missions</h3>
+            <p className="text-sm text-muted-foreground">
+              Complétez des missions pour gagner des points
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => setShowQuiz(true)}
+              variant="outline"
+              className="gap-2"
+            >
+              <Brain className="w-4 h-4" />
+              Quiz Prévention
+            </Button>
+            <Button 
+              onClick={generateAIMissions} 
+              disabled={generatingAI}
+              className="gap-2"
+            >
+              {generatingAI ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Génération...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  Missions IA
+                </>
+              )}
+            </Button>
+          </div>
         </div>
-        <Button 
-          onClick={generateAIMissions} 
-          disabled={generatingAI}
-          className="gap-2"
-        >
-          {generatingAI ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Génération...
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-4 h-4" />
-              Missions IA
-            </>
-          )}
-        </Button>
-      </div>
 
       {missions.length === 0 ? (
         <Card>
@@ -233,5 +246,14 @@ export const MissionsList = () => {
         </div>
       )}
     </div>
+
+    <QuizPreventionModal 
+      open={showQuiz} 
+      onOpenChange={setShowQuiz}
+      onComplete={() => {
+        fetchMissions();
+      }}
+    />
+  </>
   );
 };

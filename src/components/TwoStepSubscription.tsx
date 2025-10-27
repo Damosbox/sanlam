@@ -35,6 +35,7 @@ export const TwoStepSubscription = ({ selectedProduct: preSelectedProduct }: { s
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(preSelectedProduct || null);
   const [customizedCoverages, setCustomizedCoverages] = useState<Record<string, Coverage>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loyaltyDiscount, setLoyaltyDiscount] = useState(0);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -49,6 +50,38 @@ export const TwoStepSubscription = ({ selectedProduct: preSelectedProduct }: { s
       setStep(1); // Go directly to customization step
     }
   }, [preSelectedProduct]);
+
+  // Fetch loyalty profile to get discount
+  useEffect(() => {
+    const fetchLoyaltyDiscount = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: loyaltyProfile } = await supabase
+          .from('loyalty_profiles')
+          .select('current_level')
+          .eq('user_id', user.id)
+          .single();
+
+        if (loyaltyProfile) {
+          const { data: levelData } = await supabase
+            .from('loyalty_levels')
+            .select('benefits')
+            .eq('level_name', loyaltyProfile.current_level)
+            .single();
+
+          if (levelData?.benefits && typeof levelData.benefits === 'object' && 'discount' in levelData.benefits) {
+            setLoyaltyDiscount((levelData.benefits as any).discount || 0);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching loyalty discount:', error);
+      }
+    };
+
+    fetchLoyaltyDiscount();
+  }, []);
 
   // Fetch all products
   const { data: products, isLoading } = useQuery({
@@ -152,6 +185,19 @@ export const TwoStepSubscription = ({ selectedProduct: preSelectedProduct }: { s
         throw insertError;
       }
 
+      // Trigger loyalty mission completion in background
+      supabase.functions.invoke('loyalty-process-action', {
+        body: {
+          actionType: 'subscription',
+          userId: user.id,
+          metadata: {
+            productId: selectedProduct.id,
+            policyNumber,
+            premium: calculateTotalPremium(),
+          }
+        }
+      }).catch(err => console.error('Loyalty action error:', err));
+
       toast({
         title: "Souscription réussie",
         description: `Votre police ${policyNumber} a été créée avec succès.`,
@@ -193,7 +239,13 @@ export const TwoStepSubscription = ({ selectedProduct: preSelectedProduct }: { s
         total += coverage.price_modifier;
       }
     });
-    return total;
+    
+    // Apply loyalty discount
+    if (loyaltyDiscount > 0) {
+      total = total * (1 - loyaltyDiscount / 100);
+    }
+    
+    return Math.round(total);
   };
 
   if (isLoading) {
@@ -361,7 +413,15 @@ export const TwoStepSubscription = ({ selectedProduct: preSelectedProduct }: { s
                 </div>
               </div>
               <div className="pt-4 border-t">
-                <p className="text-sm text-muted-foreground mb-1">Prime mensuelle</p>
+                {loyaltyDiscount > 0 && (
+                  <div className="mb-2 p-2 bg-green-50 rounded flex items-center justify-between">
+                    <span className="text-sm text-green-800">🎉 Réduction fidélité ({loyaltyDiscount}%)</span>
+                    <span className="font-semibold text-green-800">
+                      -{Math.round((selectedProduct?.base_premium || 0) * loyaltyDiscount / 100).toLocaleString()} FCFA
+                    </span>
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground mb-1">Prime mensuelle finale</p>
                 <p className="text-2xl font-bold text-primary">
                   {calculateTotalPremium().toLocaleString()} FCFA
                 </p>

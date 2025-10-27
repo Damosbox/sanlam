@@ -3,11 +3,12 @@ import { StatCard } from "@/components/StatCard";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, Shield, TrendingUp, AlertCircle, Database, Zap, FileText, Users, GitBranch } from "lucide-react";
+import { Brain, Shield, TrendingUp, AlertCircle, Database, Zap, FileText, Users, GitBranch, Trophy } from "lucide-react";
 import { AdminClaimsTable } from "@/components/AdminClaimsTable";
 import { AdminUsersTable } from "@/components/AdminUsersTable";
 import { AdminAnalytics } from "@/components/AdminAnalytics";
 import { AdminSubscriptionsTable } from "@/components/AdminSubscriptionsTable";
+import { AdminLoyalty } from "@/components/admin/AdminLoyalty";
 
 import { AdminDataGenerator } from "@/components/AdminDataGenerator";
 import { AdminFormBuilder } from "@/components/admin/AdminFormBuilder";
@@ -51,7 +52,7 @@ const Admin = () => {
         {/* Main Management Tabs */}
         <div className="mt-12">
           <Tabs defaultValue="claims" className="space-y-6">
-            <TabsList className="grid w-full max-w-[1200px] grid-cols-7">
+            <TabsList className="grid w-full max-w-[1200px] grid-cols-8">
               <TabsTrigger value="claims" className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
                 Sinistres
@@ -63,6 +64,10 @@ const Admin = () => {
               <TabsTrigger value="users" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
                 Utilisateurs
+              </TabsTrigger>
+              <TabsTrigger value="loyalty" className="flex items-center gap-2">
+                <Trophy className="w-4 h-4" />
+                Fidélité
               </TabsTrigger>
               <TabsTrigger value="data" className="flex items-center gap-2">
                 <Database className="w-4 h-4" />
@@ -113,6 +118,10 @@ const Admin = () => {
                   <AdminUsersTable />
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="loyalty" className="space-y-4">
+              <AdminLoyalty />
             </TabsContent>
 
             <TabsContent value="data" className="space-y-4">

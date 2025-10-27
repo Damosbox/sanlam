@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Upload, FileText, Loader2, TrendingUp, TrendingDown, Shield, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,13 +9,36 @@ import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const CompetitiveAnalyzer = () => {
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [competitorName, setCompetitorName] = useState("");
+  const [selectedProductId, setSelectedProductId] = useState<string>("");
+  const [products, setProducts] = useState<any[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState("");
   const [analysis, setAnalysis] = useState<any>(null);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('is_active', true)
+      .order('name');
+    
+    if (error) {
+      console.error('Error fetching products:', error);
+      return;
+    }
+    
+    setProducts(data || []);
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -52,19 +75,22 @@ export const CompetitiveAnalyzer = () => {
     }
 
     setIsAnalyzing(true);
+    setAnalysisProgress("Lecture du document...");
     
     try {
-      // Read file as text (simplified - in production you'd use proper document parsing)
       const reader = new FileReader();
       reader.onload = async (e) => {
         const documentText = e.target?.result as string;
         
+        setAnalysisProgress("Extraction des informations du document concurrent...");
+        
         const { data, error } = await supabase.functions.invoke('analyze-competitor', {
           body: {
-            documentText: documentText.substring(0, 50000), // Limit text length
+            documentText: documentText.substring(0, 50000),
             documentType: file.type,
             filename: file.name,
-            competitorName: competitorName || null
+            competitorName: competitorName || null,
+            productId: selectedProductId || null
           }
         });
 
@@ -73,6 +99,7 @@ export const CompetitiveAnalyzer = () => {
         }
 
         if (data?.success) {
+          setAnalysisProgress("Finalisation de l'analyse...");
           setAnalysis(data.analysis);
           toast({
             title: "Analyse terminée",
@@ -97,6 +124,7 @@ export const CompetitiveAnalyzer = () => {
       });
     } finally {
       setIsAnalyzing(false);
+      setAnalysisProgress("");
     }
   };
 
@@ -149,6 +177,27 @@ export const CompetitiveAnalyzer = () => {
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="product-select">Produit à comparer (optionnel)</Label>
+            <Select 
+              value={selectedProductId} 
+              onValueChange={setSelectedProductId}
+              disabled={isAnalyzing}
+            >
+              <SelectTrigger id="product-select">
+                <SelectValue placeholder="Sélectionner un produit ou laisser vide pour auto-détection" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Auto-détection</SelectItem>
+                {products.map((product) => (
+                  <SelectItem key={product.id} value={product.id}>
+                    {product.name} ({product.category})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="file-upload">Document concurrent (PDF, Word, PowerPoint)</Label>
             <div className="flex items-center gap-4">
               <Input
@@ -167,6 +216,20 @@ export const CompetitiveAnalyzer = () => {
               )}
             </div>
           </div>
+
+          {isAnalyzing && analysisProgress && (
+            <Card className="bg-muted/50">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{analysisProgress}</p>
+                    <Progress value={33} className="mt-2 h-1" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <Button
             onClick={handleAnalyze}
@@ -199,25 +262,56 @@ export const CompetitiveAnalyzer = () => {
           </TabsList>
 
           <TabsContent value="scores" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Scores de Positionnement</CardTitle>
-                <CardDescription>Comparaison par critère (0-100)</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {Object.entries(analysis.positioning_scores || {}).map(([key, score]: [string, any]) => (
-                  <div key={key} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium capitalize">{key}</span>
-                      <span className={`text-2xl font-bold ${getScoreColor(score)}`}>
-                        {score}/100
-                      </span>
-                    </div>
-                    <Progress value={score} className="h-2" />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+            {analysis.product_not_found ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Produit non trouvé</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">{analysis.product_not_found_message}</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                {analysis.compared_product && (
+                  <Card className="bg-primary/5">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Produit comparé</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <p className="font-medium text-lg">{analysis.compared_product.name}</p>
+                        <Badge variant="outline">{analysis.compared_product.category}</Badge>
+                        <p className="text-sm text-muted-foreground mt-2">{analysis.compared_product.description}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Scores de Positionnement</CardTitle>
+                    <CardDescription>
+                      Score du concurrent comparé à notre produit. Plus le score est élevé, plus le concurrent est performant sur ce critère.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {Object.entries(analysis.positioning_scores || {}).map(([key, scoreData]: [string, any]) => (
+                      <div key={key} className="space-y-2 p-3 border rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium capitalize">{key}</span>
+                          <span className={`text-2xl font-bold ${getScoreColor(scoreData.score)}`}>
+                            {scoreData.score}/100
+                          </span>
+                        </div>
+                        <Progress value={scoreData.score} className="h-2" />
+                        <p className="text-sm text-muted-foreground mt-2">{scoreData.explanation}</p>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </>
+            )}
 
             <Card>
               <CardHeader>

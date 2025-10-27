@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { documentText, documentType, filename, competitorName } = await req.json();
+    const { documentText, documentType, filename, competitorName, productId } = await req.json();
     
     console.log('Starting competitive analysis for:', filename);
 
@@ -34,32 +34,75 @@ serve(async (req) => {
       throw new Error('User not authenticated');
     }
 
-    // Fetch our internal products for comparison
-    const { data: internalProducts } = await supabaseClient
-      .from('products')
-      .select('*')
-      .eq('is_active', true);
-
-    const systemPrompt = `Tu es un expert en analyse concurrentielle dans le domaine de l'assurance en Côte d'Ivoire et en Afrique de l'Ouest. 
+    // Get our internal product data for comparison
+    let products;
+    let selectedProduct = null;
     
-Ton rôle est d'analyser un document produit concurrent et de fournir une analyse approfondie pour aider les commerciaux à positionner notre offre.
+    if (productId) {
+      // Fetch specific product
+      const { data: product, error: productError } = await supabaseClient
+        .from('products')
+        .select('*')
+        .eq('id', productId)
+        .eq('is_active', true)
+        .single();
 
-Tu dois extraire et structurer les informations suivantes :
-1. Garanties principales et secondaires
-2. Exclusions notables
-3. Tarifs et fourchettes de prix
-4. Segments cibles
-5. Canaux de distribution
-6. Conditions de souscription
-7. Escomptes et promotions
-8. Packaging et options
+      if (productError || !product) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Produit sélectionné non trouvé' 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        );
+      }
+      
+      selectedProduct = product;
+      products = [product];
+    } else {
+      // Fetch all products for auto-detection
+      const { data: allProducts, error: productsError } = await supabaseClient
+        .from('products')
+        .select('*')
+        .eq('is_active', true);
 
-Ensuite, tu dois comparer avec nos produits internes et fournir :
-- Un score de positionnement (0-100) pour chaque critère : prix, garanties, service, réseau, digitalisation, valeur ajoutée
-- Les forces du produit concurrent
-- Les faiblesses du produit concurrent
-- Des arguments commerciaux concrets pour contre-attaquer
-- Des recommandations de valeur ajoutée spécifiques
+      if (productsError) {
+        throw new Error(`Failed to fetch products: ${productsError.message}`);
+      }
+      
+      products = allProducts;
+    }
+
+    const systemPrompt = `Tu es un expert en analyse concurrentielle dans le secteur de l'assurance en Côte d'Ivoire.
+Ton rôle est d'analyser une fiche produit concurrent et de la comparer avec nos produits internes.
+
+${productId ? 
+  `Produit à comparer (sélectionné par l'utilisateur):
+${JSON.stringify(selectedProduct, null, 2)}` 
+  : 
+  `Nos produits disponibles:
+${JSON.stringify(products, null, 2)}
+
+Tu dois d'abord identifier automatiquement le type de produit concurrent (vie ou non-vie) et déterminer quel produit de notre catalogue correspond le mieux pour la comparaison.
+Si aucun produit ne correspond au type identifié, tu dois retourner product_not_found: true avec un message explicatif.`
+}
+
+Instructions:
+1. Extraire du document concurrent: garanties, exclusions, tarifs, segments cibles, canaux de distribution, conditions de souscription.
+2. ${productId ? 'Comparer avec le produit sélectionné.' : 'Identifier automatiquement le type de produit (vie ou non-vie) du concurrent et trouver le produit correspondant dans notre catalogue.'}
+3. Attribuer des scores de positionnement (0-100) pour chaque critère avec EXPLICATION DÉTAILLÉE:
+   - prix: Score du concurrent sur le prix (100 = très compétitif, 0 = très cher)
+   - garanties: Étendue et qualité des garanties du concurrent
+   - service: Qualité du service client du concurrent
+   - réseau: Étendue du réseau de distribution
+   - digitalisation: Niveau de digitalisation
+   - valeur_ajoutee: Services additionnels proposés
+   
+   IMPORTANT: Pour chaque score, fournis une "explanation" qui détaille POURQUOI ce score, en comparant le concurrent à notre produit de façon concrète.
+   
+4. Identifier forces et faiblesses du concurrent PAR RAPPORT À NOTRE PRODUIT.
+5. Générer des arguments commerciaux prêts à utiliser pour VALORISER NOTRE PRODUIT face au concurrent.
+6. Proposer des recommandations d'actions concrètes pour nous différencier.
 
 Sois précis, factuel et orienté action commerciale.`;
 
@@ -71,9 +114,6 @@ ${competitorName ? `Concurrent : ${competitorName}` : ''}
 
 Contenu du document :
 ${documentText}
-
-Nos produits internes pour comparaison :
-${JSON.stringify(internalProducts, null, 2)}
 
 Fournis une analyse complète structurée.`;
 
@@ -92,6 +132,18 @@ Fournis une analyse complète structurée.`;
             parameters: {
               type: "object",
               properties: {
+                product_not_found: { type: "boolean", description: "True si aucun produit ne correspond au type identifié" },
+                product_not_found_message: { type: "string", description: "Message explicatif si produit non trouvé" },
+                detected_type: { type: "string", description: "Type de produit détecté: vie ou non-vie" },
+                compared_product: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string" },
+                    name: { type: "string" },
+                    category: { type: "string" },
+                    description: { type: "string" }
+                  }
+                },
                 extracted_data: {
                   type: "object",
                   properties: {
@@ -109,12 +161,54 @@ Fournis une analyse complète structurée.`;
                 positioning_scores: {
                   type: "object",
                   properties: {
-                    prix: { type: "number", minimum: 0, maximum: 100 },
-                    garanties: { type: "number", minimum: 0, maximum: 100 },
-                    service: { type: "number", minimum: 0, maximum: 100 },
-                    reseau: { type: "number", minimum: 0, maximum: 100 },
-                    digitalisation: { type: "number", minimum: 0, maximum: 100 },
-                    valeur_ajoutee: { type: "number", minimum: 0, maximum: 100 }
+                    prix: { 
+                      type: "object",
+                      properties: {
+                        score: { type: "number", minimum: 0, maximum: 100 },
+                        explanation: { type: "string" }
+                      },
+                      required: ["score", "explanation"]
+                    },
+                    garanties: { 
+                      type: "object",
+                      properties: {
+                        score: { type: "number", minimum: 0, maximum: 100 },
+                        explanation: { type: "string" }
+                      },
+                      required: ["score", "explanation"]
+                    },
+                    service: { 
+                      type: "object",
+                      properties: {
+                        score: { type: "number", minimum: 0, maximum: 100 },
+                        explanation: { type: "string" }
+                      },
+                      required: ["score", "explanation"]
+                    },
+                    reseau: { 
+                      type: "object",
+                      properties: {
+                        score: { type: "number", minimum: 0, maximum: 100 },
+                        explanation: { type: "string" }
+                      },
+                      required: ["score", "explanation"]
+                    },
+                    digitalisation: { 
+                      type: "object",
+                      properties: {
+                        score: { type: "number", minimum: 0, maximum: 100 },
+                        explanation: { type: "string" }
+                      },
+                      required: ["score", "explanation"]
+                    },
+                    valeur_ajoutee: { 
+                      type: "object",
+                      properties: {
+                        score: { type: "number", minimum: 0, maximum: 100 },
+                        explanation: { type: "string" }
+                      },
+                      required: ["score", "explanation"]
+                    }
                   },
                   required: ["prix", "garanties", "service", "reseau", "digitalisation", "valeur_ajoutee"]
                 },

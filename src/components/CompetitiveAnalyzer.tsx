@@ -90,7 +90,7 @@ export const CompetitiveAnalyzer = () => {
             documentType: file.type,
             filename: file.name,
             competitorName: competitorName || null,
-            productId: selectedProductId || null
+            productId: (selectedProductId && selectedProductId !== "auto") ? selectedProductId : null
           }
         });
 
@@ -184,10 +184,10 @@ export const CompetitiveAnalyzer = () => {
               disabled={isAnalyzing}
             >
               <SelectTrigger id="product-select">
-                <SelectValue placeholder="Sélectionner un produit ou laisser vide pour auto-détection" />
+                <SelectValue placeholder="Auto-détection du produit concurrent" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Auto-détection</SelectItem>
+              <SelectContent className="bg-background z-50">
+                <SelectItem value="auto">Auto-détection</SelectItem>
                 {products.map((product) => (
                   <SelectItem key={product.id} value={product.id}>
                     {product.name} ({product.category})

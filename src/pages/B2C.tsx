@@ -35,6 +35,8 @@ const B2C = () => {
   const [profile, setProfile] = useState<any>(null);
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [claims, setClaims] = useState<any[]>([]);
+  const [loyaltyPoints, setLoyaltyPoints] = useState<number>(0);
+  const [loyaltyLevel, setLoyaltyLevel] = useState<string>('bronze');
   const [loading, setLoading] = useState(true);
   
   // Get user role
@@ -115,6 +117,18 @@ const B2C = () => {
         if (!claimsError && claimsData) {
           setClaims(claimsData);
         }
+
+        // Fetch loyalty profile
+        const { data: loyaltyData, error: loyaltyError } = await supabase
+          .from('loyalty_profiles')
+          .select('total_points, current_level')
+          .eq('user_id', user.id)
+          .single();
+
+        if (!loyaltyError && loyaltyData) {
+          setLoyaltyPoints(loyaltyData.total_points);
+          setLoyaltyLevel(loyaltyData.current_level);
+        }
       }
       setLoading(false);
     };
@@ -158,6 +172,18 @@ const B2C = () => {
             .order('created_at', { ascending: false })
             .then(({ data }) => {
               if (data) setClaims(data);
+            });
+
+          supabase
+            .from('loyalty_profiles')
+            .select('total_points, current_level')
+            .eq('user_id', session.user.id)
+            .single()
+            .then(({ data }) => {
+              if (data) {
+                setLoyaltyPoints(data.total_points);
+                setLoyaltyLevel(data.current_level);
+              }
             });
         }, 0);
       } else {
@@ -316,10 +342,10 @@ const B2C = () => {
             variant={activeSubscriptionsCount > 0 ? "success" : "default"}
           />
           <StatCard
-            label={annualSavings > 0 ? "Économies annuelles" : "Montant mensuel"}
-            value={annualSavings > 0 ? `${annualSavings.toLocaleString('fr-FR')} FCFA` : `${totalMonthlyPremium.toLocaleString('fr-FR')} FCFA`}
-            icon={TrendingUp}
-            trend={annualSavings > 0 ? "Multi-polices (-10%)" : "Total de vos primes"}
+            label="Points de fidélité"
+            value={loyaltyPoints.toLocaleString('fr-FR')}
+            icon={Trophy}
+            trend={`Niveau ${loyaltyLevel.charAt(0).toUpperCase() + loyaltyLevel.slice(1)}`}
             variant="success"
           />
           <StatCard
@@ -330,11 +356,11 @@ const B2C = () => {
             variant={pendingClaimsCount > 0 ? "warning" : "success"}
           />
           <StatCard
-            label="Prochain paiement"
-            value={nextPayment.text}
-            icon={Clock}
-            trend={subscriptions.some(sub => sub.payment_method) ? `Auto. ${subscriptions.find(sub => sub.payment_method)?.payment_method}` : "À configurer"}
-            variant={nextPayment.days > 0 && nextPayment.days <= 7 ? "warning" : "default"}
+            label={annualSavings > 0 ? "Économies annuelles" : "Prochain paiement"}
+            value={annualSavings > 0 ? `${annualSavings.toLocaleString('fr-FR')} FCFA` : nextPayment.text}
+            icon={annualSavings > 0 ? TrendingUp : Clock}
+            trend={annualSavings > 0 ? "Multi-polices (-10%)" : subscriptions.some(sub => sub.payment_method) ? `Auto. ${subscriptions.find(sub => sub.payment_method)?.payment_method}` : "À configurer"}
+            variant={annualSavings > 0 ? "success" : (nextPayment.days > 0 && nextPayment.days <= 7 ? "warning" : "default")}
           />
         </div>
 

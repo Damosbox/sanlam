@@ -143,14 +143,36 @@ export const RewardsMarketplace = () => {
 
   return (
     <>
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h3 className="text-lg font-semibold">Boutique de récompenses</h3>
-            <p className="text-sm text-muted-foreground">
-              Vous avez {profile?.total_points.toLocaleString()} points
-            </p>
-          </div>
+      <div className="space-y-6">
+        {/* Points Display Card */}
+        <Card className="bg-gradient-to-br from-primary/10 via-secondary/10 to-primary/5 border-primary/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Vos points de fidélité</p>
+                <h2 className="text-4xl font-bold text-primary">
+                  {profile?.total_points.toLocaleString() || 0}
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Niveau: <span className="font-semibold text-foreground">{getLevelLabel(profile?.current_level || 'bronze')}</span>
+                </p>
+              </div>
+              <div className="text-right">
+                <Gift className="w-16 h-16 text-primary/40 mb-2" />
+                <p className="text-xs text-muted-foreground">
+                  {rewards.filter(r => canClaimReward(r)).length} récompenses<br />disponibles
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Rewards Title */}
+        <div>
+          <h3 className="text-xl font-semibold mb-2">Boutique de récompenses</h3>
+          <p className="text-sm text-muted-foreground">
+            Échangez vos points contre des récompenses exclusives
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

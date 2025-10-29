@@ -10,6 +10,8 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { ClientValueNote } from "@/components/ClientValueNote";
 
 export const CompetitiveAnalyzer = () => {
   const { toast } = useToast();
@@ -20,6 +22,13 @@ export const CompetitiveAnalyzer = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState("");
   const [analysis, setAnalysis] = useState<any>(null);
+  const [clientContext, setClientContext] = useState("");
+  const [companyStrengths, setCompanyStrengths] = useState(`- Délai moyen de règlement < 10 jours sur sinistres simples
+- Réseau garages agréés 300+ en Côte d'Ivoire
+- Application mobile sinistre 24/7 avec géolocalisation
+- Solidité financière avérée
+- Notation locale excellente
+- Partenariats santé exclusifs`);
 
   useEffect(() => {
     fetchProducts();
@@ -90,7 +99,9 @@ export const CompetitiveAnalyzer = () => {
             documentType: file.type,
             filename: file.name,
             competitorName: competitorName || null,
-            productId: (selectedProductId && selectedProductId !== "auto") ? selectedProductId : null
+            productId: (selectedProductId && selectedProductId !== "auto") ? selectedProductId : null,
+            clientContext: clientContext || null,
+            companyStrengths: companyStrengths || null
           }
         });
 
@@ -100,7 +111,12 @@ export const CompetitiveAnalyzer = () => {
 
         if (data?.success) {
           setAnalysisProgress("Finalisation de l'analyse...");
-          setAnalysis(data.analysis);
+          // Merge the parameters into the analysis for ClientValueNote
+          const enrichedAnalysis = {
+            ...data.analysis,
+            ...data.analysis.parameters
+          };
+          setAnalysis(enrichedAnalysis);
           toast({
             title: "Analyse terminée",
             description: "L'analyse concurrentielle a été générée avec succès",
@@ -198,6 +214,33 @@ export const CompetitiveAnalyzer = () => {
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="client-context">Contexte client (optionnel)</Label>
+            <Textarea
+              id="client-context"
+              placeholder="Ex: PME, secteur transport, 50 véhicules, risques logistiques..."
+              value={clientContext}
+              onChange={(e) => setClientContext(e.target.value)}
+              disabled={isAnalyzing}
+              rows={2}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="company-strengths">Atouts Box Africa (modifiable)</Label>
+            <Textarea
+              id="company-strengths"
+              value={companyStrengths}
+              onChange={(e) => setCompanyStrengths(e.target.value)}
+              disabled={isAnalyzing}
+              rows={6}
+              className="text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              Ces atouts seront utilisés pour personnaliser l'analyse et la note de valeur client
+            </p>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="file-upload">Document concurrent (PDF, Word, PowerPoint)</Label>
             <div className="flex items-center gap-4">
               <Input
@@ -253,13 +296,22 @@ export const CompetitiveAnalyzer = () => {
       </Card>
 
       {analysis && (
-        <Tabs defaultValue="scores" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs defaultValue="note-client" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="note-client">📄 Note Client</TabsTrigger>
             <TabsTrigger value="scores">Scores</TabsTrigger>
             <TabsTrigger value="swot">Forces/Faiblesses</TabsTrigger>
             <TabsTrigger value="arguments">Arguments</TabsTrigger>
             <TabsTrigger value="recommendations">Recommandations</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="note-client">
+            <ClientValueNote 
+              analysis={analysis} 
+              competitorName={competitorName}
+              clientContext={clientContext}
+            />
+          </TabsContent>
 
           <TabsContent value="scores" className="space-y-4">
             {analysis.product_not_found ? (

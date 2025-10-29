@@ -195,7 +195,10 @@ export type Database = {
       }
       competitive_analyses: {
         Row: {
+          analysis_timestamp: string | null
+          client_context: string | null
           commercial_arguments: Json | null
+          company_strengths: string | null
           comparison_table: Json | null
           competitor_name: string | null
           created_at: string
@@ -204,15 +207,20 @@ export type Database = {
           extracted_data: Json
           id: string
           original_filename: string
+          parameters: Json | null
           positioning_scores: Json
           recommendations: Json | null
+          source_urls: string[] | null
           status: string
           strengths: Json | null
           updated_at: string
           weaknesses: Json | null
         }
         Insert: {
+          analysis_timestamp?: string | null
+          client_context?: string | null
           commercial_arguments?: Json | null
+          company_strengths?: string | null
           comparison_table?: Json | null
           competitor_name?: string | null
           created_at?: string
@@ -221,15 +229,20 @@ export type Database = {
           extracted_data?: Json
           id?: string
           original_filename: string
+          parameters?: Json | null
           positioning_scores?: Json
           recommendations?: Json | null
+          source_urls?: string[] | null
           status?: string
           strengths?: Json | null
           updated_at?: string
           weaknesses?: Json | null
         }
         Update: {
+          analysis_timestamp?: string | null
+          client_context?: string | null
           commercial_arguments?: Json | null
+          company_strengths?: string | null
           comparison_table?: Json | null
           competitor_name?: string | null
           created_at?: string
@@ -238,8 +251,10 @@ export type Database = {
           extracted_data?: Json
           id?: string
           original_filename?: string
+          parameters?: Json | null
           positioning_scores?: Json
           recommendations?: Json | null
+          source_urls?: string[] | null
           status?: string
           strengths?: Json | null
           updated_at?: string

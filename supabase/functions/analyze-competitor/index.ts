@@ -12,7 +12,16 @@ serve(async (req) => {
   }
 
   try {
-    const { documentText, documentType, filename, competitorName, productId } = await req.json();
+    const { 
+      documentText, 
+      documentType, 
+      filename, 
+      competitorName, 
+      productId,
+      clientContext,
+      companyStrengths,
+      sourceUrl 
+    } = await req.json();
     
     console.log('Starting competitive analysis for:', filename);
 
@@ -73,8 +82,50 @@ serve(async (req) => {
       products = allProducts;
     }
 
-    const systemPrompt = `Tu es un expert en analyse concurrentielle dans le secteur de l'assurance en Côte d'Ivoire.
-Ton rôle est d'analyser une fiche produit concurrent et de la comparer avec nos produits internes.
+    // Default company strengths for Box Africa
+    const defaultCompanyStrengths = `
+- Délai moyen de règlement < 10 jours sur sinistres simples
+- Réseau garages agréés 300+ en Côte d'Ivoire
+- Application mobile sinistre 24/7 avec géolocalisation
+- Solidité financière avérée (capitalisation importante)
+- Notation locale excellente
+- Partenariats santé exclusifs
+`;
+
+    const systemPrompt = `Tu es un expert en analyse concurrentielle et vente consultative dans le secteur de l'assurance en Côte d'Ivoire (Zone CIMA).
+
+FRAMEWORKS DE VENTE À INTÉGRER :
+
+1. SPIN Selling : Générer 2-3 questions pour chaque catégorie
+   - Situation : État actuel du client
+   - Problème : Points de douleur avec solution actuelle
+   - Implication : Conséquences de ces problèmes
+   - Need-Payoff : Bénéfices de notre solution
+
+2. Challenger Sale : Créer une "teaching insight"
+   - Recadrer le problème (ex: coût sinistre mal géré > prime économisée)
+   - Tailoring au segment client
+   - Take control avec prochaine étape claire
+
+3. Cialdini (6 principes d'influence) :
+   - Autorité : Utiliser certifications/notation Box Africa
+   - Preuve sociale : Cas clients locaux similaires
+   - Réciprocité : Offre d'audit gratuit
+   - Rareté : Fenêtre tarifaire limitée
+   - Engagement : Mini-engagement (diagnostic)
+   - Sympathie : Ton chaleureux, professionnel
+
+AXES D'ANALYSE (au-delà du prix) avec scores 0-10 :
+1. Couverture & exclusions (clarté, trous, options)
+2. Expérience sinistre & service (délais, canaux, transparence)
+3. Valeur & TCoR (prévention, assistance, digital, rétention)
+4. Conformité CIMA & transparence (info précontractuelle, adéquation)
+
+ATOUTS ENTREPRISE BOX AFRICA :
+${companyStrengths || defaultCompanyStrengths}
+
+${clientContext ? `CONTEXTE CLIENT :
+${clientContext}` : ''}
 
 ${productId ? 
   `Produit à comparer (sélectionné par l'utilisateur):
@@ -87,24 +138,24 @@ Tu dois d'abord identifier automatiquement le type de produit concurrent (vie ou
 Si aucun produit ne correspond au type identifié, tu dois retourner product_not_found: true avec un message explicatif.`
 }
 
-Instructions:
+IMPORTANT - Conformité CIMA :
+- Toujours mentionner la transparence réglementaire
+- Rappeler l'adéquation besoin/produit
+- Citer les exigences CIMA pertinentes
+
+Instructions détaillées :
 1. Extraire du document concurrent: garanties, exclusions, tarifs, segments cibles, canaux de distribution, conditions de souscription.
 2. ${productId ? 'Comparer avec le produit sélectionné.' : 'Identifier automatiquement le type de produit (vie ou non-vie) du concurrent et trouver le produit correspondant dans notre catalogue.'}
-3. Attribuer des scores de positionnement (0-100) pour chaque critère avec EXPLICATION DÉTAILLÉE:
-   - prix: Score du concurrent sur le prix (100 = très compétitif, 0 = très cher)
-   - garanties: Étendue et qualité des garanties du concurrent
-   - service: Qualité du service client du concurrent
-   - réseau: Étendue du réseau de distribution
-   - digitalisation: Niveau de digitalisation
-   - valeur_ajoutee: Services additionnels proposés
-   
-   IMPORTANT: Pour chaque score, fournis une "explanation" qui détaille POURQUOI ce score, en comparant le concurrent à notre produit de façon concrète.
-   
-4. Identifier forces et faiblesses du concurrent PAR RAPPORT À NOTRE PRODUIT.
-5. Générer des arguments commerciaux prêts à utiliser pour VALORISER NOTRE PRODUIT face au concurrent.
-6. Proposer des recommandations d'actions concrètes pour nous différencier.
+3. Attribuer des scores de positionnement (0-100) pour chaque critère avec EXPLICATION DÉTAILLÉE.
+4. Générer les questions SPIN (2-3 par catégorie).
+5. Créer la teaching insight (Challenger).
+6. Intégrer les éléments Cialdini naturellement.
+7. Quantifier la valeur (gains temps, services, coût total du risque).
+8. Anticiper et répondre aux 3 objections principales.
+9. Proposer une offre recommandée avec bonus réciprocité.
+10. Inclure les mentions de conformité CIMA.
 
-Sois précis, factuel et orienté action commerciale.`;
+Sois précis, factuel, orienté persuasion et action commerciale.`;
 
     const userPrompt = `Analyse ce document produit concurrent :
 
@@ -279,6 +330,109 @@ Fournis une analyse complète structurée.`;
                     }
                   },
                   required: ["criteres"]
+                },
+                spin_questions: {
+                  type: "object",
+                  properties: {
+                    situation: { type: "array", items: { type: "string" } },
+                    probleme: { type: "array", items: { type: "string" } },
+                    implication: { type: "array", items: { type: "string" } },
+                    need_payoff: { type: "array", items: { type: "string" } }
+                  },
+                  required: ["situation", "probleme", "implication", "need_payoff"]
+                },
+                teaching_insight: {
+                  type: "object",
+                  properties: {
+                    titre: { type: "string" },
+                    recadrage_probleme: { type: "string" },
+                    tailoring_segment: { type: "string" },
+                    prochaine_etape: { type: "string" }
+                  },
+                  required: ["titre", "recadrage_probleme", "tailoring_segment", "prochaine_etape"]
+                },
+                cialdini_elements: {
+                  type: "object",
+                  properties: {
+                    autorite: {
+                      type: "object",
+                      properties: {
+                        texte: { type: "string" },
+                        source: { type: "string" }
+                      }
+                    },
+                    preuve_sociale: {
+                      type: "object",
+                      properties: {
+                        cas_client: { type: "string" },
+                        chiffres: { type: "string" }
+                      }
+                    },
+                    reciprocite: {
+                      type: "object",
+                      properties: {
+                        offre: { type: "string" },
+                        valeur: { type: "string" }
+                      }
+                    },
+                    rarete: {
+                      type: "object",
+                      properties: {
+                        limitation: { type: "string" },
+                        urgence: { type: "string" }
+                      }
+                    },
+                    engagement: {
+                      type: "object",
+                      properties: {
+                        mini_action: { type: "string" }
+                      }
+                    }
+                  }
+                },
+                quantification_valeur: {
+                  type: "object",
+                  properties: {
+                    gain_temps_sinistre: { type: "string" },
+                    valeur_services: { type: "string" },
+                    sources: { type: "array", items: { type: "string" } }
+                  }
+                },
+                top_3_objections: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      objection: { type: "string" },
+                      reponse: { type: "string" },
+                      preuve: { type: "string" }
+                    },
+                    required: ["objection", "reponse", "preuve"]
+                  }
+                },
+                offre_recommandee: {
+                  type: "object",
+                  properties: {
+                    pack: { type: "string" },
+                    option_principale: { type: "string" },
+                    bonus_reciprocite: { type: "string" },
+                    appel_action: { type: "string" }
+                  }
+                },
+                conformite_cima: {
+                  type: "object",
+                  properties: {
+                    mentions: { type: "array", items: { type: "string" } },
+                    transparence: { type: "string" }
+                  }
+                },
+                experience_sinistre: {
+                  type: "object",
+                  properties: {
+                    delai: { type: "string" },
+                    canaux: { type: "string" },
+                    transparence: { type: "string" }
+                  }
                 }
               },
               required: ["extracted_data", "positioning_scores", "strengths", "weaknesses", "commercial_arguments", "recommendations", "comparison_table"],
@@ -332,7 +486,7 @@ Fournis une analyse complète structurée.`;
     const analysis = JSON.parse(toolCall.function.arguments);
     console.log('Analysis extracted successfully');
 
-    // Save to database
+    // Save to database with new fields
     const { data: savedAnalysis, error: dbError } = await supabaseClient
       .from('competitive_analyses')
       .insert({
@@ -347,6 +501,20 @@ Fournis une analyse complète structurée.`;
         commercial_arguments: analysis.commercial_arguments,
         recommendations: analysis.recommendations,
         comparison_table: analysis.comparison_table,
+        client_context: clientContext,
+        company_strengths: companyStrengths,
+        source_urls: sourceUrl ? [sourceUrl] : null,
+        analysis_timestamp: new Date().toISOString(),
+        parameters: {
+          spin_questions: analysis.spin_questions,
+          teaching_insight: analysis.teaching_insight,
+          cialdini_elements: analysis.cialdini_elements,
+          quantification_valeur: analysis.quantification_valeur,
+          top_3_objections: analysis.top_3_objections,
+          offre_recommandee: analysis.offre_recommandee,
+          conformite_cima: analysis.conformite_cima,
+          experience_sinistre: analysis.experience_sinistre
+        },
         status: 'completed'
       })
       .select()

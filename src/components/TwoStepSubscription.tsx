@@ -188,7 +188,7 @@ export const TwoStepSubscription = ({ selectedProduct: preSelectedProduct }: { s
       // Trigger loyalty mission completion in background
       supabase.functions.invoke('loyalty-process-action', {
         body: {
-          actionType: 'subscription_new',
+          actionType: 'subscription',
           userId: user.id,
           metadata: {
             productId: selectedProduct.id,

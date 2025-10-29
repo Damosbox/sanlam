@@ -21,13 +21,57 @@ serve(async (req) => {
 
     console.log('Processing loyalty action:', actionType, 'for user:', userId);
 
-    // Fetch user's active missions matching this action type
-    const { data: userMissions } = await supabaseClient
+    // Fetch active missions matching this action type
+    const { data: availableMissions, error: missionsError } = await supabaseClient
+      .from('loyalty_missions')
+      .select('*')
+      .eq('is_active', true)
+      .eq('mission_type', actionType);
+
+    if (missionsError) {
+      console.error('Error fetching missions:', missionsError);
+      throw missionsError;
+    }
+
+    if (!availableMissions || availableMissions.length === 0) {
+      return new Response(
+        JSON.stringify({ message: 'Aucune mission correspondante' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Fetch or create user missions
+    const { data: userMissions, error: userMissionsError } = await supabaseClient
       .from('user_missions')
       .select('*, loyalty_missions(*)')
       .eq('user_id', userId)
       .eq('status', 'available')
-      .eq('loyalty_missions.mission_type', actionType);
+      .in('mission_id', availableMissions.map(m => m.id));
+
+    // Create user missions if they don't exist
+    const existingMissionIds = userMissions?.map(um => um.mission_id) || [];
+    const missionsToCreate = availableMissions.filter(m => !existingMissionIds.includes(m.id));
+
+    if (missionsToCreate.length > 0) {
+      const newUserMissions = missionsToCreate.map(mission => ({
+        user_id: userId,
+        mission_id: mission.id,
+        status: 'available',
+        progress: 0,
+      }));
+
+      const { data: createdMissions, error: createError } = await supabaseClient
+        .from('user_missions')
+        .insert(newUserMissions)
+        .select('*, loyalty_missions(*)');
+
+      if (createError) {
+        console.error('Error creating user missions:', createError);
+      } else {
+        // Add created missions to the list
+        userMissions?.push(...(createdMissions || []));
+      }
+    }
 
     if (!userMissions || userMissions.length === 0) {
       return new Response(

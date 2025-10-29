@@ -82,7 +82,7 @@ export const ClientValueNote = ({ analysis, competitorName, clientContext }: Cli
       <div id="value-note-content" className="max-w-4xl mx-auto p-8 bg-background border rounded-lg space-y-6">
         {/* HEADER */}
         <div className="border-b pb-4">
-          <img src="/logo_sanlam.svg" alt="Box Africa" className="h-12 mb-4" />
+          <img src="/logo_sanlam.svg" alt="Sanlam Allianz" className="h-12 mb-4" />
           <h1 className="text-3xl font-bold">Note de Valeur Client</h1>
           {!clientSafeMode && competitorName && (
             <p className="text-lg text-muted-foreground mt-1">
@@ -330,7 +330,7 @@ function generateEmailTemplate(analysis: any, competitorName: string, clientCont
   
   return `Bonjour [Nom],
 
-Suite à notre échange, voici une analyse comparative ${competitorName ? `avec ${competitorName}` : 'de votre couverture actuelle'} et notre solution Box Africa.
+Suite à notre échange, voici une analyse comparative ${competitorName ? `avec ${competitorName}` : 'de votre couverture actuelle'} et notre solution Sanlam Allianz.
 
 ${analysis.teaching_insight ? `
 ${analysis.teaching_insight.recadrage_probleme}
@@ -353,7 +353,7 @@ Cordialement,
 [Signature]
 
 ---
-Note : Cette analyse est fournie à titre informatif. Box Africa Group S.A. respecte les exigences CIMA de transparence et d'adéquation.
+Note : Cette analyse est fournie à titre informatif. Sanlam Allianz respecte les exigences CIMA de transparence et d'adéquation.
 Date : ${new Date().toLocaleDateString('fr-FR')}
 `;
 }

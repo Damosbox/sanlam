@@ -82,12 +82,12 @@ serve(async (req) => {
       products = allProducts;
     }
 
-    // Default company strengths for Box Africa
+    // Default company strengths for Sanlam Allianz
     const defaultCompanyStrengths = `
 - Délai moyen de règlement < 10 jours sur sinistres simples
 - Réseau garages agréés 300+ en Côte d'Ivoire
 - Application mobile sinistre 24/7 avec géolocalisation
-- Solidité financière avérée (capitalisation importante)
+- Solidité financière avérée (Sanlam Allianz)
 - Notation locale excellente
 - Partenariats santé exclusifs
 `;
@@ -121,7 +121,7 @@ AXES D'ANALYSE (au-delà du prix) avec scores 0-10 :
 3. Valeur & TCoR (prévention, assistance, digital, rétention)
 4. Conformité CIMA & transparence (info précontractuelle, adéquation)
 
-ATOUTS ENTREPRISE BOX AFRICA :
+ATOUTS ENTREPRISE SANLAM ALLIANZ :
 ${companyStrengths || defaultCompanyStrengths}
 
 ${clientContext ? `CONTEXTE CLIENT :

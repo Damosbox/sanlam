@@ -15,6 +15,10 @@ const Home = () => {
     navigate('/simulateur-epargne');
   };
 
+  const handleEducationClick = () => {
+    navigate('/simulateur-education');
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -149,7 +153,8 @@ const Home = () => {
                 "Versements périodiques",
                 "Rente certaine 5 ans"
               ]}
-              onSubscribe={() => handleSubscribe("education")}
+              onSubscribe={handleEducationClick}
+              customButtonText="Simuler mon plan éducation"
             />
             
             <ProductCard

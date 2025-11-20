@@ -9,6 +9,7 @@ interface ProductCardProps {
   gradient?: "activated" | "warm" | "success" | "info" | "accent";
   features: string[];
   onSubscribe?: () => void;
+  customButtonText?: string;
 }
 
 export const ProductCard = ({ 
@@ -17,7 +18,8 @@ export const ProductCard = ({
   icon: Icon, 
   gradient = "activated",
   features,
-  onSubscribe
+  onSubscribe,
+  customButtonText
 }: ProductCardProps) => {
   const gradientClass = {
     activated: "gradient-activated",
@@ -51,7 +53,7 @@ export const ProductCard = ({
           className="w-full group/btn transition-base"
           onClick={onSubscribe}
         >
-          Souscrire
+          {customButtonText || "Souscrire"}
           <ArrowRight className="ml-2 w-4 h-4 transition-base group-hover/btn:translate-x-1" />
         </Button>
       </div>

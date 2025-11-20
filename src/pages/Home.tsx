@@ -1,6 +1,6 @@
 import { Header } from "@/components/Header";
 import { ProductCard } from "@/components/ProductCard";
-import { Car, Heart, Smartphone, Sprout, PiggyBank, Home as HomeIcon, TrendingUp, Shield } from "lucide-react";
+import { Car, Heart, GraduationCap, Sprout, PiggyBank, Home as HomeIcon, TrendingUp, Shield } from "lucide-react";
 import heroImage from "@/assets/hero-woman.jpg";
 import { useNavigate } from "react-router-dom";
 
@@ -139,17 +139,17 @@ const Home = () => {
             />
             
             <ProductCard
-              title="Électronique"
-              description="Sécurisez vos appareils électroniques contre les dommages et le vol."
-              icon={Smartphone}
+              title="Éducation"
+              description="Financez sereinement les études de vos enfants avec une rente certaine revalorisable."
+              icon={GraduationCap}
               gradient="info"
               features={[
-                "Couverture vol et casse",
-                "Oxydation",
-                "Dommages accidentels",
-                "Remplacement rapide"
+                "Rente éducation garantie",
+                "Protection décès & invalidité",
+                "Versements périodiques",
+                "Rente certaine 5 ans"
               ]}
-              onSubscribe={() => handleSubscribe('electronics')}
+              onSubscribe={() => handleSubscribe("education")}
             />
             
             <ProductCard

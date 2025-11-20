@@ -79,6 +79,7 @@ const SavingsSimulator = () => {
               label="Durée du contrat"
               subtitle={`+1 an = +${formatCurrency(estimatedYearlyIncrease)} d'intérêts estimés`}
               helperText="Plus la durée est longue, plus votre argent travaille pour vous."
+              unit="ans"
             />
 
             <DynamicExplanation

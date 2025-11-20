@@ -11,6 +11,10 @@ const Home = () => {
     navigate('/b2c', { state: { activeTab: 'subscribe', productType } });
   };
 
+  const handleEpargneClick = () => {
+    navigate('/simulateur-epargne');
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -78,87 +82,88 @@ const Home = () => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <ProductCard
-              title="Assurance Auto"
-              description="Protection complète pour votre véhicule avec assistance 24/7 et indemnisation rapide."
+              title="Auto"
+              description="Protection complète pour votre véhicule avec des garanties adaptées à vos besoins."
               icon={Car}
               gradient="activated"
               features={[
                 "Responsabilité civile",
-                "Tous risques disponible",
-                "Assistance dépannage 24/7",
-                "Indemnisation sous 48h"
+                "Dommages tous accidents",
+                "Vol et incendie",
+                "Assistance 24/7"
               ]}
               onSubscribe={() => handleSubscribe('auto')}
             />
-
-            <ProductCard
-              title="Assurance Santé"
-              description="Couverture médicale complète pour vous et votre famille avec accès au réseau de soins."
-              icon={Heart}
-              gradient="warm"
-              features={[
-                "Consultation & hospitalisation",
-                "Médicaments remboursés",
-                "Réseau de soins agréés",
-                "Téléconsultation incluse"
-              ]}
-              onSubscribe={() => handleSubscribe('sante')}
-            />
-
-            <ProductCard
-              title="Assurance Habitation"
-              description="Protégez votre logement contre les risques d'incendie, vol et dégâts des eaux."
-              icon={HomeIcon}
-              gradient="success"
-              features={[
-                "Incendie & dégâts des eaux",
-                "Vol & vandalisme",
-                "Responsabilité civile",
-                "Assistance serrurerie"
-              ]}
-              onSubscribe={() => handleSubscribe('habitation')}
-            />
-
-            <ProductCard
-              title="Assurance Électronique"
-              description="Protégez vos appareils électroniques contre le vol, la casse et les pannes."
-              icon={Smartphone}
-              gradient="info"
-              features={[
-                "Smartphones & tablettes",
-                "Ordinateurs & TV",
-                "Vol & casse accidentelle",
-                "Remplacement rapide"
-              ]}
-              onSubscribe={() => handleSubscribe('electronique')}
-            />
-
-            <ProductCard
-              title="Assurance Agricole"
-              description="Solutions adaptées aux exploitants agricoles pour protéger récoltes et équipements."
-              icon={Sprout}
-              gradient="success"
-              features={[
-                "Protection des récoltes",
-                "Équipements & machines",
-                "Bétail & cheptel",
-                "Catastrophes naturelles"
-              ]}
-              onSubscribe={() => handleSubscribe('agricole')}
-            />
-
+            
             <ProductCard
               title="Épargne & Retraite"
-              description="Constituez votre épargne et préparez votre retraite avec des solutions avantageuses."
+              description="Construisez votre capital sereinement et préparez votre avenir avec une épargne flexible et avantageuse."
               icon={PiggyBank}
               gradient="accent"
               features={[
                 "Épargne progressive",
-                "Rendement attractif",
                 "Retraite complémentaire",
-                "Avantages fiscaux"
+                "Participation aux bénéfices",
+                "Rachats flexibles"
               ]}
-              onSubscribe={() => handleSubscribe('epargne')}
+              onSubscribe={handleEpargneClick}
+              customButtonText="Simuler mon capital"
+            />
+            
+            <ProductCard
+              title="Santé"
+              description="Prenez soin de vous et de vos proches avec une couverture santé optimale."
+              icon={Heart}
+              gradient="warm"
+              features={[
+                "Consultations médicales",
+                "Hospitalisation",
+                "Soins dentaires",
+                "Médicaments prescrits"
+              ]}
+              onSubscribe={() => handleSubscribe('health')}
+            />
+            
+            <ProductCard
+              title="Habitation"
+              description="Protégez votre foyer contre tous les risques du quotidien."
+              icon={HomeIcon}
+              gradient="success"
+              features={[
+                "Dommages électriques",
+                "Vol et vandalisme",
+                "Catastrophes naturelles",
+                "Responsabilité locative"
+              ]}
+              onSubscribe={() => handleSubscribe('home')}
+            />
+            
+            <ProductCard
+              title="Électronique"
+              description="Sécurisez vos appareils électroniques contre les dommages et le vol."
+              icon={Smartphone}
+              gradient="info"
+              features={[
+                "Couverture vol et casse",
+                "Oxydation",
+                "Dommages accidentels",
+                "Remplacement rapide"
+              ]}
+              onSubscribe={() => handleSubscribe('electronics')}
+            />
+            
+            <ProductCard
+              title="Agricole"
+              description="Solutions d'assurance adaptées aux besoins des agriculteurs."
+              icon={Sprout}
+              gradient="success"
+              features={[
+                "Protection des récoltes",
+                "Matériel agricole",
+                "Bétail",
+                "Responsabilité exploitation"
+              ]}
+              onSubscribe={() => handleSubscribe('agriculture')}
             />
           </div>
         </div>

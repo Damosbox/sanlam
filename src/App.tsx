@@ -10,6 +10,7 @@ import Admin from "./pages/Admin";
 import ClaimNew from "./pages/ClaimNew";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import SavingsSimulator from "./pages/SavingsSimulator";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RoleProtectedRoute from "./components/RoleProtectedRoute";
 
@@ -24,6 +25,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/simulateur-epargne" element={<SavingsSimulator />} />
           <Route path="/b2c" element={
             <RoleProtectedRoute allowedRoles={["customer", "admin"]}>
               <B2C />

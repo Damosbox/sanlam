@@ -2,18 +2,26 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
 import B2C from "./pages/B2C";
-import B2B from "./pages/B2B";
 import Admin from "./pages/Admin";
 import ClaimNew from "./pages/ClaimNew";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import SavingsSimulator from "./pages/SavingsSimulator";
 import EducationSimulator from "./pages/EducationSimulator";
-import ProtectedRoute from "./components/ProtectedRoute";
 import RoleProtectedRoute from "./components/RoleProtectedRoute";
+
+// Broker pages
+import { BrokerLayout } from "./layouts/BrokerLayout";
+import LeadsPage from "./pages/broker/LeadsPage";
+import GuidedSalesPage from "./pages/broker/GuidedSalesPage";
+import ClaimsPage from "./pages/broker/ClaimsPage";
+import PoliciesPage from "./pages/broker/PoliciesPage";
+import ClientsPage from "./pages/broker/ClientsPage";
+import AnalysisPage from "./pages/broker/AnalysisPage";
+import MessagesPage from "./pages/broker/MessagesPage";
 
 const queryClient = new QueryClient();
 
@@ -38,11 +46,23 @@ const App = () => (
               <ClaimNew />
             </RoleProtectedRoute>
           } />
+          
+          {/* B2B Routes with Sidebar Layout */}
           <Route path="/b2b" element={
             <RoleProtectedRoute allowedRoles={["broker", "admin"]}>
-              <B2B />
+              <BrokerLayout />
             </RoleProtectedRoute>
-          } />
+          }>
+            <Route index element={<Navigate to="leads" replace />} />
+            <Route path="leads" element={<LeadsPage />} />
+            <Route path="sales" element={<GuidedSalesPage />} />
+            <Route path="claims" element={<ClaimsPage />} />
+            <Route path="policies" element={<PoliciesPage />} />
+            <Route path="clients" element={<ClientsPage />} />
+            <Route path="analysis" element={<AnalysisPage />} />
+            <Route path="messages" element={<MessagesPage />} />
+          </Route>
+
           <Route path="/admin" element={
             <RoleProtectedRoute allowedRoles={["admin"]}>
               <Admin />

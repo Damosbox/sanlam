@@ -1,14 +1,12 @@
 import { Header } from "@/components/Header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, FileText, MessageSquare, Shield, FormInput, Inbox } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Users, FileText, MessageSquare, Shield, Inbox } from "lucide-react";
 import { BrokerClaimsTable } from "@/components/BrokerClaimsTable";
 import { BrokerAnalytics } from "@/components/BrokerAnalytics";
 import { BrokerClients } from "@/components/BrokerClients";
 import { BrokerAIInsights } from "@/components/BrokerAIInsights";
 import { BrokerSubscriptions } from "@/components/BrokerSubscriptions";
-import { DynamicFormRenderer } from "@/components/DynamicFormRenderer";
 import { CompetitiveAnalyzer } from "@/components/CompetitiveAnalyzer";
 import { LeadInbox } from "@/components/LeadInbox";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,149 +23,151 @@ const B2B = () => {
       setUser(user);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch available form templates for B2B
-  const { data: formTemplates } = useQuery({
-    queryKey: ['form-templates-b2b'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('form_deployments')
-        .select(`
-          id,
-          channel,
-          form_template_id,
-          form_templates (
-            id,
-            name,
-            description,
-            category,
-            product_type
-          )
-        `)
-        .eq('channel', 'B2B')
-        .eq('is_active', true);
-      
-      if (error) throw error;
-      return data;
-    },
-  });
-
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
-      <main className="container py-12">
-        {/* Welcome Banner */}
-        <Card className="p-8 mb-8 gradient-activated text-white">
-          <h1 className="text-3xl font-bold mb-2">Espace Courtier 🤝</h1>
-          <p className="text-white/90 mb-4">Gérez vos clients et leurs sinistres avec des outils intelligents</p>
+
+      <main className="container py-6">
+        {/* Compact Welcome Banner */}
+        <Card className="p-6 mb-6 gradient-activated text-white">
+          <h1 className="text-2xl font-bold mb-1">Espace Courtier 🤝</h1>
+          <p className="text-white/80">Gérez vos clients et leurs sinistres</p>
         </Card>
 
-        {/* Analytics Overview */}
-        <BrokerAnalytics />
-
-        {/* AI Insights */}
-        <div className="mt-8">
-          <BrokerAIInsights />
+        {/* Analytics Overview - Compact */}
+        <div className="mb-4">
+          <BrokerAnalytics />
         </div>
 
-        {/* Main Management Tabs */}
-        <div className="mt-12">
-          <Tabs defaultValue="leads" className="space-y-6">
-            <TabsList className="flex flex-wrap w-full max-w-[1200px] h-auto gap-1 p-1">
-              <TabsTrigger value="leads" className="flex-1 min-w-[120px] flex items-center justify-center gap-2">
-                <Inbox className="w-4 h-4" />
-                Leads
-              </TabsTrigger>
-              <TabsTrigger value="claims" className="flex-1 min-w-[120px] flex items-center justify-center gap-2">
-                <FileText className="w-4 h-4" />
-                Sinistres
-              </TabsTrigger>
-              <TabsTrigger value="policies" className="flex-1 min-w-[120px] flex items-center justify-center gap-2">
-                <Shield className="w-4 h-4" />
-                Polices
-              </TabsTrigger>
-              <TabsTrigger value="clients" className="flex-1 min-w-[120px] flex items-center justify-center gap-2">
-                <Users className="w-4 h-4" />
-                Clients
-              </TabsTrigger>
-              <TabsTrigger value="competitive" className="flex-1 min-w-[120px] flex items-center justify-center gap-2">
-                <Shield className="w-4 h-4" />
-                Analyse
-              </TabsTrigger>
-              <TabsTrigger value="communication" className="flex-1 min-w-[120px] flex items-center justify-center gap-2">
-                <MessageSquare className="w-4 h-4" />
-                Messages
-              </TabsTrigger>
-            </TabsList>
+        {/* Main Management Tabs - Optimized */}
+        <Tabs defaultValue="leads" className="space-y-6">
+          <TabsList className="grid grid-cols-6 w-full bg-muted/40 rounded-lg p-1">
+            <TabsTrigger
+              value="leads"
+              className="flex items-center justify-center gap-2 py-2 
+              data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:rounded-md"
+            >
+              <Inbox className="w-4 h-4" /> Leads
+            </TabsTrigger>
 
-            <TabsContent value="leads" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Lead Inbox</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <LeadInbox />
-                </CardContent>
-              </Card>
-            </TabsContent>
+            <TabsTrigger
+              value="claims"
+              className="flex items-center justify-center gap-2 py-2 
+              data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:rounded-md"
+            >
+              <FileText className="w-4 h-4" /> Sinistres
+            </TabsTrigger>
 
-            <TabsContent value="claims" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Sinistres à examiner</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <BrokerClaimsTable />
-                </CardContent>
-              </Card>
-            </TabsContent>
+            <TabsTrigger
+              value="policies"
+              className="flex items-center justify-center gap-2 py-2 
+              data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:rounded-md"
+            >
+              <Shield className="w-4 h-4" /> Polices
+            </TabsTrigger>
 
-            <TabsContent value="policies" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Polices assignées</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <BrokerSubscriptions />
-                </CardContent>
-              </Card>
-            </TabsContent>
+            <TabsTrigger
+              value="clients"
+              className="flex items-center justify-center gap-2 py-2 
+              data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:rounded-md"
+            >
+              <Users className="w-4 h-4" /> Clients
+            </TabsTrigger>
 
-            <TabsContent value="clients" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Portfolio Clients</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <BrokerClients />
-                </CardContent>
-              </Card>
-            </TabsContent>
+            <TabsTrigger
+              value="competitive"
+              className="flex items-center justify-center gap-2 py-2 
+              data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:rounded-md"
+            >
+              <Shield className="w-4 h-4" /> Analyse
+            </TabsTrigger>
 
-            <TabsContent value="competitive" className="space-y-4">
-              <CompetitiveAnalyzer />
-            </TabsContent>
+            <TabsTrigger
+              value="communication"
+              className="flex items-center justify-center gap-2 py-2 
+              data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:rounded-md"
+            >
+              <MessageSquare className="w-4 h-4" /> Messages
+            </TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="communication" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Centre de Communication</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-center text-muted-foreground py-8">
-                    Messagerie - En cours de développement
-                  </p>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+          {/* SECTION LEADS */}
+          <TabsContent value="leads" className="space-y-4">
+            <h2 className="text-xl font-semibold">Lead Inbox</h2>
+
+            <Card className="mt-2">
+              <CardContent className="p-0">
+                <LeadInbox />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* SECTION CLAIMS */}
+          <TabsContent value="claims" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Sinistres à examiner</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <BrokerClaimsTable />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* SECTION POLICIES */}
+          <TabsContent value="policies" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Polices assignées</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <BrokerSubscriptions />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* SECTION CLIENTS */}
+          <TabsContent value="clients" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Portfolio Clients</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <BrokerClients />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* SECTION COMPÉTITIVE */}
+          <TabsContent value="competitive" className="space-y-4">
+            <CompetitiveAnalyzer />
+          </TabsContent>
+
+          {/* SECTION MESSAGES */}
+          <TabsContent value="communication" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Centre de Communication</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-center text-muted-foreground py-8">Messagerie - En cours de développement</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* AI Insights moved below (not above tabs) */}
+        <div className="mt-8">
+          <BrokerAIInsights />
         </div>
       </main>
     </div>

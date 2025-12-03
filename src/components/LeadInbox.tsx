@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Phone, MessageCircle, StickyNote, User, Clock, Plus, UserPlus } from "lucide-react";
+import { Phone, MessageCircle, StickyNote, User, Clock, Plus, UserPlus, FileText, Calculator } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -29,6 +29,7 @@ const leadFormSchema = z.object({
 
 type Lead = Tables<"leads">;
 type LeadNote = Tables<"lead_notes">;
+type Product = Tables<"products">;
 
 const statusConfig = {
   nouveau: { label: "Nouveau", color: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
@@ -42,9 +43,10 @@ interface LeadCardProps {
   lead: Lead;
   onAddNote: (leadId: string) => void;
   onUpdateStatus: (leadId: string, status: Lead["status"]) => void;
+  onQuickQuote: (lead: Lead) => void;
 }
 
-const LeadCard = ({ lead, onAddNote, onUpdateStatus }: LeadCardProps) => {
+const LeadCard = ({ lead, onAddNote, onUpdateStatus, onQuickQuote }: LeadCardProps) => {
   const handleCall = () => {
     if (lead.phone) {
       window.open(`tel:${lead.phone}`, "_blank");
@@ -120,29 +122,32 @@ const LeadCard = ({ lead, onAddNote, onUpdateStatus }: LeadCardProps) => {
             size="sm"
             onClick={handleCall}
             disabled={!lead.phone}
-            className="flex-1"
           >
-            <Phone className="h-4 w-4 mr-1" />
-            Appeler
+            <Phone className="h-4 w-4" />
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={handleWhatsApp}
             disabled={!lead.whatsapp && !lead.phone}
-            className="flex-1"
           >
-            <MessageCircle className="h-4 w-4 mr-1" />
-            WhatsApp
+            <MessageCircle className="h-4 w-4" />
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => onAddNote(lead.id)}
-            className="flex-1"
           >
-            <StickyNote className="h-4 w-4 mr-1" />
-            Note
+            <StickyNote className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => onQuickQuote(lead)}
+            className="flex-1 gap-1"
+          >
+            <FileText className="h-4 w-4" />
+            Devis rapide
           </Button>
         </div>
 
@@ -173,6 +178,10 @@ export const LeadInbox = () => {
   const [noteContent, setNoteContent] = useState("");
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
+  const [selectedLeadForQuote, setSelectedLeadForQuote] = useState<Lead | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<string>("");
+  const [quoteNotes, setQuoteNotes] = useState("");
   const [activeTab, setActiveTab] = useState("nouveau");
   const [formData, setFormData] = useState({
     first_name: "",
@@ -196,6 +205,21 @@ export const LeadInbox = () => {
 
       if (error) throw error;
       return data as Lead[];
+    },
+  });
+
+  // Fetch products for Quick Quote
+  const { data: products } = useQuery({
+    queryKey: ["products-active"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("is_active", true)
+        .order("category", { ascending: true });
+
+      if (error) throw error;
+      return data as Product[];
     },
   });
 
@@ -316,6 +340,70 @@ export const LeadInbox = () => {
     updateStatusMutation.mutate({ leadId, status });
   };
 
+  const handleQuickQuote = (lead: Lead) => {
+    setSelectedLeadForQuote(lead);
+    setSelectedProductId("");
+    setQuoteNotes("");
+    // Pre-select product based on lead's interest
+    if (lead.product_interest && products) {
+      const matchingProduct = products.find(
+        (p) => p.category.toLowerCase().includes(lead.product_interest?.toLowerCase() || "") ||
+               p.name.toLowerCase().includes(lead.product_interest?.toLowerCase() || "")
+      );
+      if (matchingProduct) {
+        setSelectedProductId(matchingProduct.id);
+      }
+    }
+    setQuoteDialogOpen(true);
+  };
+
+  const selectedProduct = products?.find((p) => p.id === selectedProductId);
+
+  const handleCreateQuote = () => {
+    if (!selectedLeadForQuote || !selectedProduct) {
+      toast({ title: "Erreur", description: "Veuillez sélectionner un produit", variant: "destructive" });
+      return;
+    }
+
+    // Generate quote summary
+    const quoteData = {
+      client: `${selectedLeadForQuote.first_name} ${selectedLeadForQuote.last_name}`,
+      email: selectedLeadForQuote.email,
+      phone: selectedLeadForQuote.phone,
+      product: selectedProduct.name,
+      category: selectedProduct.category,
+      basePremium: selectedProduct.base_premium,
+      date: format(new Date(), "dd/MM/yyyy HH:mm", { locale: fr }),
+      notes: quoteNotes,
+    };
+
+    // Add note to lead with quote details
+    if (selectedLeadForQuote.id) {
+      supabase.auth.getUser().then(({ data: userData }) => {
+        if (userData.user) {
+          supabase.from("lead_notes").insert({
+            lead_id: selectedLeadForQuote.id,
+            broker_id: userData.user.id,
+            content: `📋 DEVIS RAPIDE\n\nProduit: ${quoteData.product} (${quoteData.category})\nPrime de base: ${quoteData.basePremium.toLocaleString()} FCFA/mois\nDate: ${quoteData.date}\n${quoteNotes ? `\nNotes: ${quoteNotes}` : ""}`,
+          }).then(() => {
+            queryClient.invalidateQueries({ queryKey: ["lead-notes", selectedLeadForQuote.id] });
+          });
+        }
+      });
+
+      // Update lead status to "en_cours"
+      updateStatusMutation.mutate({ leadId: selectedLeadForQuote.id, status: "en_cours" });
+    }
+
+    toast({
+      title: "Devis créé",
+      description: `Devis pour ${quoteData.product} envoyé à ${quoteData.client}`,
+    });
+
+    setQuoteDialogOpen(false);
+    setSelectedLeadForQuote(null);
+  };
+
   const handleCreateLead = () => {
     const result = leadFormSchema.safeParse(formData);
     if (!result.success) {
@@ -416,6 +504,7 @@ export const LeadInbox = () => {
                     lead={lead}
                     onAddNote={handleAddNote}
                     onUpdateStatus={handleUpdateStatus}
+                    onQuickQuote={handleQuickQuote}
                   />
                 ))}
               </div>
@@ -597,6 +686,110 @@ export const LeadInbox = () => {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick Quote Dialog */}
+      <Dialog open={quoteDialogOpen} onOpenChange={setQuoteDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calculator className="h-5 w-5 text-primary" />
+              Devis Rapide
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedLeadForQuote && (
+            <div className="space-y-6">
+              {/* Client Info */}
+              <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                <h4 className="font-medium flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Informations client (pré-remplies)
+                </h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Nom:</span>
+                    <p className="font-medium">{selectedLeadForQuote.first_name} {selectedLeadForQuote.last_name}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Email:</span>
+                    <p className="font-medium">{selectedLeadForQuote.email || "Non renseigné"}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Téléphone:</span>
+                    <p className="font-medium">{selectedLeadForQuote.phone || "Non renseigné"}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Intérêt:</span>
+                    <p className="font-medium">{selectedLeadForQuote.product_interest || "Non spécifié"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Product Selection */}
+              <div className="space-y-3">
+                <Label>Sélectionner un produit *</Label>
+                <Select value={selectedProductId} onValueChange={setSelectedProductId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choisir un produit..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {products?.map((product) => (
+                      <SelectItem key={product.id} value={product.id}>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">
+                            {product.category}
+                          </Badge>
+                          {product.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Selected Product Details */}
+              {selectedProduct && (
+                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-3">
+                  <h4 className="font-semibold text-primary">{selectedProduct.name}</h4>
+                  <p className="text-sm text-muted-foreground">{selectedProduct.description}</p>
+                  <div className="flex items-center justify-between pt-2 border-t border-primary/10">
+                    <span className="text-sm">Prime de base:</span>
+                    <span className="text-xl font-bold text-primary">
+                      {selectedProduct.base_premium.toLocaleString()} FCFA/mois
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              <div className="space-y-2">
+                <Label>Notes du devis (optionnel)</Label>
+                <Textarea
+                  value={quoteNotes}
+                  onChange={(e) => setQuoteNotes(e.target.value)}
+                  placeholder="Ajoutez des notes personnalisées pour ce devis..."
+                  rows={3}
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={() => setQuoteDialogOpen(false)}>
+                  Annuler
+                </Button>
+                <Button 
+                  onClick={handleCreateQuote} 
+                  disabled={!selectedProductId}
+                  className="gap-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  Créer le devis
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

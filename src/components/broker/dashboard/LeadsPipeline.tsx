@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 type LeadStatus = "nouveau" | "en_cours" | "relance" | "converti" | "perdu";
@@ -13,12 +15,12 @@ interface PipelineStats {
   perdu: number;
 }
 
-const statusConfig: Record<LeadStatus, { label: string; color: string; bgColor: string }> = {
-  nouveau: { label: "Nouveau", color: "text-blue-600", bgColor: "bg-blue-500" },
-  en_cours: { label: "En cours", color: "text-amber-600", bgColor: "bg-amber-500" },
-  relance: { label: "Relance", color: "text-orange-600", bgColor: "bg-orange-500" },
-  converti: { label: "Converti", color: "text-green-600", bgColor: "bg-green-500" },
-  perdu: { label: "Perdu", color: "text-red-600", bgColor: "bg-red-500" },
+const statusConfig: Record<LeadStatus, { label: string; color: string }> = {
+  nouveau: { label: "Nouveau", color: "bg-primary" },
+  en_cours: { label: "En cours", color: "bg-muted-foreground" },
+  relance: { label: "Relance", color: "bg-warning" },
+  converti: { label: "Converti", color: "bg-success" },
+  perdu: { label: "Perdu", color: "bg-destructive/60" },
 };
 
 export const LeadsPipeline = () => {
@@ -30,7 +32,6 @@ export const LeadsPipeline = () => {
     converti: 0,
     perdu: 0,
   });
-  const [activeStatus, setActiveStatus] = useState<LeadStatus | null>(null);
 
   useEffect(() => {
     fetchPipelineStats();
@@ -71,25 +72,27 @@ export const LeadsPipeline = () => {
 
   const total = Object.values(stats).reduce((a, b) => a + b, 0) || 1;
 
-  const handleClick = (status: LeadStatus) => {
-    setActiveStatus(status);
+  const handleStatusClick = (status: LeadStatus) => {
     navigate(`/b2b/leads?status=${status}`);
   };
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-foreground">Pipeline des Leads</h2>
-      
-      <div className="bg-card rounded-xl border border-border p-4 space-y-4">
-        {/* Progress bar */}
-        <div className="h-3 rounded-full bg-muted overflow-hidden flex">
+    <Card className="border-border/60">
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium text-muted-foreground">Pipeline Leads</h3>
+          <span className="text-xs text-muted-foreground">{total} total</span>
+        </div>
+        
+        {/* Compact progress bar */}
+        <div className="h-1.5 rounded-full bg-muted overflow-hidden flex">
           {(Object.keys(statusConfig) as LeadStatus[]).map((status) => {
             const width = (stats[status] / total) * 100;
             if (width === 0) return null;
             return (
               <div
                 key={status}
-                className={cn(statusConfig[status].bgColor, "transition-all duration-500")}
+                className={cn(statusConfig[status].color, "transition-all duration-500")}
                 style={{ width: `${width}%` }}
               />
             );
@@ -97,32 +100,26 @@ export const LeadsPipeline = () => {
         </div>
 
         {/* Status tabs */}
-        <div className="flex flex-wrap gap-2">
-          {(Object.keys(statusConfig) as LeadStatus[]).map((status) => (
-            <button
-              key={status}
-              onClick={() => handleClick(status)}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-lg border transition-all duration-200",
-                "hover:shadow-md hover:scale-[1.02]",
-                activeStatus === status
-                  ? "border-primary bg-primary/5"
-                  : "border-border bg-background hover:bg-muted/50"
-              )}
-            >
-              <div className={cn("w-2 h-2 rounded-full", statusConfig[status].bgColor)} />
-              <span className="text-sm font-medium">{statusConfig[status].label}</span>
-              <span className={cn(
-                "text-sm font-bold px-2 py-0.5 rounded-full",
-                statusConfig[status].bgColor + "/10",
-                statusConfig[status].color
-              )}>
-                {stats[status]}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
+        <Tabs defaultValue="nouveau" className="w-full">
+          <TabsList className="w-full h-8 bg-muted/50 p-0.5">
+            {(Object.keys(statusConfig) as LeadStatus[]).map((status) => (
+              <TabsTrigger
+                key={status}
+                value={status}
+                onClick={() => handleStatusClick(status)}
+                className={cn(
+                  "flex-1 h-7 text-xs gap-1.5 data-[state=active]:shadow-sm",
+                  "transition-all duration-200"
+                )}
+              >
+                <div className={cn("w-1.5 h-1.5 rounded-full", statusConfig[status].color)} />
+                <span className="hidden sm:inline">{statusConfig[status].label}</span>
+                <span className="font-semibold">{stats[status]}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 };

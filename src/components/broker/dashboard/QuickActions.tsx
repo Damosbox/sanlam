@@ -1,40 +1,67 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
-  UserPlus, Zap, FileText, FolderOpen, 
-  MessageSquare, HelpCircle, Package
+  UserPlus, FileText, Zap, Package, 
+  FolderOpen, MessageSquare, HelpCircle, MoreHorizontal
 } from "lucide-react";
 
-const actions = [
+const primaryActions = [
   { label: "Nouveau Lead", icon: UserPlus, route: "/b2b/leads", variant: "default" as const },
-  { label: "Vente Guidée", icon: Zap, route: "/b2b/sales", variant: "outline" as const },
-  { label: "Devis Rapide", icon: FileText, route: "/b2b/sales", variant: "outline" as const },
-  { label: "Catalogue Produits", icon: Package, route: "/b2b/policies", variant: "outline" as const },
-  { label: "Documents", icon: FolderOpen, route: "/b2b/clients", variant: "outline" as const },
-  { label: "Messages", icon: MessageSquare, route: "/b2b/messages", variant: "outline" as const },
-  { label: "Support", icon: HelpCircle, route: "/b2b/messages", variant: "ghost" as const },
+  { label: "Devis rapide", icon: FileText, route: "/b2b/sales", variant: "outline" as const },
+];
+
+const moreActions = [
+  { label: "Vente guidée", icon: Zap, route: "/b2b/sales" },
+  { label: "Catalogue produits", icon: Package, route: "/b2b/policies" },
+  { label: "Documents", icon: FolderOpen, route: "/b2b/clients" },
+  { label: "Messages", icon: MessageSquare, route: "/b2b/messages" },
+  { label: "Support", icon: HelpCircle, route: "/b2b/messages" },
 ];
 
 export const QuickActions = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-foreground">Actions rapides</h2>
-      <div className="flex flex-wrap gap-2">
-        {actions.map((action) => (
-          <Button
-            key={action.label}
-            variant={action.variant}
-            size="sm"
-            onClick={() => navigate(action.route)}
-            className="gap-2 rounded-full px-4"
-          >
-            <action.icon className="h-4 w-4" />
-            {action.label}
+    <div className="flex items-center gap-2">
+      {primaryActions.map((action) => (
+        <Button
+          key={action.label}
+          variant={action.variant}
+          size="sm"
+          onClick={() => navigate(action.route)}
+          className="gap-2 h-9 transition-all duration-200 hover:scale-[1.02]"
+        >
+          <action.icon className="h-4 w-4" />
+          {action.label}
+        </Button>
+      ))}
+      
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="h-9 px-2.5">
+            <MoreHorizontal className="h-4 w-4" />
+            <span className="sr-only">Plus d'actions</span>
           </Button>
-        ))}
-      </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          {moreActions.map((action) => (
+            <DropdownMenuItem
+              key={action.label}
+              onClick={() => navigate(action.route)}
+              className="gap-2 cursor-pointer"
+            >
+              <action.icon className="h-4 w-4 text-muted-foreground" />
+              {action.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 };

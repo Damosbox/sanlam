@@ -135,20 +135,7 @@ export const LeadInbox = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-        <Card className={`cursor-pointer transition-all duration-200 ${activeStatus === "all" ? "ring-2 ring-primary shadow-md" : "hover:border-primary/30"}`} onClick={() => setActiveStatus("all")}>
-          <CardContent className="p-3 text-center">
-            <div className="text-xl font-bold text-foreground">{statusCounts.all}</div>
-            <div className="text-xs text-muted-foreground">Tous</div>
-          </CardContent>
-        </Card>
-        {Object.entries(statusConfig).map(([status, config]) => <Card key={status} className={`cursor-pointer transition-all duration-200 ${activeStatus === status ? "ring-2 ring-primary shadow-md" : "hover:border-primary/30"}`} onClick={() => setActiveStatus(status)}>
-            <CardContent className="p-3 text-center">
-              <div className="text-xl font-bold">{statusCounts[status]}</div>
-              <div className="text-xs text-muted-foreground">{config.label}</div>
-            </CardContent>
-          </Card>)}
-      </div>
+      
 
       {/* Filters & View Toggle */}
       <div className="flex items-center justify-between gap-4 sticky top-0 bg-background/95 backdrop-blur-sm py-3 z-10 border-b">

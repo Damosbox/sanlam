@@ -15,6 +15,7 @@ import RoleProtectedRoute from "./components/RoleProtectedRoute";
 
 // Broker pages
 import { BrokerLayout } from "./layouts/BrokerLayout";
+import DashboardPage from "./pages/broker/DashboardPage";
 import LeadsPage from "./pages/broker/LeadsPage";
 import GuidedSalesPage from "./pages/broker/GuidedSalesPage";
 import ClaimsPage from "./pages/broker/ClaimsPage";
@@ -53,7 +54,8 @@ const App = () => (
               <BrokerLayout />
             </RoleProtectedRoute>
           }>
-            <Route index element={<Navigate to="leads" replace />} />
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<DashboardPage />} />
             <Route path="leads" element={<LeadsPage />} />
             <Route path="sales" element={<GuidedSalesPage />} />
             <Route path="claims" element={<ClaimsPage />} />

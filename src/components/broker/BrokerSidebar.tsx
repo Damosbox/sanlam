@@ -25,8 +25,12 @@ import {
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
+import { LayoutDashboard } from "lucide-react";
+
+const dashboardItem = { title: "Tableau de Bord", url: "/b2b/dashboard", icon: LayoutDashboard };
+
 const salesItems = [
-  { title: "Leads", url: "/b2b/leads", icon: Inbox, badge: "3" },
+  { title: "Leads", url: "/b2b/leads", icon: Inbox },
   { title: "Vente Guidée", url: "/b2b/sales", icon: Zap },
 ];
 
@@ -91,6 +95,15 @@ export function BrokerSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="py-4">
+        {/* Dashboard - Main Entry */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {renderMenuItem(dashboardItem)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         <SidebarGroup>
           <SidebarGroupLabel className={cn(collapsed && "sr-only")}>
             Vente

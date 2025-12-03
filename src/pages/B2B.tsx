@@ -1,7 +1,7 @@
 import { Header } from "@/components/Header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, FileText, MessageSquare, Shield, FormInput } from "lucide-react";
+import { Users, FileText, MessageSquare, Shield, FormInput, Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrokerClaimsTable } from "@/components/BrokerClaimsTable";
 import { BrokerAnalytics } from "@/components/BrokerAnalytics";
@@ -10,6 +10,7 @@ import { BrokerAIInsights } from "@/components/BrokerAIInsights";
 import { BrokerSubscriptions } from "@/components/BrokerSubscriptions";
 import { DynamicFormRenderer } from "@/components/DynamicFormRenderer";
 import { CompetitiveAnalyzer } from "@/components/CompetitiveAnalyzer";
+import { LeadInbox } from "@/components/LeadInbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
@@ -78,8 +79,12 @@ const B2B = () => {
 
         {/* Main Management Tabs */}
         <div className="mt-12">
-          <Tabs defaultValue="claims" className="space-y-6">
-            <TabsList className="grid w-full max-w-[1000px] grid-cols-5">
+          <Tabs defaultValue="leads" className="space-y-6">
+            <TabsList className="grid w-full max-w-[1200px] grid-cols-6">
+              <TabsTrigger value="leads" className="flex items-center gap-2">
+                <Inbox className="w-4 h-4" />
+                Leads
+              </TabsTrigger>
               <TabsTrigger value="claims" className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
                 Sinistres
@@ -94,13 +99,24 @@ const B2B = () => {
               </TabsTrigger>
               <TabsTrigger value="competitive" className="flex items-center gap-2">
                 <Shield className="w-4 h-4" />
-                Analyse Concurrentielle
+                Analyse
               </TabsTrigger>
               <TabsTrigger value="communication" className="flex items-center gap-2">
                 <MessageSquare className="w-4 h-4" />
                 Messages
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="leads" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Lead Inbox</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <LeadInbox />
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             <TabsContent value="claims" className="space-y-4">
               <Card>

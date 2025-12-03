@@ -1,0 +1,375 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Phone, MessageCircle, StickyNote, User, Calendar, Clock, Plus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import type { Tables } from "@/integrations/supabase/types";
+
+type Lead = Tables<"leads">;
+type LeadNote = Tables<"lead_notes">;
+
+const statusConfig = {
+  nouveau: { label: "Nouveau", color: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
+  en_cours: { label: "En cours", color: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
+  relance: { label: "Relance", color: "bg-orange-500/10 text-orange-600 border-orange-500/20" },
+  converti: { label: "Converti", color: "bg-green-500/10 text-green-600 border-green-500/20" },
+  perdu: { label: "Perdu", color: "bg-red-500/10 text-red-600 border-red-500/20" },
+};
+
+interface LeadCardProps {
+  lead: Lead;
+  onAddNote: (leadId: string) => void;
+  onUpdateStatus: (leadId: string, status: Lead["status"]) => void;
+}
+
+const LeadCard = ({ lead, onAddNote, onUpdateStatus }: LeadCardProps) => {
+  const handleCall = () => {
+    if (lead.phone) {
+      window.open(`tel:${lead.phone}`, "_blank");
+    }
+  };
+
+  const handleWhatsApp = () => {
+    const number = lead.whatsapp || lead.phone;
+    if (number) {
+      const cleanNumber = number.replace(/\D/g, "");
+      window.open(`https://wa.me/${cleanNumber}`, "_blank");
+    }
+  };
+
+  return (
+    <Card className="hover:shadow-md transition-shadow">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <User className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">
+                  {lead.first_name} {lead.last_name}
+                </h3>
+                <p className="text-sm text-muted-foreground">{lead.email}</p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+              {lead.phone && (
+                <span className="flex items-center gap-1">
+                  <Phone className="h-3 w-3" />
+                  {lead.phone}
+                </span>
+              )}
+              {lead.product_interest && (
+                <Badge variant="outline" className="text-xs">
+                  {lead.product_interest}
+                </Badge>
+              )}
+              {lead.source && (
+                <Badge variant="secondary" className="text-xs">
+                  {lead.source}
+                </Badge>
+              )}
+            </div>
+
+            {lead.next_followup_at && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                Relance: {format(new Date(lead.next_followup_at), "dd MMM yyyy HH:mm", { locale: fr })}
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col items-end gap-2">
+            <Badge className={statusConfig[lead.status].color}>
+              {statusConfig[lead.status].label}
+            </Badge>
+            <span className="text-xs text-muted-foreground">
+              {format(new Date(lead.created_at), "dd/MM/yyyy", { locale: fr })}
+            </span>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCall}
+            disabled={!lead.phone}
+            className="flex-1"
+          >
+            <Phone className="h-4 w-4 mr-1" />
+            Appeler
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleWhatsApp}
+            disabled={!lead.whatsapp && !lead.phone}
+            className="flex-1"
+          >
+            <MessageCircle className="h-4 w-4 mr-1" />
+            WhatsApp
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onAddNote(lead.id)}
+            className="flex-1"
+          >
+            <StickyNote className="h-4 w-4 mr-1" />
+            Note
+          </Button>
+        </div>
+
+        {/* Status Update */}
+        <div className="flex items-center gap-1 mt-3">
+          <span className="text-xs text-muted-foreground mr-2">Statut:</span>
+          {(["nouveau", "en_cours", "relance", "converti", "perdu"] as const).map((status) => (
+            <Button
+              key={status}
+              variant={lead.status === status ? "default" : "ghost"}
+              size="sm"
+              className="h-6 px-2 text-xs"
+              onClick={() => onUpdateStatus(lead.id, status)}
+            >
+              {statusConfig[status].label}
+            </Button>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+export const LeadInbox = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  const [noteContent, setNoteContent] = useState("");
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("nouveau");
+
+  // Fetch leads
+  const { data: leads, isLoading } = useQuery({
+    queryKey: ["broker-leads"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("leads")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data as Lead[];
+    },
+  });
+
+  // Fetch notes for selected lead
+  const { data: leadNotes } = useQuery({
+    queryKey: ["lead-notes", selectedLeadId],
+    queryFn: async () => {
+      if (!selectedLeadId) return [];
+      const { data, error } = await supabase
+        .from("lead_notes")
+        .select("*")
+        .eq("lead_id", selectedLeadId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data as LeadNote[];
+    },
+    enabled: !!selectedLeadId,
+  });
+
+  // Update lead status
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ leadId, status }: { leadId: string; status: Lead["status"] }) => {
+      const { error } = await supabase
+        .from("leads")
+        .update({ status, last_contact_at: new Date().toISOString() })
+        .eq("id", leadId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["broker-leads"] });
+      toast({ title: "Statut mis à jour" });
+    },
+    onError: () => {
+      toast({ title: "Erreur", description: "Impossible de mettre à jour le statut", variant: "destructive" });
+    },
+  });
+
+  // Add note mutation
+  const addNoteMutation = useMutation({
+    mutationFn: async ({ leadId, content }: { leadId: string; content: string }) => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error("Non authentifié");
+
+      const { error } = await supabase.from("lead_notes").insert({
+        lead_id: leadId,
+        broker_id: userData.user.id,
+        content,
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lead-notes", selectedLeadId] });
+      queryClient.invalidateQueries({ queryKey: ["broker-leads"] });
+      setNoteContent("");
+      setNoteDialogOpen(false);
+      toast({ title: "Note ajoutée" });
+    },
+    onError: () => {
+      toast({ title: "Erreur", description: "Impossible d'ajouter la note", variant: "destructive" });
+    },
+  });
+
+  const handleAddNote = (leadId: string) => {
+    setSelectedLeadId(leadId);
+    setNoteDialogOpen(true);
+  };
+
+  const handleSubmitNote = () => {
+    if (selectedLeadId && noteContent.trim()) {
+      addNoteMutation.mutate({ leadId: selectedLeadId, content: noteContent });
+    }
+  };
+
+  const handleUpdateStatus = (leadId: string, status: Lead["status"]) => {
+    updateStatusMutation.mutate({ leadId, status });
+  };
+
+  // Group leads by status
+  const leadsByStatus = {
+    nouveau: leads?.filter((l) => l.status === "nouveau") || [],
+    en_cours: leads?.filter((l) => l.status === "en_cours") || [],
+    relance: leads?.filter((l) => l.status === "relance") || [],
+    converti: leads?.filter((l) => l.status === "converti") || [],
+    perdu: leads?.filter((l) => l.status === "perdu") || [],
+  };
+
+  const selectedLead = leads?.find((l) => l.id === selectedLeadId);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Stats Overview */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {Object.entries(statusConfig).map(([status, config]) => (
+          <Card
+            key={status}
+            className={`cursor-pointer transition-all ${activeTab === status ? "ring-2 ring-primary" : ""}`}
+            onClick={() => setActiveTab(status)}
+          >
+            <CardContent className="p-4 text-center">
+              <div className={`text-2xl font-bold ${config.color.split(" ")[1]}`}>
+                {leadsByStatus[status as keyof typeof leadsByStatus].length}
+              </div>
+              <div className="text-sm text-muted-foreground">{config.label}</div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Leads Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-5">
+          {Object.entries(statusConfig).map(([status, config]) => (
+            <TabsTrigger key={status} value={status} className="flex items-center gap-1">
+              {config.label}
+              <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                {leadsByStatus[status as keyof typeof leadsByStatus].length}
+              </Badge>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        {Object.keys(statusConfig).map((status) => (
+          <TabsContent key={status} value={status} className="space-y-4 mt-4">
+            {leadsByStatus[status as keyof typeof leadsByStatus].length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center text-muted-foreground">
+                  Aucun lead avec le statut "{statusConfig[status as keyof typeof statusConfig].label}"
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {leadsByStatus[status as keyof typeof leadsByStatus].map((lead) => (
+                  <LeadCard
+                    key={lead.id}
+                    lead={lead}
+                    onAddNote={handleAddNote}
+                    onUpdateStatus={handleUpdateStatus}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        ))}
+      </Tabs>
+
+      {/* Note Dialog */}
+      <Dialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>
+              Ajouter une note pour {selectedLead?.first_name} {selectedLead?.last_name}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Previous Notes */}
+            {leadNotes && leadNotes.length > 0 && (
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                <p className="text-sm font-medium text-muted-foreground">Notes précédentes:</p>
+                {leadNotes.map((note) => (
+                  <div key={note.id} className="p-3 bg-muted/50 rounded-lg text-sm">
+                    <p>{note.content}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {format(new Date(note.created_at), "dd MMM yyyy HH:mm", { locale: fr })}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <Textarea
+              placeholder="Écrivez votre note ici..."
+              value={noteContent}
+              onChange={(e) => setNoteContent(e.target.value)}
+              rows={4}
+            />
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setNoteDialogOpen(false)}>
+                Annuler
+              </Button>
+              <Button onClick={handleSubmitNote} disabled={!noteContent.trim() || addNoteMutation.isPending}>
+                {addNoteMutation.isPending ? "Ajout..." : "Ajouter la note"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};

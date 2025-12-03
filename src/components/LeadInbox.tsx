@@ -122,21 +122,6 @@ export const LeadInbox = () => {
       </div>;
   }
   return <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          
-          
-        </div>
-        <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
-          <UserPlus className="h-4 w-4" />
-          Nouveau Lead
-        </Button>
-      </div>
-
-      {/* Stats Cards */}
-      
-
       {/* Filters & View Toggle */}
       <div className="flex items-center justify-between gap-4 sticky top-0 bg-background/95 backdrop-blur-sm py-3 z-10 border-b">
         <Tabs value={activeStatus} onValueChange={setActiveStatus} className="flex-1">
@@ -150,17 +135,23 @@ export const LeadInbox = () => {
           </TabsList>
         </Tabs>
 
-        <ToggleGroup type="single" value={viewDensity} onValueChange={v => v && setViewDensity(v as ViewDensity)} className="border rounded-md">
-          <ToggleGroupItem value="compact" aria-label="Compact" className="h-9 w-9 p-0">
-            <Rows3 className="h-4 w-4" />
-          </ToggleGroupItem>
-          <ToggleGroupItem value="standard" aria-label="Standard" className="h-9 w-9 p-0">
-            <LayoutList className="h-4 w-4" />
-          </ToggleGroupItem>
-          <ToggleGroupItem value="card" aria-label="Carte" className="h-9 w-9 p-0">
-            <LayoutGrid className="h-4 w-4" />
-          </ToggleGroupItem>
-        </ToggleGroup>
+        <div className="flex items-center gap-2">
+          <ToggleGroup type="single" value={viewDensity} onValueChange={v => v && setViewDensity(v as ViewDensity)} className="border rounded-md">
+            <ToggleGroupItem value="compact" aria-label="Compact" className="h-9 w-9 p-0">
+              <Rows3 className="h-4 w-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="standard" aria-label="Standard" className="h-9 w-9 p-0">
+              <LayoutList className="h-4 w-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="card" aria-label="Carte" className="h-9 w-9 p-0">
+              <LayoutGrid className="h-4 w-4" />
+            </ToggleGroupItem>
+          </ToggleGroup>
+          <Button onClick={() => setCreateDialogOpen(true)} className="gap-2 h-9">
+            <UserPlus className="h-4 w-4" />
+            Nouveau Lead
+          </Button>
+        </div>
       </div>
 
       {/* Data Display */}

@@ -383,6 +383,107 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_notes: {
+        Row: {
+          broker_id: string
+          content: string
+          created_at: string
+          id: string
+          lead_id: string
+        }
+        Insert: {
+          broker_id: string
+          content: string
+          created_at?: string
+          id?: string
+          lead_id: string
+        }
+        Update: {
+          broker_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_notes_broker_id_fkey"
+            columns: ["broker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          assigned_broker_id: string | null
+          created_at: string
+          email: string | null
+          first_name: string
+          id: string
+          last_contact_at: string | null
+          last_name: string
+          next_followup_at: string | null
+          notes: string | null
+          phone: string | null
+          product_interest: string | null
+          source: string | null
+          status: Database["public"]["Enums"]["lead_status"]
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          assigned_broker_id?: string | null
+          created_at?: string
+          email?: string | null
+          first_name: string
+          id?: string
+          last_contact_at?: string | null
+          last_name: string
+          next_followup_at?: string | null
+          notes?: string | null
+          phone?: string | null
+          product_interest?: string | null
+          source?: string | null
+          status?: Database["public"]["Enums"]["lead_status"]
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          assigned_broker_id?: string | null
+          created_at?: string
+          email?: string | null
+          first_name?: string
+          id?: string
+          last_contact_at?: string | null
+          last_name?: string
+          next_followup_at?: string | null
+          notes?: string | null
+          phone?: string | null
+          product_interest?: string | null
+          source?: string | null
+          status?: Database["public"]["Enums"]["lead_status"]
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_assigned_broker_id_fkey"
+            columns: ["assigned_broker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_levels: {
         Row: {
           benefits: Json
@@ -960,6 +1061,7 @@ export type Database = {
         | "Autre"
       deployment_channel: "B2C" | "B2B"
       form_category: "vie" | "non-vie"
+      lead_status: "nouveau" | "en_cours" | "relance" | "converti" | "perdu"
       loyalty_level: "bronze" | "silver" | "gold" | "platinum"
       mission_status: "available" | "in_progress" | "completed" | "expired"
       mission_type:
@@ -1135,6 +1237,7 @@ export const Constants = {
       ],
       deployment_channel: ["B2C", "B2B"],
       form_category: ["vie", "non-vie"],
+      lead_status: ["nouveau", "en_cours", "relance", "converti", "perdu"],
       loyalty_level: ["bronze", "silver", "gold", "platinum"],
       mission_status: ["available", "in_progress", "completed", "expired"],
       mission_type: [

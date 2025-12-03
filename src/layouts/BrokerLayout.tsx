@@ -2,8 +2,6 @@ import { Outlet } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { BrokerSidebar } from "@/components/broker/BrokerSidebar";
 import { Header } from "@/components/Header";
-import { BrokerAnalytics } from "@/components/BrokerAnalytics";
-import { BrokerAIInsights } from "@/components/BrokerAIInsights";
 import { Separator } from "@/components/ui/separator";
 
 export function BrokerLayout() {
@@ -20,15 +18,8 @@ export function BrokerLayout() {
               <span className="text-sm text-muted-foreground">Espace Courtier</span>
             </div>
             
-            <main className="p-6 space-y-6">
-              {/* Analytics Overview */}
-              <BrokerAnalytics />
-              
-              {/* Page Content */}
+            <main className="p-6">
               <Outlet />
-              
-              {/* AI Insights */}
-              <BrokerAIInsights />
             </main>
           </SidebarInset>
         </div>

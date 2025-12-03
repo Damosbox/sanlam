@@ -86,7 +86,7 @@ const B2B = () => {
           <TabsContent value="leads" className="space-y-4">
             <h2 className="text-xl font-semibold">Lead Inbox</h2>
 
-            <Card className="mt-2">
+            <Card className="mt-2 mx-0 my-0 px-[16px] py-[16px]">
               <CardContent className="p-0">
                 <LeadInbox className="mx-0 my-0 px-[16px] py-[16px]" />
               </CardContent>

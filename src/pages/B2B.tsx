@@ -25,7 +25,9 @@ const B2B = () => {
       setUser(user);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
 
@@ -34,11 +36,12 @@ const B2B = () => {
 
   // Fetch available form templates for B2B
   const { data: formTemplates } = useQuery({
-    queryKey: ['form-templates-b2b'],
+    queryKey: ["form-templates-b2b"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('form_deployments')
-        .select(`
+        .from("form_deployments")
+        .select(
+          `
           id,
           channel,
           form_template_id,
@@ -49,10 +52,11 @@ const B2B = () => {
             category,
             product_type
           )
-        `)
-        .eq('channel', 'B2B')
-        .eq('is_active', true);
-      
+        `,
+        )
+        .eq("channel", "B2B")
+        .eq("is_active", true);
+
       if (error) throw error;
       return data;
     },
@@ -61,7 +65,7 @@ const B2B = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="container py-12">
         {/* Welcome Banner */}
         <Card className="p-8 mb-8 gradient-activated text-white">
@@ -101,7 +105,10 @@ const B2B = () => {
                 <Shield className="w-4 h-4" />
                 Analyse
               </TabsTrigger>
-              <TabsTrigger value="communication" className="flex-1 min-w-[120px] flex items-center justify-center gap-2">
+              <TabsTrigger
+                value="communication"
+                className="flex-1 min-w-[120px] flex items-center justify-center gap-2"
+              >
                 <MessageSquare className="w-4 h-4" />
                 Messages
               </TabsTrigger>
@@ -161,9 +168,7 @@ const B2B = () => {
                   <CardTitle>Centre de Communication</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-center text-muted-foreground py-8">
-                    Messagerie - En cours de développement
-                  </p>
+                  <p className="text-center text-muted-foreground py-8">Messagerie - En cours de développement</p>
                 </CardContent>
               </Card>
             </TabsContent>

@@ -13,27 +13,27 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { User } from "@supabase/supabase-js";
-
 const B2B = () => {
   const [user, setUser] = useState<User | null>(null);
   const [selectedFormTemplate, setSelectedFormTemplate] = useState<string | null>(null);
-
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(({
+      data: {
+        user
+      }
+    }) => {
       setUser(user);
     });
-
     const {
-      data: { subscription },
+      data: {
+        subscription
+      }
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
-
     return () => subscription.unsubscribe();
   }, []);
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       <Header />
 
       <main className="container py-6">
@@ -51,51 +51,33 @@ const B2B = () => {
         {/* Main Management Tabs - Optimized */}
         <Tabs defaultValue="leads" className="space-y-6">
           <TabsList className="grid grid-cols-6 w-full bg-muted/40 rounded-lg p-1">
-            <TabsTrigger
-              value="leads"
-              className="flex items-center justify-center gap-2 py-2 
-              data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:rounded-md"
-            >
+            <TabsTrigger value="leads" className="flex items-center justify-center gap-2 py-2 
+              data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:rounded-md">
               <Inbox className="w-4 h-4" /> Leads
             </TabsTrigger>
 
-            <TabsTrigger
-              value="claims"
-              className="flex items-center justify-center gap-2 py-2 
-              data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:rounded-md"
-            >
+            <TabsTrigger value="claims" className="flex items-center justify-center gap-2 py-2 
+              data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:rounded-md">
               <FileText className="w-4 h-4" /> Sinistres
             </TabsTrigger>
 
-            <TabsTrigger
-              value="policies"
-              className="flex items-center justify-center gap-2 py-2 
-              data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:rounded-md"
-            >
+            <TabsTrigger value="policies" className="flex items-center justify-center gap-2 py-2 
+              data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:rounded-md">
               <Shield className="w-4 h-4" /> Polices
             </TabsTrigger>
 
-            <TabsTrigger
-              value="clients"
-              className="flex items-center justify-center gap-2 py-2 
-              data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:rounded-md"
-            >
+            <TabsTrigger value="clients" className="flex items-center justify-center gap-2 py-2 
+              data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:rounded-md">
               <Users className="w-4 h-4" /> Clients
             </TabsTrigger>
 
-            <TabsTrigger
-              value="competitive"
-              className="flex items-center justify-center gap-2 py-2 
-              data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:rounded-md"
-            >
+            <TabsTrigger value="competitive" className="flex items-center justify-center gap-2 py-2 
+              data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:rounded-md">
               <Shield className="w-4 h-4" /> Analyse
             </TabsTrigger>
 
-            <TabsTrigger
-              value="communication"
-              className="flex items-center justify-center gap-2 py-2 
-              data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:rounded-md"
-            >
+            <TabsTrigger value="communication" className="flex items-center justify-center gap-2 py-2 
+              data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:rounded-md">
               <MessageSquare className="w-4 h-4" /> Messages
             </TabsTrigger>
           </TabsList>
@@ -106,7 +88,7 @@ const B2B = () => {
 
             <Card className="mt-2">
               <CardContent className="p-0">
-                <LeadInbox />
+                <LeadInbox className="mx-0 my-0 px-[16px] py-[16px]" />
               </CardContent>
             </Card>
           </TabsContent>
@@ -170,8 +152,6 @@ const B2B = () => {
           <BrokerAIInsights />
         </div>
       </main>
-    </div>
-  );
+    </div>;
 };
-
 export default B2B;

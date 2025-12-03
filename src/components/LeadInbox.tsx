@@ -8,19 +8,21 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { UserPlus, LayoutList, LayoutGrid, Rows3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
+
 import { LeadsDataTable } from "./leads/LeadsDataTable";
 import { LeadCards } from "./leads/LeadCards";
 import { LeadDetailSheet } from "./leads/LeadDetailSheet";
 import { QuickQuoteDialog } from "./leads/QuickQuoteDialog";
 import { CreateLeadDialog } from "./leads/CreateLeadDialog";
 import { statusConfig } from "./leads/LeadStatusBadge";
+
 type Lead = Tables<"leads">;
 type ViewDensity = "compact" | "standard" | "card";
+
 export const LeadInbox = () => {
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const queryClient = useQueryClient();
+  
   const [activeStatus, setActiveStatus] = useState<string>("all");
   const [viewDensity, setViewDensity] = useState<ViewDensity>("standard");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -30,103 +32,83 @@ export const LeadInbox = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // Fetch leads
-  const {
-    data: leads = [],
-    isLoading
-  } = useQuery({
+  const { data: leads = [], isLoading } = useQuery({
     queryKey: ["broker-leads"],
     queryFn: async () => {
-      const {
-        data,
-        error
-      } = await supabase.from("leads").select("*").order("created_at", {
-        ascending: false
-      });
+      const { data, error } = await supabase
+        .from("leads")
+        .select("*")
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Lead[];
-    }
+    },
   });
 
   // Filter leads by status
   const filteredLeads = useMemo(() => {
     if (activeStatus === "all") return leads;
-    return leads.filter(l => l.status === activeStatus);
+    return leads.filter((l) => l.status === activeStatus);
   }, [leads, activeStatus]);
 
   // Status counts
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = {
-      all: leads.length
-    };
-    Object.keys(statusConfig).forEach(status => {
-      counts[status] = leads.filter(l => l.status === status).length;
+    const counts: Record<string, number> = { all: leads.length };
+    Object.keys(statusConfig).forEach((status) => {
+      counts[status] = leads.filter((l) => l.status === status).length;
     });
     return counts;
   }, [leads]);
 
   // Update lead status
   const updateStatusMutation = useMutation({
-    mutationFn: async ({
-      leadId,
-      status
-    }: {
-      leadId: string;
-      status: Lead["status"];
-    }) => {
-      const {
-        error
-      } = await supabase.from("leads").update({
-        status,
-        last_contact_at: new Date().toISOString()
-      }).eq("id", leadId);
+    mutationFn: async ({ leadId, status }: { leadId: string; status: Lead["status"] }) => {
+      const { error } = await supabase
+        .from("leads")
+        .update({ status, last_contact_at: new Date().toISOString() })
+        .eq("id", leadId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["broker-leads"]
-      });
-      toast({
-        title: "Lead mis à jour"
-      });
+      queryClient.invalidateQueries({ queryKey: ["broker-leads"] });
+      toast({ title: "Lead mis à jour" });
     },
     onError: () => {
-      toast({
-        title: "Erreur",
-        variant: "destructive"
-      });
-    }
+      toast({ title: "Erreur", variant: "destructive" });
+    },
   });
+
   const handleSelectLead = (lead: Lead) => {
     setSelectedLead(lead);
     setSheetOpen(true);
   };
+
   const handleQuickQuote = (lead: Lead) => {
     setQuoteDialogLead(lead);
     setQuoteDialogOpen(true);
   };
+
   const handleStatusChange = (leadId: string, status: Lead["status"]) => {
-    updateStatusMutation.mutate({
-      leadId,
-      status
-    });
+    updateStatusMutation.mutate({ leadId, status });
     if (selectedLead?.id === leadId) {
-      setSelectedLead({
-        ...selectedLead,
-        status
-      });
+      setSelectedLead({ ...selectedLead, status });
     }
   };
+
   if (isLoading) {
-    return <div className="flex items-center justify-center py-12">
+    return (
+      <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>;
+      </div>
+    );
   }
-  return <div className="space-y-5">
+
+  return (
+    <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between gap-0">
+      <div className="flex items-center justify-between">
         <div>
-          
-          
+          <h2 className="text-lg font-semibold">Lead Inbox</h2>
+          <p className="text-sm text-muted-foreground">{leads.length} leads au total</p>
         </div>
         <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
           <UserPlus className="h-4 w-4" />
@@ -135,7 +117,29 @@ export const LeadInbox = () => {
       </div>
 
       {/* Stats Cards */}
-      
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+        <Card 
+          className={`cursor-pointer transition-all duration-200 ${activeStatus === "all" ? "ring-2 ring-primary shadow-md" : "hover:border-primary/30"}`}
+          onClick={() => setActiveStatus("all")}
+        >
+          <CardContent className="p-3 text-center">
+            <div className="text-xl font-bold text-foreground">{statusCounts.all}</div>
+            <div className="text-xs text-muted-foreground">Tous</div>
+          </CardContent>
+        </Card>
+        {Object.entries(statusConfig).map(([status, config]) => (
+          <Card 
+            key={status}
+            className={`cursor-pointer transition-all duration-200 ${activeStatus === status ? "ring-2 ring-primary shadow-md" : "hover:border-primary/30"}`}
+            onClick={() => setActiveStatus(status)}
+          >
+            <CardContent className="p-3 text-center">
+              <div className="text-xl font-bold">{statusCounts[status]}</div>
+              <div className="text-xs text-muted-foreground">{config.label}</div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       {/* Filters & View Toggle */}
       <div className="flex items-center justify-between gap-4 sticky top-0 bg-background/95 backdrop-blur-sm py-3 z-10 border-b">
@@ -144,13 +148,20 @@ export const LeadInbox = () => {
             <TabsTrigger value="all" className="text-xs px-3">
               Tous ({statusCounts.all})
             </TabsTrigger>
-            {Object.entries(statusConfig).map(([status, config]) => <TabsTrigger key={status} value={status} className="text-xs px-3">
+            {Object.entries(statusConfig).map(([status, config]) => (
+              <TabsTrigger key={status} value={status} className="text-xs px-3">
                 {config.label} ({statusCounts[status]})
-              </TabsTrigger>)}
+              </TabsTrigger>
+            ))}
           </TabsList>
         </Tabs>
 
-        <ToggleGroup type="single" value={viewDensity} onValueChange={v => v && setViewDensity(v as ViewDensity)} className="border rounded-md">
+        <ToggleGroup 
+          type="single" 
+          value={viewDensity} 
+          onValueChange={(v) => v && setViewDensity(v as ViewDensity)}
+          className="border rounded-md"
+        >
           <ToggleGroupItem value="compact" aria-label="Compact" className="h-9 w-9 p-0">
             <Rows3 className="h-4 w-4" />
           </ToggleGroupItem>
@@ -164,15 +175,42 @@ export const LeadInbox = () => {
       </div>
 
       {/* Data Display */}
-      {viewDensity === "card" ? <LeadCards leads={filteredLeads} onSelectLead={handleSelectLead} onQuickQuote={handleQuickQuote} /> : <LeadsDataTable leads={filteredLeads} density={viewDensity} onSelectLead={handleSelectLead} />}
+      {viewDensity === "card" ? (
+        <LeadCards 
+          leads={filteredLeads} 
+          onSelectLead={handleSelectLead}
+          onQuickQuote={handleQuickQuote}
+        />
+      ) : (
+        <LeadsDataTable 
+          leads={filteredLeads} 
+          density={viewDensity}
+          onSelectLead={handleSelectLead}
+        />
+      )}
 
       {/* Side Panel */}
-      <LeadDetailSheet lead={selectedLead} open={sheetOpen} onOpenChange={setSheetOpen} onQuickQuote={handleQuickQuote} onStatusChange={handleStatusChange} />
+      <LeadDetailSheet
+        lead={selectedLead}
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        onQuickQuote={handleQuickQuote}
+        onStatusChange={handleStatusChange}
+      />
 
       {/* Quick Quote Dialog */}
-      <QuickQuoteDialog lead={quoteDialogLead} open={quoteDialogOpen} onOpenChange={setQuoteDialogOpen} onStatusChange={handleStatusChange} />
+      <QuickQuoteDialog
+        lead={quoteDialogLead}
+        open={quoteDialogOpen}
+        onOpenChange={setQuoteDialogOpen}
+        onStatusChange={handleStatusChange}
+      />
 
       {/* Create Lead Dialog */}
-      <CreateLeadDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
-    </div>;
+      <CreateLeadDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+      />
+    </div>
+  );
 };

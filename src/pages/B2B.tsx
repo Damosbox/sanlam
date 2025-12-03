@@ -80,28 +80,28 @@ const B2B = () => {
         {/* Main Management Tabs */}
         <div className="mt-12">
           <Tabs defaultValue="leads" className="space-y-6">
-            <TabsList className="grid w-full max-w-[1200px] grid-cols-6">
-              <TabsTrigger value="leads" className="flex items-center gap-2">
+            <TabsList className="flex flex-wrap w-full max-w-[1200px] h-auto gap-1 p-1">
+              <TabsTrigger value="leads" className="flex-1 min-w-[120px] flex items-center justify-center gap-2">
                 <Inbox className="w-4 h-4" />
                 Leads
               </TabsTrigger>
-              <TabsTrigger value="claims" className="flex items-center gap-2">
+              <TabsTrigger value="claims" className="flex-1 min-w-[120px] flex items-center justify-center gap-2">
                 <FileText className="w-4 h-4" />
                 Sinistres
               </TabsTrigger>
-              <TabsTrigger value="policies" className="flex items-center gap-2">
+              <TabsTrigger value="policies" className="flex-1 min-w-[120px] flex items-center justify-center gap-2">
                 <Shield className="w-4 h-4" />
                 Polices
               </TabsTrigger>
-              <TabsTrigger value="clients" className="flex items-center gap-2">
+              <TabsTrigger value="clients" className="flex-1 min-w-[120px] flex items-center justify-center gap-2">
                 <Users className="w-4 h-4" />
                 Clients
               </TabsTrigger>
-              <TabsTrigger value="competitive" className="flex items-center gap-2">
+              <TabsTrigger value="competitive" className="flex-1 min-w-[120px] flex items-center justify-center gap-2">
                 <Shield className="w-4 h-4" />
                 Analyse
               </TabsTrigger>
-              <TabsTrigger value="communication" className="flex items-center gap-2">
+              <TabsTrigger value="communication" className="flex-1 min-w-[120px] flex items-center justify-center gap-2">
                 <MessageSquare className="w-4 h-4" />
                 Messages
               </TabsTrigger>

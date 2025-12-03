@@ -112,9 +112,7 @@ export const GuidedSalesFlow = () => {
   };
   return <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b">
-        
-      </header>
+      
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-8">

@@ -1,7 +1,7 @@
 import { Header } from "@/components/Header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, FileText, MessageSquare, Shield, FormInput, Inbox } from "lucide-react";
+import { Users, FileText, MessageSquare, Shield, FormInput, Inbox, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrokerClaimsTable } from "@/components/BrokerClaimsTable";
 import { BrokerAnalytics } from "@/components/BrokerAnalytics";
@@ -11,6 +11,7 @@ import { BrokerSubscriptions } from "@/components/BrokerSubscriptions";
 import { DynamicFormRenderer } from "@/components/DynamicFormRenderer";
 import { CompetitiveAnalyzer } from "@/components/CompetitiveAnalyzer";
 import { LeadInbox } from "@/components/LeadInbox";
+import { GuidedSalesFlow } from "@/components/guided-sales/GuidedSalesFlow";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
@@ -86,7 +87,7 @@ const B2B = () => {
         <div className="mt-6">
           <Tabs defaultValue="leads" className="space-y-6">
             {/* 4. Améliorer la navigation Tabs (style CRM) */}
-            <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full h-auto p-1 bg-muted/60 rounded-lg shadow-inner">
+            <TabsList className="grid grid-cols-4 sm:grid-cols-7 w-full h-auto p-1 bg-muted/60 rounded-lg shadow-inner">
               {/* Styles des Triggers : py-2 pour réduire la hauteur, active state avec background blanc/shadow/border-radius */}
               <TabsTrigger
                 value="leads"
@@ -94,6 +95,13 @@ const B2B = () => {
               >
                 <Inbox className="w-4 h-4" />
                 Leads
+              </TabsTrigger>
+              <TabsTrigger
+                value="guided-sales"
+                className="py-2 flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:ring-1 data-[state=active]:ring-primary/10 transition-all duration-200 rounded-md"
+              >
+                <Zap className="w-4 h-4" />
+                Vente Guidée
               </TabsTrigger>
               <TabsTrigger
                 value="claims"
@@ -134,17 +142,16 @@ const B2B = () => {
 
             {/* Contenu de l'onglet Leads */}
             <TabsContent value="leads" className="space-y-4">
-              {/* 5 & 6. Enlever CardHeader et Mettre Lead Inbox dans un CardContent très compact */}
               <Card className="p-0">
-                {" "}
-                {/* Retrait du padding du Card (p-0) */}
-                {/* Le CardHeader a été supprimé pour éviter la redondance du titre */}
                 <CardContent>
-                  {/* Le composant LeadInbox est supposé gérer en interne la réduction de la hauteur des lignes de table
-                et l'activation d'un mode compact. Pour l'exemple, nous laissons le composant. */}
                   <LeadInbox />
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Contenu de l'onglet Vente Guidée */}
+            <TabsContent value="guided-sales" className="space-y-4">
+              <GuidedSalesFlow />
             </TabsContent>
 
             {/* Contenu des autres onglets (Ajustement de l'espacement: mb-8 -> mb-4) */}

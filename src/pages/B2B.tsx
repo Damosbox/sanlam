@@ -66,65 +66,88 @@ const B2B = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="container py-12">
-        {/* Welcome Banner */}
-        <Card className="p-8 mb-8 gradient-activated text-white">
-          <h1 className="text-3xl font-bold mb-2">Espace Courtier 🤝</h1>
-          <p className="text-white/90 mb-4">Gérez vos clients et leurs sinistres avec des outils intelligents</p>
+      <main className="container py-6">
+        {/* 1. Welcome Banner (Réduction de hauteur et padding) */}
+        <Card className="p-6 mb-4 gradient-activated text-white">
+          {/* Baisse de la taille du titre (3xl -> 2xl) */}
+          <h1 className="text-2xl font-bold mb-1">Espace Courtier 🤝</h1>
+          {/* Réduction de la marge (mb-4) */}
+          <p className="text-white/90 mb-0">Gérez vos clients et leurs sinistres avec des outils intelligents</p>
         </Card>
 
-        {/* Analytics Overview */}
-        <BrokerAnalytics />
-
-        {/* AI Insights */}
-        <div className="mt-8">
-          <BrokerAIInsights />
+        {/* 7. Réduire l’espace entre Banner → Analytics (mb-8 -> mb-2/mb-4) */}
+        {/* Analytics Overview (Priorité 1) */}
+        <div className="mb-4">
+          <BrokerAnalytics />
         </div>
 
-        {/* Main Management Tabs */}
-        <div className="mt-12">
+        {/* 8. Main Management Tabs (Priorité 2) */}
+        {/* Remplacement de mt-12 par mt-6 pour densifier */}
+        <div className="mt-6">
           <Tabs defaultValue="leads" className="space-y-6">
-            <TabsList className="flex flex-wrap w-full max-w-[1200px] h-auto gap-1 p-1">
-              <TabsTrigger value="leads" className="flex-1 min-w-[120px] flex items-center justify-center gap-2">
+            {/* 4. Améliorer la navigation Tabs (style CRM) */}
+            <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full h-auto p-1 bg-muted/60 rounded-lg shadow-inner">
+              {/* Styles des Triggers : py-2 pour réduire la hauteur, active state avec background blanc/shadow/border-radius */}
+              <TabsTrigger
+                value="leads"
+                className="py-2 flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:ring-1 data-[state=active]:ring-primary/10 transition-all duration-200 rounded-md"
+              >
                 <Inbox className="w-4 h-4" />
                 Leads
               </TabsTrigger>
-              <TabsTrigger value="claims" className="flex-1 min-w-[120px] flex items-center justify-center gap-2">
+              <TabsTrigger
+                value="claims"
+                className="py-2 flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:ring-1 data-[state=active]:ring-primary/10 transition-all duration-200 rounded-md"
+              >
                 <FileText className="w-4 h-4" />
                 Sinistres
               </TabsTrigger>
-              <TabsTrigger value="policies" className="flex-1 min-w-[120px] flex items-center justify-center gap-2">
+              <TabsTrigger
+                value="policies"
+                className="py-2 flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:ring-1 data-[state=active]:ring-primary/10 transition-all duration-200 rounded-md"
+              >
                 <Shield className="w-4 h-4" />
                 Polices
               </TabsTrigger>
-              <TabsTrigger value="clients" className="flex-1 min-w-[120px] flex items-center justify-center gap-2">
+              <TabsTrigger
+                value="clients"
+                className="py-2 flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:ring-1 data-[state=active]:ring-primary/10 transition-all duration-200 rounded-md"
+              >
                 <Users className="w-4 h-4" />
                 Clients
               </TabsTrigger>
-              <TabsTrigger value="competitive" className="flex-1 min-w-[120px] flex items-center justify-center gap-2">
+              <TabsTrigger
+                value="competitive"
+                className="py-2 flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:ring-1 data-[state=active]:ring-primary/10 transition-all duration-200 rounded-md"
+              >
                 <Shield className="w-4 h-4" />
                 Analyse
               </TabsTrigger>
               <TabsTrigger
                 value="communication"
-                className="flex-1 min-w-[120px] flex items-center justify-center gap-2"
+                className="py-2 flex items-center justify-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:ring-1 data-[state=active]:ring-primary/10 transition-all duration-200 rounded-md"
               >
                 <MessageSquare className="w-4 h-4" />
                 Messages
               </TabsTrigger>
             </TabsList>
 
+            {/* Contenu de l'onglet Leads */}
             <TabsContent value="leads" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Lead Inbox</CardTitle>
-                </CardHeader>
+              {/* 5 & 6. Enlever CardHeader et Mettre Lead Inbox dans un CardContent très compact */}
+              <Card className="p-0">
+                {" "}
+                {/* Retrait du padding du Card (p-0) */}
+                {/* Le CardHeader a été supprimé pour éviter la redondance du titre */}
                 <CardContent>
-                  <LeadInbox />
+                  {/* Le composant LeadInbox est supposé gérer en interne la réduction de la hauteur des lignes de table
+                et l'activation d'un mode compact. Pour l'exemple, nous laissons le composant. */}
+                  <LeadInbox isCompact={true} />
                 </CardContent>
               </Card>
             </TabsContent>
 
+            {/* Contenu des autres onglets (Ajustement de l'espacement: mb-8 -> mb-4) */}
             <TabsContent value="claims" className="space-y-4">
               <Card>
                 <CardHeader>
@@ -173,6 +196,12 @@ const B2B = () => {
               </Card>
             </TabsContent>
           </Tabs>
+        </div>
+
+        {/* 3. Déplacer le bloc IA (BrokerAIInsights) plus bas (Priorité 3) */}
+        {/* Ajout d'une marge supérieure pour le séparer des Tabs */}
+        <div className="mt-8">
+          <BrokerAIInsights />
         </div>
       </main>
     </div>

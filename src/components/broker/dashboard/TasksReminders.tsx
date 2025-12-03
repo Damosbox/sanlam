@@ -4,15 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { 
-  Phone, Eye, AlertCircle, Calendar, 
-  FileWarning, CreditCard, RefreshCw 
+  Phone, Calendar, FileWarning, RefreshCw, 
+  ChevronRight, CheckCircle2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Task {
   id: string;
-  type: "lead_relance" | "quote_expiring" | "claim_pending" | "renewal" | "payment_failed";
+  type: "lead_relance" | "quote_expiring" | "claim_pending" | "renewal";
   title: string;
   description: string;
   priority: "high" | "medium" | "low";
@@ -21,9 +22,9 @@ interface Task {
 }
 
 const priorityConfig = {
-  high: { color: "border-l-red-500", badge: "bg-red-500/10 text-red-600" },
-  medium: { color: "border-l-amber-500", badge: "bg-amber-500/10 text-amber-600" },
-  low: { color: "border-l-blue-500", badge: "bg-blue-500/10 text-blue-600" },
+  high: { dot: "bg-destructive", text: "text-destructive" },
+  medium: { dot: "bg-warning", text: "text-warning" },
+  low: { dot: "bg-primary", text: "text-primary" },
 };
 
 const typeIcons = {
@@ -31,7 +32,6 @@ const typeIcons = {
   quote_expiring: Calendar,
   claim_pending: FileWarning,
   renewal: RefreshCw,
-  payment_failed: CreditCard,
 };
 
 export const TasksReminders = () => {
@@ -63,7 +63,7 @@ export const TasksReminders = () => {
           id: `lead-${lead.id}`,
           type: "lead_relance",
           title: `Relancer ${lead.first_name} ${lead.last_name}`,
-          description: "Lead en attente de relance",
+          description: "Lead en attente",
           priority: "high",
           action: "Relancer",
           route: "/b2b/leads",
@@ -82,20 +82,20 @@ export const TasksReminders = () => {
         generatedTasks.push({
           id: `claim-${claim.id}`,
           type: "claim_pending",
-          title: `Sinistre ${claim.claim_type} à examiner`,
+          title: `Sinistre ${claim.claim_type}`,
           description: "Action requise",
           priority: "medium",
-          action: "Voir",
+          action: "Examiner",
           route: "/b2b/claims",
         });
       });
 
-      // Renouvellements (mock for now)
+      // Renouvellements
       generatedTasks.push({
         id: "renewal-1",
         type: "renewal",
-        title: "3 polices expirent ce mois",
-        description: "Clients à contacter",
+        title: "3 polices expirent bientôt",
+        description: "Ce mois-ci",
         priority: "medium",
         action: "Voir",
         route: "/b2b/policies",
@@ -125,65 +125,86 @@ export const TasksReminders = () => {
     }
   };
 
+  const remainingCount = tasks.length - completedTasks.size;
+
   return (
-    <Card>
-      <CardHeader className="pb-3">
+    <Card className="border-border/60">
+      <CardHeader className="pb-2 pt-4 px-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-primary" />
-            Tâches & Rappels
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            Tes actions du jour
           </CardTitle>
-          <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
-            {tasks.length - completedTasks.size} restantes
-          </span>
+          <Badge 
+            variant="secondary" 
+            className={cn(
+              "text-xs font-medium",
+              remainingCount === 0 ? "bg-success/10 text-success" : "bg-muted"
+            )}
+          >
+            {remainingCount === 0 ? (
+              <><CheckCircle2 className="w-3 h-3 mr-1" /> Terminé</>
+            ) : (
+              `${remainingCount} restante${remainingCount > 1 ? "s" : ""}`
+            )}
+          </Badge>
         </div>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="px-4 pb-4 pt-0">
         {tasks.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            Aucune tâche prioritaire 🎉
+          <p className="text-sm text-muted-foreground text-center py-6">
+            Aucune action prioritaire 🎉
           </p>
         ) : (
-          tasks.map((task) => {
-            const Icon = typeIcons[task.type];
-            const isCompleted = completedTasks.has(task.id);
-            
-            return (
-              <div
-                key={task.id}
-                className={cn(
-                  "flex items-center gap-3 p-3 rounded-lg border-l-4 bg-muted/30 transition-all duration-200",
-                  priorityConfig[task.priority].color,
-                  isCompleted && "opacity-50"
-                )}
-              >
-                <Checkbox
-                  checked={isCompleted}
-                  onCheckedChange={() => toggleTask(task.id)}
-                />
-                <div className={cn("p-2 rounded-lg", priorityConfig[task.priority].badge)}>
-                  <Icon className="h-4 w-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={cn(
-                    "text-sm font-medium truncate",
-                    isCompleted && "line-through"
-                  )}>
-                    {task.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{task.description}</p>
-                </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleAction(task)}
-                  disabled={isCompleted}
+          <div className="space-y-1.5">
+            {tasks.map((task, index) => {
+              const Icon = typeIcons[task.type];
+              const isCompleted = completedTasks.has(task.id);
+              
+              return (
+                <div
+                  key={task.id}
+                  className={cn(
+                    "flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200",
+                    "hover:bg-muted/50 group",
+                    isCompleted && "opacity-50"
+                  )}
+                  style={{ animationDelay: `${index * 30}ms` }}
                 >
-                  {task.action}
-                </Button>
-              </div>
-            );
-          })
+                  <Checkbox
+                    checked={isCompleted}
+                    onCheckedChange={() => toggleTask(task.id)}
+                    className="shrink-0"
+                  />
+                  <div className={cn(
+                    "w-2 h-2 rounded-full shrink-0",
+                    priorityConfig[task.priority].dot
+                  )} />
+                  <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className={cn(
+                      "text-sm font-medium truncate",
+                      isCompleted && "line-through text-muted-foreground"
+                    )}>
+                      {task.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {task.description}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleAction(task)}
+                    disabled={isCompleted}
+                    className="h-7 text-xs px-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    {task.action}
+                    <ChevronRight className="w-3 h-3 ml-1" />
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
         )}
       </CardContent>
     </Card>

@@ -1,32 +1,22 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { 
-  Clock, FileText, Shield, TrendingUp, 
-  Users, Target, Wallet, Timer 
-} from "lucide-react";
+import { Users, Target, Timer, Wallet } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface KPIStats {
-  pendingClaims: number;
-  reviewedClaims: number;
-  activePolicies: number;
-  monthlyRevenue: number;
-  conversionRate: number;
   leadsAssigned24h: number;
-  estimatedCommissions: number;
+  conversionRate: number;
   avgConversionDays: number;
+  estimatedCommissions: number;
 }
 
 export const DashboardKPIs = () => {
   const [stats, setStats] = useState<KPIStats>({
-    pendingClaims: 0,
-    reviewedClaims: 0,
-    activePolicies: 0,
-    monthlyRevenue: 0,
-    conversionRate: 0,
     leadsAssigned24h: 0,
-    estimatedCommissions: 0,
+    conversionRate: 0,
     avgConversionDays: 0,
+    estimatedCommissions: 0,
   });
 
   useEffect(() => {
@@ -38,13 +28,7 @@ export const DashboardKPIs = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch claims
-      const { data: claims } = await supabase
-        .from("claims")
-        .select("status, cost_estimation")
-        .eq("assigned_broker_id", user.id);
-
-      // Fetch subscriptions
+      // Fetch subscriptions for commissions
       const { data: subscriptions } = await supabase
         .from("subscriptions")
         .select("status, monthly_premium")
@@ -59,26 +43,17 @@ export const DashboardKPIs = () => {
       const now = new Date();
       const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-      const pending = claims?.filter(c => c.status === "Submitted").length || 0;
-      const reviewed = claims?.filter(c => c.status === "Reviewed").length || 0;
-      const totalPolicies = subscriptions?.filter(s => s.status === "active").length || 0;
       const monthlyRevenue = subscriptions?.reduce((sum, sub) => sum + (sub.monthly_premium || 0), 0) || 0;
-
       const totalLeads = leads?.length || 1;
       const convertedLeads = leads?.filter(l => l.status === "converti").length || 0;
       const conversionRate = Math.round((convertedLeads / totalLeads) * 100);
-
       const leadsLast24h = leads?.filter(l => new Date(l.created_at) >= yesterday).length || 0;
 
       setStats({
-        pendingClaims: pending,
-        reviewedClaims: reviewed,
-        activePolicies: totalPolicies,
-        monthlyRevenue,
-        conversionRate,
         leadsAssigned24h: leadsLast24h,
-        estimatedCommissions: Math.round(monthlyRevenue * 0.15),
+        conversionRate,
         avgConversionDays: 4.2,
+        estimatedCommissions: Math.round(monthlyRevenue * 0.15),
       });
     } catch (error) {
       console.error("Error fetching KPI stats:", error);
@@ -87,83 +62,62 @@ export const DashboardKPIs = () => {
 
   const kpis = [
     { 
-      label: "Sinistres en attente", 
-      value: stats.pendingClaims.toString(), 
-      icon: Clock, 
-      color: "text-orange-500",
-      bgColor: "bg-orange-500/10"
-    },
-    { 
-      label: "Sinistres examinés", 
-      value: stats.reviewedClaims.toString(), 
-      icon: FileText, 
-      color: "text-blue-500",
-      bgColor: "bg-blue-500/10"
-    },
-    { 
-      label: "Polices actives", 
-      value: stats.activePolicies.toString(), 
-      icon: Shield, 
-      color: "text-green-500",
-      bgColor: "bg-green-500/10"
-    },
-    { 
-      label: "Revenus mensuels", 
-      value: `${stats.monthlyRevenue.toLocaleString()} FCFA`, 
-      icon: TrendingUp, 
-      color: "text-primary",
-      bgColor: "bg-primary/10"
+      label: "Leads (24h)", 
+      value: stats.leadsAssigned24h.toString(), 
+      icon: Users, 
+      trend: "+3 vs hier",
     },
     { 
       label: "Taux conversion", 
       value: `${stats.conversionRate}%`, 
       icon: Target, 
-      color: "text-purple-500",
-      bgColor: "bg-purple-500/10"
-    },
-    { 
-      label: "Leads (24h)", 
-      value: stats.leadsAssigned24h.toString(), 
-      icon: Users, 
-      color: "text-cyan-500",
-      bgColor: "bg-cyan-500/10"
-    },
-    { 
-      label: "Commissions MTD", 
-      value: `${stats.estimatedCommissions.toLocaleString()} FCFA`, 
-      icon: Wallet, 
-      color: "text-emerald-500",
-      bgColor: "bg-emerald-500/10"
+      trend: "+2.5% vs mois dernier",
     },
     { 
       label: "Temps conversion", 
-      value: `${stats.avgConversionDays} jours`, 
+      value: `${stats.avgConversionDays}j`, 
       icon: Timer, 
-      color: "text-amber-500",
-      bgColor: "bg-amber-500/10"
+      trend: "-0.8j vs moyenne",
+    },
+    { 
+      label: "Commissions MTD", 
+      value: `${stats.estimatedCommissions.toLocaleString()}`, 
+      icon: Wallet, 
+      trend: "FCFA",
     },
   ];
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-foreground">Indicateurs clés</h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {kpis.map((kpi) => (
-          <Card key={kpi.label} className="hover:shadow-md transition-shadow duration-200">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="text-xs text-muted-foreground mb-1">{kpi.label}</p>
-                  <p className="text-xl font-bold text-foreground">{kpi.value}</p>
-                </div>
-                <div className={`w-10 h-10 rounded-xl ${kpi.bgColor} flex items-center justify-center`}>
-                  <kpi.icon className={`w-5 h-5 ${kpi.color}`} />
-                </div>
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {kpis.map((kpi, index) => (
+        <Card 
+          key={kpi.label} 
+          className={cn(
+            "border-border/60 transition-all duration-200 hover:shadow-soft hover:border-primary/20",
+            "animate-fade-in"
+          )}
+          style={{ animationDelay: `${index * 50}ms` }}
+        >
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-muted-foreground font-medium mb-1 truncate">
+                  {kpi.label}
+                </p>
+                <p className="text-2xl font-bold text-foreground tracking-tight">
+                  {kpi.value}
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                  {kpi.trend}
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <kpi.icon className="w-4 h-4 text-primary" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 };

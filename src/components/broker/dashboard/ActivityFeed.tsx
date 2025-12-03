@@ -3,8 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
-  FileText, CreditCard, CheckCircle, 
-  UserPlus, MessageSquare, Shield, Activity
+  Shield, CreditCard, UserPlus, FileText, Activity
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -12,18 +11,16 @@ import { cn } from "@/lib/utils";
 
 interface ActivityItem {
   id: string;
-  type: "policy" | "payment" | "quote" | "lead" | "claim" | "message";
+  type: "policy" | "payment" | "lead" | "claim";
   title: string;
   timestamp: Date;
 }
 
 const activityConfig = {
-  policy: { icon: Shield, color: "text-green-500", bgColor: "bg-green-500/10" },
-  payment: { icon: CreditCard, color: "text-blue-500", bgColor: "bg-blue-500/10" },
-  quote: { icon: CheckCircle, color: "text-purple-500", bgColor: "bg-purple-500/10" },
-  lead: { icon: UserPlus, color: "text-amber-500", bgColor: "bg-amber-500/10" },
-  claim: { icon: FileText, color: "text-orange-500", bgColor: "bg-orange-500/10" },
-  message: { icon: MessageSquare, color: "text-cyan-500", bgColor: "bg-cyan-500/10" },
+  policy: { icon: Shield, color: "text-success" },
+  payment: { icon: CreditCard, color: "text-primary" },
+  lead: { icon: UserPlus, color: "text-warning" },
+  claim: { icon: FileText, color: "text-accent" },
 };
 
 export const ActivityFeed = () => {
@@ -52,7 +49,7 @@ export const ActivityFeed = () => {
         activityList.push({
           id: `sub-${sub.id}`,
           type: "policy",
-          title: `Nouvelle police ${sub.policy_number}`,
+          title: `Police ${sub.policy_number}`,
           timestamp: new Date(sub.created_at),
         });
       });
@@ -60,7 +57,7 @@ export const ActivityFeed = () => {
       // Recent leads
       const { data: leads } = await supabase
         .from("leads")
-        .select("id, first_name, last_name, status, updated_at")
+        .select("id, first_name, last_name, updated_at")
         .eq("assigned_broker_id", user.id)
         .eq("status", "converti")
         .order("updated_at", { ascending: false })
@@ -78,7 +75,7 @@ export const ActivityFeed = () => {
       // Recent claims
       const { data: claims } = await supabase
         .from("claims")
-        .select("id, claim_type, status, updated_at")
+        .select("id, claim_type, updated_at")
         .eq("assigned_broker_id", user.id)
         .order("updated_at", { ascending: false })
         .limit(2);
@@ -87,76 +84,63 @@ export const ActivityFeed = () => {
         activityList.push({
           id: `claim-${claim.id}`,
           type: "claim",
-          title: `Sinistre ${claim.claim_type} - ${claim.status}`,
+          title: `Sinistre ${claim.claim_type}`,
           timestamp: new Date(claim.updated_at),
         });
       });
 
-      // Sort by timestamp
       activityList.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-
-      setActivities(activityList.slice(0, 8));
+      setActivities(activityList.slice(0, 6));
     } catch (error) {
       console.error("Error fetching activities:", error);
     }
   };
 
+  // Conditional rendering - only show if data exists
+  if (activities.length === 0) {
+    return null;
+  }
+
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Activity className="h-5 w-5 text-primary" />
+    <Card className="border-border/60">
+      <CardHeader className="pb-2 pt-4 px-4">
+        <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+          <Activity className="h-4 w-4" />
           Activité récente
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[300px] pr-4">
-          {activities.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              Aucune activité récente
-            </p>
-          ) : (
-            <div className="relative">
-              {/* Timeline line */}
-              <div className="absolute left-5 top-0 bottom-0 w-px bg-border" />
+      <CardContent className="px-4 pb-4 pt-0">
+        <ScrollArea className="h-[180px]">
+          <div className="space-y-1">
+            {activities.map((activity, index) => {
+              const config = activityConfig[activity.type];
+              const Icon = config.icon;
               
-              <div className="space-y-4">
-                {activities.map((activity, index) => {
-                  const config = activityConfig[activity.type];
-                  const Icon = config.icon;
-                  
-                  return (
-                    <div
-                      key={activity.id}
-                      className={cn(
-                        "relative flex gap-4 pl-2 animate-fade-in",
-                        index === 0 && "pt-0"
-                      )}
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      <div className={cn(
-                        "relative z-10 w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-background",
-                        config.bgColor
-                      )}>
-                        <Icon className={cn("h-4 w-4", config.color)} />
-                      </div>
-                      <div className="flex-1 pt-1">
-                        <p className="text-sm font-medium text-foreground">
-                          {activity.title}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(activity.timestamp, { 
-                            addSuffix: true, 
-                            locale: fr 
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+              return (
+                <div
+                  key={activity.id}
+                  className={cn(
+                    "flex items-center gap-3 py-2 px-2 rounded-md",
+                    "hover:bg-muted/30 transition-colors duration-150"
+                  )}
+                  style={{ animationDelay: `${index * 30}ms` }}
+                >
+                  <Icon className={cn("h-4 w-4 shrink-0", config.color)} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground truncate">
+                      {activity.title}
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted-foreground shrink-0">
+                    {formatDistanceToNow(activity.timestamp, { 
+                      addSuffix: true, 
+                      locale: fr 
+                    })}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
         </ScrollArea>
       </CardContent>
     </Card>

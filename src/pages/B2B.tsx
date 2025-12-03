@@ -142,7 +142,7 @@ const B2B = () => {
                 <CardContent>
                   {/* Le composant LeadInbox est supposé gérer en interne la réduction de la hauteur des lignes de table
                 et l'activation d'un mode compact. Pour l'exemple, nous laissons le composant. */}
-                  <LeadInbox isCompact={true} />
+                  <LeadInbox />
                 </CardContent>
               </Card>
             </TabsContent>

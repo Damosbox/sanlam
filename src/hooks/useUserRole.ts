@@ -23,13 +23,14 @@ export const useUserRole = (user: User | null) => {
           .eq("user_id", user.id)
           .order("role", { ascending: true }) // admin < broker < customer
           .limit(1)
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error("Error fetching user role:", error);
           setRole(null);
         } else {
-          setRole(data?.role as UserRole);
+          // Default to "customer" if no role found
+          setRole((data?.role as UserRole) ?? "customer");
         }
       } catch (error) {
         console.error("Error fetching user role:", error);

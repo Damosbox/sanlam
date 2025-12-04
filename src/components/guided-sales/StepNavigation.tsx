@@ -1,11 +1,13 @@
 import { cn } from "@/lib/utils";
-import { Check } from "lucide-react";
+import { Check, ChevronLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface StepNavigationProps {
   currentStep: number;
   totalSteps: number;
   stepNames: string[];
   onStepClick: (step: number) => void;
+  onPrev?: () => void;
   compact?: boolean;
 }
 
@@ -14,6 +16,7 @@ export const StepNavigation = ({
   totalSteps, 
   stepNames, 
   onStepClick,
+  onPrev,
   compact = false 
 }: StepNavigationProps) => {
   if (compact) {
@@ -50,7 +53,18 @@ export const StepNavigation = ({
   }
 
   return (
-    <nav aria-label="Progress">
+    <nav aria-label="Progress" className="flex items-center gap-3">
+      {onPrev && currentStep > 1 && currentStep < totalSteps && (
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={onPrev}
+          className="gap-1.5 text-muted-foreground hover:text-foreground"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Retour
+        </Button>
+      )}
       <ol className="flex items-center gap-2">
         {stepNames.map((name, index) => {
           const stepNumber = index + 1;

@@ -1,15 +1,13 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowRight, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { GuidedSalesState, ProductType } from "./types";
 import { useEffect, useState } from "react";
 
 interface QuoteSummaryCardProps {
   state: GuidedSalesState;
   onNext: () => void;
-  onPrev?: () => void;
   nextLabel: string;
   disabled?: boolean;
 }
@@ -21,7 +19,7 @@ const productLabels: Record<ProductType, string> = {
   vie: "Prévoyance Vie",
 };
 
-export const QuoteSummaryCard = ({ state, onNext, onPrev, nextLabel, disabled }: QuoteSummaryCardProps) => {
+export const QuoteSummaryCard = ({ state, onNext, nextLabel, disabled }: QuoteSummaryCardProps) => {
   const [displayTotal, setDisplayTotal] = useState(state.calculatedPremium.total);
 
   // Animate number changes
@@ -90,28 +88,16 @@ export const QuoteSummaryCard = ({ state, onNext, onPrev, nextLabel, disabled }:
           </div>
         </div>
 
-        {/* Navigation Buttons */}
-        <div className="flex gap-2 pt-2">
-          {onPrev && (
-            <Button 
-              onClick={onPrev} 
-              variant="ghost"
-              size="icon"
-              className="shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors h-11 w-11"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          )}
-          <Button 
-            onClick={onNext} 
-            className="flex-1 min-w-0 gap-2 bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg transition-all duration-200" 
-            size="lg"
-            disabled={disabled}
-          >
-            <span className="truncate">{nextLabel}</span>
-            <ArrowRight className="h-4 w-4 shrink-0" />
-          </Button>
-        </div>
+        {/* CTA Button - Full Width */}
+        <Button 
+          onClick={onNext} 
+          className="w-full gap-2 bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg transition-all duration-200" 
+          size="lg"
+          disabled={disabled}
+        >
+          {nextLabel}
+          <ArrowRight className="h-4 w-4 shrink-0" />
+        </Button>
       </div>
     </Card>
   );

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Shield, CreditCard, UserPlus, FileText, Activity
 } from "lucide-react";
@@ -25,6 +26,7 @@ const activityConfig = {
 
 export const ActivityFeed = () => {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchActivities();
@@ -93,8 +95,34 @@ export const ActivityFeed = () => {
       setActivities(activityList.slice(0, 6));
     } catch (error) {
       console.error("Error fetching activities:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <Card className="border-border/60">
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+            <Activity className="h-4 w-4" />
+            Activité récente
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4 pt-0">
+          <div className="space-y-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex items-center gap-3 py-2 px-2">
+                <Skeleton className="w-4 h-4 rounded" />
+                <Skeleton className="flex-1 h-4" />
+                <Skeleton className="w-16 h-3" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   // Conditional rendering - only show if data exists
   if (activities.length === 0) {

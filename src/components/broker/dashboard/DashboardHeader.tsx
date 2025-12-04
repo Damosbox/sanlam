@@ -1,29 +1,35 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw } from "lucide-react";
 
 export const DashboardHeader = () => {
   const [agentName, setAgentName] = useState("Agent");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [lastSync, setLastSync] = useState(new Date());
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("display_name, avatar_url")
-          .eq("id", user.id)
-          .maybeSingle();
-        
-        if (profile?.display_name) {
-          setAgentName(profile.display_name);
-        } else if (user.email) {
-          setAgentName(user.email.split("@")[0]);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("display_name, avatar_url")
+            .eq("id", user.id)
+            .maybeSingle();
+          
+          if (profile?.display_name) {
+            setAgentName(profile.display_name);
+          } else if (user.email) {
+            setAgentName(user.email.split("@")[0]);
+          }
+          setAvatarUrl(profile?.avatar_url || null);
         }
-        setAvatarUrl(profile?.avatar_url || null);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchProfile();
@@ -39,6 +45,18 @@ export const DashboardHeader = () => {
     if (hour < 18) return "Bon après-midi";
     return "Bonsoir";
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-3 sm:gap-4">
+        <Skeleton className="h-10 w-10 sm:h-12 sm:w-12 rounded-full" />
+        <div className="space-y-2">
+          <Skeleton className="h-5 sm:h-6 w-40 sm:w-52" />
+          <Skeleton className="h-3 w-28 sm:w-36" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-3 sm:gap-4">

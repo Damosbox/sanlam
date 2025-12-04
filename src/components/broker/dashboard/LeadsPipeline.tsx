@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 type LeadStatus = "nouveau" | "en_cours" | "relance" | "converti" | "perdu";
@@ -32,6 +33,7 @@ export const LeadsPipeline = () => {
     converti: 0,
     perdu: 0,
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchPipelineStats();
@@ -67,6 +69,8 @@ export const LeadsPipeline = () => {
       }
     } catch (error) {
       console.error("Error fetching pipeline stats:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -75,6 +79,25 @@ export const LeadsPipeline = () => {
   const handleStatusClick = (status: LeadStatus) => {
     navigate(`/b2b/leads?status=${status}`);
   };
+
+  if (isLoading) {
+    return (
+      <Card className="border-border/60">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-3 w-12" />
+          </div>
+          <Skeleton className="h-1.5 w-full rounded-full" />
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Skeleton key={i} className="flex-1 h-7 rounded" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="border-border/60">

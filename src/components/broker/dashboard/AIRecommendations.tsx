@@ -110,12 +110,12 @@ export const AIRecommendations = () => {
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="px-4 pb-4 pt-0">
-        <ScrollArea className="h-[200px]">
+      <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4 pt-0">
+        <ScrollArea className="h-[180px] sm:h-[200px]">
           {isLoading ? (
             <div className="space-y-2">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-16 rounded-lg bg-muted/30 animate-pulse" />
+                <div key={i} className="h-14 sm:h-16 rounded-lg bg-muted/30 animate-pulse" />
               ))}
             </div>
           ) : (
@@ -128,37 +128,36 @@ export const AIRecommendations = () => {
                   <div
                     key={rec.id}
                     className={cn(
-                      "p-3 rounded-lg transition-all duration-200",
+                      "p-2.5 sm:p-3 rounded-lg transition-all duration-200",
                       "hover:bg-muted/50 group cursor-pointer",
                       config.bgColor
                     )}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <div className="flex items-start gap-2.5">
-                      <Icon className={cn("h-4 w-4 mt-0.5 shrink-0", config.color)} />
+                    <div className="flex items-start gap-2 sm:gap-2.5">
+                      <Icon className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4 mt-0.5 shrink-0", config.color)} />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <p className="text-sm font-medium text-foreground truncate">
+                        <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5">
+                          <p className="text-xs sm:text-sm font-medium text-foreground truncate">
                             {rec.title}
                           </p>
                           <Badge 
                             variant="outline" 
-                            className={cn("text-[9px] px-1.5 h-4 shrink-0", config.color)}
+                            className={cn("text-[8px] sm:text-[9px] px-1 sm:px-1.5 h-3.5 sm:h-4 shrink-0 hidden sm:flex", config.color)}
                           >
                             {config.label}
                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground truncate">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                           {rec.description}
                         </p>
                       </div>
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-6 text-xs px-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                        className="h-5 sm:h-6 text-[10px] sm:text-xs px-1.5 sm:px-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0"
                       >
-                        {rec.action}
-                        <ArrowRight className="h-3 w-3 ml-1" />
+                        <ArrowRight className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>

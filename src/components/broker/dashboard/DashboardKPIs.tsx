@@ -88,7 +88,7 @@ export const DashboardKPIs = () => {
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
       {kpis.map((kpi, index) => (
         <Card 
           key={kpi.label} 
@@ -98,21 +98,21 @@ export const DashboardKPIs = () => {
           )}
           style={{ animationDelay: `${index * 50}ms` }}
         >
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-muted-foreground font-medium mb-1 truncate">
+                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium mb-0.5 sm:mb-1 truncate">
                   {kpi.label}
                 </p>
-                <p className="text-2xl font-bold text-foreground tracking-tight">
+                <p className="text-lg sm:text-2xl font-bold text-foreground tracking-tight">
                   {kpi.value}
                 </p>
-                <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5 truncate">
                   {kpi.trend}
                 </p>
               </div>
-              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                <kpi.icon className="w-4 h-4 text-primary" />
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <kpi.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
               </div>
             </div>
           </CardContent>

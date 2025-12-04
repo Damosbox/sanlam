@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, Menu } from "lucide-react";
+import { Home } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
@@ -55,9 +55,6 @@ export const Header = () => {
               </Button>
             </Link>
           )}
-          <Button variant="ghost" size="icon">
-            <Menu className="w-5 h-5" />
-          </Button>
         </nav>
       </div>
     </header>

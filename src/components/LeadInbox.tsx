@@ -121,35 +121,37 @@ export const LeadInbox = () => {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>;
   }
-  return <div className="space-y-5">
+  return <div className="space-y-4 sm:space-y-5">
       {/* Filters & View Toggle */}
-      <div className="flex items-center justify-between gap-4 sticky top-0 bg-background/95 backdrop-blur-sm py-3 z-10 border-b">
-        <Tabs value={activeStatus} onValueChange={setActiveStatus} className="flex-1">
-          <TabsList className="h-9">
-            <TabsTrigger value="all" className="text-xs px-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sticky top-0 bg-background/95 backdrop-blur-sm py-3 z-10 border-b">
+        <Tabs value={activeStatus} onValueChange={setActiveStatus} className="w-full sm:flex-1">
+          <TabsList className="h-9 w-full sm:w-auto overflow-x-auto flex-nowrap">
+            <TabsTrigger value="all" className="text-xs px-2 sm:px-3 flex-shrink-0">
               Tous ({statusCounts.all})
             </TabsTrigger>
-            {Object.entries(statusConfig).map(([status, config]) => <TabsTrigger key={status} value={status} className="text-xs px-3">
-                {config.label} ({statusCounts[status]})
+            {Object.entries(statusConfig).map(([status, config]) => <TabsTrigger key={status} value={status} className="text-xs px-2 sm:px-3 flex-shrink-0">
+                <span className="hidden sm:inline">{config.label}</span>
+                <span className="sm:hidden">{config.label.slice(0, 3)}.</span>
+                <span className="ml-1">({statusCounts[status]})</span>
               </TabsTrigger>)}
           </TabsList>
         </Tabs>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 justify-between sm:justify-end">
           <ToggleGroup type="single" value={viewDensity} onValueChange={v => v && setViewDensity(v as ViewDensity)} className="border rounded-md">
-            <ToggleGroupItem value="compact" aria-label="Compact" className="h-9 w-9 p-0">
+            <ToggleGroupItem value="compact" aria-label="Compact" className="h-8 w-8 sm:h-9 sm:w-9 p-0">
               <Rows3 className="h-4 w-4" />
             </ToggleGroupItem>
-            <ToggleGroupItem value="standard" aria-label="Standard" className="h-9 w-9 p-0">
+            <ToggleGroupItem value="standard" aria-label="Standard" className="h-8 w-8 sm:h-9 sm:w-9 p-0">
               <LayoutList className="h-4 w-4" />
             </ToggleGroupItem>
-            <ToggleGroupItem value="card" aria-label="Carte" className="h-9 w-9 p-0">
+            <ToggleGroupItem value="card" aria-label="Carte" className="h-8 w-8 sm:h-9 sm:w-9 p-0">
               <LayoutGrid className="h-4 w-4" />
             </ToggleGroupItem>
           </ToggleGroup>
-          <Button onClick={() => setCreateDialogOpen(true)} className="gap-2 h-9">
+          <Button onClick={() => setCreateDialogOpen(true)} className="gap-2 h-8 sm:h-9 px-2 sm:px-3">
             <UserPlus className="h-4 w-4" />
-            Nouveau Lead
+            <span className="hidden sm:inline">Nouveau Lead</span>
           </Button>
         </div>
       </div>

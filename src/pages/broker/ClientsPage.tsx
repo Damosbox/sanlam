@@ -3,11 +3,11 @@ import { BrokerClients } from "@/components/BrokerClients";
 
 export default function ClientsPage() {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Portfolio Clients</CardTitle>
+    <Card className="border-0 sm:border shadow-none sm:shadow-sm">
+      <CardHeader className="px-0 sm:px-6 pb-3 sm:pb-6">
+        <CardTitle className="text-lg sm:text-xl">Portfolio Clients</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-0 sm:px-6">
         <BrokerClients />
       </CardContent>
     </Card>

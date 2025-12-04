@@ -116,15 +116,15 @@ export const BrokerClients = () => {
   }
 
   return (
-    <div className="rounded-lg border bg-card">
-      <Table>
+    <div className="rounded-lg border bg-card overflow-x-auto">
+      <Table className="min-w-[500px]">
         <TableHeader>
           <TableRow>
-            <TableHead>Client</TableHead>
-            <TableHead>Contact</TableHead>
-            <TableHead>Sinistres</TableHead>
-            <TableHead>Polices</TableHead>
-            <TableHead>Dernier sinistre</TableHead>
+            <TableHead className="min-w-[120px]">Client</TableHead>
+            <TableHead className="min-w-[140px]">Contact</TableHead>
+            <TableHead className="min-w-[70px]">Sinistres</TableHead>
+            <TableHead className="min-w-[70px]">Polices</TableHead>
+            <TableHead className="min-w-[100px] hidden sm:table-cell">Dernier sinistre</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -138,23 +138,23 @@ export const BrokerClients = () => {
             clients.map((client) => (
               <TableRow key={client.id}>
                 <TableCell>
-                  <div className="font-medium">
+                  <div className="font-medium text-sm">
                     {client.display_name || "N/A"}
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="text-sm">
-                    <div>{client.email}</div>
+                  <div className="text-xs sm:text-sm">
+                    <div className="truncate max-w-[100px] sm:max-w-none">{client.email}</div>
                     <div className="text-muted-foreground">{client.phone || "N/A"}</div>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="secondary">{client.claimsCount}</Badge>
+                  <Badge variant="secondary" className="text-xs">{client.claimsCount}</Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="default">{client.subscriptionsCount}</Badge>
+                  <Badge variant="default" className="text-xs">{client.subscriptionsCount}</Badge>
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden sm:table-cell text-sm">
                   {client.lastClaimDate
                     ? new Date(client.lastClaimDate).toLocaleDateString()
                     : "N/A"}

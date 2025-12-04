@@ -8,8 +8,8 @@ import { UnderwritingStep } from "./steps/UnderwritingStep";
 import { BindingStep } from "./steps/BindingStep";
 import { IssuanceStep } from "./steps/IssuanceStep";
 import { GuidedSalesState, initialState } from "./types";
-import { StepProgress } from "./StepProgress";
-import { ChevronUp } from "lucide-react";
+import { StepNavigation } from "./StepNavigation";
+import { ChevronUp, ChevronLeft } from "lucide-react";
 import {
   Drawer,
   DrawerContent,
@@ -20,6 +20,7 @@ import {
 
 const TOTAL_STEPS = 6;
 const stepLabels = ["Générer Devis Rapide", "Valider Devis", "Passer à la Vérification", "Confirmer", "Émettre la police", "Terminer"];
+const stepNames = ["Analyse", "Devis", "Couverture", "Souscription", "Signature", "Émission"];
 
 export const GuidedSalesFlow = () => {
   const [state, setState] = useState<GuidedSalesState>(initialState);
@@ -98,6 +99,15 @@ export const GuidedSalesFlow = () => {
     }));
   };
 
+  const goToStep = (step: number) => {
+    if (step >= 1 && step <= state.currentStep) {
+      setState(prev => ({
+        ...prev,
+        currentStep: step
+      }));
+    }
+  };
+
   const nextStep = () => {
     if (state.currentStep < TOTAL_STEPS) {
       setState(prev => ({
@@ -105,6 +115,15 @@ export const GuidedSalesFlow = () => {
         currentStep: prev.currentStep + 1
       }));
       setDrawerOpen(false);
+    }
+  };
+
+  const prevStep = () => {
+    if (state.currentStep > 1) {
+      setState(prev => ({
+        ...prev,
+        currentStep: prev.currentStep - 1
+      }));
     }
   };
 
@@ -133,13 +152,35 @@ export const GuidedSalesFlow = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Step Navigation - Desktop */}
+      <div className="hidden lg:block border-b bg-background/95 backdrop-blur sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-6 py-3">
+          <StepNavigation 
+            currentStep={state.currentStep} 
+            totalSteps={TOTAL_STEPS} 
+            stepNames={stepNames}
+            onStepClick={goToStep}
+          />
+        </div>
+      </div>
+
       {/* Step Progress - Mobile */}
       <div className="lg:hidden px-4 py-3 border-b bg-background/95 backdrop-blur sticky top-0 z-10">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-muted-foreground">
-            Étape {state.currentStep}/{TOTAL_STEPS}
-          </span>
-          <StepProgress currentStep={state.currentStep} totalSteps={TOTAL_STEPS} />
+        <div className="flex items-center gap-3">
+          {state.currentStep > 1 && state.currentStep < 6 && (
+            <Button variant="ghost" size="icon" onClick={prevStep} className="shrink-0 -ml-2">
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+          )}
+          <div className="flex-1">
+            <StepNavigation 
+              currentStep={state.currentStep} 
+              totalSteps={TOTAL_STEPS} 
+              stepNames={stepNames}
+              onStepClick={goToStep}
+              compact
+            />
+          </div>
         </div>
       </div>
 
@@ -147,14 +188,19 @@ export const GuidedSalesFlow = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8 pb-24 lg:pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Main Form Area */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 animate-fade-in">
             {renderStep()}
           </div>
 
           {/* Desktop Summary Card */}
           {state.currentStep < 6 && (
             <div className="hidden lg:block">
-              <QuoteSummaryCard state={state} onNext={nextStep} nextLabel={stepLabels[state.currentStep - 1]} />
+              <QuoteSummaryCard 
+                state={state} 
+                onNext={nextStep} 
+                onPrev={state.currentStep > 1 ? prevStep : undefined}
+                nextLabel={stepLabels[state.currentStep - 1]} 
+              />
             </div>
           )}
         </div>
@@ -183,7 +229,12 @@ export const GuidedSalesFlow = () => {
                 <DrawerTitle>Résumé du devis</DrawerTitle>
               </DrawerHeader>
               <div className="p-4 overflow-auto">
-                <QuoteSummaryCard state={state} onNext={nextStep} nextLabel={stepLabels[state.currentStep - 1]} />
+                <QuoteSummaryCard 
+                  state={state} 
+                  onNext={nextStep} 
+                  onPrev={state.currentStep > 1 ? prevStep : undefined}
+                  nextLabel={stepLabels[state.currentStep - 1]} 
+                />
               </div>
             </DrawerContent>
           </Drawer>

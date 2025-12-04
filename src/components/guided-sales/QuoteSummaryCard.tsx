@@ -2,13 +2,14 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { GuidedSalesState, ProductType } from "./types";
 import { useEffect, useState } from "react";
 
 interface QuoteSummaryCardProps {
   state: GuidedSalesState;
   onNext: () => void;
+  onPrev?: () => void;
   nextLabel: string;
   disabled?: boolean;
 }
@@ -20,7 +21,7 @@ const productLabels: Record<ProductType, string> = {
   vie: "Prévoyance Vie",
 };
 
-export const QuoteSummaryCard = ({ state, onNext, nextLabel, disabled }: QuoteSummaryCardProps) => {
+export const QuoteSummaryCard = ({ state, onNext, onPrev, nextLabel, disabled }: QuoteSummaryCardProps) => {
   const [displayTotal, setDisplayTotal] = useState(state.calculatedPremium.total);
 
   // Animate number changes
@@ -39,20 +40,20 @@ export const QuoteSummaryCard = ({ state, onNext, nextLabel, disabled }: QuoteSu
   }, [state.calculatedPremium.total, displayTotal]);
 
   return (
-    <Card className="sticky top-4 overflow-hidden">
+    <Card className="sticky top-20 overflow-hidden">
       {/* Header with gradient */}
-      <div className="bg-gradient-to-r from-slate-800 to-slate-700 text-white p-6">
+      <div className="bg-gradient-to-r from-slate-800 to-slate-700 text-white p-4 sm:p-6">
         <p className="text-xs uppercase tracking-wider text-slate-300 mb-1">Devis en cours</p>
-        <h3 className="text-xl font-semibold">{productLabels[state.needsAnalysis.productType]}</h3>
+        <h3 className="text-lg sm:text-xl font-semibold">{productLabels[state.needsAnalysis.productType]}</h3>
       </div>
 
       {/* Content */}
-      <div className="p-6 space-y-4">
+      <div className="p-4 sm:p-6 space-y-4">
         <div className="flex items-baseline justify-between">
           <span className="text-sm text-muted-foreground">Prime Annuelle</span>
-          <span className="text-3xl font-bold text-foreground">
+          <span className="text-2xl sm:text-3xl font-bold text-foreground">
             {Math.round(displayTotal)}
-            <span className="text-lg font-normal text-muted-foreground ml-1">€</span>
+            <span className="text-base sm:text-lg font-normal text-muted-foreground ml-1">€</span>
           </span>
         </div>
 
@@ -89,15 +90,29 @@ export const QuoteSummaryCard = ({ state, onNext, nextLabel, disabled }: QuoteSu
           </div>
         </div>
 
-        <Button 
-          onClick={onNext} 
-          className="w-full gap-2" 
-          size="lg"
-          disabled={disabled}
-        >
-          {nextLabel}
-          <ArrowRight className="h-4 w-4" />
-        </Button>
+        {/* Navigation Buttons */}
+        <div className="flex gap-2">
+          {onPrev && (
+            <Button 
+              onClick={onPrev} 
+              variant="outline"
+              size="lg"
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Retour</span>
+            </Button>
+          )}
+          <Button 
+            onClick={onNext} 
+            className="flex-1 gap-2" 
+            size="lg"
+            disabled={disabled}
+          >
+            {nextLabel}
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </Card>
   );

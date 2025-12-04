@@ -41,21 +41,21 @@ export const DashboardHeader = () => {
   };
 
   return (
-    <div className="flex items-center gap-4">
-      <Avatar className="h-12 w-12 border-2 border-primary/10">
+    <div className="flex items-center gap-3 sm:gap-4">
+      <Avatar className="h-10 w-10 sm:h-12 sm:w-12 border-2 border-primary/10 shrink-0">
         <AvatarImage src={avatarUrl || undefined} />
-        <AvatarFallback className="bg-primary/5 text-primary font-semibold text-sm">
+        <AvatarFallback className="bg-primary/5 text-primary font-semibold text-xs sm:text-sm">
           {getInitials(agentName)}
         </AvatarFallback>
       </Avatar>
-      <div>
-        <h1 className="text-xl font-semibold text-foreground">
+      <div className="min-w-0">
+        <h1 className="text-base sm:text-xl font-semibold text-foreground truncate">
           {getGreeting()} {agentName} 👋
         </h1>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-          <span>Voici tes priorités du jour</span>
-          <span className="text-border">•</span>
-          <span className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+          <span className="truncate">Tes priorités du jour</span>
+          <span className="text-border hidden sm:inline">•</span>
+          <span className="hidden sm:flex items-center gap-1">
             <RefreshCw className="h-3 w-3" />
             {lastSync.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
           </span>

@@ -8,13 +8,11 @@ import { QuickActions } from "@/components/broker/dashboard/QuickActions";
 
 const DashboardPage = () => {
   return (
-    <div className="space-y-6 max-w-6xl animate-fade-in">
+    <div className="space-y-4 sm:space-y-6 max-w-6xl animate-fade-in px-1 sm:px-0">
       {/* 1. Header Premium + Actions rapides */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-start sm:justify-between">
         <DashboardHeader />
-        <div className="sm:pt-2">
-          <QuickActions />
-        </div>
+        <QuickActions />
       </div>
       
       {/* 2. KPIs Prioritaires - 4 cartes */}
@@ -23,8 +21,8 @@ const DashboardPage = () => {
       {/* 3. Actions du jour (priorité absolue) */}
       <TasksReminders />
       
-      {/* 4. Pipeline + Recommandations IA (side by side on desktop) */}
-      <div className="grid lg:grid-cols-2 gap-4">
+      {/* 4. Pipeline + Recommandations IA */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="space-y-4">
           <LeadsPipeline />
           <ActivityFeed />

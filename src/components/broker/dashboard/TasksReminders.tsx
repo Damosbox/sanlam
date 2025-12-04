@@ -164,7 +164,7 @@ export const TasksReminders = () => {
                 <div
                   key={task.id}
                   className={cn(
-                    "flex items-center gap-3 p-2.5 rounded-lg transition-all duration-200",
+                    "flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 rounded-lg transition-all duration-200",
                     "hover:bg-muted/50 group",
                     isCompleted && "opacity-50"
                   )}
@@ -176,18 +176,18 @@ export const TasksReminders = () => {
                     className="shrink-0"
                   />
                   <div className={cn(
-                    "w-2 h-2 rounded-full shrink-0",
+                    "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full shrink-0",
                     priorityConfig[task.priority].dot
                   )} />
-                  <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground shrink-0 hidden sm:block" />
                   <div className="flex-1 min-w-0">
                     <p className={cn(
-                      "text-sm font-medium truncate",
+                      "text-xs sm:text-sm font-medium truncate",
                       isCompleted && "line-through text-muted-foreground"
                     )}>
                       {task.title}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                       {task.description}
                     </p>
                   </div>
@@ -196,10 +196,10 @@ export const TasksReminders = () => {
                     variant="ghost"
                     onClick={() => handleAction(task)}
                     disabled={isCompleted}
-                    className="h-7 text-xs px-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="h-6 sm:h-7 text-[10px] sm:text-xs px-1.5 sm:px-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0"
                   >
-                    {task.action}
-                    <ChevronRight className="w-3 h-3 ml-1" />
+                    <span className="hidden sm:inline">{task.action}</span>
+                    <ChevronRight className="w-3 h-3 sm:ml-1" />
                   </Button>
                 </div>
               );

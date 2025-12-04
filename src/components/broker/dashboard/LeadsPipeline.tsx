@@ -101,19 +101,18 @@ export const LeadsPipeline = () => {
 
         {/* Status tabs */}
         <Tabs defaultValue="nouveau" className="w-full">
-          <TabsList className="w-full h-8 bg-muted/50 p-0.5">
+          <TabsList className="w-full h-auto sm:h-8 bg-muted/50 p-0.5 flex-wrap sm:flex-nowrap gap-0.5 sm:gap-0">
             {(Object.keys(statusConfig) as LeadStatus[]).map((status) => (
               <TabsTrigger
                 key={status}
                 value={status}
                 onClick={() => handleStatusClick(status)}
                 className={cn(
-                  "flex-1 h-7 text-xs gap-1.5 data-[state=active]:shadow-sm",
-                  "transition-all duration-200"
+                  "flex-1 h-7 sm:h-7 text-[10px] sm:text-xs gap-1 sm:gap-1.5 data-[state=active]:shadow-sm",
+                  "transition-all duration-200 min-w-[60px] sm:min-w-0"
                 )}
               >
                 <div className={cn("w-1.5 h-1.5 rounded-full", statusConfig[status].color)} />
-                <span className="hidden sm:inline">{statusConfig[status].label}</span>
                 <span className="font-semibold">{stats[status]}</span>
               </TabsTrigger>
             ))}

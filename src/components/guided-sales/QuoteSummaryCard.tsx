@@ -91,26 +91,26 @@ export const QuoteSummaryCard = ({ state, onNext, onPrev, nextLabel, disabled }:
         </div>
 
         {/* Navigation Buttons */}
-        <div className="flex gap-2">
+        <div className="flex gap-3 pt-2">
           {onPrev && (
             <Button 
               onClick={onPrev} 
-              variant="outline"
+              variant="ghost"
               size="lg"
-              className="gap-2"
+              className="gap-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">Retour</span>
+              Retour
             </Button>
           )}
           <Button 
             onClick={onNext} 
-            className="flex-1 gap-2" 
+            className="flex-1 gap-2 bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg transition-all duration-200" 
             size="lg"
             disabled={disabled}
           >
             {nextLabel}
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Button>
         </div>
       </div>

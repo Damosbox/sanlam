@@ -116,10 +116,20 @@ export function BrokerSidebar() {
     { title: "Messages", url: "/b2b/messages", icon: MessageSquare },
   ];
 
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  const handleNavigation = (url: string) => {
+    navigate(url);
+    // Close sidebar on mobile after navigation
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   const renderMenuItem = (item: { title: string; url: string; icon: React.ComponentType<{ className?: string }>; badge?: string }) => (
     <SidebarMenuItem key={item.title}>
       <SidebarMenuButton
-        onClick={() => navigate(item.url)}
+        onClick={() => handleNavigation(item.url)}
         className={cn(
           "w-full justify-start gap-3 transition-all duration-200",
           isActive(item.url) &&
@@ -134,7 +144,7 @@ export function BrokerSidebar() {
         </div>
         {!collapsed && (
           <>
-            <span className="flex-1">{item.title}</span>
+            <span className="flex-1 truncate">{item.title}</span>
             {item.badge && (
               <Badge 
                 variant="secondary" 
@@ -155,15 +165,15 @@ export function BrokerSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/50">
-      <SidebarHeader className="p-4 border-b border-border/50">
+      <SidebarHeader className="p-3 sm:p-4 border-b border-border/50">
         <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
-          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
             <Sparkles className="h-4 w-4 text-primary" />
           </div>
           {!collapsed && (
-            <div>
-              <h2 className="font-semibold text-sm">Espace Courtier</h2>
-              <p className="text-xs text-muted-foreground">Sanlam Allianz</p>
+            <div className="min-w-0">
+              <h2 className="font-semibold text-sm truncate">Espace Courtier</h2>
+              <p className="text-xs text-muted-foreground truncate">Sanlam Allianz</p>
             </div>
           )}
         </div>

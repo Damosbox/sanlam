@@ -19,9 +19,9 @@ export default function LogoutButton() {
   };
 
   return (
-    <Button variant="outline" size="sm" onClick={handleLogout}>
-      <LogOut className="w-4 h-4 mr-2" />
-      Se déconnecter
+    <Button variant="outline" size="sm" onClick={handleLogout} className="px-2 sm:px-3">
+      <LogOut className="w-4 h-4 sm:mr-2" />
+      <span className="hidden sm:inline">Se déconnecter</span>
     </Button>
   );
 }

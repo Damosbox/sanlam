@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Phone, Calendar, FileWarning, RefreshCw, 
   ChevronRight, CheckCircle2
@@ -38,6 +39,7 @@ export const TasksReminders = () => {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchTasks();
@@ -104,6 +106,8 @@ export const TasksReminders = () => {
       setTasks(generatedTasks);
     } catch (error) {
       console.error("Error fetching tasks:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -150,7 +154,22 @@ export const TasksReminders = () => {
         </div>
       </CardHeader>
       <CardContent className="px-4 pb-4 pt-0">
-        {tasks.length === 0 ? (
+        {isLoading ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-3 p-2.5">
+                <Skeleton className="w-4 h-4 rounded" />
+                <Skeleton className="w-2 h-2 rounded-full" />
+                <Skeleton className="w-4 h-4 rounded hidden sm:block" />
+                <div className="flex-1 space-y-1.5">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+                <Skeleton className="h-7 w-16" />
+              </div>
+            ))}
+          </div>
+        ) : tasks.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-6">
             Aucune action prioritaire 🎉
           </p>

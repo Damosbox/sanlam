@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Users, Target, Timer, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +19,7 @@ export const DashboardKPIs = () => {
     avgConversionDays: 0,
     estimatedCommissions: 0,
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchStats();
@@ -57,6 +59,8 @@ export const DashboardKPIs = () => {
       });
     } catch (error) {
       console.error("Error fetching KPI stats:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -86,6 +90,27 @@ export const DashboardKPIs = () => {
       trend: "FCFA",
     },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i} className="border-border/60">
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-6 sm:h-8 w-20" />
+                  <Skeleton className="h-2 w-24" />
+                </div>
+                <Skeleton className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">

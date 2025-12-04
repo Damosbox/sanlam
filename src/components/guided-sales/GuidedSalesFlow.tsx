@@ -160,6 +160,7 @@ export const GuidedSalesFlow = () => {
             totalSteps={TOTAL_STEPS} 
             stepNames={stepNames}
             onStepClick={goToStep}
+            onPrev={prevStep}
           />
         </div>
       </div>
@@ -198,7 +199,6 @@ export const GuidedSalesFlow = () => {
               <QuoteSummaryCard 
                 state={state} 
                 onNext={nextStep} 
-                onPrev={state.currentStep > 1 ? prevStep : undefined}
                 nextLabel={stepLabels[state.currentStep - 1]} 
               />
             </div>
@@ -232,7 +232,6 @@ export const GuidedSalesFlow = () => {
                 <QuoteSummaryCard 
                   state={state} 
                   onNext={nextStep} 
-                  onPrev={state.currentStep > 1 ? prevStep : undefined}
                   nextLabel={stepLabels[state.currentStep - 1]} 
                 />
               </div>

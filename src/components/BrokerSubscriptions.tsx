@@ -98,16 +98,16 @@ export const BrokerSubscriptions = () => {
   }
 
   return (
-    <div className="rounded-md border">
-      <Table>
+    <div className="rounded-md border overflow-x-auto">
+      <Table className="min-w-[600px]">
         <TableHeader>
           <TableRow>
-            <TableHead>Client</TableHead>
-            <TableHead>Produit</TableHead>
-            <TableHead>N° Police</TableHead>
-            <TableHead>Prime mensuelle</TableHead>
-            <TableHead>Date de début</TableHead>
-            <TableHead>Statut</TableHead>
+            <TableHead className="min-w-[140px]">Client</TableHead>
+            <TableHead className="min-w-[100px]">Produit</TableHead>
+            <TableHead className="min-w-[110px] hidden sm:table-cell">N° Police</TableHead>
+            <TableHead className="min-w-[100px]">Prime</TableHead>
+            <TableHead className="min-w-[100px] hidden sm:table-cell">Date début</TableHead>
+            <TableHead className="min-w-[80px]">Statut</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -122,20 +122,20 @@ export const BrokerSubscriptions = () => {
               <TableRow key={sub.id}>
                 <TableCell>
                   <div>
-                    <div className="font-medium">
+                    <div className="font-medium text-sm">
                       {sub.profiles?.display_name || "N/A"}
                     </div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-xs text-muted-foreground truncate max-w-[100px] sm:max-w-none">
                       {sub.profiles?.email || "N/A"}
                     </div>
                   </div>
                 </TableCell>
-                <TableCell>{sub.products?.name || "N/A"}</TableCell>
-                <TableCell className="font-mono text-sm">
+                <TableCell className="text-sm">{sub.products?.name || "N/A"}</TableCell>
+                <TableCell className="font-mono text-xs hidden sm:table-cell">
                   {sub.policy_number}
                 </TableCell>
-                <TableCell>{sub.monthly_premium.toLocaleString()} FCFA</TableCell>
-                <TableCell>
+                <TableCell className="text-sm whitespace-nowrap">{sub.monthly_premium.toLocaleString()} FCFA</TableCell>
+                <TableCell className="hidden sm:table-cell text-sm">
                   {format(new Date(sub.start_date), "dd MMM yyyy", {
                     locale: fr,
                   })}

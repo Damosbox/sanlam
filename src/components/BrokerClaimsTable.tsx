@@ -190,17 +190,17 @@ export const BrokerClaimsTable = () => {
 
   return (
     <>
-      <div className="rounded-lg border bg-card">
-        <Table>
+      <div className="rounded-lg border bg-card overflow-x-auto">
+        <Table className="min-w-[700px]">
           <TableHeader>
             <TableRow>
-              <TableHead>Client</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Police</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Confiance IA</TableHead>
-              <TableHead>Statut</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="min-w-[150px]">Client</TableHead>
+              <TableHead className="min-w-[80px]">Type</TableHead>
+              <TableHead className="min-w-[100px] hidden sm:table-cell">Police</TableHead>
+              <TableHead className="min-w-[90px]">Date</TableHead>
+              <TableHead className="min-w-[80px] hidden sm:table-cell">Confiance IA</TableHead>
+              <TableHead className="min-w-[80px]">Statut</TableHead>
+              <TableHead className="text-right min-w-[120px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -215,28 +215,29 @@ export const BrokerClaimsTable = () => {
                 <TableRow key={claim.id}>
                   <TableCell>
                     <div>
-                      <div className="font-medium">
+                      <div className="font-medium text-sm">
                         {claim.profiles?.display_name || "N/A"}
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-xs text-muted-foreground truncate max-w-[120px] sm:max-w-none">
                         {claim.profiles?.email}
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="capitalize">{claim.claim_type}</TableCell>
-                  <TableCell>{claim.policy_id}</TableCell>
-                  <TableCell>
+                  <TableCell className="capitalize text-sm">{claim.claim_type}</TableCell>
+                  <TableCell className="hidden sm:table-cell text-sm">{claim.policy_id}</TableCell>
+                  <TableCell className="text-sm">
                     {claim.incident_date
                       ? new Date(claim.incident_date).toLocaleDateString()
                       : "N/A"}
                   </TableCell>
-                  <TableCell>{getConfidenceBadge(claim.ai_confidence)}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{getConfidenceBadge(claim.ai_confidence)}</TableCell>
                   <TableCell>{getStatusBadge(claim.status)}</TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-end gap-1 sm:gap-2">
                       <Button
                         size="sm"
                         variant="outline"
+                        className="h-8 w-8 p-0"
                         onClick={() => {
                           setSelectedClaim(claim);
                           setShowDetailDialog(true);
@@ -247,6 +248,7 @@ export const BrokerClaimsTable = () => {
                       <Button
                         size="sm"
                         variant="outline"
+                        className="h-8 w-8 p-0 hidden sm:flex"
                       >
                         <MessageSquare className="w-4 h-4" />
                       </Button>
@@ -254,7 +256,7 @@ export const BrokerClaimsTable = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-[hsl(var(--bright-green))]"
+                          className="text-[hsl(var(--bright-green))] h-8 w-8 p-0"
                           onClick={() => openReviewDialog(claim)}
                         >
                           <CheckCircle className="w-4 h-4" />

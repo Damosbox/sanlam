@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { QuoteSummaryCard } from "./QuoteSummaryCard";
 import { NeedsAnalysisStep } from "./steps/NeedsAnalysisStep";
@@ -10,6 +10,7 @@ import { IssuanceStep } from "./steps/IssuanceStep";
 import { GuidedSalesState, initialState } from "./types";
 import { StepNavigation } from "./StepNavigation";
 import { ChevronUp, ChevronLeft } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   Drawer,
   DrawerContent,
@@ -25,6 +26,18 @@ const stepNames = ["Analyse", "Devis", "Couverture", "Souscription", "Signature"
 export const GuidedSalesFlow = () => {
   const [state, setState] = useState<GuidedSalesState>(initialState);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [direction, setDirection] = useState<"forward" | "backward">("forward");
+  const [isAnimating, setIsAnimating] = useState(false);
+  const prevStepRef = useRef(state.currentStep);
+
+  useEffect(() => {
+    if (prevStepRef.current !== state.currentStep) {
+      setIsAnimating(true);
+      const timer = setTimeout(() => setIsAnimating(false), 300);
+      prevStepRef.current = state.currentStep;
+      return () => clearTimeout(timer);
+    }
+  }, [state.currentStep]);
 
   const updateNeedsAnalysis = (data: Partial<GuidedSalesState["needsAnalysis"]>) => {
     setState(prev => ({
@@ -101,6 +114,7 @@ export const GuidedSalesFlow = () => {
 
   const goToStep = (step: number) => {
     if (step >= 1 && step <= state.currentStep) {
+      setDirection(step < state.currentStep ? "backward" : "forward");
       setState(prev => ({
         ...prev,
         currentStep: step
@@ -110,6 +124,7 @@ export const GuidedSalesFlow = () => {
 
   const nextStep = () => {
     if (state.currentStep < TOTAL_STEPS) {
+      setDirection("forward");
       setState(prev => ({
         ...prev,
         currentStep: prev.currentStep + 1
@@ -120,6 +135,7 @@ export const GuidedSalesFlow = () => {
 
   const prevStep = () => {
     if (state.currentStep > 1) {
+      setDirection("backward");
       setState(prev => ({
         ...prev,
         currentStep: prev.currentStep - 1
@@ -128,6 +144,7 @@ export const GuidedSalesFlow = () => {
   };
 
   const resetFlow = () => {
+    setDirection("forward");
     setState(initialState);
   };
 
@@ -186,11 +203,20 @@ export const GuidedSalesFlow = () => {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8 pb-24 lg:pb-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8 pb-24 lg:pb-8 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-          {/* Main Form Area */}
-          <div className="lg:col-span-2 animate-fade-in">
-            {renderStep()}
+          {/* Main Form Area with Slide Animation */}
+          <div className="lg:col-span-2">
+            <div
+              key={state.currentStep}
+              className={cn(
+                "transition-all duration-300 ease-out",
+                isAnimating && direction === "forward" && "animate-slide-in-right",
+                isAnimating && direction === "backward" && "animate-slide-in-left"
+              )}
+            >
+              {renderStep()}
+            </div>
           </div>
 
           {/* Desktop Summary Card */}

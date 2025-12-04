@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { StepProgress } from "./StepProgress";
+import { Button } from "@/components/ui/button";
 import { QuoteSummaryCard } from "./QuoteSummaryCard";
 import { NeedsAnalysisStep } from "./steps/NeedsAnalysisStep";
 import { QuickQuoteStep } from "./steps/QuickQuoteStep";
@@ -9,10 +8,23 @@ import { UnderwritingStep } from "./steps/UnderwritingStep";
 import { BindingStep } from "./steps/BindingStep";
 import { IssuanceStep } from "./steps/IssuanceStep";
 import { GuidedSalesState, initialState } from "./types";
+import { StepProgress } from "./StepProgress";
+import { ChevronUp } from "lucide-react";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+
 const TOTAL_STEPS = 6;
 const stepLabels = ["Générer Devis Rapide", "Valider Devis", "Passer à la Vérification", "Confirmer", "Émettre la police", "Terminer"];
+
 export const GuidedSalesFlow = () => {
   const [state, setState] = useState<GuidedSalesState>(initialState);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
   const updateNeedsAnalysis = (data: Partial<GuidedSalesState["needsAnalysis"]>) => {
     setState(prev => ({
       ...prev,
@@ -22,6 +34,7 @@ export const GuidedSalesFlow = () => {
       }
     }));
   };
+
   const updateQuickQuote = (data: Partial<GuidedSalesState["quickQuote"]>) => {
     setState(prev => ({
       ...prev,
@@ -30,9 +43,9 @@ export const GuidedSalesFlow = () => {
         ...data
       }
     }));
-    // Recalculate premium on quote changes
     recalculatePremium();
   };
+
   const updateCoverage = (data: Partial<GuidedSalesState["coverage"]>) => {
     setState(prev => ({
       ...prev,
@@ -42,6 +55,7 @@ export const GuidedSalesFlow = () => {
       }
     }));
   };
+
   const updateUnderwriting = (data: Partial<GuidedSalesState["underwriting"]>) => {
     setState(prev => ({
       ...prev,
@@ -51,6 +65,7 @@ export const GuidedSalesFlow = () => {
       }
     }));
   };
+
   const updateBinding = (data: Partial<GuidedSalesState["binding"]>) => {
     setState(prev => ({
       ...prev,
@@ -60,14 +75,15 @@ export const GuidedSalesFlow = () => {
       }
     }));
   };
+
   const updatePremium = (premium: GuidedSalesState["calculatedPremium"]) => {
     setState(prev => ({
       ...prev,
       calculatedPremium: premium
     }));
   };
+
   const recalculatePremium = () => {
-    // Simple calculation based on franchise
     const basePremium = 450;
     const franchiseDiscount = state.quickQuote.franchise * 0.05;
     const total = Math.max(300, basePremium - franchiseDiscount);
@@ -81,17 +97,21 @@ export const GuidedSalesFlow = () => {
       }
     }));
   };
+
   const nextStep = () => {
     if (state.currentStep < TOTAL_STEPS) {
       setState(prev => ({
         ...prev,
         currentStep: prev.currentStep + 1
       }));
+      setDrawerOpen(false);
     }
   };
+
   const resetFlow = () => {
     setState(initialState);
   };
+
   const renderStep = () => {
     switch (state.currentStep) {
       case 1:
@@ -110,28 +130,65 @@ export const GuidedSalesFlow = () => {
         return null;
     }
   };
-  return <div className="min-h-screen bg-background">
-      {/* Header */}
-      
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Step Progress - Mobile */}
+      <div className="lg:hidden px-4 py-3 border-b bg-background/95 backdrop-blur sticky top-0 z-10">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-muted-foreground">
+            Étape {state.currentStep}/{TOTAL_STEPS}
+          </span>
+          <StepProgress currentStep={state.currentStep} totalSteps={TOTAL_STEPS} />
+        </div>
+      </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8 pb-24 lg:pb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Main Form Area */}
           <div className="lg:col-span-2">
             {renderStep()}
           </div>
 
-          {/* Sticky Summary Card */}
-          {state.currentStep < 6 && <div className="hidden lg:block">
+          {/* Desktop Summary Card */}
+          {state.currentStep < 6 && (
+            <div className="hidden lg:block">
               <QuoteSummaryCard state={state} onNext={nextStep} nextLabel={stepLabels[state.currentStep - 1]} />
-            </div>}
+            </div>
+          )}
         </div>
-
-        {/* Mobile CTA */}
-        {state.currentStep < 6 && <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-background border-t">
-            <QuoteSummaryCard state={state} onNext={nextStep} nextLabel={stepLabels[state.currentStep - 1]} />
-          </div>}
       </main>
-    </div>;
+
+      {/* Mobile Drawer */}
+      {state.currentStep < 6 && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50">
+          <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+            <DrawerTrigger asChild>
+              <Button
+                className="w-full rounded-none h-16 text-base font-medium gap-2 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]"
+                size="lg"
+              >
+                <span className="flex flex-col items-center">
+                  <ChevronUp className="h-4 w-4 mb-0.5" />
+                  <span className="flex items-baseline gap-2">
+                    <span>{Math.round(state.calculatedPremium.total)} €/an</span>
+                    <span className="text-xs opacity-80">• {stepLabels[state.currentStep - 1]}</span>
+                  </span>
+                </span>
+              </Button>
+            </DrawerTrigger>
+            <DrawerContent className="max-h-[85vh]">
+              <DrawerHeader className="sr-only">
+                <DrawerTitle>Résumé du devis</DrawerTitle>
+              </DrawerHeader>
+              <div className="p-4 overflow-auto">
+                <QuoteSummaryCard state={state} onNext={nextStep} nextLabel={stepLabels[state.currentStep - 1]} />
+              </div>
+            </DrawerContent>
+          </Drawer>
+        </div>
+      )}
+    </div>
+  );
 };

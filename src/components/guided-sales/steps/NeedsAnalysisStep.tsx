@@ -32,26 +32,22 @@ export const NeedsAnalysisStep = ({ state, onUpdate }: NeedsAnalysisStepProps) =
             value={needsAnalysis.productType} 
             onValueChange={(v) => onUpdate({ productType: v as ProductType })}
           >
-            <TabsList className="grid grid-cols-4 w-full">
-              <TabsTrigger value="auto" className="gap-2">
-                <Car className="h-4 w-4" />
-                <span className="hidden sm:inline">Assurance Auto</span>
-                <span className="sm:hidden">Auto</span>
+            <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full h-auto gap-1 p-1">
+              <TabsTrigger value="auto" className="gap-1.5 py-2 px-2 sm:px-3 text-xs sm:text-sm">
+                <Car className="h-4 w-4 shrink-0" />
+                <span className="truncate">Auto</span>
               </TabsTrigger>
-              <TabsTrigger value="habitation" className="gap-2">
-                <Home className="h-4 w-4" />
-                <span className="hidden sm:inline">Multirisque Habitation</span>
-                <span className="sm:hidden">Habitat</span>
+              <TabsTrigger value="habitation" className="gap-1.5 py-2 px-2 sm:px-3 text-xs sm:text-sm">
+                <Home className="h-4 w-4 shrink-0" />
+                <span className="truncate">Habitation</span>
               </TabsTrigger>
-              <TabsTrigger value="sante" className="gap-2">
-                <HeartPulse className="h-4 w-4" />
-                <span className="hidden sm:inline">Complémentaire Santé</span>
-                <span className="sm:hidden">Santé</span>
+              <TabsTrigger value="sante" className="gap-1.5 py-2 px-2 sm:px-3 text-xs sm:text-sm">
+                <HeartPulse className="h-4 w-4 shrink-0" />
+                <span className="truncate">Santé</span>
               </TabsTrigger>
-              <TabsTrigger value="vie" className="gap-2">
-                <Shield className="h-4 w-4" />
-                <span className="hidden sm:inline">Prévoyance</span>
-                <span className="sm:hidden">Vie</span>
+              <TabsTrigger value="vie" className="gap-1.5 py-2 px-2 sm:px-3 text-xs sm:text-sm">
+                <Shield className="h-4 w-4 shrink-0" />
+                <span className="truncate">Vie</span>
               </TabsTrigger>
             </TabsList>
 
@@ -59,7 +55,7 @@ export const NeedsAnalysisStep = ({ state, onUpdate }: NeedsAnalysisStepProps) =
             <div className="h-1.5 bg-primary rounded-full mt-4" />
 
             {/* Common Fields */}
-            <div className="grid grid-cols-2 gap-6 mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mt-6">
               <div className="space-y-2">
                 <Label className="text-xs uppercase tracking-wider text-muted-foreground">
                   Type de client
@@ -110,7 +106,7 @@ export const NeedsAnalysisStep = ({ state, onUpdate }: NeedsAnalysisStepProps) =
 
             {/* Product-specific fields */}
             <TabsContent value="auto" className="mt-6 space-y-6">
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">
                     Marque / Modèle
@@ -153,7 +149,7 @@ export const NeedsAnalysisStep = ({ state, onUpdate }: NeedsAnalysisStepProps) =
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">
                     Année du véhicule
@@ -185,7 +181,7 @@ export const NeedsAnalysisStep = ({ state, onUpdate }: NeedsAnalysisStepProps) =
             </TabsContent>
 
             <TabsContent value="habitation" className="mt-6 space-y-6">
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">
                     Type de logement
@@ -216,7 +212,7 @@ export const NeedsAnalysisStep = ({ state, onUpdate }: NeedsAnalysisStepProps) =
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">
                     Matériaux de construction
@@ -256,7 +252,7 @@ export const NeedsAnalysisStep = ({ state, onUpdate }: NeedsAnalysisStepProps) =
             </TabsContent>
 
             <TabsContent value="sante" className="mt-6 space-y-6">
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">
                     Nombre de bénéficiaires
@@ -329,7 +325,7 @@ export const NeedsAnalysisStep = ({ state, onUpdate }: NeedsAnalysisStepProps) =
             </TabsContent>
 
             <TabsContent value="vie" className="mt-6 space-y-6">
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">
                     Capital souhaité
@@ -367,7 +363,7 @@ export const NeedsAnalysisStep = ({ state, onUpdate }: NeedsAnalysisStepProps) =
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">
                     Fumeur ?

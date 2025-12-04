@@ -49,7 +49,7 @@ export const QuickQuoteStep = ({ state, onUpdate }: QuickQuoteStepProps) => {
           </div>
 
           {/* Value and Bonus/Malus */}
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-2">
               <Label className="text-sm">Valeur Assurée</Label>
               <div className="relative">

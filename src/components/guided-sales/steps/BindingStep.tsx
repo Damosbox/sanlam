@@ -79,7 +79,7 @@ export const BindingStep = ({ state, onUpdate }: BindingStepProps) => {
           <RadioGroup
             value={binding.signatureChannel}
             onValueChange={(v) => onUpdate({ signatureChannel: v as any })}
-            className="grid grid-cols-2 gap-4"
+            className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4"
           >
             {signatureChannels.map((channel) => (
               <div key={channel.id}>

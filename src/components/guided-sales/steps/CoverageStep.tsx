@@ -107,7 +107,7 @@ export const CoverageStep = ({ state, onUpdate, onPremiumUpdate }: CoverageStepP
       </div>
 
       {/* Plan Cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {plans.map((plan) => (
           <Card
             key={plan.tier}

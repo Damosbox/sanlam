@@ -7,11 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Phone, MessageCircle, Mail, FileText, Send, User } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Phone, MessageCircle, Mail, FileText, Send, User, Shield, StickyNote } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { LeadStatusBadge, statusConfig } from "./LeadStatusBadge";
+import { LeadKYCSection } from "./LeadKYCSection";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"leads">;
@@ -167,73 +169,92 @@ export const LeadDetailSheet = ({
           </div>
         </SheetHeader>
 
-        <ScrollArea className="flex-1 p-6">
-          {/* Status Selector */}
-          <div className="space-y-3 mb-6">
-            <p className="text-sm font-medium text-muted-foreground">Changer le statut</p>
-            <div className="flex flex-wrap gap-1.5">
-              {(Object.keys(statusConfig) as Lead["status"][]).map((status) => (
-                <Button
-                  key={status}
-                  variant={lead.status === status ? "default" : "outline"}
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={() => onStatusChange(lead.id, status)}
-                >
-                  {statusConfig[status].label}
-                </Button>
-              ))}
-            </div>
-          </div>
+        <Tabs defaultValue="info" className="flex-1 flex flex-col">
+          <TabsList className="mx-6 mt-2 grid w-auto grid-cols-2">
+            <TabsTrigger value="info" className="gap-1.5 text-xs">
+              <StickyNote className="h-3.5 w-3.5" />
+              Infos & Notes
+            </TabsTrigger>
+            <TabsTrigger value="kyc" className="gap-1.5 text-xs">
+              <Shield className="h-3.5 w-3.5" />
+              Compliance KYC
+            </TabsTrigger>
+          </TabsList>
 
-          <Separator className="my-4" />
-
-          {/* Notes Section */}
-          <div className="space-y-4">
-            <p className="text-sm font-medium text-muted-foreground">Notes & Timeline</p>
-            
-            {/* Add Note */}
-            <div className="flex gap-2">
-              <Textarea
-                placeholder="Ajouter une note..."
-                value={noteContent}
-                onChange={(e) => setNoteContent(e.target.value)}
-                rows={2}
-                className="resize-none text-sm"
-              />
-              <Button 
-                size="icon" 
-                onClick={() => noteContent.trim() && addNoteMutation.mutate(noteContent)}
-                disabled={!noteContent.trim() || addNoteMutation.isPending}
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* Notes List */}
-            <div className="space-y-3">
-              {notesLoading ? (
-                <div className="text-sm text-muted-foreground text-center py-4">Chargement...</div>
-              ) : notes?.length === 0 ? (
-                <div className="text-sm text-muted-foreground text-center py-4">
-                  Aucune note pour ce lead
+          <ScrollArea className="flex-1 p-6">
+            <TabsContent value="info" className="mt-0 space-y-4">
+              {/* Status Selector */}
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-muted-foreground">Changer le statut</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(Object.keys(statusConfig) as Lead["status"][]).map((status) => (
+                    <Button
+                      key={status}
+                      variant={lead.status === status ? "default" : "outline"}
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => onStatusChange(lead.id, status)}
+                    >
+                      {statusConfig[status].label}
+                    </Button>
+                  ))}
                 </div>
-              ) : (
-                notes?.map((note) => (
-                  <div 
-                    key={note.id} 
-                    className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-1"
+              </div>
+
+              <Separator />
+
+              {/* Notes Section */}
+              <div className="space-y-4">
+                <p className="text-sm font-medium text-muted-foreground">Notes & Timeline</p>
+                
+                {/* Add Note */}
+                <div className="flex gap-2">
+                  <Textarea
+                    placeholder="Ajouter une note..."
+                    value={noteContent}
+                    onChange={(e) => setNoteContent(e.target.value)}
+                    rows={2}
+                    className="resize-none text-sm"
+                  />
+                  <Button 
+                    size="icon" 
+                    onClick={() => noteContent.trim() && addNoteMutation.mutate(noteContent)}
+                    disabled={!noteContent.trim() || addNoteMutation.isPending}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{note.content}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(note.created_at), "dd MMM yyyy à HH:mm", { locale: fr })}
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </ScrollArea>
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Notes List */}
+                <div className="space-y-3">
+                  {notesLoading ? (
+                    <div className="text-sm text-muted-foreground text-center py-4">Chargement...</div>
+                  ) : notes?.length === 0 ? (
+                    <div className="text-sm text-muted-foreground text-center py-4">
+                      Aucune note pour ce prospect
+                    </div>
+                  ) : (
+                    notes?.map((note) => (
+                      <div 
+                        key={note.id} 
+                        className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-1"
+                      >
+                        <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(note.created_at), "dd MMM yyyy à HH:mm", { locale: fr })}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="kyc" className="mt-0">
+              <LeadKYCSection leadId={lead.id} />
+            </TabsContent>
+          </ScrollArea>
+        </Tabs>
       </SheetContent>
     </Sheet>
   );

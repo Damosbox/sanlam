@@ -15,7 +15,16 @@ export const AdminDataGenerator = () => {
     setResult(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('create-mock-clients');
+      // Récupérer l'ID de l'utilisateur connecté
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("Vous devez être connecté");
+      }
+
+      const { data, error } = await supabase.functions.invoke('create-mock-clients', {
+        body: { brokerId: user.id }
+      });
 
       if (error) {
         toast({
@@ -24,9 +33,16 @@ export const AdminDataGenerator = () => {
           description: error.message || "Impossible de générer les clients",
         });
         setResult({ success: false, error: error.message });
+      } else if (data?.success === false) {
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: data.error || "Impossible de générer les clients",
+        });
+        setResult(data);
       } else {
         toast({
-          title: "✅ Clients générés",
+          title: "✅ Données générées",
           description: data.message || "Les clients mock ont été créés avec succès",
         });
         setResult(data);
@@ -51,14 +67,14 @@ export const AdminDataGenerator = () => {
           Générateur de Données Test
         </CardTitle>
         <CardDescription>
-          Créez des clients, sinistres et souscriptions de test pour le broker B2B
+          Créez des clients, sinistres et polices de test pour le broker B2B
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="p-4 rounded-lg bg-muted">
-          <h4 className="font-medium mb-2">🎭 Clients Mock</h4>
+          <h4 className="font-medium mb-2">🎭 Clients Mock avec Sinistres & Polices</h4>
           <p className="text-sm text-muted-foreground mb-4">
-            Génère 5 clients avec profils, souscriptions actives et sinistres variés (Auto, Santé, Habitation)
+            Génère 3 clients avec profils, 1 police active chacun et 2-3 sinistres variés (Auto, Santé, Habitation)
           </p>
           <Button 
             onClick={generateMockClients} 
@@ -73,19 +89,19 @@ export const AdminDataGenerator = () => {
             ) : (
               <>
                 <Database className="w-4 h-4 mr-2" />
-                Générer 5 Clients Test
+                Générer Données Test
               </>
             )}
           </Button>
         </div>
 
         {result && (
-          <div className={`p-4 rounded-lg border ${result.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+          <div className={`p-4 rounded-lg border ${result.success ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800' : 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800'}`}>
             <div className="flex items-start gap-2">
               {result.success ? (
-                <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
+                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
               ) : (
-                <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
               )}
               <div className="flex-1">
                 <p className="font-medium mb-1">
@@ -102,6 +118,7 @@ export const AdminDataGenerator = () => {
                         {r.success ? '✅' : '❌'}
                         <span>{r.email}</span>
                         {r.policyNumber && <span className="text-muted-foreground">({r.policyNumber})</span>}
+                        {r.claimsCreated && <span className="text-muted-foreground">- {r.claimsCreated} sinistres</span>}
                       </div>
                     ))}
                   </div>
@@ -111,13 +128,13 @@ export const AdminDataGenerator = () => {
           </div>
         )}
 
-        <div className="text-xs text-muted-foreground p-3 bg-blue-50 rounded-lg">
+        <div className="text-xs text-muted-foreground p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
           <p className="font-medium mb-1">ℹ️ Informations</p>
           <ul className="list-disc list-inside space-y-1">
             <li>Emails: marie.dupont@test.com, jean.kouassi@test.com, etc.</li>
             <li>Mot de passe: Test1234!</li>
-            <li>Broker assigné: Utilisateur broker actuel</li>
-            <li>Données: 1-2 sinistres par client + 1 souscription active</li>
+            <li>Broker assigné: Vous (utilisateur connecté)</li>
+            <li>Données: 2-3 sinistres par client + 1 police active</li>
           </ul>
         </div>
       </CardContent>

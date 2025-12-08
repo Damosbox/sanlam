@@ -78,7 +78,7 @@ export function BrokerSidebar() {
     icon: LayoutDashboard
   };
   const salesItems = [{
-    title: "Leads",
+    title: "Prospects",
     url: "/b2b/leads",
     icon: Inbox,
     badge: badges.newLeads > 0 ? badges.newLeads.toString() : undefined

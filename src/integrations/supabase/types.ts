@@ -383,6 +383,71 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_kyc_compliance: {
+        Row: {
+          aml_notes: string | null
+          aml_risk_level: string | null
+          aml_verified: boolean | null
+          aml_verified_at: string | null
+          created_at: string
+          id: string
+          identity_document_number: string | null
+          identity_document_type: string | null
+          identity_expiry_date: string | null
+          identity_verified: boolean | null
+          is_ppe: boolean | null
+          lead_id: string
+          ppe_country: string | null
+          ppe_position: string | null
+          ppe_relationship: string | null
+          updated_at: string
+        }
+        Insert: {
+          aml_notes?: string | null
+          aml_risk_level?: string | null
+          aml_verified?: boolean | null
+          aml_verified_at?: string | null
+          created_at?: string
+          id?: string
+          identity_document_number?: string | null
+          identity_document_type?: string | null
+          identity_expiry_date?: string | null
+          identity_verified?: boolean | null
+          is_ppe?: boolean | null
+          lead_id: string
+          ppe_country?: string | null
+          ppe_position?: string | null
+          ppe_relationship?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aml_notes?: string | null
+          aml_risk_level?: string | null
+          aml_verified?: boolean | null
+          aml_verified_at?: string | null
+          created_at?: string
+          id?: string
+          identity_document_number?: string | null
+          identity_document_type?: string | null
+          identity_expiry_date?: string | null
+          identity_verified?: boolean | null
+          is_ppe?: boolean | null
+          lead_id?: string
+          ppe_country?: string | null
+          ppe_position?: string | null
+          ppe_relationship?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_kyc_compliance_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_notes: {
         Row: {
           broker_id: string

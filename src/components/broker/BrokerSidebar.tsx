@@ -77,12 +77,17 @@ export function BrokerSidebar() {
     url: "/b2b/dashboard",
     icon: LayoutDashboard
   };
-  const salesItems = [{
+  const clientsItems = [{
     title: "Prospects",
     url: "/b2b/leads",
     icon: Inbox,
     badge: badges.newLeads > 0 ? badges.newLeads.toString() : undefined
   }, {
+    title: "Clients",
+    url: "/b2b/clients",
+    icon: Users
+  }];
+  const salesItems = [{
     title: "Vente Guidée",
     url: "/b2b/sales",
     icon: Zap
@@ -96,10 +101,6 @@ export function BrokerSidebar() {
     title: "Polices",
     url: "/b2b/policies",
     icon: Shield
-  }, {
-    title: "Clients",
-    url: "/b2b/clients",
-    icon: Users
   }];
   const toolsItems = [{
     title: "Analyse Concurrentielle",
@@ -161,6 +162,17 @@ export function BrokerSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {renderMenuItem(dashboardItem)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className={cn(collapsed && "sr-only")}>
+            Clients
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {clientsItems.map(renderMenuItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

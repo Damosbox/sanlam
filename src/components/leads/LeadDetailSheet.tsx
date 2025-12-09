@@ -169,8 +169,8 @@ export const LeadDetailSheet = ({
           </div>
         </SheetHeader>
 
-        <Tabs defaultValue="info" className="flex-1 flex flex-col">
-          <TabsList className="mx-6 mt-2 grid w-auto grid-cols-2">
+        <Tabs defaultValue="info" className="flex-1 flex flex-col overflow-hidden min-h-0">
+          <TabsList className="mx-6 mt-2 grid w-auto grid-cols-2 shrink-0">
             <TabsTrigger value="info" className="gap-1.5 text-xs">
               <StickyNote className="h-3.5 w-3.5" />
               Infos & Notes
@@ -181,8 +181,8 @@ export const LeadDetailSheet = ({
             </TabsTrigger>
           </TabsList>
 
-          <ScrollArea className="flex-1 p-6">
-            <TabsContent value="info" className="mt-0 space-y-4">
+          <ScrollArea className="flex-1 min-h-0">
+            <TabsContent value="info" className="mt-0 p-6 space-y-4">
               {/* Status Selector */}
               <div className="space-y-3">
                 <p className="text-sm font-medium text-muted-foreground">Changer le statut</p>
@@ -250,7 +250,7 @@ export const LeadDetailSheet = ({
               </div>
             </TabsContent>
 
-            <TabsContent value="kyc" className="mt-0">
+            <TabsContent value="kyc" className="mt-0 p-6">
               <LeadKYCSection leadId={lead.id} />
             </TabsContent>
           </ScrollArea>

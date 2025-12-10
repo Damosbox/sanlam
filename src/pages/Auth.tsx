@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,9 @@ import { Loader2 } from "lucide-react";
 
 export default function Auth() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isBrokerAccess = searchParams.get("broker") === "true";
+  
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [phoneAuth, setPhoneAuth] = useState(false);
@@ -20,14 +23,33 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [isBrokerSignup, setIsBrokerSignup] = useState(false);
+  const [isBrokerSignup, setIsBrokerSignup] = useState(isBrokerAccess);
+
+  // Fonction pour rediriger selon le rôle
+  const redirectBasedOnRole = async (userId: string) => {
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .order("role", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    
+    const role = roleData?.role ?? "customer";
+    
+    if (role === "broker" || role === "admin") {
+      navigate("/b2b/dashboard");
+    } else {
+      navigate("/b2c");
+    }
+  };
 
   useEffect(() => {
     // Check if user is already logged in
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate("/b2c");
+        await redirectBasedOnRole(session.user.id);
       }
     };
     checkUser();
@@ -35,7 +57,10 @@ export default function Auth() {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        navigate("/b2c");
+        // Defer role check to avoid Supabase deadlock
+        setTimeout(() => {
+          redirectBasedOnRole(session.user.id);
+        }, 0);
       }
     });
 
@@ -48,11 +73,15 @@ export default function Auth() {
 
     try {
       if (isSignUp) {
+        const redirectUrl = isBrokerSignup 
+          ? `${window.location.origin}/b2b/dashboard`
+          : `${window.location.origin}/b2c`;
+        
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/b2c`,
+            emailRedirectTo: redirectUrl,
             data: {
               full_name: displayName,
             }
@@ -126,10 +155,11 @@ export default function Auth() {
   const handleGoogleAuth = async () => {
     setLoading(true);
     try {
+      // OAuth will redirect, role check happens on return via onAuthStateChange
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/b2c`,
+          redirectTo: `${window.location.origin}/auth`,
         }
       });
       if (error) throw error;
@@ -142,10 +172,11 @@ export default function Auth() {
   const handleFacebookAuth = async () => {
     setLoading(true);
     try {
+      // OAuth will redirect, role check happens on return via onAuthStateChange
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'facebook',
         options: {
-          redirectTo: `${window.location.origin}/b2c`,
+          redirectTo: `${window.location.origin}/auth`,
         }
       });
       if (error) throw error;

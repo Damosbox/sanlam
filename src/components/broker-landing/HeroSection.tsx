@@ -44,7 +44,7 @@ export const HeroSection = () => {
                 </a>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link to="/auth">
+                <Link to="/auth?broker=true">
                   Accès espace courtier
                 </Link>
               </Button>

@@ -37,7 +37,7 @@ export const Header = () => {
           />
         </Link>
 
-        <nav className="flex items-center gap-2">
+        <nav className="flex items-center gap-2 sm:gap-3">
           {!isHome && (
             <Link to="/">
               <Button variant="ghost" size="sm">
@@ -46,6 +46,11 @@ export const Header = () => {
               </Button>
             </Link>
           )}
+          <Link to="/courtiers">
+            <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
+              Espace Courtier
+            </Button>
+          </Link>
           {user ? (
             <LogoutButton />
           ) : (

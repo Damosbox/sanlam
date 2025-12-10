@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import SavingsSimulator from "./pages/SavingsSimulator";
 import EducationSimulator from "./pages/EducationSimulator";
+import BrokerLanding from "./pages/BrokerLanding";
 import RoleProtectedRoute from "./components/RoleProtectedRoute";
 
 // Broker pages
@@ -34,6 +35,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/courtiers" element={<BrokerLanding />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/simulateur-epargne" element={<SavingsSimulator />} />
           <Route path="/simulateur-education" element={<EducationSimulator />} />

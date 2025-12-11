@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Check, X } from "lucide-react";
 import { GuidedSalesState, PlanTier } from "../types";
 import { cn } from "@/lib/utils";
+import { formatFCFA } from "@/utils/formatCurrency";
 
 interface CoverageStepProps {
   state: GuidedSalesState;
@@ -16,7 +17,7 @@ const plans: { tier: PlanTier; name: string; price: number; coverages: { name: s
   {
     tier: "basic",
     name: "Basic",
-    price: 360,
+    price: 236000,
     coverages: [
       { name: "Responsabilité Civile", included: true },
       { name: "Défense Pénale", included: true },
@@ -28,7 +29,7 @@ const plans: { tier: PlanTier; name: string; price: number; coverages: { name: s
   {
     tier: "standard",
     name: "Standard",
-    price: 450,
+    price: 295000,
     coverages: [
       { name: "Responsabilité Civile", included: true },
       { name: "Défense Pénale", included: true },
@@ -40,7 +41,7 @@ const plans: { tier: PlanTier; name: string; price: number; coverages: { name: s
   {
     tier: "premium",
     name: "Premium",
-    price: 630,
+    price: 413000,
     coverages: [
       { name: "Responsabilité Civile", included: true },
       { name: "Défense Pénale", included: true },
@@ -52,8 +53,8 @@ const plans: { tier: PlanTier; name: string; price: number; coverages: { name: s
 ];
 
 const additionalOptions = [
-  { id: "bris_glace", name: "Bris de Glace Sans Franchise", description: "Pare-brise, vitres latérales et optiques", price: 45 },
-  { id: "assistance", name: "Assistance 0km + Véhicule Relais", description: "Dépannage même en bas de chez vous", price: 32 },
+  { id: "bris_glace", name: "Bris de Glace Sans Franchise", description: "Pare-brise, vitres latérales et optiques", price: 29500 },
+  { id: "assistance", name: "Assistance 0km + Véhicule Relais", description: "Dépannage même en bas de chez vous", price: 21000 },
 ];
 
 export const CoverageStep = ({ state, onUpdate, onPremiumUpdate }: CoverageStepProps) => {
@@ -146,7 +147,7 @@ export const CoverageStep = ({ state, onUpdate, onPremiumUpdate }: CoverageStepP
               </div>
 
               <div className="pt-4 border-t">
-                <span className="text-2xl font-bold">{plan.price}€</span>
+                <span className="text-xl font-bold">{formatFCFA(plan.price)}</span>
                 <span className="text-muted-foreground text-sm">/an</span>
               </div>
             </CardContent>
@@ -177,7 +178,7 @@ export const CoverageStep = ({ state, onUpdate, onPremiumUpdate }: CoverageStepP
                     <p className="text-sm text-muted-foreground">{option.description}</p>
                   </div>
                 </div>
-                <span className="text-primary font-medium">+{option.price} €</span>
+                <span className="text-primary font-medium">+{formatFCFA(option.price)}</span>
               </div>
             ))}
           </div>

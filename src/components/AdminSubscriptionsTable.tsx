@@ -20,6 +20,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { formatFCFA } from "@/utils/formatCurrency";
 
 interface Subscription {
   id: string;
@@ -208,7 +209,7 @@ export const AdminSubscriptionsTable = () => {
                 </TableCell>
                 <TableCell>{subscription.products?.name || "N/A"}</TableCell>
                 <TableCell>{subscription.policy_number}</TableCell>
-                <TableCell>{subscription.monthly_premium} €</TableCell>
+                <TableCell>{formatFCFA(subscription.monthly_premium)}</TableCell>
                 <TableCell>
                   {format(new Date(subscription.start_date), "dd MMM yyyy", {
                     locale: fr,

@@ -11,6 +11,7 @@ import { GuidedSalesState, initialState } from "./types";
 import { StepNavigation } from "./StepNavigation";
 import { ChevronUp, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatFCFA } from "@/utils/formatCurrency";
 import {
   Drawer,
   DrawerContent,
@@ -244,7 +245,7 @@ export const GuidedSalesFlow = () => {
                 <span className="flex flex-col items-center">
                   <ChevronUp className="h-4 w-4 mb-0.5" />
                   <span className="flex items-baseline gap-2">
-                    <span>{Math.round(state.calculatedPremium.total)} €/an</span>
+                    <span>{formatFCFA(state.calculatedPremium.total)}/an</span>
                     <span className="text-xs opacity-80">• {stepLabels[state.currentStep - 1]}</span>
                   </span>
                 </span>

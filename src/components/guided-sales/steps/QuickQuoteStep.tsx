@@ -5,6 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Zap, Lightbulb } from "lucide-react";
 import { GuidedSalesState } from "../types";
+import { formatFCFA } from "@/utils/formatCurrency";
 
 interface QuickQuoteStepProps {
   state: GuidedSalesState;
@@ -32,19 +33,19 @@ export const QuickQuoteStep = ({ state, onUpdate }: QuickQuoteStepProps) => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">Franchise (Reste à charge)</Label>
-              <span className="text-lg font-semibold text-primary">{quickQuote.franchise} €</span>
+              <span className="text-lg font-semibold text-primary">{formatFCFA(quickQuote.franchise)}</span>
             </div>
             <Slider
               value={[quickQuote.franchise]}
               onValueChange={([v]) => onUpdate({ franchise: v })}
               min={0}
-              max={1000}
-              step={50}
+              max={1000000}
+              step={50000}
               className="w-full"
             />
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>0 € (Cher)</span>
-              <span>1000 € (Éco)</span>
+              <span>0 FCFA (Cher)</span>
+              <span>1 000 000 FCFA (Éco)</span>
             </div>
           </div>
 
@@ -57,10 +58,10 @@ export const QuickQuoteStep = ({ state, onUpdate }: QuickQuoteStepProps) => {
                   type="number"
                   value={quickQuote.insuredValue}
                   onChange={(e) => onUpdate({ insuredValue: Number(e.target.value) })}
-                  className="pr-8"
+                  className="pr-14"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                  €
+                  FCFA
                 </span>
               </div>
             </div>
@@ -93,7 +94,7 @@ export const QuickQuoteStep = ({ state, onUpdate }: QuickQuoteStepProps) => {
             <div>
               <p className="font-medium text-emerald-800 dark:text-emerald-300">Recommendation IA</p>
               <p className="text-sm text-emerald-700 dark:text-emerald-400 mt-1">
-                Au vu du profil "Bon Conducteur", augmenter la franchise à 450€ réduirait la prime de 15% sans risque majeur.
+                Au vu du profil "Bon Conducteur", augmenter la franchise à 450 000 FCFA réduirait la prime de 15% sans risque majeur.
               </p>
               <button className="text-sm text-primary hover:underline mt-2 font-medium">
                 Appliquer la suggestion

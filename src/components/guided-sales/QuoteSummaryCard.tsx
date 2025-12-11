@@ -4,6 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { GuidedSalesState, ProductType } from "./types";
 import { useEffect, useState } from "react";
+import { formatFCFA, formatFCFADecimal } from "@/utils/formatCurrency";
 
 interface QuoteSummaryCardProps {
   state: GuidedSalesState;
@@ -49,9 +50,8 @@ export const QuoteSummaryCard = ({ state, onNext, nextLabel, disabled }: QuoteSu
       <div className="p-4 sm:p-6 space-y-4">
         <div className="flex items-baseline justify-between">
           <span className="text-sm text-muted-foreground">Prime Annuelle</span>
-          <span className="text-2xl sm:text-3xl font-bold text-foreground">
-            {Math.round(displayTotal)}
-            <span className="text-base sm:text-lg font-normal text-muted-foreground ml-1">€</span>
+          <span className="text-xl sm:text-2xl font-bold text-foreground">
+            {formatFCFA(displayTotal)}
           </span>
         </div>
 
@@ -60,11 +60,11 @@ export const QuoteSummaryCard = ({ state, onNext, nextLabel, disabled }: QuoteSu
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Cotisation Nette</span>
-            <span>{state.calculatedPremium.netPremium.toFixed(2)} €</span>
+            <span>{formatFCFADecimal(state.calculatedPremium.netPremium)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Taxes Fiscales (33%)</span>
-            <span>{state.calculatedPremium.taxes.toFixed(2)} €</span>
+            <span>{formatFCFADecimal(state.calculatedPremium.taxes)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-primary">Frais de Gestion</span>
@@ -76,7 +76,7 @@ export const QuoteSummaryCard = ({ state, onNext, nextLabel, disabled }: QuoteSu
 
         <div className="flex justify-between text-sm text-muted-foreground">
           <span>Taxes & Frais (estimés)</span>
-          <span>{state.calculatedPremium.taxes.toFixed(2)} €</span>
+          <span>{formatFCFADecimal(state.calculatedPremium.taxes)}</span>
         </div>
 
         {/* Smart Default Badge */}

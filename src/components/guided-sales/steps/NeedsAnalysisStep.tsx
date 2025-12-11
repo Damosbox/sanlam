@@ -98,7 +98,7 @@ export const NeedsAnalysisStep = ({ state, onUpdate }: NeedsAnalysisStepProps) =
                     className="pr-12"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                    €/an
+                    FCFA/an
                   </span>
                 </div>
               </div>
@@ -173,7 +173,7 @@ export const NeedsAnalysisStep = ({ state, onUpdate }: NeedsAnalysisStepProps) =
                       className="pr-8"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                      €
+                      FCFA
                     </span>
                   </div>
                 </div>
@@ -244,7 +244,7 @@ export const NeedsAnalysisStep = ({ state, onUpdate }: NeedsAnalysisStepProps) =
                       className="pr-8"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                      €
+                      FCFA
                     </span>
                   </div>
                 </div>
@@ -338,7 +338,7 @@ export const NeedsAnalysisStep = ({ state, onUpdate }: NeedsAnalysisStepProps) =
                       className="pr-8"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                      €
+                      FCFA
                     </span>
                   </div>
                 </div>

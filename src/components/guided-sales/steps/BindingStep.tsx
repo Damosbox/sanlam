@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Mail, MessageSquare, Smartphone, PenTool, FileText, CheckCircle } from "lucide-react";
 import { GuidedSalesState } from "../types";
 import { cn } from "@/lib/utils";
+import { formatFCFA } from "@/utils/formatCurrency";
 
 interface BindingStepProps {
   state: GuidedSalesState;
@@ -52,7 +53,7 @@ export const BindingStep = ({ state, onUpdate }: BindingStepProps) => {
             <Separator />
             <div className="flex justify-between text-base">
               <span className="font-medium">Prime totale</span>
-              <span className="font-bold text-primary">{state.calculatedPremium.total} €/an</span>
+              <span className="font-bold text-primary">{formatFCFA(state.calculatedPremium.total)}/an</span>
             </div>
           </div>
 

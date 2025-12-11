@@ -8,12 +8,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, MessageCircle, Mail, FileText, Send, User, Shield, StickyNote } from "lucide-react";
+import { Phone, MessageCircle, Mail, FileText, Send, User, Shield, StickyNote, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { LeadStatusBadge, statusConfig } from "./LeadStatusBadge";
 import { LeadKYCSection } from "./LeadKYCSection";
+import { ConvertToClientSection } from "./ConvertToClientSection";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"leads">;
@@ -170,14 +171,18 @@ export const LeadDetailSheet = ({
         </SheetHeader>
 
         <Tabs defaultValue="info" className="flex-1 flex flex-col overflow-hidden min-h-0">
-          <TabsList className="mx-6 mt-2 grid w-auto grid-cols-2 shrink-0">
+          <TabsList className="mx-6 mt-2 grid w-auto grid-cols-3 shrink-0">
             <TabsTrigger value="info" className="gap-1.5 text-xs">
               <StickyNote className="h-3.5 w-3.5" />
-              Infos & Notes
+              Infos
             </TabsTrigger>
             <TabsTrigger value="kyc" className="gap-1.5 text-xs">
               <Shield className="h-3.5 w-3.5" />
-              Compliance KYC
+              KYC
+            </TabsTrigger>
+            <TabsTrigger value="convert" className="gap-1.5 text-xs">
+              <UserPlus className="h-3.5 w-3.5" />
+              Convertir
             </TabsTrigger>
           </TabsList>
 
@@ -252,6 +257,13 @@ export const LeadDetailSheet = ({
 
             <TabsContent value="kyc" className="mt-0 p-6">
               <LeadKYCSection leadId={lead.id} />
+            </TabsContent>
+
+            <TabsContent value="convert" className="mt-0 p-6">
+              <ConvertToClientSection 
+                lead={lead} 
+                onConverted={() => onOpenChange(false)} 
+              />
             </TabsContent>
           </ScrollArea>
         </Tabs>

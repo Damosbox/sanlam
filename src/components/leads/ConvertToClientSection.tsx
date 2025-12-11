@@ -42,36 +42,22 @@ export const ConvertToClientSection = ({ lead, onConverted }: ConvertToClientSec
       const selectedProduct = products?.find(p => p.id === selectedProductId);
       if (!selectedProduct) throw new Error("Produit non trouvé");
 
-      // Generate policy number
-      const policyNumber = `POL-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
-
-      // Create subscription for the lead (using broker as proxy since lead has no account yet)
-      const { error: subError } = await supabase.from("subscriptions").insert({
-        user_id: userData.user.id, // Temporarily use broker ID - will be updated when client creates account
-        product_id: selectedProductId,
-        assigned_broker_id: userData.user.id,
-        policy_number: policyNumber,
-        monthly_premium: selectedProduct.base_premium,
-        start_date: new Date().toISOString(),
-        end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year
-        status: "pending", // Pending until client creates account
-      });
-
-      if (subError) throw subError;
-
       // Update lead status to converted
       const { error: leadError } = await supabase
         .from("leads")
-        .update({ status: "converti" as const })
+        .update({ 
+          status: "converti" as const,
+          product_interest: selectedProduct.name,
+        })
         .eq("id", lead.id);
 
       if (leadError) throw leadError;
 
-      // Add a note about the conversion
+      // Add a note about the conversion with product details
       await supabase.from("lead_notes").insert({
         lead_id: lead.id,
         broker_id: userData.user.id,
-        content: `🎉 Prospect converti en client avec le produit "${selectedProduct.name}" (Police: ${policyNumber})`,
+        content: `🎉 Prospect converti en client\n\nProduit sélectionné: ${selectedProduct.name}\nCatégorie: ${selectedProduct.category}\nPrime mensuelle: ${selectedProduct.base_premium.toLocaleString()} FCFA\n\n⏳ En attente de création du compte client pour finaliser la souscription.`,
       });
     },
     onSuccess: () => {

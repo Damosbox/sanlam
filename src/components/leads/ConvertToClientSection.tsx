@@ -42,12 +42,13 @@ export const ConvertToClientSection = ({ lead, onConverted }: ConvertToClientSec
       const selectedProduct = products?.find(p => p.id === selectedProductId);
       if (!selectedProduct) throw new Error("Produit non trouvé");
 
-      // Update lead status to converted
+      // Update lead status to converted and assign to current broker
       const { error: leadError } = await supabase
         .from("leads")
         .update({ 
           status: "converti" as const,
           product_interest: selectedProduct.name,
+          assigned_broker_id: userData.user.id, // Assign to current broker
         })
         .eq("id", lead.id);
 

@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import {
   Table,
   TableBody,
@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
 import { Users, UserCheck, Clock } from "lucide-react";
 
 interface Client {
@@ -26,26 +25,13 @@ interface Client {
 }
 
 export const BrokerClients = () => {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    fetchClients();
-  }, []);
-
-  const fetchClients = async () => {
-    try {
+  const { data: clients = [], isLoading: loading } = useQuery({
+    queryKey: ["broker-clients"],
+    queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        toast({
-          title: "Erreur",
-          description: "Non authentifié",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
+        throw new Error("Non authentifié");
       }
 
       // Fetch clients assigned to this broker via broker_clients table
@@ -126,18 +112,9 @@ export const BrokerClients = () => {
         product_interest: lead.product_interest,
       }));
 
-      setClients([...activeClientsWithStats, ...pendingClients]);
-    } catch (error) {
-      console.error("Error fetching clients:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les clients",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+      return [...activeClientsWithStats, ...pendingClients] as Client[];
+    },
+  });
 
   const activeClients = clients.filter(c => c.type === "active");
   const pendingClients = clients.filter(c => c.type === "pending");

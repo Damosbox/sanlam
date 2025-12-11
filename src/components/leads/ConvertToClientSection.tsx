@@ -64,6 +64,7 @@ export const ConvertToClientSection = ({ lead, onConverted }: ConvertToClientSec
       queryClient.invalidateQueries({ queryKey: ["leads"] });
       queryClient.invalidateQueries({ queryKey: ["lead-notes", lead.id] });
       queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
+      queryClient.invalidateQueries({ queryKey: ["broker-clients"] });
       toast({ 
         title: "Prospect converti", 
         description: "Le prospect a été converti en client avec succès" 

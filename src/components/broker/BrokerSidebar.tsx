@@ -167,9 +167,9 @@ export function BrokerSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className={cn(collapsed && "sr-only")}>
-            Clients
-          </SidebarGroupLabel>
+          <SidebarGroupLabel className={cn(collapsed && "sr-only")}>Mon portefeuille
+
+        </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {clientsItems.map(renderMenuItem)}

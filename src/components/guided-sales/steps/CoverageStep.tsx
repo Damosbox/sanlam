@@ -2,7 +2,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Check, X } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Check, X, Star } from "lucide-react";
 import { GuidedSalesState, PlanTier } from "../types";
 import { cn } from "@/lib/utils";
 import { formatFCFA } from "@/utils/formatCurrency";
@@ -52,24 +53,51 @@ const plans: { tier: PlanTier; name: string; price: number; coverages: { name: s
   },
 ];
 
+const assistanceOptions = [
+  { id: "avantage", name: "Avantage", description: "Assistance de base", price: 15000 },
+  { id: "confort", name: "Confort", description: "Assistance étendue + dépannage", price: 25000 },
+  { id: "relax", name: "Relax", description: "Assistance premium + véhicule relais", price: 35000 },
+  { id: "liberte", name: "Liberté", description: "Assistance tout inclus 0km", price: 45000 },
+];
+
 const additionalOptions = [
   { id: "bris_glace", name: "Bris de Glace Sans Franchise", description: "Pare-brise, vitres latérales et optiques", price: 29500 },
-  { id: "assistance", name: "Assistance 0km + Véhicule Relais", description: "Dépannage même en bas de chez vous", price: 21000 },
 ];
+
+// Determine recommended plan based on vehicle age
+const getRecommendedPlan = (vehicleDate?: string): PlanTier => {
+  if (!vehicleDate) return "standard";
+  
+  const vehicleYear = new Date(vehicleDate).getFullYear();
+  const currentYear = new Date().getFullYear();
+  const vehicleAge = currentYear - vehicleYear;
+  
+  if (vehicleAge <= 3) return "premium"; // New vehicles: full coverage
+  if (vehicleAge <= 7) return "standard"; // Medium age: balanced
+  return "basic"; // Older vehicles: basic coverage
+};
 
 export const CoverageStep = ({ state, onUpdate, onPremiumUpdate }: CoverageStepProps) => {
   const { coverage } = state;
   const selectedPlan = plans.find(p => p.tier === coverage.planTier) || plans[1];
+  
+  // Get recommended plan based on vehicle first circulation date
+  const recommendedPlan = getRecommendedPlan(state.needsAnalysis.vehicleFirstCirculationDate);
+
+  const calculateTotal = (planPrice: number, options: string[], assistanceId?: string) => {
+    const optionsTotal = options.reduce((sum, optId) => {
+      const opt = additionalOptions.find(o => o.id === optId);
+      return sum + (opt?.price || 0);
+    }, 0);
+    const assistancePrice = assistanceOptions.find(a => a.id === assistanceId)?.price || 0;
+    return planPrice + optionsTotal + assistancePrice;
+  };
 
   const handlePlanSelect = (tier: PlanTier) => {
     const plan = plans.find(p => p.tier === tier);
     if (plan) {
       onUpdate({ planTier: tier });
-      const optionsTotal = coverage.additionalOptions.reduce((sum, optId) => {
-        const opt = additionalOptions.find(o => o.id === optId);
-        return sum + (opt?.price || 0);
-      }, 0);
-      const total = plan.price + optionsTotal;
+      const total = calculateTotal(plan.price, coverage.additionalOptions, coverage.assistanceLevel);
       onPremiumUpdate({
         netPremium: total * 0.67,
         taxes: total * 0.33,
@@ -85,11 +113,18 @@ export const CoverageStep = ({ state, onUpdate, onPremiumUpdate }: CoverageStepP
       : coverage.additionalOptions.filter(id => id !== optionId);
     onUpdate({ additionalOptions: newOptions });
 
-    const optionsTotal = newOptions.reduce((sum, optId) => {
-      const opt = additionalOptions.find(o => o.id === optId);
-      return sum + (opt?.price || 0);
-    }, 0);
-    const total = selectedPlan.price + optionsTotal;
+    const total = calculateTotal(selectedPlan.price, newOptions, coverage.assistanceLevel);
+    onPremiumUpdate({
+      netPremium: total * 0.67,
+      taxes: total * 0.33,
+      fees: 0,
+      total,
+    });
+  };
+
+  const handleAssistanceChange = (assistanceId: string) => {
+    onUpdate({ assistanceLevel: assistanceId });
+    const total = calculateTotal(selectedPlan.price, coverage.additionalOptions, assistanceId);
     onPremiumUpdate({
       netPremium: total * 0.67,
       taxes: total * 0.33,
@@ -109,51 +144,104 @@ export const CoverageStep = ({ state, onUpdate, onPremiumUpdate }: CoverageStepP
 
       {/* Plan Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {plans.map((plan) => (
-          <Card
-            key={plan.tier}
-            className={cn(
-              "relative cursor-pointer transition-all duration-200 hover:shadow-md",
-              coverage.planTier === plan.tier && "ring-2 ring-primary border-primary"
-            )}
-            onClick={() => handlePlanSelect(plan.tier)}
-          >
-            {coverage.planTier === plan.tier && (
-              <div className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-primary flex items-center justify-center">
-                <Check className="h-4 w-4 text-primary-foreground" />
-              </div>
-            )}
-            <CardContent className="pt-6 space-y-4">
-              <h3 className={cn(
-                "text-lg font-semibold",
-                coverage.planTier === plan.tier && "text-primary"
-              )}>
-                {plan.name}
-              </h3>
+        {plans.map((plan) => {
+          const isRecommended = plan.tier === recommendedPlan;
+          const isSelected = coverage.planTier === plan.tier;
+          
+          return (
+            <Card
+              key={plan.tier}
+              className={cn(
+                "relative cursor-pointer transition-all duration-200 hover:shadow-md",
+                isSelected && "ring-2 ring-primary border-primary",
+                isRecommended && !isSelected && "ring-1 ring-emerald-500 border-emerald-500"
+              )}
+              onClick={() => handlePlanSelect(plan.tier)}
+            >
+              {/* Recommended Badge */}
+              {isRecommended && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+                  <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white gap-1">
+                    <Star className="h-3 w-3 fill-current" />
+                    Recommandée
+                  </Badge>
+                </div>
+              )}
               
-              <div className="space-y-2">
-                {plan.coverages.map((cov) => (
-                  <div key={cov.name} className="flex items-center gap-2 text-sm">
-                    {cov.included ? (
-                      <Check className="h-4 w-4 text-emerald-500 shrink-0" />
-                    ) : (
-                      <X className="h-4 w-4 text-muted-foreground/40 shrink-0" />
-                    )}
-                    <span className={cn(!cov.included && "text-muted-foreground/60")}>
-                      {cov.name}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              {/* Selected Checkmark */}
+              {isSelected && (
+                <div className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-primary flex items-center justify-center z-10">
+                  <Check className="h-4 w-4 text-primary-foreground" />
+                </div>
+              )}
+              
+              <CardContent className={cn("pt-6 space-y-4", isRecommended && "pt-8")}>
+                <h3 className={cn(
+                  "text-lg font-semibold",
+                  isSelected && "text-primary",
+                  isRecommended && !isSelected && "text-emerald-600"
+                )}>
+                  {plan.name}
+                </h3>
+                
+                <div className="space-y-2">
+                  {plan.coverages.map((cov) => (
+                    <div key={cov.name} className="flex items-center gap-2 text-sm">
+                      {cov.included ? (
+                        <Check className="h-4 w-4 text-emerald-500 shrink-0" />
+                      ) : (
+                        <X className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+                      )}
+                      <span className={cn(!cov.included && "text-muted-foreground/60")}>
+                        {cov.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
 
-              <div className="pt-4 border-t">
-                <span className="text-xl font-bold">{formatFCFA(plan.price)}</span>
-                <span className="text-muted-foreground text-sm">/an</span>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                <div className="pt-4 border-t">
+                  <span className="text-xl font-bold">{formatFCFA(plan.price)}</span>
+                  <span className="text-muted-foreground text-sm">/an</span>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
+
+      {/* Assistance Auto Block */}
+      <Card>
+        <CardContent className="pt-6">
+          <h3 className="font-semibold mb-4">Assistance Auto</h3>
+          <RadioGroup
+            value={coverage.assistanceLevel || ""}
+            onValueChange={handleAssistanceChange}
+            className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+          >
+            {assistanceOptions.map((option) => (
+              <div key={option.id}>
+                <RadioGroupItem
+                  value={option.id}
+                  id={option.id}
+                  className="peer sr-only"
+                />
+                <Label
+                  htmlFor={option.id}
+                  className={cn(
+                    "flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 cursor-pointer transition-all",
+                    "hover:bg-accent hover:text-accent-foreground",
+                    "peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5"
+                  )}
+                >
+                  <span className="font-medium">{option.name}</span>
+                  <span className="text-xs text-muted-foreground text-center mt-1">{option.description}</span>
+                  <span className="text-sm font-semibold text-primary mt-2">+{formatFCFA(option.price)}</span>
+                </Label>
+              </div>
+            ))}
+          </RadioGroup>
+        </CardContent>
+      </Card>
 
       {/* Additional Options */}
       <Card>

@@ -58,7 +58,7 @@ export const BindingStep = ({
               <span className="font-medium">Assurance Auto - Standard</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Couvertures</span>
+              <span className="text-muted-foreground">Garanties</span>
               <span className="font-medium">RC + Défense + Vol & Incendie</span>
             </div>
             <div className="flex justify-between">

@@ -62,6 +62,7 @@ export interface QuickQuoteData {
 export interface CoverageData {
   planTier: PlanTier;
   additionalOptions: string[];
+  assistanceLevel?: string;
 }
 
 export interface UnderwritingData {

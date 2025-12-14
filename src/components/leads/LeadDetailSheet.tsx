@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, MessageCircle, Mail, FileText, Send, User, Shield, StickyNote, UserPlus } from "lucide-react";
+import { Phone, MessageCircle, Mail, FileText, Send, User, Shield, StickyNote, UserPlus, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -26,6 +26,7 @@ interface LeadDetailSheetProps {
   onOpenChange: (open: boolean) => void;
   onQuickQuote: (lead: Lead) => void;
   onStatusChange: (leadId: string, status: Lead["status"]) => void;
+  onEditLead?: (lead: Lead) => void;
 }
 
 export const LeadDetailSheet = ({ 
@@ -33,7 +34,8 @@ export const LeadDetailSheet = ({
   open, 
   onOpenChange, 
   onQuickQuote,
-  onStatusChange 
+  onStatusChange,
+  onEditLead
 }: LeadDetailSheetProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -159,6 +161,17 @@ export const LeadDetailSheet = ({
             <Button variant="ghost" size="sm" onClick={handleEmail} disabled={!lead.email}>
               <Mail className="h-4 w-4" />
             </Button>
+            {onEditLead && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => onEditLead(lead)}
+                className="gap-1.5"
+              >
+                <Pencil className="h-4 w-4" />
+                Modifier
+              </Button>
+            )}
             <Button 
               size="sm" 
               onClick={() => onQuickQuote(lead)}
@@ -188,6 +201,18 @@ export const LeadDetailSheet = ({
 
           <ScrollArea className="flex-1 min-h-0">
             <TabsContent value="info" className="mt-0 p-6 space-y-4">
+              {/* Notes complémentaires */}
+              {lead.notes && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">Données complémentaires</p>
+                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <p className="text-sm whitespace-pre-wrap">{lead.notes}</p>
+                  </div>
+                </div>
+              )}
+
+              {lead.notes && <Separator />}
+
               {/* Status Selector */}
               <div className="space-y-3">
                 <p className="text-sm font-medium text-muted-foreground">Changer le statut</p>

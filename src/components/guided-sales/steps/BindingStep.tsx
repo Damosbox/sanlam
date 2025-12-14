@@ -7,24 +7,39 @@ import { Mail, MessageSquare, Smartphone, PenTool, FileText, CheckCircle } from 
 import { GuidedSalesState } from "../types";
 import { cn } from "@/lib/utils";
 import { formatFCFA } from "@/utils/formatCurrency";
-
 interface BindingStepProps {
   state: GuidedSalesState;
   onUpdate: (data: Partial<GuidedSalesState["binding"]>) => void;
 }
-
-const signatureChannels = [
-  { id: "email", label: "Email", icon: Mail, description: "Envoi du contrat par email" },
-  { id: "sms", label: "SMS", icon: MessageSquare, description: "Lien de signature par SMS" },
-  { id: "whatsapp", label: "WhatsApp", icon: Smartphone, description: "Partage via WhatsApp" },
-  { id: "presential", label: "Signature Présentielle", icon: PenTool, description: "Signature sur tablette agent" },
-];
-
-export const BindingStep = ({ state, onUpdate }: BindingStepProps) => {
-  const { binding } = state;
-
-  return (
-    <div className="space-y-6">
+const signatureChannels = [{
+  id: "email",
+  label: "Email",
+  icon: Mail,
+  description: "Envoi du contrat par email"
+}, {
+  id: "sms",
+  label: "SMS",
+  icon: MessageSquare,
+  description: "Lien de signature par SMS"
+}, {
+  id: "whatsapp",
+  label: "WhatsApp",
+  icon: Smartphone,
+  description: "Partage via WhatsApp"
+}, {
+  id: "presential",
+  label: "Signature Présentielle",
+  icon: PenTool,
+  description: "Signature sur tablette agent"
+}];
+export const BindingStep = ({
+  state,
+  onUpdate
+}: BindingStepProps) => {
+  const {
+    binding
+  } = state;
+  return <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Signature & Engagement</h1>
         <p className="text-muted-foreground mt-1">
@@ -52,7 +67,7 @@ export const BindingStep = ({ state, onUpdate }: BindingStepProps) => {
             </div>
             <Separator />
             <div className="flex justify-between text-base">
-              <span className="font-medium">Prime totale</span>
+              <span className="font-medium">Prime totale à payer</span>
               <span className="font-bold text-primary">{formatFCFA(state.calculatedPremium.total)}/an</span>
             </div>
           </div>
@@ -62,12 +77,10 @@ export const BindingStep = ({ state, onUpdate }: BindingStepProps) => {
           {/* Documents */}
           <h4 className="font-medium mb-3">Documents générés</h4>
           <div className="space-y-2">
-            {["Devis détaillé", "IPID (Fiche d'information)", "Conditions générales"].map((doc) => (
-              <div key={doc} className="flex items-center gap-2 text-sm">
+            {["Devis détaillé", "IPID (Fiche d'information)", "Conditions générales"].map(doc => <div key={doc} className="flex items-center gap-2 text-sm">
                 <FileText className="h-4 w-4 text-muted-foreground" />
                 <span className="text-primary hover:underline cursor-pointer">{doc}</span>
-              </div>
-            ))}
+              </div>)}
           </div>
         </CardContent>
       </Card>
@@ -77,27 +90,13 @@ export const BindingStep = ({ state, onUpdate }: BindingStepProps) => {
         <CardContent className="pt-6">
           <h3 className="font-semibold mb-4">Canal de signature</h3>
           
-          <RadioGroup
-            value={binding.signatureChannel}
-            onValueChange={(v) => onUpdate({ signatureChannel: v as any })}
-            className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4"
-          >
-            {signatureChannels.map((channel) => (
-              <div key={channel.id}>
+          <RadioGroup value={binding.signatureChannel} onValueChange={v => onUpdate({
+          signatureChannel: v as any
+        })} className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            {signatureChannels.map(channel => <div key={channel.id}>
                 <RadioGroupItem value={channel.id} id={channel.id} className="peer sr-only" />
-                <Label
-                  htmlFor={channel.id}
-                  className={cn(
-                    "flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-all",
-                    "hover:bg-muted peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5"
-                  )}
-                >
-                  <div className={cn(
-                    "h-10 w-10 rounded-full flex items-center justify-center",
-                    binding.signatureChannel === channel.id 
-                      ? "bg-primary text-primary-foreground" 
-                      : "bg-muted"
-                  )}>
+                <Label htmlFor={channel.id} className={cn("flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-all", "hover:bg-muted peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5")}>
+                  <div className={cn("h-10 w-10 rounded-full flex items-center justify-center", binding.signatureChannel === channel.id ? "bg-primary text-primary-foreground" : "bg-muted")}>
                     <channel.icon className="h-5 w-5" />
                   </div>
                   <div>
@@ -105,8 +104,7 @@ export const BindingStep = ({ state, onUpdate }: BindingStepProps) => {
                     <p className="text-xs text-muted-foreground">{channel.description}</p>
                   </div>
                 </Label>
-              </div>
-            ))}
+              </div>)}
           </RadioGroup>
 
           <div className="mt-6">
@@ -116,6 +114,5 @@ export const BindingStep = ({ state, onUpdate }: BindingStepProps) => {
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 };

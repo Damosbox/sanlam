@@ -1,17 +1,25 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Users, TrendingUp, Award, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
-
-const stats = [
-  { label: "Courtiers partenaires", value: "500+", icon: Users },
-  { label: "Taux de conversion moyen", value: "34%", icon: TrendingUp },
-  { label: "Commission moyenne", value: "18%", icon: Award },
-  { label: "Satisfaction client", value: "4.8/5", icon: Shield },
-];
-
+const stats = [{
+  label: "Courtiers partenaires",
+  value: "500+",
+  icon: Users
+}, {
+  label: "Taux de conversion moyen",
+  value: "34%",
+  icon: TrendingUp
+}, {
+  label: "Commission moyenne",
+  value: "18%",
+  icon: Award
+}, {
+  label: "Satisfaction client",
+  value: "4.8/5",
+  icon: Shield
+}];
 export const HeroSection = () => {
-  return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-accent/5 py-20 lg:py-32">
+  return <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-accent/5 py-20 lg:py-32">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-[url('/pattern-circles.jpg')] opacity-5" />
       
@@ -38,10 +46,7 @@ export const HeroSection = () => {
             
             <div className="flex flex-col sm:flex-row gap-4">
               <Button size="lg" className="gap-2 shadow-lg" asChild>
-                <a href="#inscription">
-                  Devenir partenaire
-                  <ArrowRight className="h-4 w-4" />
-                </a>
+                
               </Button>
               <Button size="lg" variant="outline" asChild>
                 <Link to="/auth?broker=true">
@@ -52,22 +57,19 @@ export const HeroSection = () => {
           </div>
           
           {/* Right Stats Grid */}
-          <div className="grid grid-cols-2 gap-4 animate-fade-in" style={{ animationDelay: "150ms" }}>
-            {stats.map((stat, index) => (
-              <div
-                key={stat.label}
-                className="group relative overflow-hidden rounded-2xl border bg-card p-6 shadow-sm transition-all hover:shadow-md hover:-translate-y-1"
-                style={{ animationDelay: `${(index + 1) * 100}ms` }}
-              >
+          <div className="grid grid-cols-2 gap-4 animate-fade-in" style={{
+          animationDelay: "150ms"
+        }}>
+            {stats.map((stat, index) => <div key={stat.label} className="group relative overflow-hidden rounded-2xl border bg-card p-6 shadow-sm transition-all hover:shadow-md hover:-translate-y-1" style={{
+            animationDelay: `${(index + 1) * 100}ms`
+          }}>
                 <div className="absolute top-0 right-0 h-20 w-20 translate-x-6 -translate-y-6 rounded-full bg-primary/10 transition-transform group-hover:scale-150" />
                 <stat.icon className="h-8 w-8 text-primary mb-3 relative z-10" />
                 <p className="text-3xl font-bold text-foreground relative z-10">{stat.value}</p>
                 <p className="text-sm text-muted-foreground relative z-10">{stat.label}</p>
-              </div>
-            ))}
+              </div>)}
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };

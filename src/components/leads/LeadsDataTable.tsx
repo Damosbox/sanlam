@@ -47,12 +47,12 @@ export const LeadsDataTable = ({ leads, density, onSelectLead }: LeadsDataTableP
       <Table>
         <TableHeader>
           <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
-            <TableHead className="w-[250px]">Nom</TableHead>
-            <TableHead>Téléphone</TableHead>
-            <TableHead className="hidden md:table-cell">Email</TableHead>
-            <TableHead>Produit</TableHead>
+            <TableHead className="w-[200px]">Client</TableHead>
+            <TableHead>Contact</TableHead>
+            <TableHead className="hidden md:table-cell">Type client</TableHead>
+            <TableHead className="hidden lg:table-cell">Nbre de contrats</TableHead>
+            <TableHead className="hidden lg:table-cell">Nbre de cotations</TableHead>
             <TableHead>Statut</TableHead>
-            <TableHead className="hidden lg:table-cell">Date</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -77,26 +77,29 @@ export const LeadsDataTable = ({ leads, density, onSelectLead }: LeadsDataTableP
                       <p className={`font-medium ${textSize}`}>
                         {lead.first_name} {lead.last_name}
                       </p>
-                      {lead.source && (
-                        <p className="text-xs text-muted-foreground">{lead.source}</p>
+                      {lead.product_interest && (
+                        <p className="text-xs text-muted-foreground">{lead.product_interest}</p>
                       )}
                     </div>
                   </div>
                 </TableCell>
                 <TableCell className={`${rowPadding} ${textSize}`}>
-                  {lead.phone || "—"}
+                  <div className="space-y-0.5">
+                    <p>{lead.phone || "—"}</p>
+                    <p className="text-xs text-muted-foreground">{lead.email || ""}</p>
+                  </div>
                 </TableCell>
-                <TableCell className={`hidden md:table-cell ${rowPadding} ${textSize} text-muted-foreground`}>
-                  {lead.email || "—"}
+                <TableCell className={`hidden md:table-cell ${rowPadding} ${textSize}`}>
+                  {lead.source || "Prospect"}
                 </TableCell>
-                <TableCell className={`${rowPadding} ${textSize}`}>
-                  {lead.product_interest || "—"}
+                <TableCell className={`hidden lg:table-cell ${rowPadding} ${textSize} text-center`}>
+                  0
+                </TableCell>
+                <TableCell className={`hidden lg:table-cell ${rowPadding} ${textSize} text-center`}>
+                  0
                 </TableCell>
                 <TableCell className={rowPadding}>
                   <LeadStatusBadge status={lead.status} />
-                </TableCell>
-                <TableCell className={`hidden lg:table-cell ${rowPadding} ${textSize} text-muted-foreground`}>
-                  {format(new Date(lead.created_at), "dd/MM/yy", { locale: fr })}
                 </TableCell>
                 <TableCell className={`${rowPadding} text-right`}>
                   <div className="flex items-center justify-end gap-1">

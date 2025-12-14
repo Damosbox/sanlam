@@ -5,7 +5,13 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Car, Home, HeartPulse, Shield } from "lucide-react";
+import { Car, Home, HeartPulse, Shield, CalendarIcon } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import { GuidedSalesState, ProductType } from "../types";
 
 interface NeedsAnalysisStepProps {
@@ -19,7 +25,7 @@ export const NeedsAnalysisStep = ({ state, onUpdate }: NeedsAnalysisStepProps) =
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Analyse des Besoins</h1>
+        <h1 className="text-2xl font-bold text-foreground">Besoin</h1>
         <p className="text-muted-foreground mt-1">
           Commençons par définir le profil du client pour activer les recommandations intelligentes.
         </p>
@@ -106,6 +112,7 @@ export const NeedsAnalysisStep = ({ state, onUpdate }: NeedsAnalysisStepProps) =
 
             {/* Product-specific fields */}
             <TabsContent value="auto" className="mt-6 space-y-6">
+              {/* Row 1: Marque/Modèle + Usage */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">
@@ -149,33 +156,140 @@ export const NeedsAnalysisStep = ({ state, onUpdate }: NeedsAnalysisStepProps) =
                 </div>
               </div>
 
+              {/* Row 2: Date mise en circulation + Valeur vénale */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                    Année du véhicule
+                    Date de mise en circulation
                   </Label>
-                  <Input
-                    placeholder="ex: 2021"
-                    value={needsAnalysis.vehicleYear || ""}
-                    onChange={(e) => onUpdate({ vehicleYear: e.target.value })}
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !needsAnalysis.vehicleFirstCirculationDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {needsAnalysis.vehicleFirstCirculationDate ? (
+                          format(new Date(needsAnalysis.vehicleFirstCirculationDate), "PPP", { locale: fr })
+                        ) : (
+                          <span>Sélectionner une date</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={needsAnalysis.vehicleFirstCirculationDate ? new Date(needsAnalysis.vehicleFirstCirculationDate) : undefined}
+                        onSelect={(date) => onUpdate({ vehicleFirstCirculationDate: date?.toISOString() })}
+                        disabled={(date) => date > new Date()}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                    Valeur estimée
+                    Valeur vénale
                   </Label>
                   <div className="relative">
                     <Input
                       type="number"
-                      value={needsAnalysis.vehicleValue || ""}
-                      onChange={(e) => onUpdate({ vehicleValue: Number(e.target.value) })}
-                      className="pr-8"
+                      placeholder="Valeur actuelle du véhicule"
+                      value={needsAnalysis.vehicleVenalValue || ""}
+                      onChange={(e) => onUpdate({ vehicleVenalValue: Number(e.target.value) })}
+                      className="pr-14"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
                       FCFA
                     </span>
                   </div>
+                </div>
+              </div>
+
+              {/* Row 3: Valeur neuve + BNS */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Valeur neuve
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      placeholder="Valeur à l'achat neuf"
+                      value={needsAnalysis.vehicleNewValue || ""}
+                      onChange={(e) => onUpdate({ vehicleNewValue: Number(e.target.value) })}
+                      className="pr-14"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                      FCFA
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    BNS (Bonus/Malus)
+                  </Label>
+                  <Select
+                    value={needsAnalysis.bonusMalus || "bonus_0"}
+                    onValueChange={(v) => onUpdate({ bonusMalus: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner le BNS" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="bonus_50">Bonus 50%</SelectItem>
+                      <SelectItem value="bonus_40">Bonus 40%</SelectItem>
+                      <SelectItem value="bonus_30">Bonus 30%</SelectItem>
+                      <SelectItem value="bonus_25">Bonus 25%</SelectItem>
+                      <SelectItem value="bonus_20">Bonus 20%</SelectItem>
+                      <SelectItem value="bonus_15">Bonus 15%</SelectItem>
+                      <SelectItem value="bonus_10">Bonus 10%</SelectItem>
+                      <SelectItem value="bonus_5">Bonus 5%</SelectItem>
+                      <SelectItem value="bonus_0">0% (Neutre)</SelectItem>
+                      <SelectItem value="malus_25">Malus 25%</SelectItem>
+                      <SelectItem value="malus_50">Malus 50%</SelectItem>
+                      <SelectItem value="malus_100">Malus 100%</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Row 4: Puissance fiscale + Nombre de places */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Puissance fiscale
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      placeholder="ex: 7"
+                      value={needsAnalysis.vehicleFiscalPower || ""}
+                      onChange={(e) => onUpdate({ vehicleFiscalPower: Number(e.target.value) })}
+                      className="pr-10"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                      CV
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Nombre de places
+                  </Label>
+                  <Input
+                    type="number"
+                    placeholder="ex: 5"
+                    value={needsAnalysis.vehicleSeats || ""}
+                    onChange={(e) => onUpdate({ vehicleSeats: Number(e.target.value) })}
+                  />
                 </div>
               </div>
             </TabsContent>

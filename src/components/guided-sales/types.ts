@@ -12,10 +12,14 @@ export interface NeedsAnalysisData {
   contactPreference: "whatsapp" | "sms" | "email";
   // Auto specific
   vehicleType?: string;
-  vehicleYear?: string;
   vehicleBrand?: string;
-  vehicleValue?: number;
   vehicleUsage?: UsageType;
+  vehicleFirstCirculationDate?: string;
+  vehicleVenalValue?: number;
+  vehicleNewValue?: number;
+  bonusMalus?: string;
+  vehicleFiscalPower?: number;
+  vehicleSeats?: number;
   hasClaimHistory?: boolean;
   // Habitation specific
   housingType?: "appartement" | "maison";

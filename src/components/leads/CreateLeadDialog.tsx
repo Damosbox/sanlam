@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import type { Tables } from "@/integrations/supabase/types";
 
 const leadFormSchema = z.object({
   first_name: z.string().trim().min(1, "Prénom requis").max(50),
@@ -18,26 +20,52 @@ const leadFormSchema = z.object({
   whatsapp: z.string().trim().max(20).optional().or(z.literal("")),
   product_interest: z.string().optional(),
   source: z.string().optional(),
+  notes: z.string().trim().max(500).optional().or(z.literal("")),
 });
 
 interface CreateLeadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  lead?: Tables<"leads"> | null;
+  mode?: "create" | "edit";
 }
 
-export const CreateLeadDialog = ({ open, onOpenChange }: CreateLeadDialogProps) => {
+const emptyFormData = {
+  first_name: "",
+  last_name: "",
+  email: "",
+  phone: "",
+  whatsapp: "",
+  product_interest: "",
+  source: "",
+  notes: "",
+};
+
+export const CreateLeadDialog = ({ open, onOpenChange, lead, mode = "create" }: CreateLeadDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [formData, setFormData] = useState({
-    first_name: "",
-    last_name: "",
-    email: "",
-    phone: "",
-    whatsapp: "",
-    product_interest: "",
-    source: "",
-  });
+  const [formData, setFormData] = useState(emptyFormData);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const isEditMode = mode === "edit" && lead;
+
+  useEffect(() => {
+    if (isEditMode && lead) {
+      setFormData({
+        first_name: lead.first_name || "",
+        last_name: lead.last_name || "",
+        email: lead.email || "",
+        phone: lead.phone || "",
+        whatsapp: lead.whatsapp || "",
+        product_interest: lead.product_interest || "",
+        source: lead.source || "",
+        notes: lead.notes || "",
+      });
+    } else if (!open) {
+      setFormData(emptyFormData);
+      setFormErrors({});
+    }
+  }, [isEditMode, lead, open]);
 
   const createLeadMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -52,6 +80,7 @@ export const CreateLeadDialog = ({ open, onOpenChange }: CreateLeadDialogProps) 
         whatsapp: data.whatsapp?.trim() || null,
         product_interest: data.product_interest || null,
         source: data.source || null,
+        notes: data.notes?.trim() || null,
         assigned_broker_id: userData.user.id,
         status: "nouveau",
       });
@@ -61,15 +90,7 @@ export const CreateLeadDialog = ({ open, onOpenChange }: CreateLeadDialogProps) 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["broker-leads"] });
       onOpenChange(false);
-      setFormData({
-        first_name: "",
-        last_name: "",
-        email: "",
-        phone: "",
-        whatsapp: "",
-        product_interest: "",
-        source: "",
-      });
+      setFormData(emptyFormData);
       setFormErrors({});
       toast({ title: "Lead créé" });
     },
@@ -78,7 +99,35 @@ export const CreateLeadDialog = ({ open, onOpenChange }: CreateLeadDialogProps) 
     },
   });
 
-  const handleCreateLead = () => {
+  const updateLeadMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      if (!lead) throw new Error("Lead non trouvé");
+
+      const { error } = await supabase.from("leads").update({
+        first_name: data.first_name.trim(),
+        last_name: data.last_name.trim(),
+        email: data.email?.trim() || null,
+        phone: data.phone?.trim() || null,
+        whatsapp: data.whatsapp?.trim() || null,
+        product_interest: data.product_interest || null,
+        source: data.source || null,
+        notes: data.notes?.trim() || null,
+        updated_at: new Date().toISOString(),
+      }).eq("id", lead.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["broker-leads"] });
+      onOpenChange(false);
+      toast({ title: "Lead modifié" });
+    },
+    onError: () => {
+      toast({ title: "Erreur", description: "Impossible de modifier le lead", variant: "destructive" });
+    },
+  });
+
+  const handleSubmit = () => {
     const result = leadFormSchema.safeParse(formData);
     if (!result.success) {
       const errors: Record<string, string> = {};
@@ -89,7 +138,12 @@ export const CreateLeadDialog = ({ open, onOpenChange }: CreateLeadDialogProps) 
       return;
     }
     setFormErrors({});
-    createLeadMutation.mutate(formData);
+    
+    if (isEditMode) {
+      updateLeadMutation.mutate(formData);
+    } else {
+      createLeadMutation.mutate(formData);
+    }
   };
 
   const updateFormField = (field: keyof typeof formData, value: string) => {
@@ -97,13 +151,24 @@ export const CreateLeadDialog = ({ open, onOpenChange }: CreateLeadDialogProps) 
     if (formErrors[field]) setFormErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
+  const isPending = createLeadMutation.isPending || updateLeadMutation.isPending;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5" />
-            Nouveau Lead
+            {isEditMode ? (
+              <>
+                <Pencil className="h-5 w-5" />
+                Modifier le Lead
+              </>
+            ) : (
+              <>
+                <UserPlus className="h-5 w-5" />
+                Nouveau Lead
+              </>
+            )}
           </DialogTitle>
         </DialogHeader>
 
@@ -217,13 +282,36 @@ export const CreateLeadDialog = ({ open, onOpenChange }: CreateLeadDialogProps) 
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="notes">Données complémentaires</Label>
+            <Textarea
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => updateFormField("notes", e.target.value)}
+              placeholder="Informations supplémentaires sur le prospect..."
+              rows={3}
+            />
+          </div>
+
           <div className="flex justify-end gap-2 pt-4">
+            {isEditMode && (
+              <Button 
+                variant="default" 
+                onClick={handleSubmit} 
+                disabled={isPending}
+                className="bg-primary"
+              >
+                {isPending ? "Modification..." : "Modifier"}
+              </Button>
+            )}
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Annuler
             </Button>
-            <Button onClick={handleCreateLead} disabled={createLeadMutation.isPending}>
-              {createLeadMutation.isPending ? "Création..." : "Créer"}
-            </Button>
+            {!isEditMode && (
+              <Button onClick={handleSubmit} disabled={isPending}>
+                {isPending ? "Création..." : "Créer"}
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>

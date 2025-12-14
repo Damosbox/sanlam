@@ -46,11 +46,9 @@ export const Header = () => {
               </Button>
             </Link>
           )}
-          <Link to="/courtiers">
-            <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
-              Espace Courtier
-            </Button>
-          </Link>
+          <span className="hidden sm:inline-flex text-sm font-semibold tracking-wide text-foreground uppercase">
+            ESPACE COMMERCIAL
+          </span>
           {user ? (
             <LogoutButton />
           ) : (

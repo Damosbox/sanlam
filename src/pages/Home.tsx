@@ -31,7 +31,7 @@ const Home = () => {
             <div className="space-y-6">
               <h1 className="text-4xl md:text-6xl font-bold leading-tight">
                 L'assurance intelligente
-                <span className="text-gradient-activated"> propulsée par l'IA</span>
+                <span className="text-gradient-activated"> qui vous accompagne</span>
               </h1>
               <p className="text-xl text-muted-foreground leading-relaxed">
                 Diagnostic personnalisé, souscription en 2 étapes et support omnicanal pour 
@@ -68,6 +68,20 @@ const Home = () => {
               <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-primary/20 rounded-full blur-3xl" />
               <div className="absolute -top-6 -right-6 w-40 h-40 bg-accent/20 rounded-full blur-3xl" />
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Communication Block */}
+      <section className="py-12 bg-[hsl(var(--bright-green))]">
+        <div className="container">
+          <div className="text-center text-white space-y-4">
+            <h2 className="text-2xl md:text-3xl font-bold">
+              Découvrez nos offres exclusives
+            </h2>
+            <p className="text-lg opacity-90 max-w-2xl mx-auto">
+              Bénéficiez de tarifs préférentiels et d'un accompagnement personnalisé pour tous vos projets d'assurance.
+            </p>
           </div>
         </div>
       </section>

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
-import { Inbox, Zap, FileText, Shield, Users, BarChart3, MessageSquare, Sparkles, LayoutDashboard } from "lucide-react";
+import { Inbox, Zap, FileText, Shield, Users, BarChart3, MessageSquare, Sparkles, LayoutDashboard, Newspaper } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 interface BadgeCounts {
@@ -110,6 +110,10 @@ export function BrokerSidebar() {
     title: "Messages",
     url: "/b2b/messages",
     icon: MessageSquare
+  }, {
+    title: "Actualité",
+    url: "/courtiers",
+    icon: Newspaper
   }];
   const {
     isMobile,

@@ -41,8 +41,8 @@ export const IssuanceStep = ({ state, onReset }: IssuanceStepProps) => {
           
           <div className="space-y-3">
             {[
-              { name: "Devis final signé", type: "PDF" },
-              { name: "IPID - Fiche d'information produit", type: "PDF" },
+              { name: "Reçu de paiement", type: "PDF" },
+              { name: "Conditions Particulières (CP)", type: "PDF" },
               { name: "Attestation d'assurance", type: "PDF" },
               { name: "Conditions générales", type: "PDF" },
             ].map((doc) => (
@@ -65,7 +65,7 @@ export const IssuanceStep = ({ state, onReset }: IssuanceStepProps) => {
         </Button>
         <Button variant="outline" className="gap-2">
           <FolderOpen className="h-4 w-4" />
-          Document Vault
+          Espace documents
         </Button>
         <Button variant="secondary" className="gap-2" onClick={onReset}>
           <ArrowLeft className="h-4 w-4" />

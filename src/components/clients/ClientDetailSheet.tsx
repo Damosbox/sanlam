@@ -29,6 +29,7 @@ import { formatFCFA } from "@/utils/formatCurrency";
 import { ClientDocumentsSection } from "./ClientDocumentsSection";
 import { ClientAdditionalDataSection } from "./ClientAdditionalDataSection";
 import { ClientKYCSection } from "./ClientKYCSection";
+import { ClientNotesSection } from "./ClientNotesSection";
 
 interface Client {
   id: string;
@@ -264,6 +265,14 @@ export const ClientDetailSheet = ({
                     </div>
                   </div>
                 </div>
+              )}
+
+              {/* Notes & Timeline */}
+              {client.type === "active" && (
+                <>
+                  <Separator className="my-4" />
+                  <ClientNotesSection clientId={client.id} />
+                </>
               )}
             </TabsContent>
 

@@ -193,6 +193,201 @@ export type Database = {
           },
         ]
       }
+      client_additional_data: {
+        Row: {
+          address: string | null
+          birth_date: string | null
+          children_count: number | null
+          city: string | null
+          client_id: string
+          country: string | null
+          created_at: string | null
+          current_insurer: string | null
+          custom_fields: Json | null
+          drivers_license_date: string | null
+          employer: string | null
+          existing_insurances: string[] | null
+          gender: string | null
+          has_drivers_license: boolean | null
+          id: string
+          marital_status: string | null
+          monthly_income_range: string | null
+          postal_code: string | null
+          preferred_contact_method: string | null
+          preferred_contact_time: string | null
+          profession: string | null
+          property_owner: boolean | null
+          property_type: string | null
+          referral_source: string | null
+          updated_at: string | null
+          vehicle_count: number | null
+        }
+        Insert: {
+          address?: string | null
+          birth_date?: string | null
+          children_count?: number | null
+          city?: string | null
+          client_id: string
+          country?: string | null
+          created_at?: string | null
+          current_insurer?: string | null
+          custom_fields?: Json | null
+          drivers_license_date?: string | null
+          employer?: string | null
+          existing_insurances?: string[] | null
+          gender?: string | null
+          has_drivers_license?: boolean | null
+          id?: string
+          marital_status?: string | null
+          monthly_income_range?: string | null
+          postal_code?: string | null
+          preferred_contact_method?: string | null
+          preferred_contact_time?: string | null
+          profession?: string | null
+          property_owner?: boolean | null
+          property_type?: string | null
+          referral_source?: string | null
+          updated_at?: string | null
+          vehicle_count?: number | null
+        }
+        Update: {
+          address?: string | null
+          birth_date?: string | null
+          children_count?: number | null
+          city?: string | null
+          client_id?: string
+          country?: string | null
+          created_at?: string | null
+          current_insurer?: string | null
+          custom_fields?: Json | null
+          drivers_license_date?: string | null
+          employer?: string | null
+          existing_insurances?: string[] | null
+          gender?: string | null
+          has_drivers_license?: boolean | null
+          id?: string
+          marital_status?: string | null
+          monthly_income_range?: string | null
+          postal_code?: string | null
+          preferred_contact_method?: string | null
+          preferred_contact_time?: string | null
+          profession?: string | null
+          property_owner?: boolean | null
+          property_type?: string | null
+          referral_source?: string | null
+          updated_at?: string | null
+          vehicle_count?: number | null
+        }
+        Relationships: []
+      }
+      client_documents: {
+        Row: {
+          broker_id: string
+          client_id: string
+          created_at: string
+          document_name: string
+          document_type: string
+          expiry_date: string | null
+          file_size: number | null
+          file_url: string | null
+          id: string
+          notes: string | null
+          status: string
+          updated_at: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          broker_id: string
+          client_id: string
+          created_at?: string
+          document_name: string
+          document_type: string
+          expiry_date?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          broker_id?: string
+          client_id?: string
+          created_at?: string
+          document_name?: string
+          document_type?: string
+          expiry_date?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: []
+      }
+      client_kyc_compliance: {
+        Row: {
+          aml_notes: string | null
+          aml_risk_level: string | null
+          aml_verified: boolean | null
+          aml_verified_at: string | null
+          client_id: string
+          created_at: string
+          id: string
+          identity_document_number: string | null
+          identity_document_type: string | null
+          identity_expiry_date: string | null
+          identity_verified: boolean | null
+          is_ppe: boolean | null
+          ppe_country: string | null
+          ppe_position: string | null
+          ppe_relationship: string | null
+          updated_at: string
+        }
+        Insert: {
+          aml_notes?: string | null
+          aml_risk_level?: string | null
+          aml_verified?: boolean | null
+          aml_verified_at?: string | null
+          client_id: string
+          created_at?: string
+          id?: string
+          identity_document_number?: string | null
+          identity_document_type?: string | null
+          identity_expiry_date?: string | null
+          identity_verified?: boolean | null
+          is_ppe?: boolean | null
+          ppe_country?: string | null
+          ppe_position?: string | null
+          ppe_relationship?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aml_notes?: string | null
+          aml_risk_level?: string | null
+          aml_verified?: boolean | null
+          aml_verified_at?: string | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          identity_document_number?: string | null
+          identity_document_type?: string | null
+          identity_expiry_date?: string | null
+          identity_verified?: boolean | null
+          is_ppe?: boolean | null
+          ppe_country?: string | null
+          ppe_position?: string | null
+          ppe_relationship?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       competitive_analyses: {
         Row: {
           analysis_timestamp: string | null

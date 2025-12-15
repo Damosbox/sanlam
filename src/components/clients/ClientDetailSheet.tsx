@@ -20,11 +20,15 @@ import {
   Shield,
   Clock,
   CheckCircle,
-  XCircle
+  XCircle,
+  FolderOpen
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatFCFA } from "@/utils/formatCurrency";
+import { ClientDocumentsSection } from "./ClientDocumentsSection";
+import { ClientAdditionalDataSection } from "./ClientAdditionalDataSection";
+import { ClientKYCSection } from "./ClientKYCSection";
 
 interface Client {
   id: string;
@@ -198,7 +202,7 @@ export const ClientDetailSheet = ({
         </SheetHeader>
 
         <Tabs defaultValue="info" className="flex-1 flex flex-col overflow-hidden min-h-0">
-          <TabsList className="mx-6 mt-2 grid w-auto grid-cols-3 shrink-0">
+          <TabsList className="mx-6 mt-2 grid w-auto grid-cols-4 shrink-0">
             <TabsTrigger value="info" className="gap-1.5 text-xs">
               <User className="h-3.5 w-3.5" />
               Infos
@@ -210,6 +214,10 @@ export const ClientDetailSheet = ({
             <TabsTrigger value="claims" className="gap-1.5 text-xs">
               <AlertTriangle className="h-3.5 w-3.5" />
               Sinistres
+            </TabsTrigger>
+            <TabsTrigger value="documents" className="gap-1.5 text-xs">
+              <FolderOpen className="h-3.5 w-3.5" />
+              Docs
             </TabsTrigger>
           </TabsList>
 
@@ -377,6 +385,49 @@ export const ClientDetailSheet = ({
                     </Card>
                   );
                 })
+              )}
+            </TabsContent>
+
+            {/* Documents Tab */}
+            <TabsContent value="documents" className="mt-0 p-6 space-y-6">
+              {client.type === "active" ? (
+                <>
+                  {/* Documents Section */}
+                  <div>
+                    <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Pièces justificatives
+                    </h3>
+                    <ClientDocumentsSection clientId={client.id} />
+                  </div>
+
+                  <Separator />
+
+                  {/* Additional Data Section */}
+                  <div>
+                    <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Données complémentaires
+                    </h3>
+                    <ClientAdditionalDataSection clientId={client.id} />
+                  </div>
+
+                  <Separator />
+
+                  {/* KYC Section */}
+                  <div>
+                    <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      KYC & Compliance
+                    </h3>
+                    <ClientKYCSection clientId={client.id} />
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FolderOpen className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                  <p>Documents disponibles après activation du compte client</p>
+                </div>
               )}
             </TabsContent>
           </ScrollArea>

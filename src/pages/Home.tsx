@@ -68,13 +68,13 @@ const Home = () => {
       </section>
 
       {/* Communication Block */}
-      <section className="py-12 bg-[hsl(var(--bright-green))]">
+      <section className="py-12 bg-muted">
         <div className="container">
-          <div className="text-center text-white space-y-4">
+          <div className="text-center text-foreground space-y-4">
             <h2 className="text-2xl md:text-3xl font-bold">
               Découvrez nos offres exclusives
             </h2>
-            <p className="text-lg opacity-90 max-w-2xl mx-auto">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Bénéficiez de tarifs préférentiels et d'un accompagnement personnalisé pour tous vos projets d'assurance.
             </p>
           </div>

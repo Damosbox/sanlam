@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home } from "lucide-react";
+import { Home, LayoutDashboard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
@@ -49,6 +49,14 @@ export const Header = () => {
           <span className="hidden sm:inline-flex text-sm font-semibold tracking-wide text-foreground uppercase">
             ESPACE COMMERCIAL
           </span>
+          {user && (
+            <Link to="/b2b/dashboard">
+              <Button variant="outline" size="sm">
+                <LayoutDashboard className="w-4 h-4 mr-2" />
+                Dashboard
+              </Button>
+            </Link>
+          )}
           {user ? (
             <LogoutButton />
           ) : (

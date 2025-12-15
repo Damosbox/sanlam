@@ -87,7 +87,7 @@ export const DashboardKPIs = () => {
       highlight: true,
     },
     { 
-      label: "GWP Total", 
+      label: "Primes Totales", 
       value: formatFCFA(stats.totalGWP), 
       icon: TrendingUp, 
       trend: "Prime annuelle brute",
@@ -177,7 +177,7 @@ export const DashboardKPIs = () => {
           <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-2 mb-3">
               <Trophy className="w-4 h-4 text-amber-500" />
-              <p className="text-xs sm:text-sm font-semibold text-foreground">Top 3 par GWP</p>
+              <p className="text-xs sm:text-sm font-semibold text-foreground">Top 3 par Primes</p>
             </div>
             <div className="space-y-2">
               {stats.topSalesByGWP.length > 0 ? stats.topSalesByGWP.map((sale, i) => (

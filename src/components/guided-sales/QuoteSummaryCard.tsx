@@ -21,11 +21,11 @@ const productLabels: Record<ProductType, string> = {
 };
 
 export const QuoteSummaryCard = ({ state, onNext, nextLabel, disabled }: QuoteSummaryCardProps) => {
-  const [displayTotal, setDisplayTotal] = useState(state.calculatedPremium.total);
+  const [displayTotal, setDisplayTotal] = useState(state.calculatedPremium.totalAPayer);
 
   // Animate number changes
   useEffect(() => {
-    const target = state.calculatedPremium.total;
+    const target = state.calculatedPremium.totalAPayer;
     const diff = target - displayTotal;
     if (Math.abs(diff) < 1) {
       setDisplayTotal(target);
@@ -36,7 +36,9 @@ export const QuoteSummaryCard = ({ state, onNext, nextLabel, disabled }: QuoteSu
       setDisplayTotal(prev => prev + step);
     }, 20);
     return () => clearTimeout(timer);
-  }, [state.calculatedPremium.total, displayTotal]);
+  }, [state.calculatedPremium.totalAPayer, displayTotal]);
+
+  const premium = state.calculatedPremium;
 
   return (
     <Card className="sticky top-20 overflow-hidden">
@@ -48,36 +50,50 @@ export const QuoteSummaryCard = ({ state, onNext, nextLabel, disabled }: QuoteSu
 
       {/* Content */}
       <div className="p-4 sm:p-6 space-y-4">
-        <div className="flex items-baseline justify-between">
-          <span className="text-sm text-muted-foreground">Prime Annuelle</span>
-          <span className="text-xl sm:text-2xl font-bold text-foreground">
+        {/* Prime Totale à payer - En haut et en gras */}
+        <div className="flex items-baseline justify-between bg-primary/10 rounded-lg p-3 -mx-1">
+          <span className="text-sm font-semibold text-foreground">Prime Totale à payer</span>
+          <span className="text-xl sm:text-2xl font-bold text-primary">
             {formatFCFA(displayTotal)}
           </span>
         </div>
 
         <Separator />
 
+        {/* Décompte détaillé */}
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Cotisation Nette</span>
-            <span>{formatFCFADecimal(state.calculatedPremium.netPremium)}</span>
+            <span className="text-muted-foreground">Prime Nette</span>
+            <span>{formatFCFADecimal(premium.primeNette)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Taxes Fiscales (33%)</span>
-            <span>{formatFCFADecimal(state.calculatedPremium.taxes)}</span>
+            <span className="text-muted-foreground">Frais d'accessoires</span>
+            <span>{formatFCFADecimal(premium.fraisAccessoires)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-primary">Frais de Gestion</span>
-            <span className="text-primary">Inclus</span>
+            <span className="text-muted-foreground">Taxes (14%)</span>
+            <span>{formatFCFADecimal(premium.taxes)}</span>
           </div>
         </div>
 
         <Separator />
 
-        <div className="flex justify-between text-sm text-muted-foreground">
-          <span>Taxes & Frais (estimés)</span>
-          <span>{formatFCFADecimal(state.calculatedPremium.taxes)}</span>
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between font-medium">
+            <span className="text-foreground">Prime TTC</span>
+            <span>{formatFCFADecimal(premium.primeTTC)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">FGA (Fond de Garantie Auto)</span>
+            <span>{formatFCFADecimal(premium.fga)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Carte Brune CEDEAO</span>
+            <span>{formatFCFADecimal(premium.cedeao)}</span>
+          </div>
         </div>
+
+        <Separator />
 
         {/* Smart Default Badge */}
         <div className="bg-slate-800 text-white rounded-lg p-3 flex items-start gap-2">

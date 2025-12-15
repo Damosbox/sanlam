@@ -90,8 +90,15 @@ export interface GuidedSalesState {
   binding: BindingData;
   issuance: IssuanceData;
   calculatedPremium: {
-    netPremium: number;
+    primeNette: number;
+    fraisAccessoires: number;
     taxes: number;
+    primeTTC: number;
+    fga: number;
+    cedeao: number;
+    totalAPayer: number;
+    // Compatibilité ancienne structure
+    netPremium: number;
     fees: number;
     total: number;
   };
@@ -131,9 +138,15 @@ export const initialState: GuidedSalesState = {
     documentsGenerated: [],
   },
   calculatedPremium: {
-    netPremium: 301.5,
-    taxes: 148.5,
-    fees: 0,
-    total: 450,
+    primeNette: 45000,
+    fraisAccessoires: 10000,
+    taxes: 6300,
+    primeTTC: 61300,
+    fga: 5000,
+    cedeao: 5000,
+    totalAPayer: 71300,
+    netPremium: 45000,
+    fees: 10000,
+    total: 71300,
   },
 };

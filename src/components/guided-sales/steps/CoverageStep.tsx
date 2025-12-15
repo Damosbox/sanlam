@@ -98,10 +98,18 @@ export const CoverageStep = ({ state, onUpdate, onPremiumUpdate }: CoverageStepP
     if (plan) {
       onUpdate({ planTier: tier });
       const total = calculateTotal(plan.price, coverage.additionalOptions, coverage.assistanceLevel);
+      const primeNette = Math.round(total * 0.67);
+      const taxes = Math.round(primeNette * 0.14);
       onPremiumUpdate({
-        netPremium: total * 0.67,
-        taxes: total * 0.33,
-        fees: 0,
+        primeNette,
+        fraisAccessoires: 10000,
+        taxes,
+        primeTTC: primeNette + 10000 + taxes,
+        fga: Math.max(5000, Math.round(primeNette * 0.02)),
+        cedeao: 5000,
+        totalAPayer: total,
+        netPremium: primeNette,
+        fees: 10000,
         total,
       });
     }
@@ -114,10 +122,18 @@ export const CoverageStep = ({ state, onUpdate, onPremiumUpdate }: CoverageStepP
     onUpdate({ additionalOptions: newOptions });
 
     const total = calculateTotal(selectedPlan.price, newOptions, coverage.assistanceLevel);
+    const primeNette = Math.round(total * 0.67);
+    const taxes = Math.round(primeNette * 0.14);
     onPremiumUpdate({
-      netPremium: total * 0.67,
-      taxes: total * 0.33,
-      fees: 0,
+      primeNette,
+      fraisAccessoires: 10000,
+      taxes,
+      primeTTC: primeNette + 10000 + taxes,
+      fga: Math.max(5000, Math.round(primeNette * 0.02)),
+      cedeao: 5000,
+      totalAPayer: total,
+      netPremium: primeNette,
+      fees: 10000,
       total,
     });
   };
@@ -125,10 +141,18 @@ export const CoverageStep = ({ state, onUpdate, onPremiumUpdate }: CoverageStepP
   const handleAssistanceChange = (assistanceId: string) => {
     onUpdate({ assistanceLevel: assistanceId });
     const total = calculateTotal(selectedPlan.price, coverage.additionalOptions, assistanceId);
+    const primeNette = Math.round(total * 0.67);
+    const taxes = Math.round(primeNette * 0.14);
     onPremiumUpdate({
-      netPremium: total * 0.67,
-      taxes: total * 0.33,
-      fees: 0,
+      primeNette,
+      fraisAccessoires: 10000,
+      taxes,
+      primeTTC: primeNette + 10000 + taxes,
+      fga: Math.max(5000, Math.round(primeNette * 0.02)),
+      cedeao: 5000,
+      totalAPayer: total,
+      netPremium: primeNette,
+      fees: 10000,
       total,
     });
   };

@@ -8,6 +8,8 @@ import {
   Target, ArrowRight, RefreshCw 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Recommendation {
   id: string;
@@ -15,6 +17,7 @@ interface Recommendation {
   title: string;
   description: string;
   action: string;
+  priority?: "low" | "medium" | "high";
 }
 
 const typeConfig = {
@@ -47,6 +50,7 @@ const typeConfig = {
 export const AIRecommendations = () => {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     generateRecommendations();
@@ -54,41 +58,53 @@ export const AIRecommendations = () => {
 
   const generateRecommendations = async () => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 600));
+    setHasError(false);
     
-    const mockRecommendations: Recommendation[] = [
-      {
-        id: "1",
-        type: "opportunity",
-        title: "3 clients proches expiration",
-        description: "Polices auto expirant dans 30 jours",
-        action: "Voir",
-      },
-      {
-        id: "2",
-        type: "upsell",
-        title: "Upgrade santé recommandé",
-        description: "5 clients éligibles formule premium",
-        action: "Analyser",
-      },
-      {
-        id: "3",
-        type: "cross_sell",
-        title: "Vente croisée habitation",
-        description: "8 clients auto sans assurance habitation",
-        action: "Voir",
-      },
-      {
-        id: "4",
-        type: "risk",
-        title: "Leads inactifs 7j+",
-        description: "4 leads non contactés",
-        action: "Relancer",
-      },
-    ];
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error("Non authentifié");
+      }
 
-    setRecommendations(mockRecommendations);
-    setIsLoading(false);
+      const { data, error } = await supabase.functions.invoke('broker-dashboard-recommendations', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      if (data.recommendations && Array.isArray(data.recommendations)) {
+        setRecommendations(data.recommendations);
+      } else {
+        throw new Error("Format de réponse invalide");
+      }
+    } catch (error) {
+      console.error('Error generating recommendations:', error);
+      setHasError(true);
+      toast.error("Erreur lors de la génération des recommandations IA");
+      
+      // Fallback to mock data if API fails
+      setRecommendations([
+        {
+          id: "fallback-1",
+          type: "opportunity",
+          title: "Données en cours de chargement",
+          description: "Actualisez pour obtenir des recommandations personnalisées",
+          action: "Actualiser",
+        }
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -98,6 +114,11 @@ export const AIRecommendations = () => {
           <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
             <Sparkles className="h-4 w-4 text-primary" />
             Analyse IA
+            {!isLoading && !hasError && recommendations.length > 0 && (
+              <Badge variant="secondary" className="text-[9px] px-1.5 h-4">
+                {recommendations.length}
+              </Badge>
+            )}
           </CardTitle>
           <Button
             size="sm"
@@ -114,14 +135,14 @@ export const AIRecommendations = () => {
         <ScrollArea className="h-[180px] sm:h-[200px]">
           {isLoading ? (
             <div className="space-y-2">
-              {[1, 2, 3].map((i) => (
+              {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="h-14 sm:h-16 rounded-lg bg-muted/30 animate-pulse" />
               ))}
             </div>
           ) : (
             <div className="space-y-2">
               {recommendations.map((rec, index) => {
-                const config = typeConfig[rec.type];
+                const config = typeConfig[rec.type] || typeConfig.opportunity;
                 const Icon = config.icon;
                 
                 return (
@@ -157,7 +178,7 @@ export const AIRecommendations = () => {
                         variant="ghost"
                         className="h-5 sm:h-6 text-[10px] sm:text-xs px-1.5 sm:px-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0"
                       >
-                        <ArrowRight className="h-3 w-3" />
+                        {rec.action || <ArrowRight className="h-3 w-3" />}
                       </Button>
                     </div>
                   </div>

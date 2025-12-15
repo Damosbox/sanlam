@@ -1,1 +1,4 @@
 project_id = "ygdgludwuybclprzshol"
+
+[functions.broker-dashboard-recommendations]
+verify_jwt = false

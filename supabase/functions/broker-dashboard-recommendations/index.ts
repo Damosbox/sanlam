@@ -251,9 +251,14 @@ Génère 4-6 recommandations prioritaires et actionnables.`;
                         type: "string",
                         enum: ["low", "medium", "high"],
                         description: "Niveau de priorité"
+                      },
+                      targetPage: {
+                        type: "string",
+                        enum: ["leads", "clients", "claims", "policies", "sales"],
+                        description: "Page cible pour l'action. leads=prospects, clients=portfolio clients, claims=sinistres, policies=polices, sales=vente guidée"
                       }
                     },
-                    required: ["type", "title", "description", "action", "priority"],
+                    required: ["type", "title", "description", "action", "priority", "targetPage"],
                     additionalProperties: false
                   }
                 }

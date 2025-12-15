@@ -50,6 +50,15 @@ const OPTIONAL_COVERAGE_RATES: Record<string, number> = {
   tiersCollision: 0.012, // 1.2%
 };
 
+// Coefficient de réduction franchise (plus la franchise est haute, moins la prime est élevée)
+const getFranchiseCoefficient = (franchise: number): number => {
+  if (franchise >= 1000000) return 0.75;  // -25%
+  if (franchise >= 500000) return 0.85;   // -15%
+  if (franchise >= 250000) return 0.92;   // -8%
+  if (franchise >= 100000) return 0.96;   // -4%
+  return 1.0;                              // Pas de réduction
+};
+
 // Plan tiers - options incluses
 const PLAN_COVERAGES: Record<PlanTier, string[]> = {
   basic: [],
@@ -102,7 +111,10 @@ export const calculateAutoPremium = (state: GuidedSalesState): AutoPremiumBreakd
 
   const primeRC = Math.round(rcBaseRate * usageCoef * seatsCoef * bnsCoef);
 
-  // 2. Calcul des garanties optionnelles
+  // 2. Calcul des garanties optionnelles avec impact franchise
+  const franchise = quickQuote.franchise || 0;
+  const franchiseCoef = getFranchiseCoefficient(franchise);
+  
   const planCoverages = PLAN_COVERAGES[coverage.planTier];
   const allCoverages = [...new Set([...planCoverages, ...coverage.additionalOptions])];
   
@@ -110,7 +122,8 @@ export const calculateAutoPremium = (state: GuidedSalesState): AutoPremiumBreakd
   allCoverages.forEach(cov => {
     const rate = OPTIONAL_COVERAGE_RATES[cov];
     if (rate) {
-      primeGaranties += Math.round(venalValue * rate);
+      // La franchise réduit le coût des garanties dommages
+      primeGaranties += Math.round(venalValue * rate * franchiseCoef);
     }
   });
 

@@ -383,6 +383,107 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_additional_data: {
+        Row: {
+          address: string | null
+          birth_date: string | null
+          children_count: number | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          current_insurer: string | null
+          custom_fields: Json | null
+          drivers_license_date: string | null
+          employer: string | null
+          existing_insurances: string[] | null
+          gender: string | null
+          has_drivers_license: boolean | null
+          id: string
+          lead_id: string
+          loyalty_program_interest: boolean | null
+          marital_status: string | null
+          monthly_income_range: string | null
+          postal_code: string | null
+          preferred_contact_method: string | null
+          preferred_contact_time: string | null
+          profession: string | null
+          property_owner: boolean | null
+          property_type: string | null
+          referral_source: string | null
+          socio_professional_category: string | null
+          updated_at: string | null
+          vehicle_count: number | null
+        }
+        Insert: {
+          address?: string | null
+          birth_date?: string | null
+          children_count?: number | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          current_insurer?: string | null
+          custom_fields?: Json | null
+          drivers_license_date?: string | null
+          employer?: string | null
+          existing_insurances?: string[] | null
+          gender?: string | null
+          has_drivers_license?: boolean | null
+          id?: string
+          lead_id: string
+          loyalty_program_interest?: boolean | null
+          marital_status?: string | null
+          monthly_income_range?: string | null
+          postal_code?: string | null
+          preferred_contact_method?: string | null
+          preferred_contact_time?: string | null
+          profession?: string | null
+          property_owner?: boolean | null
+          property_type?: string | null
+          referral_source?: string | null
+          socio_professional_category?: string | null
+          updated_at?: string | null
+          vehicle_count?: number | null
+        }
+        Update: {
+          address?: string | null
+          birth_date?: string | null
+          children_count?: number | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          current_insurer?: string | null
+          custom_fields?: Json | null
+          drivers_license_date?: string | null
+          employer?: string | null
+          existing_insurances?: string[] | null
+          gender?: string | null
+          has_drivers_license?: boolean | null
+          id?: string
+          lead_id?: string
+          loyalty_program_interest?: boolean | null
+          marital_status?: string | null
+          monthly_income_range?: string | null
+          postal_code?: string | null
+          preferred_contact_method?: string | null
+          preferred_contact_time?: string | null
+          profession?: string | null
+          property_owner?: boolean | null
+          property_type?: string | null
+          referral_source?: string | null
+          socio_professional_category?: string | null
+          updated_at?: string | null
+          vehicle_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_additional_data_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_kyc_compliance: {
         Row: {
           aml_notes: string | null

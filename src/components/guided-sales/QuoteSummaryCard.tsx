@@ -1,7 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ArrowRight, CheckCircle2, HelpCircle } from "lucide-react";
 import { GuidedSalesState, ProductType } from "./types";
 import { useEffect, useState } from "react";
 import { formatFCFA, formatFCFADecimal } from "@/utils/formatCurrency";
@@ -19,6 +20,43 @@ const productLabels: Record<ProductType, string> = {
   sante: "Complémentaire Santé",
   vie: "Prévoyance Vie",
 };
+
+// Définitions des termes techniques pour les infobulles
+const tooltips = {
+  primeNette: "Prime de base calculée selon la puissance fiscale, l'usage du véhicule, le nombre de places et les garanties sélectionnées. Le coefficient bonus/malus (BNS) est appliqué.",
+  fraisAccessoires: "Frais fixes de gestion et d'émission du contrat d'assurance. Ce montant couvre les coûts administratifs.",
+  taxes: "Taxes fiscales obligatoires représentant 14% de la prime nette, conformément à la réglementation CIMA.",
+  primeTTC: "Prime Toutes Taxes Comprises = Prime Nette + Frais d'accessoires + Taxes. C'est le montant de l'assurance avant les contributions obligatoires.",
+  fga: "Le Fond de Garantie Automobile est une contribution obligatoire (2% de la prime nette, min. 5 000 FCFA) destinée à indemniser les victimes d'accidents causés par des véhicules non assurés.",
+  cedeao: "La Carte Brune CEDEAO permet la circulation automobile dans tous les pays membres de la CEDEAO. Elle garantit une couverture responsabilité civile valable dans 15 pays d'Afrique de l'Ouest.",
+  totalAPayer: "Montant total annuel à régler incluant la prime TTC et toutes les contributions obligatoires (FGA + CEDEAO).",
+};
+
+interface PremiumLineProps {
+  label: string;
+  value: string;
+  tooltip: string;
+  isBold?: boolean;
+}
+
+const PremiumLine = ({ label, value, tooltip, isBold }: PremiumLineProps) => (
+  <div className="flex justify-between items-center">
+    <div className="flex items-center gap-1.5">
+      <span className={isBold ? "text-foreground font-medium" : "text-muted-foreground"}>{label}</span>
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-primary cursor-help transition-colors" />
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-[280px] text-xs">
+            <p>{tooltip}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+    <span className={isBold ? "font-medium" : ""}>{value}</span>
+  </div>
+);
 
 export const QuoteSummaryCard = ({ state, onNext, nextLabel, disabled }: QuoteSummaryCardProps) => {
   const [displayTotal, setDisplayTotal] = useState(state.calculatedPremium.totalAPayer);
@@ -51,8 +89,20 @@ export const QuoteSummaryCard = ({ state, onNext, nextLabel, disabled }: QuoteSu
       {/* Content */}
       <div className="p-4 sm:p-6 space-y-4">
         {/* Prime Totale à payer - En haut et en gras */}
-        <div className="flex items-baseline justify-between bg-primary/10 rounded-lg p-3 -mx-1">
-          <span className="text-sm font-semibold text-foreground">Prime Totale à payer</span>
+        <div className="flex items-center justify-between bg-primary/10 rounded-lg p-3 -mx-1">
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm font-semibold text-foreground">Prime Totale à payer</span>
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 hover:text-primary cursor-help transition-colors" />
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[280px] text-xs">
+                  <p>{tooltips.totalAPayer}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
           <span className="text-xl sm:text-2xl font-bold text-primary">
             {formatFCFA(displayTotal)}
           </span>
@@ -62,35 +112,42 @@ export const QuoteSummaryCard = ({ state, onNext, nextLabel, disabled }: QuoteSu
 
         {/* Décompte détaillé */}
         <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Prime Nette</span>
-            <span>{formatFCFADecimal(premium.primeNette)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Frais d'accessoires</span>
-            <span>{formatFCFADecimal(premium.fraisAccessoires)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Taxes (14%)</span>
-            <span>{formatFCFADecimal(premium.taxes)}</span>
-          </div>
+          <PremiumLine 
+            label="Prime Nette" 
+            value={formatFCFADecimal(premium.primeNette)} 
+            tooltip={tooltips.primeNette} 
+          />
+          <PremiumLine 
+            label="Frais d'accessoires" 
+            value={formatFCFADecimal(premium.fraisAccessoires)} 
+            tooltip={tooltips.fraisAccessoires} 
+          />
+          <PremiumLine 
+            label="Taxes (14%)" 
+            value={formatFCFADecimal(premium.taxes)} 
+            tooltip={tooltips.taxes} 
+          />
         </div>
 
         <Separator />
 
         <div className="space-y-2 text-sm">
-          <div className="flex justify-between font-medium">
-            <span className="text-foreground">Prime TTC</span>
-            <span>{formatFCFADecimal(premium.primeTTC)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">FGA (Fond de Garantie Auto)</span>
-            <span>{formatFCFADecimal(premium.fga)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Carte Brune CEDEAO</span>
-            <span>{formatFCFADecimal(premium.cedeao)}</span>
-          </div>
+          <PremiumLine 
+            label="Prime TTC" 
+            value={formatFCFADecimal(premium.primeTTC)} 
+            tooltip={tooltips.primeTTC}
+            isBold 
+          />
+          <PremiumLine 
+            label="FGA" 
+            value={formatFCFADecimal(premium.fga)} 
+            tooltip={tooltips.fga} 
+          />
+          <PremiumLine 
+            label="Carte Brune CEDEAO" 
+            value={formatFCFADecimal(premium.cedeao)} 
+            tooltip={tooltips.cedeao} 
+          />
         </div>
 
         <Separator />

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,7 @@ interface Recommendation {
   description: string;
   action: string;
   priority?: "low" | "medium" | "high";
+  targetPage?: "leads" | "clients" | "claims" | "policies" | "sales";
 }
 
 const typeConfig = {
@@ -47,7 +49,16 @@ const typeConfig = {
   },
 };
 
+const pageRoutes: Record<string, string> = {
+  leads: "/b2b/leads",
+  clients: "/b2b/clients",
+  claims: "/b2b/claims",
+  policies: "/b2b/policies",
+  sales: "/b2b/sales",
+};
+
 export const AIRecommendations = () => {
+  const navigate = useNavigate();
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -100,10 +111,17 @@ export const AIRecommendations = () => {
           title: "Données en cours de chargement",
           description: "Actualisez pour obtenir des recommandations personnalisées",
           action: "Actualiser",
+          targetPage: "leads",
         }
       ]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRecommendationClick = (rec: Recommendation) => {
+    if (rec.targetPage && pageRoutes[rec.targetPage]) {
+      navigate(pageRoutes[rec.targetPage]);
     }
   };
 
@@ -154,6 +172,7 @@ export const AIRecommendations = () => {
                       config.bgColor
                     )}
                     style={{ animationDelay: `${index * 50}ms` }}
+                    onClick={() => handleRecommendationClick(rec)}
                   >
                     <div className="flex items-start gap-2 sm:gap-2.5">
                       <Icon className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4 mt-0.5 shrink-0", config.color)} />
@@ -177,6 +196,10 @@ export const AIRecommendations = () => {
                         size="sm"
                         variant="ghost"
                         className="h-5 sm:h-6 text-[10px] sm:text-xs px-1.5 sm:px-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRecommendationClick(rec);
+                        }}
                       >
                         {rec.action || <ArrowRight className="h-3 w-3" />}
                       </Button>

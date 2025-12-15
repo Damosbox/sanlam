@@ -80,10 +80,10 @@ export const DashboardKPIs = () => {
 
   const kpis = [
     { 
-      label: "Commissions MTD", 
+      label: "Commissions du mois", 
       value: formatFCFA(stats.commissionsMTD), 
       icon: Wallet, 
-      trend: "Ce mois",
+      trend: "Mois en cours",
       highlight: true,
     },
     { 

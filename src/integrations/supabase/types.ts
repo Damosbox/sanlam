@@ -388,6 +388,33 @@ export type Database = {
         }
         Relationships: []
       }
+      client_notes: {
+        Row: {
+          broker_id: string
+          client_id: string
+          content: string
+          created_at: string
+          id: string
+          note_type: string | null
+        }
+        Insert: {
+          broker_id: string
+          client_id: string
+          content: string
+          created_at?: string
+          id?: string
+          note_type?: string | null
+        }
+        Update: {
+          broker_id?: string
+          client_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          note_type?: string | null
+        }
+        Relationships: []
+      }
       competitive_analyses: {
         Row: {
           analysis_timestamp: string | null

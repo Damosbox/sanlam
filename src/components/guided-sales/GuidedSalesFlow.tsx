@@ -42,13 +42,22 @@ export const GuidedSalesFlow = () => {
   }, [state.currentStep]);
 
   const updateNeedsAnalysis = (data: Partial<GuidedSalesState["needsAnalysis"]>) => {
-    setState(prev => ({
-      ...prev,
-      needsAnalysis: {
-        ...prev.needsAnalysis,
-        ...data
-      }
-    }));
+    setState(prev => {
+      const newState = {
+        ...prev,
+        needsAnalysis: {
+          ...prev.needsAnalysis,
+          ...data
+        }
+      };
+      // Recalcul dynamique avec le nouvel état
+      const breakdown = calculateAutoPremium(newState);
+      const premium = convertToCalculatedPremium(breakdown);
+      return {
+        ...newState,
+        calculatedPremium: premium
+      };
+    });
   };
 
   const updateQuickQuote = (data: Partial<GuidedSalesState["quickQuote"]>) => {
@@ -63,13 +72,22 @@ export const GuidedSalesFlow = () => {
   };
 
   const updateCoverage = (data: Partial<GuidedSalesState["coverage"]>) => {
-    setState(prev => ({
-      ...prev,
-      coverage: {
-        ...prev.coverage,
-        ...data
-      }
-    }));
+    setState(prev => {
+      const newState = {
+        ...prev,
+        coverage: {
+          ...prev.coverage,
+          ...data
+        }
+      };
+      // Recalcul dynamique avec le nouvel état
+      const breakdown = calculateAutoPremium(newState);
+      const premium = convertToCalculatedPremium(breakdown);
+      return {
+        ...newState,
+        calculatedPremium: premium
+      };
+    });
   };
 
   const updateUnderwriting = (data: Partial<GuidedSalesState["underwriting"]>) => {

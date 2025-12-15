@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { QuoteSummaryCard } from "./QuoteSummaryCard";
 import { NeedsAnalysisStep } from "./steps/NeedsAnalysisStep";
@@ -7,7 +7,7 @@ import { CoverageStep } from "./steps/CoverageStep";
 import { UnderwritingStep } from "./steps/UnderwritingStep";
 import { BindingStep } from "./steps/BindingStep";
 import { IssuanceStep } from "./steps/IssuanceStep";
-import { GuidedSalesState, initialState } from "./types";
+import { GuidedSalesState, initialState, PlanTier } from "./types";
 import { StepNavigation } from "./StepNavigation";
 import { ChevronUp, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -24,6 +24,14 @@ import {
 const TOTAL_STEPS = 6;
 const stepLabels = ["Générer Devis Rapide", "Valider Devis", "Passer à la Vérification", "Confirmer", "Émettre la police", "Terminer"];
 const stepNames = ["Analyse", "Devis", "Couverture", "Souscription", "Signature", "Émission"];
+
+// Type pour les recommandations IA
+interface AIRecommendation {
+  id: string;
+  text: string;
+  savingsPercent: number;
+  action: string;
+}
 
 export const GuidedSalesFlow = () => {
   const [state, setState] = useState<GuidedSalesState>(initialState);
@@ -126,6 +134,73 @@ export const GuidedSalesFlow = () => {
       calculatedPremium: premium
     }));
   };
+
+  // Handler pour appliquer les suggestions IA
+  const handleApplySuggestion = useCallback((suggestion: AIRecommendation) => {
+    setState(prev => {
+      let newState = { ...prev };
+
+      switch (suggestion.action) {
+        case "increase_franchise":
+          // Appliquer bonus 20% si ce n'est pas déjà le cas
+          if (!prev.needsAnalysis.bonusMalus?.startsWith("bonus_2")) {
+            newState = {
+              ...newState,
+              needsAnalysis: {
+                ...newState.needsAnalysis,
+                bonusMalus: "bonus_20"
+              }
+            };
+          }
+          break;
+
+        case "downgrade_to_standard":
+          // Passer au plan Standard
+          newState = {
+            ...newState,
+            coverage: {
+              ...newState.coverage,
+              planTier: "standard" as PlanTier
+            }
+          };
+          break;
+
+        case "add_avantage_assistance":
+          // Ajouter l'assistance Avantage
+          newState = {
+            ...newState,
+            coverage: {
+              ...newState.coverage,
+              assistanceLevel: "avantage"
+            }
+          };
+          break;
+
+        case "check_bns":
+          // Suggérer un bonus de 20%
+          newState = {
+            ...newState,
+            needsAnalysis: {
+              ...newState.needsAnalysis,
+              bonusMalus: "bonus_20"
+            }
+          };
+          break;
+
+        default:
+          break;
+      }
+
+      // Recalculer la prime avec le nouvel état
+      const breakdown = calculateAutoPremium(newState);
+      const premium = convertToCalculatedPremium(breakdown);
+      
+      return {
+        ...newState,
+        calculatedPremium: premium
+      };
+    });
+  }, []);
 
   const goToStep = (step: number) => {
     if (step >= 1 && step <= state.currentStep) {
@@ -240,7 +315,8 @@ export const GuidedSalesFlow = () => {
               <QuoteSummaryCard 
                 state={state} 
                 onNext={nextStep} 
-                nextLabel={stepLabels[state.currentStep - 1]} 
+                nextLabel={stepLabels[state.currentStep - 1]}
+                onApplySuggestion={handleApplySuggestion}
               />
             </div>
           )}
@@ -273,7 +349,8 @@ export const GuidedSalesFlow = () => {
                 <QuoteSummaryCard 
                   state={state} 
                   onNext={nextStep} 
-                  nextLabel={stepLabels[state.currentStep - 1]} 
+                  nextLabel={stepLabels[state.currentStep - 1]}
+                  onApplySuggestion={handleApplySuggestion}
                 />
               </div>
             </DrawerContent>

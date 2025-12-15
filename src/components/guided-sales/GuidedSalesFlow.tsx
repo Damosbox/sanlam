@@ -12,6 +12,7 @@ import { StepNavigation } from "./StepNavigation";
 import { ChevronUp, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatFCFA } from "@/utils/formatCurrency";
+import { calculateAutoPremium, convertToCalculatedPremium } from "@/utils/autoPremiumCalculator";
 import {
   Drawer,
   DrawerContent,
@@ -99,17 +100,12 @@ export const GuidedSalesFlow = () => {
   };
 
   const recalculatePremium = () => {
-    const basePremium = 450;
-    const franchiseDiscount = state.quickQuote.franchise * 0.05;
-    const total = Math.max(300, basePremium - franchiseDiscount);
+    // Utilise le calculateur de prime Auto CIMA
+    const breakdown = calculateAutoPremium(state);
+    const premium = convertToCalculatedPremium(breakdown);
     setState(prev => ({
       ...prev,
-      calculatedPremium: {
-        netPremium: total * 0.67,
-        taxes: total * 0.33,
-        fees: 0,
-        total
-      }
+      calculatedPremium: premium
     }));
   };
 

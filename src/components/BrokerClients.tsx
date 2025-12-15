@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -19,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Users, UserCheck, Clock, Phone, MessageCircle, Mail, MoreHorizontal, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { ClientDetailSheet } from "./clients/ClientDetailSheet";
 
 interface Client {
   id: string;
@@ -33,6 +35,8 @@ interface Client {
 }
 
 export const BrokerClients = () => {
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const { data: clients = [], isLoading: loading } = useQuery({
     queryKey: ["broker-clients"],
     queryFn: async () => {
@@ -153,8 +157,8 @@ export const BrokerClients = () => {
   };
 
   const handleViewDetails = (client: Client) => {
-    toast.info(`Détails de ${client.display_name || "Client"}`);
-    // TODO: Open client detail sheet
+    setSelectedClient(client);
+    setDetailSheetOpen(true);
   };
 
   if (loading) {
@@ -307,6 +311,12 @@ export const BrokerClients = () => {
           {renderClientTable(pendingClients, true)}
         </TabsContent>
       </Tabs>
+
+      <ClientDetailSheet
+        client={selectedClient}
+        open={detailSheetOpen}
+        onOpenChange={setDetailSheetOpen}
+      />
     </div>
   );
 };

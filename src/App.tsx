@@ -17,11 +17,10 @@ import RoleProtectedRoute from "./components/RoleProtectedRoute";
 // Broker pages
 import { BrokerLayout } from "./layouts/BrokerLayout";
 import DashboardPage from "./pages/broker/DashboardPage";
-import LeadsPage from "./pages/broker/LeadsPage";
+import PortfolioPage from "./pages/broker/PortfolioPage";
 import GuidedSalesPage from "./pages/broker/GuidedSalesPage";
 import ClaimsPage from "./pages/broker/ClaimsPage";
 import PoliciesPage from "./pages/broker/PoliciesPage";
-import ClientsPage from "./pages/broker/ClientsPage";
 import AnalysisPage from "./pages/broker/AnalysisPage";
 import MessagesPage from "./pages/broker/MessagesPage";
 
@@ -58,11 +57,12 @@ const App = () => (
           }>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="leads" element={<LeadsPage />} />
+            <Route path="portfolio" element={<PortfolioPage />} />
+            <Route path="leads" element={<Navigate to="/b2b/portfolio?tab=prospects" replace />} />
+            <Route path="clients" element={<Navigate to="/b2b/portfolio?tab=clients" replace />} />
             <Route path="sales" element={<GuidedSalesPage />} />
             <Route path="claims" element={<ClaimsPage />} />
             <Route path="policies" element={<PoliciesPage />} />
-            <Route path="clients" element={<ClientsPage />} />
             <Route path="analysis" element={<AnalysisPage />} />
             <Route path="messages" element={<MessagesPage />} />
           </Route>

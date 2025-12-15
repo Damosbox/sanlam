@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -35,6 +36,7 @@ interface Client {
 }
 
 export const BrokerClients = () => {
+  const navigate = useNavigate();
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const { data: clients = [], isLoading: loading } = useQuery({
@@ -195,9 +197,12 @@ export const BrokerClients = () => {
             clientList.map((client) => (
               <TableRow key={client.id}>
                 <TableCell>
-                  <div className="font-medium text-sm">
+                  <button
+                    className="font-medium text-sm text-left hover:text-primary hover:underline transition-colors"
+                    onClick={() => handleViewDetails(client)}
+                  >
                     {client.display_name || "N/A"}
-                  </div>
+                  </button>
                 </TableCell>
                 <TableCell>
                   <div className="text-xs sm:text-sm">
@@ -214,10 +219,24 @@ export const BrokerClients = () => {
                 ) : (
                   <>
                     <TableCell>
-                      <Badge variant="secondary" className="text-xs">{client.claimsCount}</Badge>
+                      <button
+                        className="text-primary hover:underline font-medium"
+                        onClick={() => navigate(`/b2b/claims?clientId=${client.id}`)}
+                      >
+                        <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80">
+                          {client.claimsCount}
+                        </Badge>
+                      </button>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="default" className="text-xs">{client.subscriptionsCount}</Badge>
+                      <button
+                        className="text-primary hover:underline font-medium"
+                        onClick={() => navigate(`/b2b/policies?clientId=${client.id}`)}
+                      >
+                        <Badge variant="default" className="text-xs cursor-pointer hover:bg-primary/80">
+                          {client.subscriptionsCount}
+                        </Badge>
+                      </button>
                     </TableCell>
                   </>
                 )}

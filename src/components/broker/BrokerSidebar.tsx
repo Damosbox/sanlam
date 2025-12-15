@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
-import { Inbox, Zap, FileText, Shield, Users, BarChart3, MessageSquare, Sparkles, LayoutDashboard, Newspaper } from "lucide-react";
+import { Inbox, Zap, FileText, Shield, Users, BarChart3, MessageSquare, Sparkles, LayoutDashboard, Newspaper, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 interface BadgeCounts {
@@ -77,16 +77,12 @@ export function BrokerSidebar() {
     url: "/b2b/dashboard",
     icon: LayoutDashboard
   };
-  const clientsItems = [{
-    title: "Prospects",
-    url: "/b2b/leads",
-    icon: Inbox,
+  const portfolioItem = {
+    title: "Mon Portefeuille",
+    url: "/b2b/portfolio",
+    icon: Briefcase,
     badge: badges.newLeads > 0 ? badges.newLeads.toString() : undefined
-  }, {
-    title: "Clients",
-    url: "/b2b/clients",
-    icon: Users
-  }];
+  };
   const salesItems = [{
     title: "Vente Guidée",
     url: "/b2b/sales",
@@ -171,12 +167,9 @@ export function BrokerSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className={cn(collapsed && "sr-only")}>Mon portefeuille
-
-        </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {clientsItems.map(renderMenuItem)}
+              {renderMenuItem(portfolioItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -16,6 +17,7 @@ interface LeadsDataTableProps {
 }
 
 export const LeadsDataTable = ({ leads, density, onSelectLead }: LeadsDataTableProps) => {
+  const navigate = useNavigate();
   const handleCall = (e: React.MouseEvent, phone: string | null) => {
     e.stopPropagation();
     if (phone) window.open(`tel:${phone}`, "_blank");
@@ -74,9 +76,15 @@ export const LeadsDataTable = ({ leads, density, onSelectLead }: LeadsDataTableP
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className={`font-medium ${textSize}`}>
+                      <button
+                        className={`font-medium ${textSize} text-left hover:text-primary hover:underline transition-colors`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectLead(lead);
+                        }}
+                      >
                         {lead.first_name} {lead.last_name}
-                      </p>
+                      </button>
                       {lead.product_interest && (
                         <p className="text-xs text-muted-foreground">{lead.product_interest}</p>
                       )}
@@ -93,10 +101,26 @@ export const LeadsDataTable = ({ leads, density, onSelectLead }: LeadsDataTableP
                   {lead.source || "Prospect"}
                 </TableCell>
                 <TableCell className={`hidden lg:table-cell ${rowPadding} ${textSize} text-center`}>
-                  0
+                  <button
+                    className="text-primary hover:underline font-medium"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/b2b/policies?prospectId=${lead.id}`);
+                    }}
+                  >
+                    0
+                  </button>
                 </TableCell>
                 <TableCell className={`hidden lg:table-cell ${rowPadding} ${textSize} text-center`}>
-                  0
+                  <button
+                    className="text-primary hover:underline font-medium"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/b2b/sales?prospectId=${lead.id}`);
+                    }}
+                  >
+                    0
+                  </button>
                 </TableCell>
                 <TableCell className={rowPadding}>
                   <LeadStatusBadge status={lead.status} />

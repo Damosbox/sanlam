@@ -118,8 +118,7 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }
           {items.map((item) => (
             <TableRow 
               key={item.id} 
-              className={`cursor-pointer hover:bg-muted/30 transition-colors duration-200`}
-              onClick={() => onSelectItem(item)}
+              className="hover:bg-muted/30 transition-colors duration-200"
             >
               <TableCell className={rowPadding}>
                 <div className="flex items-center gap-3">

@@ -10,7 +10,15 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, UserCheck, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Users, UserCheck, Clock, Phone, MessageCircle, Mail, MoreHorizontal, Eye } from "lucide-react";
+import { toast } from "sonner";
 
 interface Client {
   id: string;
@@ -119,6 +127,36 @@ export const BrokerClients = () => {
   const activeClients = clients.filter(c => c.type === "active");
   const pendingClients = clients.filter(c => c.type === "pending");
 
+  const handleCall = (phone: string | null) => {
+    if (phone) {
+      window.location.href = `tel:${phone}`;
+    } else {
+      toast.error("Aucun numéro de téléphone disponible");
+    }
+  };
+
+  const handleWhatsApp = (phone: string | null) => {
+    if (phone) {
+      const cleanPhone = phone.replace(/\D/g, "");
+      window.open(`https://wa.me/${cleanPhone}`, "_blank");
+    } else {
+      toast.error("Aucun numéro WhatsApp disponible");
+    }
+  };
+
+  const handleEmail = (email: string | null) => {
+    if (email) {
+      window.location.href = `mailto:${email}`;
+    } else {
+      toast.error("Aucune adresse email disponible");
+    }
+  };
+
+  const handleViewDetails = (client: Client) => {
+    toast.info(`Détails de ${client.display_name || "Client"}`);
+    // TODO: Open client detail sheet
+  };
+
   if (loading) {
     return <div className="text-center py-8">Chargement...</div>;
   }
@@ -139,12 +177,13 @@ export const BrokerClients = () => {
               </>
             )}
             <TableHead className="min-w-[80px]">Statut</TableHead>
+            <TableHead className="min-w-[100px] text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {clientList.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={showProduct ? 4 : 5} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={showProduct ? 5 : 6} className="text-center text-muted-foreground py-8">
                 {showProduct ? "Aucun client en attente" : "Aucun client actif"}
               </TableCell>
             </TableRow>
@@ -190,6 +229,45 @@ export const BrokerClients = () => {
                       En attente
                     </Badge>
                   )}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handleCall(client.phone)}
+                      title="Appeler"
+                    >
+                      <Phone className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handleWhatsApp(client.phone)}
+                      title="WhatsApp"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEmail(client.email)}>
+                          <Mail className="h-4 w-4 mr-2" />
+                          Envoyer un email
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleViewDetails(client)}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          Voir les détails
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </TableCell>
               </TableRow>
             ))

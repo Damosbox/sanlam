@@ -29,24 +29,13 @@ export const QuickQuoteStep = ({ state, onUpdate }: QuickQuoteStepProps) => {
 
       <Card>
         <CardContent className="pt-6 space-y-8">
-          {/* Franchise Slider */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
+          {/* Franchise Fixe */}
+          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+            <div>
               <Label className="text-sm font-medium">Franchise (Reste à charge)</Label>
-              <span className="text-lg font-semibold text-primary">{formatFCFA(quickQuote.franchise)}</span>
+              <p className="text-xs text-muted-foreground mt-1">Montant fixe défini par le produit</p>
             </div>
-            <Slider
-              value={[quickQuote.franchise]}
-              onValueChange={([v]) => onUpdate({ franchise: v })}
-              min={0}
-              max={1000000}
-              step={50000}
-              className="w-full"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>0 FCFA (Cher)</span>
-              <span>1 000 000 FCFA (Éco)</span>
-            </div>
+            <span className="text-lg font-semibold text-primary">{formatFCFA(150000)}</span>
           </div>
 
           {/* Value and Bonus/Malus */}

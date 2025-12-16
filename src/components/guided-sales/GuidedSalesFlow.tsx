@@ -10,18 +10,11 @@ import { BindingStep } from "./steps/BindingStep";
 import { IssuanceStep } from "./steps/IssuanceStep";
 import { GuidedSalesState, initialState, PlanTier } from "./types";
 import { StepNavigation } from "./StepNavigation";
-import { ChevronUp, ChevronLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatFCFA } from "@/utils/formatCurrency";
 import { calculateAutoPremium, convertToCalculatedPremium } from "@/utils/autoPremiumCalculator";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
 
 const TOTAL_STEPS = 6;
 const stepLabels = ["Identifier le client", "Générer Devis Rapide", "Passer à la Vérification", "Confirmer", "Émettre la police", "Terminer"];
@@ -38,7 +31,6 @@ interface AIRecommendation {
 export const GuidedSalesFlow = () => {
   const [searchParams] = useSearchParams();
   const [state, setState] = useState<GuidedSalesState>(initialState);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
   const [isAnimating, setIsAnimating] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -279,7 +271,6 @@ export const GuidedSalesFlow = () => {
         ...prev,
         currentStep: prev.currentStep + 1
       }));
-      setDrawerOpen(false);
     }
   };
 
@@ -350,6 +341,12 @@ export const GuidedSalesFlow = () => {
             />
           </div>
         </div>
+        {/* Floating Client Name */}
+        {state.clientIdentification.firstName && (
+          <div className="mt-2 pt-2 border-t text-sm text-muted-foreground">
+            Client: <span className="font-medium text-foreground">{state.clientIdentification.firstName} {state.clientIdentification.lastName}</span>
+          </div>
+        )}
       </div>
 
       {/* Main Content */}
@@ -391,50 +388,6 @@ export const GuidedSalesFlow = () => {
           )}
         </div>
       </main>
-
-      {/* Mobile Drawer - only show from step 3 onwards */}
-      {state.currentStep > 2 && state.currentStep < 5 && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50">
-          <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
-            <DrawerTrigger asChild>
-              <Button
-                className="w-full rounded-none h-16 text-base font-medium gap-2 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]"
-                size="lg"
-              >
-                <span className="flex flex-col items-center">
-                  <ChevronUp className="h-4 w-4 mb-0.5" />
-                  <span className="flex items-baseline gap-2">
-                    <span>{formatFCFA(state.calculatedPremium.total)}/an</span>
-                    <span className="text-xs opacity-80">• {stepLabels[state.currentStep]}</span>
-                  </span>
-                </span>
-              </Button>
-            </DrawerTrigger>
-            <DrawerContent className="max-h-[85vh]">
-              <DrawerHeader className="sr-only">
-                <DrawerTitle>Résumé du devis</DrawerTitle>
-              </DrawerHeader>
-              <div className="p-4 overflow-auto">
-                <QuoteSummaryCard 
-                  state={state} 
-                  onNext={nextStep} 
-                  nextLabel={stepLabels[state.currentStep]}
-                  onApplySuggestion={handleApplySuggestion}
-                />
-              </div>
-            </DrawerContent>
-          </Drawer>
-        </div>
-      )}
-
-      {/* Mobile Next Button for steps 0-2 */}
-      {state.currentStep >= 0 && state.currentStep <= 2 && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 p-4 bg-background border-t">
-          <Button onClick={nextStep} className="w-full" size="lg">
-            {stepLabels[state.currentStep]}
-          </Button>
-        </div>
-      )}
 
     </div>
   );

@@ -19,6 +19,6 @@ export default function LogoutButton() {
   };
   return <Button variant="outline" size="sm" onClick={handleLogout} className="px-2 sm:px-3">
       <LogOut className="w-4 h-4 sm:mr-2" />
-      <span className="hidden sm:inline text-accent">Se déconnecter</span>
+      <span className="hidden sm:inline text-accent hover:text-orange-500 transition-colors">Se déconnecter</span>
     </Button>;
 }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -8,7 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, MessageCircle, Mail, FileText, Send, User, Shield, StickyNote, UserPlus, Pencil, Database } from "lucide-react";
+import { Phone, MessageCircle, Mail, FileText, Send, User, Shield, StickyNote, UserPlus, Pencil, Database, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -40,7 +41,15 @@ export const LeadDetailSheet = ({
 }: LeadDetailSheetProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [noteContent, setNoteContent] = useState("");
+
+  const handleGuidedSales = () => {
+    if (lead) {
+      navigate(`/b2b/sales?contactId=${lead.id}&type=prospect`);
+      onOpenChange(false);
+    }
+  };
 
   const { data: notes, isLoading: notesLoading } = useQuery({
     queryKey: ["lead-notes", lead?.id],
@@ -176,10 +185,19 @@ export const LeadDetailSheet = ({
             <Button 
               size="sm" 
               onClick={() => onQuickQuote(lead)}
-              className="ml-auto gap-1.5"
+              variant="outline"
+              className="gap-1.5"
             >
               <FileText className="h-4 w-4" />
               Devis rapide
+            </Button>
+            <Button 
+              size="sm" 
+              onClick={handleGuidedSales}
+              className="ml-auto gap-1.5"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              Vente Guidée
             </Button>
           </div>
         </SheetHeader>

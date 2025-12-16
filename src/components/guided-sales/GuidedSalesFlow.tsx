@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { QuoteSummaryCard } from "./QuoteSummaryCard";
+import { ClientIdentificationStep } from "./steps/ClientIdentificationStep";
 import { NeedsAnalysisStep } from "./steps/NeedsAnalysisStep";
 import { QuickQuoteStep } from "./steps/QuickQuoteStep";
 import { CoverageStep } from "./steps/CoverageStep";
@@ -13,6 +15,7 @@ import { ChevronUp, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatFCFA } from "@/utils/formatCurrency";
 import { calculateAutoPremium, convertToCalculatedPremium } from "@/utils/autoPremiumCalculator";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Drawer,
   DrawerContent,
@@ -21,9 +24,9 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 
-const TOTAL_STEPS = 6;
-const stepLabels = ["Générer Devis Rapide", "Valider Devis", "Passer à la Vérification", "Confirmer", "Émettre la police", "Terminer"];
-const stepNames = ["Analyse", "Devis", "Couverture", "Souscription", "Signature", "Émission"];
+const TOTAL_STEPS = 7;
+const stepLabels = ["Identifier le client", "Générer Devis Rapide", "Valider Devis", "Passer à la Vérification", "Confirmer", "Émettre la police", "Terminer"];
+const stepNames = ["Identification", "Besoin", "Devis", "Couverture", "Vérification", "Signature", "Émission"];
 
 // Type pour les recommandations IA
 interface AIRecommendation {
@@ -34,11 +37,71 @@ interface AIRecommendation {
 }
 
 export const GuidedSalesFlow = () => {
+  const [searchParams] = useSearchParams();
   const [state, setState] = useState<GuidedSalesState>(initialState);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const prevStepRef = useRef(state.currentStep);
+
+  // Load contact data from query params
+  useEffect(() => {
+    const contactId = searchParams.get("contactId");
+    const contactType = searchParams.get("type") as "prospect" | "client" | null;
+
+    if (contactId && contactType && !isInitialized) {
+      loadContactData(contactId, contactType);
+    }
+    setIsInitialized(true);
+  }, [searchParams, isInitialized]);
+
+  const loadContactData = async (contactId: string, contactType: "prospect" | "client") => {
+    if (contactType === "prospect") {
+      const { data: lead } = await supabase
+        .from("leads")
+        .select("*")
+        .eq("id", contactId)
+        .single();
+
+      if (lead) {
+        setState(prev => ({
+          ...prev,
+          clientIdentification: {
+            ...prev.clientIdentification,
+            firstName: lead.first_name,
+            lastName: lead.last_name,
+            phone: lead.phone || "",
+            email: lead.email || "",
+            linkedContactId: lead.id,
+            linkedContactType: "prospect",
+          },
+        }));
+      }
+    } else {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", contactId)
+        .single();
+
+      if (profile) {
+        const nameParts = (profile.display_name || "").split(" ");
+        setState(prev => ({
+          ...prev,
+          clientIdentification: {
+            ...prev.clientIdentification,
+            firstName: nameParts[0] || "",
+            lastName: nameParts.slice(1).join(" ") || "",
+            phone: profile.phone || "",
+            email: profile.email || "",
+            linkedContactId: profile.id,
+            linkedContactType: "client",
+          },
+        }));
+      }
+    }
+  };
 
   useEffect(() => {
     if (prevStepRef.current !== state.currentStep) {
@@ -48,6 +111,16 @@ export const GuidedSalesFlow = () => {
       return () => clearTimeout(timer);
     }
   }, [state.currentStep]);
+
+  const updateClientIdentification = (data: Partial<GuidedSalesState["clientIdentification"]>) => {
+    setState(prev => ({
+      ...prev,
+      clientIdentification: {
+        ...prev.clientIdentification,
+        ...data
+      }
+    }));
+  };
 
   const updateNeedsAnalysis = (data: Partial<GuidedSalesState["needsAnalysis"]>) => {
     setState(prev => {
@@ -203,7 +276,7 @@ export const GuidedSalesFlow = () => {
   }, []);
 
   const goToStep = (step: number) => {
-    if (step >= 1 && step <= state.currentStep) {
+    if (step >= 0 && step <= state.currentStep) {
       setDirection(step < state.currentStep ? "backward" : "forward");
       setState(prev => ({
         ...prev,
@@ -213,7 +286,7 @@ export const GuidedSalesFlow = () => {
   };
 
   const nextStep = () => {
-    if (state.currentStep < TOTAL_STEPS) {
+    if (state.currentStep < TOTAL_STEPS - 1) {
       setDirection("forward");
       setState(prev => ({
         ...prev,
@@ -224,7 +297,7 @@ export const GuidedSalesFlow = () => {
   };
 
   const prevStep = () => {
-    if (state.currentStep > 1) {
+    if (state.currentStep > 0) {
       setDirection("backward");
       setState(prev => ({
         ...prev,
@@ -240,6 +313,8 @@ export const GuidedSalesFlow = () => {
 
   const renderStep = () => {
     switch (state.currentStep) {
+      case 0:
+        return <ClientIdentificationStep state={state} onUpdate={updateClientIdentification} />;
       case 1:
         return <NeedsAnalysisStep state={state} onUpdate={updateNeedsAnalysis} />;
       case 2:
@@ -275,7 +350,7 @@ export const GuidedSalesFlow = () => {
       {/* Step Progress - Mobile */}
       <div className="lg:hidden px-4 py-3 border-b bg-background/95 backdrop-blur sticky top-0 z-10">
         <div className="flex items-center gap-3">
-          {state.currentStep > 1 && state.currentStep < 6 && (
+          {state.currentStep > 0 && state.currentStep < 6 && (
             <Button variant="ghost" size="icon" onClick={prevStep} className="shrink-0 -ml-2">
               <ChevronLeft className="h-5 w-5" />
             </Button>
@@ -309,13 +384,13 @@ export const GuidedSalesFlow = () => {
             </div>
           </div>
 
-          {/* Desktop Summary Card */}
-          {state.currentStep < 6 && (
+          {/* Desktop Summary Card - only show from step 1 onwards */}
+          {state.currentStep > 0 && state.currentStep < 6 && (
             <div className="hidden lg:block">
               <QuoteSummaryCard 
                 state={state} 
                 onNext={nextStep} 
-                nextLabel={stepLabels[state.currentStep - 1]}
+                nextLabel={stepLabels[state.currentStep]}
                 onApplySuggestion={handleApplySuggestion}
               />
             </div>
@@ -323,8 +398,8 @@ export const GuidedSalesFlow = () => {
         </div>
       </main>
 
-      {/* Mobile Drawer */}
-      {state.currentStep < 6 && (
+      {/* Mobile Drawer - only show from step 1 onwards */}
+      {state.currentStep > 0 && state.currentStep < 6 && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50">
           <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
             <DrawerTrigger asChild>
@@ -336,7 +411,7 @@ export const GuidedSalesFlow = () => {
                   <ChevronUp className="h-4 w-4 mb-0.5" />
                   <span className="flex items-baseline gap-2">
                     <span>{formatFCFA(state.calculatedPremium.total)}/an</span>
-                    <span className="text-xs opacity-80">• {stepLabels[state.currentStep - 1]}</span>
+                    <span className="text-xs opacity-80">• {stepLabels[state.currentStep]}</span>
                   </span>
                 </span>
               </Button>
@@ -349,12 +424,21 @@ export const GuidedSalesFlow = () => {
                 <QuoteSummaryCard 
                   state={state} 
                   onNext={nextStep} 
-                  nextLabel={stepLabels[state.currentStep - 1]}
+                  nextLabel={stepLabels[state.currentStep]}
                   onApplySuggestion={handleApplySuggestion}
                 />
               </div>
             </DrawerContent>
           </Drawer>
+        </div>
+      )}
+
+      {/* Mobile Next Button for step 0 */}
+      {state.currentStep === 0 && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 p-4 bg-background border-t">
+          <Button onClick={nextStep} className="w-full" size="lg">
+            {stepLabels[0]}
+          </Button>
         </div>
       )}
     </div>

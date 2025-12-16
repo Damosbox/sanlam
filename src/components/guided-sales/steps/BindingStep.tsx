@@ -10,6 +10,7 @@ import { formatFCFA } from "@/utils/formatCurrency";
 interface BindingStepProps {
   state: GuidedSalesState;
   onUpdate: (data: Partial<GuidedSalesState["binding"]>) => void;
+  onNext: () => void;
 }
 const signatureChannels = [{
   id: "email",
@@ -34,7 +35,8 @@ const signatureChannels = [{
 }];
 export const BindingStep = ({
   state,
-  onUpdate
+  onUpdate,
+  onNext
 }: BindingStepProps) => {
   const {
     binding
@@ -108,8 +110,8 @@ export const BindingStep = ({
           </RadioGroup>
 
           <div className="mt-6">
-            <Button className="w-full" size="lg">
-              Envoyer pour signature
+            <Button className="w-full" size="lg" onClick={onNext}>
+              Émettre la police
             </Button>
           </div>
         </CardContent>

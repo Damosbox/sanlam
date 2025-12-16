@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,7 @@ interface CoverageStepProps {
   state: GuidedSalesState;
   onUpdate: (data: Partial<GuidedSalesState["coverage"]>) => void;
   onPremiumUpdate: (premium: GuidedSalesState["calculatedPremium"]) => void;
+  onNext: () => void;
 }
 
 const plans: { tier: PlanTier; name: string; price: number; coverages: { name: string; included: boolean }[] }[] = [
@@ -77,7 +79,7 @@ const getRecommendedPlan = (vehicleDate?: string): PlanTier => {
   return "basic"; // Older vehicles: basic coverage
 };
 
-export const CoverageStep = ({ state, onUpdate, onPremiumUpdate }: CoverageStepProps) => {
+export const CoverageStep = ({ state, onUpdate, onPremiumUpdate, onNext }: CoverageStepProps) => {
   const { coverage } = state;
   const selectedPlan = plans.find(p => p.tier === coverage.planTier) || plans[1];
   
@@ -247,6 +249,13 @@ export const CoverageStep = ({ state, onUpdate, onPremiumUpdate }: CoverageStepP
           </div>
         </CardContent>
       </Card>
+
+      {/* Next Button */}
+      <div className="flex justify-end pt-4">
+        <Button onClick={onNext} size="lg">
+          Passer à la vérification
+        </Button>
+      </div>
     </div>
   );
 };

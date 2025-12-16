@@ -12,8 +12,23 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import SavingsSimulator from "./pages/SavingsSimulator";
 import EducationSimulator from "./pages/EducationSimulator";
-// BrokerLanding merged into Commercial
 import RoleProtectedRoute from "./components/RoleProtectedRoute";
+
+// Product landing pages
+import AssuranceAuto from "./pages/products/AssuranceAuto";
+import AssuranceHabitation from "./pages/products/AssuranceHabitation";
+import AssuranceSante from "./pages/products/AssuranceSante";
+import AssuranceVie from "./pages/products/AssuranceVie";
+import Sinistres from "./pages/products/Sinistres";
+
+// Commercial landing pages
+import OutilsPipeline from "./pages/commercial/OutilsPipeline";
+import OutilsVenteGuidee from "./pages/commercial/OutilsVenteGuidee";
+import OutilsAnalytics from "./pages/commercial/OutilsAnalytics";
+import OutilsKYC from "./pages/commercial/OutilsKYC";
+import Formation from "./pages/commercial/Formation";
+import Support from "./pages/commercial/Support";
+import Communaute from "./pages/commercial/Communaute";
 
 // Broker pages
 import { BrokerLayout } from "./layouts/BrokerLayout";
@@ -50,6 +65,22 @@ const App = () => (
               <ClaimNew />
             </RoleProtectedRoute>
           } />
+          
+          {/* Product Landing Pages */}
+          <Route path="/assurance/auto" element={<AssuranceAuto />} />
+          <Route path="/assurance/habitation" element={<AssuranceHabitation />} />
+          <Route path="/assurance/sante" element={<AssuranceSante />} />
+          <Route path="/assurance/vie" element={<AssuranceVie />} />
+          <Route path="/sinistres" element={<Sinistres />} />
+          
+          {/* Commercial Landing Pages */}
+          <Route path="/commercial/outils/pipeline" element={<OutilsPipeline />} />
+          <Route path="/commercial/outils/vente-guidee" element={<OutilsVenteGuidee />} />
+          <Route path="/commercial/outils/analytics" element={<OutilsAnalytics />} />
+          <Route path="/commercial/outils/kyc" element={<OutilsKYC />} />
+          <Route path="/commercial/ressources/formation" element={<Formation />} />
+          <Route path="/commercial/ressources/support" element={<Support />} />
+          <Route path="/commercial/ressources/communaute" element={<Communaute />} />
           
           {/* B2B Routes with Sidebar Layout */}
           <Route path="/b2b" element={

@@ -27,10 +27,10 @@ export const Header = () => {
   const isInsidePlatform = platformRoutes.some(route => location.pathname.startsWith(route));
   
   // Check if we're on public pages (home, commercial)
-  const isPublicPage = location.pathname === "/" || location.pathname === "/commercial" || location.pathname.startsWith("/simulateur");
+  const isPublicPage = location.pathname === "/" || location.pathname === "/commercial" || location.pathname.startsWith("/simulateur") || location.pathname.startsWith("/assurance") || location.pathname.startsWith("/sinistres") || location.pathname.startsWith("/commercial/");
   
   // Check which segment we're on
-  const isCommercialPage = location.pathname === "/commercial";
+  const isCommercialPage = location.pathname === "/commercial" || location.pathname.startsWith("/commercial/");
 
   useEffect(() => {
     supabase.auth.getSession().then(({
@@ -52,10 +52,10 @@ export const Header = () => {
 
   // Particuliers navigation
   const insuranceProducts = [
-    { name: "Assurance Auto", description: "Roulez en toute confiance", href: "/b2c", icon: Car },
-    { name: "Assurance Habitation", description: "Protégez votre foyer", href: "/b2c", icon: HomeIcon },
-    { name: "Assurance Santé", description: "Prenez soin de votre santé", href: "/b2c", icon: Heart },
-    { name: "Assurance Vie", description: "Protégez vos proches", href: "/b2c", icon: Shield },
+    { name: "Assurance Auto", description: "Roulez en toute confiance", href: "/assurance/auto", icon: Car },
+    { name: "Assurance Habitation", description: "Protégez votre foyer", href: "/assurance/habitation", icon: HomeIcon },
+    { name: "Assurance Santé", description: "Prenez soin de votre santé", href: "/assurance/sante", icon: Heart },
+    { name: "Assurance Vie", description: "Protégez vos proches", href: "/assurance/vie", icon: Shield },
   ];
 
   const savingsProducts = [
@@ -66,16 +66,16 @@ export const Header = () => {
 
   // Commercial navigation
   const commercialTools = [
-    { name: "Pipeline Leads", description: "Gérez vos prospects efficacement", href: "/b2b/portfolio", icon: Target },
-    { name: "Vente Guidée", description: "Processus de vente structuré", href: "/b2b/sales", icon: Zap },
-    { name: "Analytics", description: "Suivez vos performances", href: "/b2b/dashboard", icon: BarChart3 },
-    { name: "Compliance KYC", description: "Vérifications réglementaires", href: "/b2b/portfolio", icon: FileCheck },
+    { name: "Pipeline Leads", description: "Gérez vos prospects efficacement", href: "/commercial/outils/pipeline", icon: Target },
+    { name: "Vente Guidée", description: "Processus de vente structuré", href: "/commercial/outils/vente-guidee", icon: Zap },
+    { name: "Analytics", description: "Suivez vos performances", href: "/commercial/outils/analytics", icon: BarChart3 },
+    { name: "Compliance KYC", description: "Vérifications réglementaires", href: "/commercial/outils/kyc", icon: FileCheck },
   ];
 
   const commercialResources = [
-    { name: "Formation", description: "Modules de formation continue", href: "#", icon: BookOpen },
-    { name: "Support", description: "Assistance et FAQ", href: "#", icon: Headphones },
-    { name: "Communauté", description: "Réseau de commerciaux", href: "#", icon: Users },
+    { name: "Formation", description: "Modules de formation continue", href: "/commercial/ressources/formation", icon: BookOpen },
+    { name: "Support", description: "Assistance et FAQ", href: "/commercial/ressources/support", icon: Headphones },
+    { name: "Communauté", description: "Réseau de commerciaux", href: "/commercial/ressources/communaute", icon: Users },
   ];
 
   // If inside platform, show minimal header
@@ -231,7 +231,7 @@ export const Header = () => {
                   </NavigationMenuItem>
 
                   <NavigationMenuItem>
-                    <Link to="/b2c" className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors">
+                    <Link to="/sinistres" className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors">
                       <TrendingUp className="w-4 h-4 text-primary" />
                       Sinistres
                     </Link>

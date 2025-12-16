@@ -263,23 +263,44 @@ export const ClientIdentificationStep = ({ state, onUpdate, onNext }: ClientIden
           </Popover>
 
           {isLinked && (
-            <div className="mt-3 flex items-center gap-2">
-              <Badge variant="secondary" className="gap-1">
-                <LinkIcon className="h-3 w-3" />
-                {data.linkedContactType === "prospect" ? "Prospect" : "Client"} lié
-              </Badge>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  onUpdate({
-                    linkedContactId: undefined,
-                    linkedContactType: undefined,
-                  })
-                }
-              >
-                Dissocier
-              </Button>
+            <div className="mt-3 p-3 bg-muted/50 rounded-lg border">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <User className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium truncate">{data.firstName} {data.lastName}</span>
+                      <Badge variant={data.linkedContactType === "prospect" ? "outline" : "default"} className="text-xs flex-shrink-0">
+                        {data.linkedContactType === "prospect" ? "Prospect" : "Client"}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5">
+                      {data.phone && <span>{data.phone}</span>}
+                      {data.phone && data.email && <span>•</span>}
+                      {data.email && <span className="truncate">{data.email}</span>}
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex-shrink-0 text-xs h-7"
+                  onClick={() =>
+                    onUpdate({
+                      linkedContactId: undefined,
+                      linkedContactType: undefined,
+                      firstName: "",
+                      lastName: "",
+                      phone: "",
+                      email: "",
+                    })
+                  }
+                >
+                  Dissocier
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

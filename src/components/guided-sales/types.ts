@@ -3,6 +3,17 @@ export type ClientType = "prospect" | "existing";
 export type UsageType = "prive" | "professionnel" | "taxi" | "livraison";
 export type PlanTier = "basic" | "standard" | "premium";
 
+export interface ClientIdentificationData {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  identityDocumentType: string;
+  identityDocumentNumber: string;
+  linkedContactId?: string;
+  linkedContactType?: "prospect" | "client";
+}
+
 export interface NeedsAnalysisData {
   productType: ProductType;
   clientType: ClientType;
@@ -83,6 +94,7 @@ export interface IssuanceData {
 
 export interface GuidedSalesState {
   currentStep: number;
+  clientIdentification: ClientIdentificationData;
   needsAnalysis: NeedsAnalysisData;
   quickQuote: QuickQuoteData;
   coverage: CoverageData;
@@ -105,7 +117,15 @@ export interface GuidedSalesState {
 }
 
 export const initialState: GuidedSalesState = {
-  currentStep: 1,
+  currentStep: 0,
+  clientIdentification: {
+    firstName: "",
+    lastName: "",
+    phone: "",
+    email: "",
+    identityDocumentType: "",
+    identityDocumentNumber: "",
+  },
   needsAnalysis: {
     productType: "auto",
     clientType: "prospect",

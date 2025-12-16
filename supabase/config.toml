@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.otp-verification]
 verify_jwt = true
+
+[functions.ocr-identity]
+verify_jwt = true

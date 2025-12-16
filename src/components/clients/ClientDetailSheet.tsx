@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -21,7 +22,8 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  FolderOpen
+  FolderOpen,
+  ShoppingCart
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -70,6 +72,7 @@ export const ClientDetailSheet = ({
   open, 
   onOpenChange 
 }: ClientDetailSheetProps) => {
+  const navigate = useNavigate();
   // Fetch claims for active clients
   const { data: claims = [], isLoading: claimsLoading } = useQuery({
     queryKey: ["client-claims", client?.id],
@@ -121,6 +124,13 @@ export const ClientDetailSheet = ({
 
   const handleEmail = () => {
     if (client?.email) window.open(`mailto:${client.email}`, "_blank");
+  };
+
+  const handleGuidedSales = () => {
+    if (client) {
+      navigate(`/b2b/sales?contactId=${client.id}&type=client`);
+      onOpenChange(false);
+    }
   };
 
   if (!client) return null;
@@ -198,6 +208,14 @@ export const ClientDetailSheet = ({
             </Button>
             <Button variant="ghost" size="sm" onClick={handleEmail} disabled={!client.email}>
               <Mail className="h-4 w-4" />
+            </Button>
+            <Button 
+              size="sm" 
+              onClick={handleGuidedSales}
+              className="ml-auto gap-1.5"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              Nouveau Contrat
             </Button>
           </div>
         </SheetHeader>

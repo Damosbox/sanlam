@@ -382,6 +382,15 @@ export const GuidedSalesFlow = () => {
             >
               {renderStep()}
             </div>
+            
+            {/* Desktop Next Button for steps 1-3 (inline in form area) */}
+            {state.currentStep >= 1 && state.currentStep <= 3 && (
+              <div className="hidden lg:flex justify-end mt-6">
+                <Button onClick={nextStep} size="lg">
+                  {stepLabels[state.currentStep]}
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Desktop Summary Card - only show from step 4 onwards */}
@@ -442,14 +451,6 @@ export const GuidedSalesFlow = () => {
         </div>
       )}
 
-      {/* Desktop Next Button for steps 1-3 (no summary card visible) */}
-      {state.currentStep >= 1 && state.currentStep <= 3 && (
-        <div className="hidden lg:block fixed bottom-6 right-6 z-50">
-          <Button onClick={nextStep} size="lg" className="shadow-lg">
-            {stepLabels[state.currentStep]}
-          </Button>
-        </div>
-      )}
     </div>
   );
 };

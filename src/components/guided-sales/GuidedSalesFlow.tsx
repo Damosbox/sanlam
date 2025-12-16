@@ -433,11 +433,20 @@ export const GuidedSalesFlow = () => {
         </div>
       )}
 
-      {/* Mobile Next Button for step 0 */}
-      {state.currentStep === 0 && (
+      {/* Mobile Next Button for steps 0-3 */}
+      {state.currentStep >= 0 && state.currentStep <= 3 && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 p-4 bg-background border-t">
           <Button onClick={nextStep} className="w-full" size="lg">
-            {stepLabels[0]}
+            {stepLabels[state.currentStep]}
+          </Button>
+        </div>
+      )}
+
+      {/* Desktop Next Button for steps 1-3 (no summary card visible) */}
+      {state.currentStep >= 1 && state.currentStep <= 3 && (
+        <div className="hidden lg:block fixed bottom-6 right-6 z-50">
+          <Button onClick={nextStep} size="lg" className="shadow-lg">
+            {stepLabels[state.currentStep]}
           </Button>
         </div>
       )}

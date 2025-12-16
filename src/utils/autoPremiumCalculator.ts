@@ -1,4 +1,4 @@
-import { GuidedSalesState, UsageType, PlanTier } from "@/components/guided-sales/types";
+import { GuidedSalesState, UsageType, PlanTier, ContractPeriodicity } from "@/components/guided-sales/types";
 
 // Barème RC de base par puissance fiscale (en FCFA)
 const RC_BASE_RATES: Record<string, number> = {
@@ -139,8 +139,9 @@ export const calculateAutoPremium = (state: GuidedSalesState): AutoPremiumBreakd
   const assistancePrice = ASSISTANCE_PRICES[coverage.assistanceLevel || "avantage"] || 0;
   const primeNette = primeRC + primeGaranties + assistancePrice;
 
-  // 4. Frais d'accessoires (selon périodicité - par défaut 1 an)
-  const fraisAccessoires = ACCESSORIES_FEES["1_year"];
+  // 4. Frais d'accessoires (selon périodicité du contrat)
+  const periodicity: ContractPeriodicity = needsAnalysis.contractPeriodicity || "1_year";
+  const fraisAccessoires = ACCESSORIES_FEES[periodicity];
 
   // 5. Taxes fiscales (14,5% sur prime nette)
   const taxes = Math.round(primeNette * TAX_RATE);

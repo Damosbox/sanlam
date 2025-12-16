@@ -2,6 +2,7 @@ export type ProductType = "auto" | "habitation" | "sante" | "vie";
 export type ClientType = "prospect" | "existing";
 export type UsageType = "prive" | "professionnel" | "taxi" | "livraison";
 export type PlanTier = "basic" | "standard" | "premium";
+export type ContractPeriodicity = "1_month" | "3_months" | "6_months" | "1_year";
 
 export interface ClientIdentificationData {
   firstName: string;
@@ -32,6 +33,7 @@ export interface NeedsAnalysisData {
   bonusMalus?: string;
   vehicleFiscalPower?: number;
   vehicleSeats?: number;
+  contractPeriodicity?: ContractPeriodicity;
   hasClaimHistory?: boolean;
   // Habitation specific
   housingType?: "appartement" | "maison";
@@ -134,6 +136,7 @@ export const initialState: GuidedSalesState = {
     country: "CI",
     specificRisks: "",
     contactPreference: "whatsapp",
+    contractPeriodicity: "1_year",
   },
   quickQuote: {
     franchise: 250,

@@ -314,7 +314,7 @@ export const GuidedSalesFlow = () => {
   const renderStep = () => {
     switch (state.currentStep) {
       case 0:
-        return <ClientIdentificationStep state={state} onUpdate={updateClientIdentification} />;
+        return <ClientIdentificationStep state={state} onUpdate={updateClientIdentification} onNext={nextStep} />;
       case 1:
         return <NeedsAnalysisStep state={state} onUpdate={updateNeedsAnalysis} />;
       case 2:

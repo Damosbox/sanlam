@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 interface ClientIdentificationStepProps {
   state: GuidedSalesState;
   onUpdate: (data: Partial<GuidedSalesState["clientIdentification"]>) => void;
+  onNext: () => void;
 }
 
 type SearchResult = {
@@ -27,7 +28,7 @@ type SearchResult = {
   email: string | null;
 };
 
-export const ClientIdentificationStep = ({ state, onUpdate }: ClientIdentificationStepProps) => {
+export const ClientIdentificationStep = ({ state, onUpdate, onNext }: ClientIdentificationStepProps) => {
   const { toast } = useToast();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -161,7 +162,7 @@ export const ClientIdentificationStep = ({ state, onUpdate }: ClientIdentificati
           setOcrConfidence(result.confidence);
           toast({
             title: "Document analysé",
-            description: `Confiance: ${Math.round(result.confidence * 100)}%`,
+            description: `Nom/Prénom et numéro extraits (Confiance: ${Math.round(result.confidence * 100)}%)`,
           });
         } else {
           toast({
@@ -185,6 +186,7 @@ export const ClientIdentificationStep = ({ state, onUpdate }: ClientIdentificati
   };
 
   const isLinked = !!data.linkedContactId;
+  const canProceed = data.firstName && data.lastName && data.phone;
 
   return (
     <div className="space-y-6">
@@ -283,62 +285,7 @@ export const ClientIdentificationStep = ({ state, onUpdate }: ClientIdentificati
         </CardContent>
       </Card>
 
-      {/* Manual Entry Section */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <User className="h-4 w-4" />
-            Informations du client
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">Prénom *</Label>
-              <Input
-                id="firstName"
-                value={data.firstName}
-                onChange={(e) => onUpdate({ firstName: e.target.value })}
-                placeholder="Prénom"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Nom *</Label>
-              <Input
-                id="lastName"
-                value={data.lastName}
-                onChange={(e) => onUpdate({ lastName: e.target.value })}
-                placeholder="Nom de famille"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="phone">Téléphone *</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={data.phone}
-                onChange={(e) => onUpdate({ phone: e.target.value })}
-                placeholder="+225 07 XX XX XX XX"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={data.email}
-                onChange={(e) => onUpdate({ email: e.target.value })}
-                placeholder="email@exemple.com"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Identity Document Section */}
+      {/* Identity Document Section - MOVED TO 2ND POSITION */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
@@ -346,7 +293,7 @@ export const ClientIdentificationStep = ({ state, onUpdate }: ClientIdentificati
             Document d'identité
           </CardTitle>
           <CardDescription>
-            Scannez ou uploadez le document pour extraction automatique
+            Scannez le document pour remplir automatiquement Nom, Prénom et numéro
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -421,6 +368,72 @@ export const ClientIdentificationStep = ({ state, onUpdate }: ClientIdentificati
           </div>
         </CardContent>
       </Card>
+
+      {/* Manual Entry Section - NOW 3RD */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <User className="h-4 w-4" />
+            Informations du client
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">Prénom *</Label>
+              <Input
+                id="firstName"
+                value={data.firstName}
+                onChange={(e) => onUpdate({ firstName: e.target.value })}
+                placeholder="Prénom"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Nom *</Label>
+              <Input
+                id="lastName"
+                value={data.lastName}
+                onChange={(e) => onUpdate({ lastName: e.target.value })}
+                placeholder="Nom de famille"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="phone">Téléphone *</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={data.phone}
+                onChange={(e) => onUpdate({ phone: e.target.value })}
+                placeholder="+225 07 XX XX XX XX"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={data.email}
+                onChange={(e) => onUpdate({ email: e.target.value })}
+                placeholder="email@exemple.com"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Next Button */}
+      <div className="flex justify-end pt-4">
+        <Button 
+          onClick={onNext} 
+          disabled={!canProceed}
+          size="lg"
+        >
+          Continuer vers l'analyse du besoin
+        </Button>
+      </div>
     </div>
   );
 };

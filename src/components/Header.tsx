@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, LayoutDashboard, Phone, User, ChevronDown, Shield, PiggyBank, TrendingUp, Car, Heart, GraduationCap, HomeIcon } from "lucide-react";
+import { LayoutDashboard, Phone, User, Shield, PiggyBank, TrendingUp, Car, Heart, GraduationCap, Home as HomeIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
@@ -16,13 +16,9 @@ import {
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
 
-type UserSegment = "particuliers" | "commercial";
-
 export const Header = () => {
   const location = useLocation();
-  const isHome = location.pathname === "/";
   const [user, setUser] = useState<SupabaseUser | null>(null);
-  const [activeSegment, setActiveSegment] = useState<UserSegment>("particuliers");
 
   useEffect(() => {
     supabase.auth.getSession().then(({
@@ -61,31 +57,36 @@ export const Header = () => {
       <div className="bg-secondary text-secondary-foreground">
         <div className="container flex h-10 items-center justify-between">
           <div className="flex items-center">
-            <button
-              onClick={() => setActiveSegment("particuliers")}
+            <Link
+              to="/"
               className={cn(
                 "px-4 py-2 text-sm font-medium transition-all border-b-2",
-                activeSegment === "particuliers"
+                location.pathname === "/" || location.pathname.startsWith("/b2c") || location.pathname.startsWith("/simulateur")
                   ? "border-white text-white"
                   : "border-transparent text-white/70 hover:text-white"
               )}
             >
               Particuliers
-            </button>
-            <button
-              onClick={() => setActiveSegment("commercial")}
+            </Link>
+            <Link
+              to="/commercial"
               className={cn(
                 "px-4 py-2 text-sm font-medium transition-all border-b-2",
-                activeSegment === "commercial"
+                location.pathname === "/commercial"
                   ? "border-white text-white"
                   : "border-transparent text-white/70 hover:text-white"
               )}
             >
               Commercial
-            </button>
+            </Link>
             <Link
               to="/courtiers"
-              className="px-4 py-2 text-sm font-medium text-white/70 hover:text-white transition-all"
+              className={cn(
+                "px-4 py-2 text-sm font-medium transition-all border-b-2",
+                location.pathname === "/courtiers"
+                  ? "border-white text-white"
+                  : "border-transparent text-white/70 hover:text-white"
+              )}
             >
               Courtiers
             </Link>

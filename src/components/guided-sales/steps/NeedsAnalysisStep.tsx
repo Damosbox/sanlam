@@ -112,18 +112,32 @@ export const NeedsAnalysisStep = ({ state, onUpdate }: NeedsAnalysisStepProps) =
 
             {/* Product-specific fields */}
             <TabsContent value="auto" className="mt-6 space-y-6">
-              {/* Row 1: Marque/Modèle + Usage */}
+              {/* Row 1: Marque + Modèle */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                    Marque / Modèle
+                    Marque
                   </Label>
                   <Input
-                    placeholder="ex: Peugeot 3008"
+                    placeholder="ex: Peugeot"
                     value={needsAnalysis.vehicleBrand || ""}
                     onChange={(e) => onUpdate({ vehicleBrand: e.target.value })}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Modèle
+                  </Label>
+                  <Input
+                    placeholder="ex: 3008"
+                    value={needsAnalysis.vehicleModel || ""}
+                    onChange={(e) => onUpdate({ vehicleModel: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Usage */}
+              <div className="grid grid-cols-1 gap-4 sm:gap-6">
 
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">

@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 interface UnderwritingStepProps {
   state: GuidedSalesState;
   onUpdate: (data: Partial<GuidedSalesState["underwriting"]>) => void;
+  onNext: () => void;
 }
 
 type RuleStatus = "green" | "yellow" | "red";
@@ -135,7 +136,7 @@ const evaluateUnderwritingRules = (state: GuidedSalesState): UnderwritingRule[] 
   return rules;
 };
 
-export const UnderwritingStep = ({ state, onUpdate }: UnderwritingStepProps) => {
+export const UnderwritingStep = ({ state, onUpdate, onNext }: UnderwritingStepProps) => {
   const [uploadedDocs, setUploadedDocs] = useState<Record<string, boolean>>({});
   const rules = evaluateUnderwritingRules(state);
 
@@ -287,14 +288,14 @@ export const UnderwritingStep = ({ state, onUpdate }: UnderwritingStepProps) => 
         </CardContent>
       </Card>
 
-      <div className="flex justify-center">
+      {/* Next Button */}
+      <div className="flex justify-end pt-4">
         <Button 
-          variant={canValidate ? "default" : "secondary"} 
+          onClick={onNext}
           size="lg" 
-          className="px-8"
           disabled={hasBlockingRule}
         >
-          {canValidate ? "Valider le Risque" : hasBlockingRule ? "En attente manager" : "Valider avec vigilance"}
+          {canValidate ? "Continuer vers la signature" : hasBlockingRule ? "En attente manager" : "Continuer avec vigilance"}
         </Button>
       </div>
     </div>

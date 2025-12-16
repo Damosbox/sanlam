@@ -70,9 +70,10 @@ const POPULAR_VEHICLES = [
 interface NeedsAnalysisStepProps {
   state: GuidedSalesState;
   onUpdate: (data: Partial<GuidedSalesState["needsAnalysis"]>) => void;
+  onNext: () => void;
 }
 
-export const NeedsAnalysisStep = ({ state, onUpdate }: NeedsAnalysisStepProps) => {
+export const NeedsAnalysisStep = ({ state, onUpdate, onNext }: NeedsAnalysisStepProps) => {
   const { needsAnalysis } = state;
   const [vehicleSearchOpen, setVehicleSearchOpen] = useState(false);
   const [vehicleSearchTerm, setVehicleSearchTerm] = useState("");
@@ -670,6 +671,13 @@ export const NeedsAnalysisStep = ({ state, onUpdate }: NeedsAnalysisStepProps) =
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Next Button */}
+      <div className="flex justify-end pt-4">
+        <Button onClick={onNext} size="lg">
+          Passer à la couverture
+        </Button>
+      </div>
     </div>
   );
 };

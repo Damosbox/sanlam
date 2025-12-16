@@ -294,13 +294,13 @@ export const GuidedSalesFlow = () => {
       case 0:
         return <ClientIdentificationStep state={state} onUpdate={updateClientIdentification} onNext={nextStep} />;
       case 1:
-        return <NeedsAnalysisStep state={state} onUpdate={updateNeedsAnalysis} />;
+        return <NeedsAnalysisStep state={state} onUpdate={updateNeedsAnalysis} onNext={nextStep} />;
       case 2:
-        return <CoverageStep state={state} onUpdate={updateCoverage} onPremiumUpdate={updatePremium} />;
+        return <CoverageStep state={state} onUpdate={updateCoverage} onPremiumUpdate={updatePremium} onNext={nextStep} />;
       case 3:
-        return <UnderwritingStep state={state} onUpdate={updateUnderwriting} />;
+        return <UnderwritingStep state={state} onUpdate={updateUnderwriting} onNext={nextStep} />;
       case 4:
-        return <BindingStep state={state} onUpdate={updateBinding} />;
+        return <BindingStep state={state} onUpdate={updateBinding} onNext={nextStep} />;
       case 5:
         return <IssuanceStep state={state} onReset={resetFlow} />;
       default:
@@ -364,15 +364,6 @@ export const GuidedSalesFlow = () => {
             >
               {renderStep()}
             </div>
-            
-            {/* Desktop Next Button for steps 1-2 (inline in form area) */}
-            {state.currentStep >= 1 && state.currentStep <= 2 && (
-              <div className="hidden lg:flex justify-end mt-6">
-                <Button onClick={nextStep} size="lg">
-                  {stepLabels[state.currentStep]}
-                </Button>
-              </div>
-            )}
           </div>
 
           {/* Desktop Summary Card - only show from step 3 onwards */}

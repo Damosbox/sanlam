@@ -383,18 +383,12 @@ export const NeedsAnalysisStep = ({ state, onUpdate, onNext }: NeedsAnalysisStep
                       <SelectValue placeholder="Sélectionner le BNS" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="bonus_50">Bonus 50%</SelectItem>
-                      <SelectItem value="bonus_40">Bonus 40%</SelectItem>
-                      <SelectItem value="bonus_30">Bonus 30%</SelectItem>
-                      <SelectItem value="bonus_25">Bonus 25%</SelectItem>
-                      <SelectItem value="bonus_20">Bonus 20%</SelectItem>
-                      <SelectItem value="bonus_15">Bonus 15%</SelectItem>
-                      <SelectItem value="bonus_10">Bonus 10%</SelectItem>
-                      <SelectItem value="bonus_5">Bonus 5%</SelectItem>
                       <SelectItem value="bonus_0">0% (Neutre)</SelectItem>
-                      <SelectItem value="malus_25">Malus 25%</SelectItem>
-                      <SelectItem value="malus_50">Malus 50%</SelectItem>
-                      <SelectItem value="malus_100">Malus 100%</SelectItem>
+                      <SelectItem value="bonus_10">Bonus 10%</SelectItem>
+                      <SelectItem value="bonus_19">Bonus 19%</SelectItem>
+                      <SelectItem value="bonus_25">Bonus 25%</SelectItem>
+                      <SelectItem value="bonus_30">Bonus 30%</SelectItem>
+                      <SelectItem value="bonus_35">Bonus 35%</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

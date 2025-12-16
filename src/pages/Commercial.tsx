@@ -2,110 +2,88 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { 
-  Car, 
-  Building2, 
-  Users, 
-  Shield, 
   ArrowRight, 
-  Calculator, 
-  MessageCircle, 
-  FileText, 
   ChevronRight, 
   Briefcase,
-  Factory,
-  Truck,
-  HardHat,
-  Scale,
-  HeartPulse,
+  Users,
+  Target,
   TrendingUp,
-  Clock,
   Award,
-  CheckCircle
+  Zap,
+  BarChart3,
+  Shield,
+  FileCheck,
+  Headphones,
+  CheckCircle,
+  Play,
+  Star,
+  Rocket
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import sanlamLogo from "@/assets/logo_sanlam.svg";
+import dashboardPreview from "@/assets/dashboard-preview.jpg";
 
-const productCards = [
+const features = [
   {
-    icon: Truck,
-    title: "Flotte Automobile",
-    description: "Protégez tous vos véhicules professionnels",
-    href: "/b2c",
+    icon: Target,
+    title: "Pipeline Leads Intelligent",
+    description: "Gérez vos prospects avec un CRM intégré et des relances automatisées.",
   },
   {
-    icon: Building2,
-    title: "Multirisque Pro",
-    description: "Locaux, stocks et équipements",
-    href: "/b2c",
+    icon: Zap,
+    title: "Vente Guidée 6 Étapes",
+    description: "Processus de vente structuré avec calcul de prime en temps réel.",
   },
   {
-    icon: Scale,
-    title: "Responsabilité Civile",
-    description: "RC Pro et exploitation",
-    href: "/b2c",
+    icon: BarChart3,
+    title: "Recommandations IA",
+    description: "L'IA analyse votre portefeuille et suggère des actions commerciales.",
   },
   {
-    icon: HeartPulse,
-    title: "Santé Collective",
-    description: "Couverture santé pour vos équipes",
-    href: "/b2c",
+    icon: FileCheck,
+    title: "KYC & Compliance",
+    description: "Collecte et vérification des documents réglementaires intégrées.",
   },
-  {
-    icon: HardHat,
-    title: "Accidents du Travail",
-    description: "Protection de vos collaborateurs",
-    href: "/b2c",
-  },
-  {
-    icon: Briefcase,
-    title: "Homme Clé",
-    description: "Sécurisez votre capital humain",
-    href: "/b2c",
-  },
-];
-
-const quickActions = [
-  {
-    icon: Calculator,
-    title: "Demander un audit",
-    description: "Analyse de vos risques professionnels",
-    href: "/b2c"
-  },
-  {
-    icon: MessageCircle,
-    title: "Contacter un expert",
-    description: "Un conseiller dédié aux entreprises",
-    href: "/b2c"
-  },
-  {
-    icon: FileText,
-    title: "Obtenir un devis",
-    description: "Tarification personnalisée",
-    href: "/b2c"
-  },
-];
-
-const sectors = [
-  { name: "BTP & Construction", icon: HardHat },
-  { name: "Transport & Logistique", icon: Truck },
-  { name: "Commerce & Distribution", icon: Building2 },
-  { name: "Industrie", icon: Factory },
-  { name: "Services", icon: Briefcase },
-  { name: "Santé & Médical", icon: HeartPulse },
 ];
 
 const stats = [
-  { value: "10K+", label: "Entreprises clientes", icon: Building2 },
-  { value: "48h", label: "Délai de traitement", icon: Clock },
-  { value: "98%", label: "Taux de satisfaction", icon: Award },
+  { value: "500+", label: "Commerciaux actifs" },
+  { value: "+35%", label: "Productivité moyenne" },
+  { value: "2.5x", label: "Taux de conversion" },
+  { value: "24/7", label: "Support disponible" },
 ];
 
-const advantages = [
-  "Tarifs négociés pour les groupements",
-  "Gestionnaire de compte dédié",
-  "Plateforme de gestion en ligne",
-  "Reporting personnalisé",
-  "Formation prévention incluse",
-  "Assistance 24/7 multilingue",
+const benefits = [
+  "Accès à tous les produits Sanlam Allianz",
+  "Formation continue et certification",
+  "Commissions attractives et transparentes",
+  "Outils digitaux premium inclus",
+  "Support dédié et réactif",
+  "Communauté de commerciaux active",
+];
+
+const testimonials = [
+  {
+    name: "Amadou Diallo",
+    role: "Commercial Senior",
+    region: "Dakar",
+    quote: "Grâce à la plateforme, j'ai doublé mon portefeuille clients en 6 mois. L'IA me suggère les meilleures opportunités.",
+    rating: 5,
+  },
+  {
+    name: "Fatou Sow",
+    role: "Responsable Commerciale",
+    region: "Abidjan",
+    quote: "Le processus de vente guidée m'a permis de réduire mon temps de souscription de 50%. Mes clients adorent la rapidité.",
+    rating: 5,
+  },
+  {
+    name: "Ibrahima Ndiaye",
+    role: "Commercial",
+    region: "Saint-Louis",
+    quote: "Je n'ai plus besoin de papier. Tout est digitalisé, de la prospection à l'émission de la police.",
+    rating: 5,
+  },
 ];
 
 const Commercial = () => {
@@ -113,265 +91,256 @@ const Commercial = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      {/* Hero Section - Gradient Background */}
+      {/* Hero Section */}
       <section className="relative overflow-hidden gradient-activated py-16 md:py-24">
         <div className="container relative">
-          <div className="grid lg:grid-cols-2 gap-8 items-start">
-            {/* Left Content - Product Cards */}
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left Content */}
             <div className="space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-sm">
-                <Briefcase className="w-4 h-4" />
-                Solutions Entreprises
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 text-white text-sm font-medium">
+                <Rocket className="w-4 h-4" />
+                Espace Commercial Sanlam Allianz
               </div>
               
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight">
-                Assurances professionnelles sur mesure
+                Développez votre activité avec les meilleurs outils
               </h1>
               
               <p className="text-white/80 text-lg max-w-xl">
-                Des solutions adaptées à chaque secteur d'activité pour protéger votre entreprise, vos collaborateurs et votre patrimoine.
+                Rejoignez le réseau commercial Sanlam Allianz et accédez à une plateforme complète pour prospecter, vendre et fidéliser vos clients.
               </p>
-              
-              {/* Product Cards Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {productCards.map((product) => (
-                  <Link
-                    key={product.title}
-                    to={product.href}
-                    className="group flex items-center gap-3 p-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
-                  >
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                      <product.icon className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-white text-sm">{product.title}</h3>
-                      <p className="text-white/70 text-xs">{product.description}</p>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-white/50 group-hover:text-white group-hover:translate-x-1 transition-all" />
-                  </Link>
-                ))}
-              </div>
 
-              {/* CTA Buttons */}
-              <div className="flex flex-wrap gap-3 pt-4">
-                <Link to="/b2c">
-                  <Button variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-primary">
-                    Découvrir nos solutions
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  </Button>
-                </Link>
-                <Link to="/b2c">
-                  <Button className="bg-white text-primary hover:bg-white/90">
-                    Demander un rendez-vous
-                  </Button>
-                </Link>
-              </div>
-            </div>
-
-            {/* Right Content - Stats & Trust */}
-            <div className="hidden lg:block space-y-6">
-              {/* Stats Cards */}
-              <div className="grid grid-cols-3 gap-3">
+              {/* Stats Row */}
+              <div className="grid grid-cols-4 gap-4 py-6">
                 {stats.map((stat) => (
-                  <div key={stat.label} className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center border border-white/20">
-                    <stat.icon className="w-6 h-6 text-white/80 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-white">{stat.value}</p>
+                  <div key={stat.label} className="text-center">
+                    <p className="text-2xl md:text-3xl font-bold text-white">{stat.value}</p>
                     <p className="text-xs text-white/70">{stat.label}</p>
                   </div>
                 ))}
               </div>
-              
-              {/* Advantages List */}
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                <h3 className="font-semibold text-white mb-4">Vos avantages exclusifs</h3>
-                <ul className="space-y-2">
-                  {advantages.map((advantage) => (
-                    <li key={advantage} className="flex items-center gap-2 text-white/80 text-sm">
-                      <CheckCircle className="w-4 h-4 text-[hsl(var(--bright-green))]" />
-                      {advantage}
-                    </li>
-                  ))}
-                </ul>
+
+              {/* CTA Buttons */}
+              <div className="flex flex-wrap gap-4">
+                <Link to="/auth?broker=true">
+                  <Button size="lg" className="bg-white text-primary hover:bg-white/90">
+                    Accéder à mon espace
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                </Link>
+                <Link to="#demo">
+                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+                    <Play className="w-5 h-5 mr-2" />
+                    Voir la démo
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Demo Access */}
+              <div className="p-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
+                <p className="text-white/80 text-sm mb-2">🔐 Accès démo disponible</p>
+                <p className="text-white text-xs">
+                  Email: <span className="font-mono">b2btest@box.africa</span> | 
+                  Mot de passe: <span className="font-mono">123456</span>
+                </p>
+              </div>
+            </div>
+
+            {/* Right Content - Dashboard Preview */}
+            <div className="hidden lg:block relative">
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-white/20">
+                <img 
+                  src={dashboardPreview} 
+                  alt="Dashboard Commercial" 
+                  className="w-full h-auto"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-primary/50 to-transparent" />
+              </div>
+              {/* Floating Badge */}
+              <div className="absolute -bottom-4 -left-4 bg-white rounded-xl p-4 shadow-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-[hsl(var(--bright-green))]/10 flex items-center justify-center">
+                    <TrendingUp className="w-6 h-6 text-[hsl(var(--bright-green))]" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-foreground">+35%</p>
+                    <p className="text-xs text-muted-foreground">Productivité</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Quick Actions Section */}
+      {/* Features Grid */}
       <section className="py-16 bg-background">
         <div className="container">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-8">
-            Comment pouvons-nous vous aider?
-          </h2>
-          
-          <div className="grid md:grid-cols-3 gap-4">
-            {quickActions.map((action) => (
-              <Link
-                key={action.title}
-                to={action.href}
-                className="group flex items-center gap-4 p-5 rounded-xl border bg-card hover:shadow-medium hover:border-primary/20 transition-all duration-300"
-              >
-                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
-                  <action.icon className="w-6 h-6 text-primary group-hover:text-white" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground">{action.title}</h3>
-                  <p className="text-sm text-muted-foreground">{action.description}</p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Sectors Section */}
-      <section className="py-16 bg-muted">
-        <div className="container">
-          <div className="text-center mb-10">
+          <div className="text-center mb-12">
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-              Des solutions par secteur d'activité
+              Une plateforme complète pour performer
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Nous connaissons les risques spécifiques de votre métier et proposons des garanties adaptées.
+              Tous les outils dont vous avez besoin pour développer votre portefeuille clients et maximiser vos revenus.
             </p>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {sectors.map((sector) => (
-              <Link
-                key={sector.name}
-                to="/b2c"
-                className="group flex flex-col items-center gap-3 p-6 rounded-xl bg-background border hover:shadow-medium hover:border-primary/20 transition-all"
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {features.map((feature) => (
+              <div
+                key={feature.title}
+                className="group p-6 rounded-2xl border bg-card hover:shadow-medium hover:border-primary/20 transition-all duration-300"
               >
-                <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary transition-colors">
-                  <sector.icon className="w-7 h-7 text-primary group-hover:text-white" />
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary transition-colors">
+                  <feature.icon className="w-6 h-6 text-primary group-hover:text-white" />
                 </div>
-                <span className="text-sm font-medium text-foreground text-center">{sector.name}</span>
-              </Link>
+                <h3 className="font-semibold text-lg text-foreground mb-2">{feature.title}</h3>
+                <p className="text-sm text-muted-foreground">{feature.description}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Already Client Section */}
+      {/* Dashboard Preview Section */}
+      <section id="demo" className="py-16 bg-muted">
+        <div className="container">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6">
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground">
+                Un dashboard pensé pour la performance
+              </h2>
+              <p className="text-muted-foreground">
+                Visualisez vos KPIs, suivez vos leads, gérez vos clients et recevez des recommandations IA personnalisées. Tout en un seul endroit.
+              </p>
+              
+              <ul className="space-y-3">
+                {[
+                  "Vue 360° de votre activité commerciale",
+                  "Alertes et rappels automatisés",
+                  "Calcul de prime instantané",
+                  "Signature électronique intégrée",
+                  "Reporting et analytics avancés",
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-[hsl(var(--bright-green))]" />
+                    <span className="text-foreground">{item}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <Link to="/auth?broker=true">
+                <Button size="lg">
+                  Essayer gratuitement
+                  <ChevronRight className="w-5 h-5 ml-1" />
+                </Button>
+              </Link>
+            </div>
+
+            <div className="relative">
+              <div className="rounded-2xl overflow-hidden shadow-xl border">
+                <img 
+                  src={dashboardPreview} 
+                  alt="Dashboard Preview" 
+                  className="w-full h-auto"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Benefits Section */}
       <section className="py-16 bg-background">
         <div className="container">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div>
-              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-                Vous êtes déjà client entreprise?
-              </h2>
-              <p className="text-muted-foreground mb-6">
-                Accédez à votre espace pro pour gérer vos contrats, déclarer un sinistre, télécharger vos attestations ou contacter votre gestionnaire.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Link to="/auth">
-                  <Button>
-                    Espace client entreprise
-                  </Button>
-                </Link>
-                <Link to="/b2c">
-                  <Button variant="outline">
-                    Déclarer un sinistre
-                  </Button>
-                </Link>
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="order-2 lg:order-1">
+              <div className="grid grid-cols-2 gap-4">
+                {benefits.map((benefit, index) => (
+                  <div key={benefit} className="flex items-start gap-3 p-4 rounded-xl bg-muted">
+                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckCircle className="w-4 h-4 text-primary" />
+                    </div>
+                    <span className="text-sm text-foreground">{benefit}</span>
+                  </div>
+                ))}
               </div>
             </div>
-            
-            {/* Features */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl bg-muted">
-                <FileText className="w-8 h-8 text-primary mb-2" />
-                <p className="font-semibold text-foreground">Attestations</p>
-                <p className="text-xs text-muted-foreground">Téléchargement immédiat</p>
-              </div>
-              <div className="p-4 rounded-xl bg-muted">
-                <TrendingUp className="w-8 h-8 text-primary mb-2" />
-                <p className="font-semibold text-foreground">Reporting</p>
-                <p className="text-xs text-muted-foreground">Tableaux de bord</p>
-              </div>
-              <div className="p-4 rounded-xl bg-muted">
-                <Users className="w-8 h-8 text-primary mb-2" />
-                <p className="font-semibold text-foreground">Gestion RH</p>
-                <p className="text-xs text-muted-foreground">Affiliations en ligne</p>
-              </div>
-              <div className="p-4 rounded-xl bg-muted">
-                <Shield className="w-8 h-8 text-primary mb-2" />
-                <p className="font-semibold text-foreground">Sinistres</p>
-                <p className="text-xs text-muted-foreground">Suivi en temps réel</p>
+
+            <div className="order-1 lg:order-2 space-y-6">
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground">
+                Pourquoi rejoindre le réseau Sanlam Allianz?
+              </h2>
+              <p className="text-muted-foreground">
+                En tant que commercial Sanlam Allianz, vous bénéficiez d'un accompagnement complet et d'outils de pointe pour réussir dans l'assurance.
+              </p>
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-primary/5 border border-primary/20">
+                <Award className="w-10 h-10 text-primary" />
+                <div>
+                  <p className="font-semibold text-foreground">Leader en Afrique de l'Ouest</p>
+                  <p className="text-sm text-muted-foreground">35+ années d'expertise et de confiance</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Why Choose Us */}
+      {/* Testimonials */}
       <section className="py-16 bg-muted">
         <div className="container">
-          <div className="text-center max-w-2xl mx-auto mb-12">
+          <div className="text-center mb-12">
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-              Pourquoi les entreprises nous font confiance?
+              Ce que disent nos commerciaux
             </h2>
             <p className="text-muted-foreground">
-              Plus de 10 000 entreprises en Afrique de l'Ouest nous font confiance pour protéger leur activité.
+              Découvrez les témoignages de ceux qui utilisent la plateforme au quotidien.
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-6">
-            <div className="p-6 rounded-2xl border bg-card hover:shadow-medium transition-all">
-              <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                <Users className="w-7 h-7 text-primary" />
+            {testimonials.map((testimonial) => (
+              <div key={testimonial.name} className="p-6 rounded-2xl bg-background border hover:shadow-medium transition-all">
+                <div className="flex gap-1 mb-4">
+                  {Array.from({ length: testimonial.rating }).map((_, i) => (
+                    <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+                <p className="text-foreground mb-4 italic">"{testimonial.quote}"</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">{testimonial.name}</p>
+                    <p className="text-xs text-muted-foreground">{testimonial.role} • {testimonial.region}</p>
+                  </div>
+                </div>
               </div>
-              <h3 className="font-semibold text-lg text-foreground mb-2">Accompagnement dédié</h3>
-              <p className="text-muted-foreground text-sm">
-                Un gestionnaire de compte unique pour piloter l'ensemble de vos contrats et répondre à vos besoins.
-              </p>
-            </div>
-            
-            <div className="p-6 rounded-2xl border bg-card hover:shadow-medium transition-all">
-              <div className="w-14 h-14 rounded-xl bg-[hsl(var(--bright-green))]/10 flex items-center justify-center mb-4">
-                <Scale className="w-7 h-7 text-[hsl(var(--bright-green))]" />
-              </div>
-              <h3 className="font-semibold text-lg text-foreground mb-2">Expertise sectorielle</h3>
-              <p className="text-muted-foreground text-sm">
-                Des équipes spécialisées par secteur d'activité pour des garanties parfaitement adaptées à vos risques.
-              </p>
-            </div>
-            
-            <div className="p-6 rounded-2xl border bg-card hover:shadow-medium transition-all">
-              <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center mb-4">
-                <TrendingUp className="w-7 h-7 text-accent" />
-              </div>
-              <h3 className="font-semibold text-lg text-foreground mb-2">Outils digitaux</h3>
-              <p className="text-muted-foreground text-sm">
-                Une plateforme complète pour gérer vos contrats, affiliations et sinistres en toute autonomie.
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Footer CTA */}
+      {/* CTA Section */}
       <section className="py-16 gradient-activated">
         <div className="container text-center">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-            Protégez votre entreprise dès maintenant
+            Prêt à booster votre carrière commerciale?
           </h2>
           <p className="text-white/80 mb-8 max-w-xl mx-auto">
-            Nos experts sont à votre disposition pour analyser vos besoins et vous proposer une solution sur mesure.
+            Rejoignez le réseau Sanlam Allianz et accédez à tous les outils pour réussir dans l'assurance.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Link to="/b2c">
+            <Link to="/auth?broker=true">
               <Button size="lg" className="bg-white text-primary hover:bg-white/90">
-                Demander un devis
+                Commencer maintenant
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>
             <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
-              <MessageCircle className="w-5 h-5 mr-2" />
-              Être rappelé
+              <Headphones className="w-5 h-5 mr-2" />
+              Nous contacter
             </Button>
           </div>
         </div>

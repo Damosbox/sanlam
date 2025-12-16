@@ -12,7 +12,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import SavingsSimulator from "./pages/SavingsSimulator";
 import EducationSimulator from "./pages/EducationSimulator";
-import BrokerLanding from "./pages/BrokerLanding";
+// BrokerLanding merged into Commercial
 import RoleProtectedRoute from "./components/RoleProtectedRoute";
 
 // Broker pages
@@ -36,7 +36,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/commercial" element={<Commercial />} />
-          <Route path="/courtiers" element={<BrokerLanding />} />
+          <Route path="/courtiers" element={<Navigate to="/commercial" replace />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/simulateur-epargne" element={<SavingsSimulator />} />
           <Route path="/simulateur-education" element={<EducationSimulator />} />

@@ -1,88 +1,291 @@
 import { Header } from "@/components/Header";
-import { ProductCard } from "@/components/ProductCard";
-import { Car, Heart, GraduationCap, Sprout, PiggyBank, Home as HomeIcon, TrendingUp, Shield } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Car, Heart, GraduationCap, PiggyBank, Home as HomeIcon, Shield, ArrowRight, Calculator, MessageCircle, FileText, ChevronRight, Users, Clock, Award } from "lucide-react";
 import heroImage from "@/assets/hero-woman.jpg";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
+
+const productCards = [
+  {
+    icon: Car,
+    title: "Assurance Auto",
+    description: "Roulez en toute confiance",
+    href: "/b2c",
+    color: "text-primary"
+  },
+  {
+    icon: HomeIcon,
+    title: "Assurance Habitation",
+    description: "Protégez votre foyer",
+    href: "/b2c",
+    color: "text-primary"
+  },
+  {
+    icon: Heart,
+    title: "Assurance Santé",
+    description: "Prenez soin de votre santé",
+    href: "/b2c",
+    color: "text-primary"
+  },
+  {
+    icon: Shield,
+    title: "Assurance Vie",
+    description: "Soutenez vos proches",
+    href: "/b2c",
+    color: "text-primary"
+  },
+  {
+    icon: PiggyBank,
+    title: "Épargne Plus",
+    description: "Faites fructifier votre épargne",
+    href: "/simulateur-epargne",
+    color: "text-primary"
+  },
+  {
+    icon: GraduationCap,
+    title: "Educ'Plus",
+    description: "Préparez l'avenir de vos enfants",
+    href: "/simulateur-education",
+    color: "text-primary"
+  },
+];
+
+const quickActions = [
+  {
+    icon: Calculator,
+    title: "Calculer vos besoins",
+    description: "Simulez votre couverture idéale",
+    href: "/simulateur-epargne"
+  },
+  {
+    icon: MessageCircle,
+    title: "Parler à un conseiller",
+    description: "Un expert à votre écoute",
+    href: "/b2c"
+  },
+  {
+    icon: FileText,
+    title: "Faire une soumission",
+    description: "Obtenez votre devis en ligne",
+    href: "/b2c"
+  },
+];
+
+const stats = [
+  { value: "500K+", label: "Clients protégés", icon: Users },
+  { value: "24h", label: "Traitement sinistres", icon: Clock },
+  { value: "15+", label: "Années d'expérience", icon: Award },
+];
+
 const Home = () => {
   const navigate = useNavigate();
-  const handleSubscribe = (productType: string) => {
-    navigate('/b2c', {
-      state: {
-        activeTab: 'subscribe',
-        productType
-      }
-    });
-  };
-  const handleEpargneClick = () => {
-    navigate('/simulateur-epargne');
-  };
-  const handleEducationClick = () => {
-    navigate('/simulateur-education');
-  };
-  return <div className="min-h-screen bg-background">
+
+  return (
+    <div className="min-h-screen bg-background">
       <Header />
       
-      {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 md:py-32">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
+      {/* Hero Section - Blue Background like ia.ca */}
+      <section className="relative overflow-hidden gradient-activated py-16 md:py-24">
         <div className="container relative">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-8 items-start">
+            {/* Left Content - Product Cards */}
             <div className="space-y-6">
-              <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-                L'assurance intelligente
-                <span className="text-gradient-activated"> qui vous accompagne</span>
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight">
+                Notre offre en assurance et épargne
               </h1>
-              <p className="text-xl text-muted-foreground leading-relaxed">
-                Diagnostic personnalisé, souscription en 2 étapes et support omnicanal pour 
-                particuliers, courtiers et administrateurs.
-              </p>
-              <div className="flex flex-wrap gap-4 pt-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-full bg-[hsl(var(--bright-green))]/10 flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-[hsl(var(--bright-green))]" />
+              
+              {/* Product Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {productCards.map((product) => (
+                  <Link
+                    key={product.title}
+                    to={product.href}
+                    className="group flex items-center gap-3 p-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+                  >
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+                      <product.icon className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-white text-sm">{product.title}</h3>
+                      <p className="text-white/70 text-xs">{product.description}</p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-white/50 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                  </Link>
+                ))}
+              </div>
+
+              {/* CTA Buttons */}
+              <div className="flex flex-wrap gap-3 pt-4">
+                <Link to="/b2c">
+                  <Button variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-primary">
+                    Voir notre offre complète
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </Link>
+                <Link to="/b2c">
+                  <Button className="bg-white text-primary hover:bg-white/90">
+                    Parler à un conseiller
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            {/* Right Content - Hero Image */}
+            <div className="relative hidden lg:block">
+              <img 
+                src={heroImage} 
+                alt="Famille protégée par Sanlam Allianz" 
+                className="rounded-2xl shadow-2xl w-full max-w-md ml-auto"
+              />
+              {/* Floating Badge */}
+              <div className="absolute -bottom-4 -left-4 bg-white rounded-xl shadow-lg p-4 animate-fade-in">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-[hsl(var(--bright-green))]/10 flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-[hsl(var(--bright-green))]" />
                   </div>
                   <div>
-                    <p className="font-semibold">+45% conversion</p>
-                    <p className="text-sm text-muted-foreground">avec l'IA</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">100% sécurisé</p>
-                    <p className="text-sm text-muted-foreground">RGPD compliant</p>
+                    <p className="font-bold text-foreground">+500 000</p>
+                    <p className="text-sm text-muted-foreground">Clients protégés</p>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Quick Actions Section */}
+      <section className="py-16 bg-background">
+        <div className="container">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-8">
+            Prêt à passer à l'action?
+          </h2>
+          
+          <div className="grid md:grid-cols-3 gap-4">
+            {quickActions.map((action) => (
+              <Link
+                key={action.title}
+                to={action.href}
+                className="group flex items-center gap-4 p-5 rounded-xl border bg-card hover:shadow-medium hover:border-primary/20 transition-all duration-300"
+              >
+                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+                  <action.icon className="w-6 h-6 text-primary group-hover:text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-foreground">{action.title}</h3>
+                  <p className="text-sm text-muted-foreground">{action.description}</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Already Client Section */}
+      <section className="py-16 bg-muted">
+        <div className="container">
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+                Je suis déjà client
+              </h2>
+              <p className="text-muted-foreground mb-6">
+                Accédez à votre espace personnel pour gérer vos contrats, déclarer un sinistre ou contacter votre conseiller.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Link to="/auth">
+                  <Button>
+                    Accéder à mon espace
+                  </Button>
+                </Link>
+                <Link to="/b2c">
+                  <Button variant="outline">
+                    Déclarer un sinistre
+                  </Button>
+                </Link>
+              </div>
+            </div>
             
-            <div className="relative">
-              <img src={heroImage} alt="Professionelle utilisant la plateforme Allianz Sanlam" className="rounded-3xl shadow-strong w-full" />
-              <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-primary/20 rounded-full blur-3xl" />
-              <div className="absolute -top-6 -right-6 w-40 h-40 bg-accent/20 rounded-full blur-3xl" />
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-4">
+              {stats.map((stat) => (
+                <div key={stat.label} className="text-center p-4 rounded-xl bg-background shadow-soft">
+                  <stat.icon className="w-8 h-8 text-primary mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Communication Block */}
-      <section className="py-12 bg-muted">
+      {/* Trust Section */}
+      <section className="py-16 bg-background">
         <div className="container">
-          <div className="text-center text-foreground space-y-4">
-            <h2 className="text-2xl md:text-3xl font-bold">
-              Découvrez nos offres exclusives
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+              Pourquoi choisir Sanlam Allianz?
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Bénéficiez de tarifs préférentiels et d'un accompagnement personnalisé pour tous vos projets d'assurance.
+            <p className="text-muted-foreground">
+              Leader de l'assurance en Afrique de l'Ouest, nous vous accompagnons depuis plus de 15 ans avec des solutions adaptées à vos besoins.
             </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="p-6 rounded-2xl border bg-card hover:shadow-medium transition-all">
+              <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                <Shield className="w-7 h-7 text-primary" />
+              </div>
+              <h3 className="font-semibold text-lg text-foreground mb-2">Protection complète</h3>
+              <p className="text-muted-foreground text-sm">
+                Des garanties étendues pour vous protéger vous et votre famille en toutes circonstances.
+              </p>
+            </div>
+            
+            <div className="p-6 rounded-2xl border bg-card hover:shadow-medium transition-all">
+              <div className="w-14 h-14 rounded-xl bg-[hsl(var(--bright-green))]/10 flex items-center justify-center mb-4">
+                <Clock className="w-7 h-7 text-[hsl(var(--bright-green))]" />
+              </div>
+              <h3 className="font-semibold text-lg text-foreground mb-2">Réactivité 24/7</h3>
+              <p className="text-muted-foreground text-sm">
+                Une équipe disponible à tout moment pour répondre à vos urgences et vos questions.
+              </p>
+            </div>
+            
+            <div className="p-6 rounded-2xl border bg-card hover:shadow-medium transition-all">
+              <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center mb-4">
+                <Award className="w-7 h-7 text-accent" />
+              </div>
+              <h3 className="font-semibold text-lg text-foreground mb-2">Expertise reconnue</h3>
+              <p className="text-muted-foreground text-sm">
+                La force de deux leaders mondiaux : Sanlam et Allianz, au service de votre sérénité.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Produits d'assurance */}
-      
-    </div>;
+      {/* Footer CTA */}
+      <section className="py-16 gradient-activated">
+        <div className="container text-center">
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
+            Prêt à être mieux protégé?
+          </h2>
+          <p className="text-white/80 mb-8 max-w-xl mx-auto">
+            Obtenez un devis personnalisé en quelques minutes et découvrez nos offres adaptées à votre situation.
+          </p>
+          <Link to="/b2c">
+            <Button size="lg" className="bg-white text-primary hover:bg-white/90">
+              Obtenir mon devis gratuit
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
+          </Link>
+        </div>
+      </section>
+    </div>
+  );
 };
+
 export default Home;

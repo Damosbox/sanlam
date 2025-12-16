@@ -82,7 +82,7 @@ const evaluateUnderwritingRules = (state: GuidedSalesState): UnderwritingRule[] 
     if (malusPercent >= 50) {
       rules.push({
         id: "bonus_malus",
-        label: "Coefficient Bonus/Malus",
+        label: "Coefficient Bonus",
         status: "red",
         message: `Malus ${malusPercent}% trop élevé. Escalade manager requise.`,
         requiresEscalation: true
@@ -90,7 +90,7 @@ const evaluateUnderwritingRules = (state: GuidedSalesState): UnderwritingRule[] 
     } else {
       rules.push({
         id: "bonus_malus",
-        label: "Coefficient Bonus/Malus",
+        label: "Coefficient Bonus",
         status: "yellow",
         message: `Malus ${malusPercent}% appliqué. Relevé d'information requis.`,
         requiresDocument: true
@@ -99,7 +99,7 @@ const evaluateUnderwritingRules = (state: GuidedSalesState): UnderwritingRule[] 
   } else {
     rules.push({
       id: "bonus_malus",
-      label: "Coefficient Bonus/Malus",
+      label: "Coefficient Bonus",
       status: "green",
       message: "Bonus applicable, profil favorable."
     });

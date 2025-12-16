@@ -17,8 +17,8 @@ export default function LogoutButton() {
       toast.error(error.message || "Erreur lors de la déconnexion");
     }
   };
-  return <Button variant="outline" size="sm" onClick={handleLogout} className="px-2 sm:px-3">
-      <LogOut className="w-4 h-4 sm:mr-2" />
+  return <Button variant="outline" size="sm" onClick={handleLogout} className="px-2 sm:px-3 group">
+      <LogOut className="w-4 h-4 sm:mr-2 group-hover:text-orange-500 transition-colors" />
       <span className="hidden sm:inline text-accent hover:text-orange-500 transition-colors">Se déconnecter</span>
     </Button>;
 }

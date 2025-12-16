@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
+import Commercial from "./pages/Commercial";
 import B2C from "./pages/B2C";
 import Admin from "./pages/Admin";
 import ClaimNew from "./pages/ClaimNew";
@@ -34,6 +35,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/commercial" element={<Commercial />} />
           <Route path="/courtiers" element={<BrokerLanding />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/simulateur-epargne" element={<SavingsSimulator />} />

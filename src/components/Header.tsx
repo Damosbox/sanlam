@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Phone, User, Shield, PiggyBank, TrendingUp, Car, Heart, GraduationCap, Home as HomeIcon } from "lucide-react";
+import { LayoutDashboard, Phone, User, Shield, PiggyBank, TrendingUp, Car, Heart, GraduationCap, Home as HomeIcon, Target, Zap, BarChart3, FileCheck, Headphones, BookOpen, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
@@ -28,6 +28,9 @@ export const Header = () => {
   
   // Check if we're on public pages (home, commercial)
   const isPublicPage = location.pathname === "/" || location.pathname === "/commercial" || location.pathname.startsWith("/simulateur");
+  
+  // Check which segment we're on
+  const isCommercialPage = location.pathname === "/commercial";
 
   useEffect(() => {
     supabase.auth.getSession().then(({
@@ -47,6 +50,7 @@ export const Header = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Particuliers navigation
   const insuranceProducts = [
     { name: "Assurance Auto", description: "Roulez en toute confiance", href: "/b2c", icon: Car },
     { name: "Assurance Habitation", description: "Protégez votre foyer", href: "/b2c", icon: HomeIcon },
@@ -58,6 +62,20 @@ export const Header = () => {
     { name: "Épargne Plus", description: "Faites fructifier votre argent", href: "/simulateur-epargne", icon: PiggyBank },
     { name: "Educ'Plus", description: "Préparez l'avenir de vos enfants", href: "/simulateur-education", icon: GraduationCap },
     { name: "Plan Retraite", description: "Anticipez votre retraite", href: "/simulateur-epargne", icon: TrendingUp },
+  ];
+
+  // Commercial navigation
+  const commercialTools = [
+    { name: "Pipeline Leads", description: "Gérez vos prospects efficacement", href: "/b2b/portfolio", icon: Target },
+    { name: "Vente Guidée", description: "Processus de vente structuré", href: "/b2b/sales", icon: Zap },
+    { name: "Analytics", description: "Suivez vos performances", href: "/b2b/dashboard", icon: BarChart3 },
+    { name: "Compliance KYC", description: "Vérifications réglementaires", href: "/b2b/portfolio", icon: FileCheck },
+  ];
+
+  const commercialResources = [
+    { name: "Formation", description: "Modules de formation continue", href: "#", icon: BookOpen },
+    { name: "Support", description: "Assistance et FAQ", href: "#", icon: Headphones },
+    { name: "Communauté", description: "Réseau de commerciaux", href: "#", icon: Users },
   ];
 
   // If inside platform, show minimal header
@@ -151,7 +169,7 @@ export const Header = () => {
             </Link>
 
             {/* Show navigation menu only on public pages */}
-            {isPublicPage && (
+            {isPublicPage && !isCommercialPage && (
               <NavigationMenu className="hidden md:flex">
                 <NavigationMenuList>
                   <NavigationMenuItem>
@@ -221,14 +239,95 @@ export const Header = () => {
                 </NavigationMenuList>
               </NavigationMenu>
             )}
+
+            {/* Commercial navigation */}
+            {isCommercialPage && (
+              <NavigationMenu className="hidden md:flex">
+                <NavigationMenuList>
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger className="bg-transparent">
+                      <Zap className="w-4 h-4 mr-2 text-primary" />
+                      Outils
+                    </NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
+                        {commercialTools.map((tool) => (
+                          <li key={tool.name}>
+                            <NavigationMenuLink asChild>
+                              <Link
+                                to={tool.href}
+                                className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent/10 hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <tool.icon className="w-4 h-4 text-primary" />
+                                  <div className="text-sm font-medium leading-none">{tool.name}</div>
+                                </div>
+                                <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                                  {tool.description}
+                                </p>
+                              </Link>
+                            </NavigationMenuLink>
+                          </li>
+                        ))}
+                      </ul>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger className="bg-transparent">
+                      <BookOpen className="w-4 h-4 mr-2 text-primary" />
+                      Ressources
+                    </NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <ul className="grid w-[400px] gap-3 p-4">
+                        {commercialResources.map((resource) => (
+                          <li key={resource.name}>
+                            <NavigationMenuLink asChild>
+                              <Link
+                                to={resource.href}
+                                className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent/10 hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <resource.icon className="w-4 h-4 text-primary" />
+                                  <div className="text-sm font-medium leading-none">{resource.name}</div>
+                                </div>
+                                <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                                  {resource.description}
+                                </p>
+                              </Link>
+                            </NavigationMenuLink>
+                          </li>
+                        ))}
+                      </ul>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+
+                  <NavigationMenuItem>
+                    <Link to="/b2b/dashboard" className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors">
+                      <BarChart3 className="w-4 h-4 text-primary" />
+                      Mon Dashboard
+                    </Link>
+                  </NavigationMenuItem>
+                </NavigationMenuList>
+              </NavigationMenu>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
             {/* Show different CTAs based on context */}
-            {isPublicPage && (
+            {isPublicPage && !isCommercialPage && (
               <Link to="/b2c">
                 <Button className="hidden sm:flex">
                   Obtenir un devis
+                </Button>
+              </Link>
+            )}
+            
+            {/* Commercial CTA */}
+            {isCommercialPage && (
+              <Link to="/auth?broker=true">
+                <Button className="hidden sm:flex">
+                  Accéder à mon espace
                 </Button>
               </Link>
             )}

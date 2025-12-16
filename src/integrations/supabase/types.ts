@@ -63,6 +63,30 @@ export type Database = {
           },
         ]
       }
+      broker_settings: {
+        Row: {
+          broker_id: string
+          created_at: string
+          id: string
+          otp_verification_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          broker_id: string
+          created_at?: string
+          id?: string
+          otp_verification_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          broker_id?: string
+          created_at?: string
+          id?: string
+          otp_verification_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           created_at: string
@@ -1088,6 +1112,36 @@ export type Database = {
           source_type?: Database["public"]["Enums"]["transaction_source"]
           transaction_type?: Database["public"]["Enums"]["transaction_type"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      otp_verifications: {
+        Row: {
+          broker_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          otp_code: string
+          phone_number: string
+          verified: boolean
+        }
+        Insert: {
+          broker_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          otp_code: string
+          phone_number: string
+          verified?: boolean
+        }
+        Update: {
+          broker_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          otp_code?: string
+          phone_number?: string
+          verified?: boolean
         }
         Relationships: []
       }

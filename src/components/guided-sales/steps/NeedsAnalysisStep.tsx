@@ -247,7 +247,7 @@ export const NeedsAnalysisStep = ({ state, onUpdate }: NeedsAnalysisStepProps) =
 
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                    BNS (Bonus/Malus)
+                    BNS (Bonus)
                   </Label>
                   <Select
                     value={needsAnalysis.bonusMalus || "bonus_0"}

@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -5,14 +6,66 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Car, Home, HeartPulse, Shield, CalendarIcon } from "lucide-react";
+import { Car, Home, HeartPulse, Shield, CalendarIcon, Search, Check } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { GuidedSalesState, ProductType } from "../types";
+
+// Liste des véhicules populaires pour l'autocomplétion
+const POPULAR_VEHICLES = [
+  { brand: "Toyota", model: "Corolla" },
+  { brand: "Toyota", model: "Camry" },
+  { brand: "Toyota", model: "RAV4" },
+  { brand: "Toyota", model: "Land Cruiser" },
+  { brand: "Toyota", model: "Hilux" },
+  { brand: "Toyota", model: "Yaris" },
+  { brand: "Peugeot", model: "208" },
+  { brand: "Peugeot", model: "308" },
+  { brand: "Peugeot", model: "3008" },
+  { brand: "Peugeot", model: "5008" },
+  { brand: "Peugeot", model: "508" },
+  { brand: "Renault", model: "Clio" },
+  { brand: "Renault", model: "Duster" },
+  { brand: "Renault", model: "Megane" },
+  { brand: "Renault", model: "Captur" },
+  { brand: "Mercedes", model: "Classe C" },
+  { brand: "Mercedes", model: "Classe E" },
+  { brand: "Mercedes", model: "GLE" },
+  { brand: "Mercedes", model: "GLC" },
+  { brand: "BMW", model: "Série 3" },
+  { brand: "BMW", model: "Série 5" },
+  { brand: "BMW", model: "X3" },
+  { brand: "BMW", model: "X5" },
+  { brand: "Hyundai", model: "Tucson" },
+  { brand: "Hyundai", model: "Santa Fe" },
+  { brand: "Hyundai", model: "i10" },
+  { brand: "Hyundai", model: "i20" },
+  { brand: "Kia", model: "Sportage" },
+  { brand: "Kia", model: "Sorento" },
+  { brand: "Kia", model: "Picanto" },
+  { brand: "Honda", model: "CR-V" },
+  { brand: "Honda", model: "Civic" },
+  { brand: "Honda", model: "Accord" },
+  { brand: "Nissan", model: "Qashqai" },
+  { brand: "Nissan", model: "X-Trail" },
+  { brand: "Nissan", model: "Patrol" },
+  { brand: "Volkswagen", model: "Golf" },
+  { brand: "Volkswagen", model: "Polo" },
+  { brand: "Volkswagen", model: "Tiguan" },
+  { brand: "Ford", model: "Ranger" },
+  { brand: "Ford", model: "Focus" },
+  { brand: "Ford", model: "Fiesta" },
+  { brand: "Mitsubishi", model: "Pajero" },
+  { brand: "Mitsubishi", model: "L200" },
+  { brand: "Suzuki", model: "Swift" },
+  { brand: "Suzuki", model: "Vitara" },
+  { brand: "Suzuki", model: "Jimny" },
+];
 
 interface NeedsAnalysisStepProps {
   state: GuidedSalesState;
@@ -21,6 +74,34 @@ interface NeedsAnalysisStepProps {
 
 export const NeedsAnalysisStep = ({ state, onUpdate }: NeedsAnalysisStepProps) => {
   const { needsAnalysis } = state;
+  const [vehicleSearchOpen, setVehicleSearchOpen] = useState(false);
+  const [vehicleSearchTerm, setVehicleSearchTerm] = useState("");
+
+  // Valeur affichée dans le champ
+  const vehicleDisplayValue = useMemo(() => {
+    if (needsAnalysis.vehicleBrand && needsAnalysis.vehicleModel) {
+      return `${needsAnalysis.vehicleBrand} ${needsAnalysis.vehicleModel}`;
+    }
+    if (needsAnalysis.vehicleBrand) {
+      return needsAnalysis.vehicleBrand;
+    }
+    return "";
+  }, [needsAnalysis.vehicleBrand, needsAnalysis.vehicleModel]);
+
+  // Filtrer les suggestions
+  const filteredVehicles = useMemo(() => {
+    if (!vehicleSearchTerm) return POPULAR_VEHICLES.slice(0, 10);
+    const search = vehicleSearchTerm.toLowerCase();
+    return POPULAR_VEHICLES.filter(
+      v => v.brand.toLowerCase().includes(search) || v.model.toLowerCase().includes(search) || `${v.brand} ${v.model}`.toLowerCase().includes(search)
+    ).slice(0, 10);
+  }, [vehicleSearchTerm]);
+
+  const handleSelectVehicle = (brand: string, model: string) => {
+    onUpdate({ vehicleBrand: brand, vehicleModel: model });
+    setVehicleSearchOpen(false);
+    setVehicleSearchTerm("");
+  };
 
   return (
     <div className="space-y-6">
@@ -112,28 +193,72 @@ export const NeedsAnalysisStep = ({ state, onUpdate }: NeedsAnalysisStepProps) =
 
             {/* Product-specific fields */}
             <TabsContent value="auto" className="mt-6 space-y-6">
-              {/* Row 1: Marque + Modèle */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                    Marque
-                  </Label>
-                  <Input
-                    placeholder="ex: Peugeot"
-                    value={needsAnalysis.vehicleBrand || ""}
-                    onChange={(e) => onUpdate({ vehicleBrand: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                    Modèle
-                  </Label>
-                  <Input
-                    placeholder="ex: 3008"
-                    value={needsAnalysis.vehicleModel || ""}
-                    onChange={(e) => onUpdate({ vehicleModel: e.target.value })}
-                  />
-                </div>
+              {/* Row 1: Marque + Modèle unifié avec autocomplétion */}
+              <div className="space-y-2">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Véhicule (Marque & Modèle)
+                </Label>
+                <Popover open={vehicleSearchOpen} onOpenChange={setVehicleSearchOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={vehicleSearchOpen}
+                      className="w-full justify-start text-left font-normal"
+                    >
+                      <Search className="mr-2 h-4 w-4 text-muted-foreground shrink-0" />
+                      {vehicleDisplayValue || <span className="text-muted-foreground">Rechercher un véhicule...</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                    <Command shouldFilter={false}>
+                      <CommandInput 
+                        placeholder="ex: Toyota Corolla, Peugeot 3008..." 
+                        value={vehicleSearchTerm}
+                        onValueChange={setVehicleSearchTerm}
+                      />
+                      <CommandList>
+                        <CommandEmpty>
+                          <div className="p-2 text-center">
+                            <p className="text-sm text-muted-foreground mb-2">Véhicule non trouvé</p>
+                            {vehicleSearchTerm && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  const parts = vehicleSearchTerm.trim().split(/\s+/);
+                                  const brand = parts[0] || vehicleSearchTerm;
+                                  const model = parts.slice(1).join(" ") || "";
+                                  onUpdate({ vehicleBrand: brand, vehicleModel: model });
+                                  setVehicleSearchOpen(false);
+                                  setVehicleSearchTerm("");
+                                }}
+                              >
+                                Utiliser "{vehicleSearchTerm}"
+                              </Button>
+                            )}
+                          </div>
+                        </CommandEmpty>
+                        <CommandGroup heading="Véhicules populaires">
+                          {filteredVehicles.map((vehicle) => (
+                            <CommandItem
+                              key={`${vehicle.brand}-${vehicle.model}`}
+                              onSelect={() => handleSelectVehicle(vehicle.brand, vehicle.model)}
+                              className="cursor-pointer"
+                            >
+                              <Car className="mr-2 h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium">{vehicle.brand}</span>
+                              <span className="ml-1 text-muted-foreground">{vehicle.model}</span>
+                              {needsAnalysis.vehicleBrand === vehicle.brand && needsAnalysis.vehicleModel === vehicle.model && (
+                                <Check className="ml-auto h-4 w-4 text-primary" />
+                              )}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {/* Row 2: Usage */}

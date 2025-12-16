@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { QuoteSummaryCard } from "./QuoteSummaryCard";
 import { ClientIdentificationStep } from "./steps/ClientIdentificationStep";
 import { NeedsAnalysisStep } from "./steps/NeedsAnalysisStep";
-import { QuickQuoteStep } from "./steps/QuickQuoteStep";
 import { CoverageStep } from "./steps/CoverageStep";
 import { UnderwritingStep } from "./steps/UnderwritingStep";
 import { BindingStep } from "./steps/BindingStep";
@@ -24,9 +23,9 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 
-const TOTAL_STEPS = 7;
-const stepLabels = ["Identifier le client", "Générer Devis Rapide", "Valider Devis", "Passer à la Vérification", "Confirmer", "Émettre la police", "Terminer"];
-const stepNames = ["Identification", "Besoin", "Devis", "Couverture", "Vérification", "Signature", "Émission"];
+const TOTAL_STEPS = 6;
+const stepLabels = ["Identifier le client", "Générer Devis Rapide", "Passer à la Vérification", "Confirmer", "Émettre la police", "Terminer"];
+const stepNames = ["Identification", "Besoin", "Couverture", "Vérification", "Signature", "Émission"];
 
 // Type pour les recommandations IA
 interface AIRecommendation {
@@ -140,18 +139,6 @@ export const GuidedSalesFlow = () => {
       };
     });
   };
-
-  const updateQuickQuote = (data: Partial<GuidedSalesState["quickQuote"]>) => {
-    setState(prev => ({
-      ...prev,
-      quickQuote: {
-        ...prev.quickQuote,
-        ...data
-      }
-    }));
-    recalculatePremium();
-  };
-
   const updateCoverage = (data: Partial<GuidedSalesState["coverage"]>) => {
     setState(prev => {
       const newState = {
@@ -318,14 +305,12 @@ export const GuidedSalesFlow = () => {
       case 1:
         return <NeedsAnalysisStep state={state} onUpdate={updateNeedsAnalysis} />;
       case 2:
-        return <QuickQuoteStep state={state} onUpdate={updateQuickQuote} />;
-      case 3:
         return <CoverageStep state={state} onUpdate={updateCoverage} onPremiumUpdate={updatePremium} />;
-      case 4:
+      case 3:
         return <UnderwritingStep state={state} onUpdate={updateUnderwriting} />;
-      case 5:
+      case 4:
         return <BindingStep state={state} onUpdate={updateBinding} />;
-      case 6:
+      case 5:
         return <IssuanceStep state={state} onReset={resetFlow} />;
       default:
         return null;
@@ -383,8 +368,8 @@ export const GuidedSalesFlow = () => {
               {renderStep()}
             </div>
             
-            {/* Desktop Next Button for steps 1-3 (inline in form area) */}
-            {state.currentStep >= 1 && state.currentStep <= 3 && (
+            {/* Desktop Next Button for steps 1-2 (inline in form area) */}
+            {state.currentStep >= 1 && state.currentStep <= 2 && (
               <div className="hidden lg:flex justify-end mt-6">
                 <Button onClick={nextStep} size="lg">
                   {stepLabels[state.currentStep]}
@@ -393,8 +378,8 @@ export const GuidedSalesFlow = () => {
             )}
           </div>
 
-          {/* Desktop Summary Card - only show from step 4 onwards */}
-          {state.currentStep > 3 && state.currentStep < 6 && (
+          {/* Desktop Summary Card - only show from step 3 onwards */}
+          {state.currentStep > 2 && state.currentStep < 5 && (
             <div className="hidden lg:block">
               <QuoteSummaryCard 
                 state={state} 
@@ -407,8 +392,8 @@ export const GuidedSalesFlow = () => {
         </div>
       </main>
 
-      {/* Mobile Drawer - only show from step 4 onwards */}
-      {state.currentStep > 3 && state.currentStep < 6 && (
+      {/* Mobile Drawer - only show from step 3 onwards */}
+      {state.currentStep > 2 && state.currentStep < 5 && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50">
           <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
             <DrawerTrigger asChild>
@@ -442,8 +427,8 @@ export const GuidedSalesFlow = () => {
         </div>
       )}
 
-      {/* Mobile Next Button for steps 0-3 */}
-      {state.currentStep >= 0 && state.currentStep <= 3 && (
+      {/* Mobile Next Button for steps 0-2 */}
+      {state.currentStep >= 0 && state.currentStep <= 2 && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 p-4 bg-background border-t">
           <Button onClick={nextStep} className="w-full" size="lg">
             {stepLabels[state.currentStep]}

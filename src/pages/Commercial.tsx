@@ -1,94 +1,62 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { 
-  ArrowRight, 
-  ChevronRight, 
-  Briefcase,
-  Users,
-  Target,
-  TrendingUp,
-  Award,
-  Zap,
-  BarChart3,
-  Shield,
-  FileCheck,
-  Headphones,
-  CheckCircle,
-  Play,
-  Star,
-  Rocket
-} from "lucide-react";
+import { ArrowRight, ChevronRight, Briefcase, Users, Target, TrendingUp, Award, Zap, BarChart3, Shield, FileCheck, Headphones, CheckCircle, Play, Star, Rocket } from "lucide-react";
 import { Link } from "react-router-dom";
 import sanlamLogo from "@/assets/logo_sanlam.svg";
 import dashboardPreview from "@/assets/dashboard-preview.jpg";
-
-const features = [
-  {
-    icon: Target,
-    title: "Pipeline Leads Intelligent",
-    description: "Gérez vos prospects avec un CRM intégré et des relances automatisées.",
-  },
-  {
-    icon: Zap,
-    title: "Vente Guidée 6 Étapes",
-    description: "Processus de vente structuré avec calcul de prime en temps réel.",
-  },
-  {
-    icon: BarChart3,
-    title: "Recommandations IA",
-    description: "L'IA analyse votre portefeuille et suggère des actions commerciales.",
-  },
-  {
-    icon: FileCheck,
-    title: "KYC & Compliance",
-    description: "Collecte et vérification des documents réglementaires intégrées.",
-  },
-];
-
-const stats = [
-  { value: "500+", label: "Commerciaux actifs" },
-  { value: "+35%", label: "Productivité moyenne" },
-  { value: "2.5x", label: "Taux de conversion" },
-  { value: "24/7", label: "Support disponible" },
-];
-
-const benefits = [
-  "Accès à tous les produits Sanlam Allianz",
-  "Formation continue et certification",
-  "Commissions attractives et transparentes",
-  "Outils digitaux premium inclus",
-  "Support dédié et réactif",
-  "Communauté de commerciaux active",
-];
-
-const testimonials = [
-  {
-    name: "Amadou Diallo",
-    role: "Commercial Senior",
-    region: "Dakar",
-    quote: "Grâce à la plateforme, j'ai doublé mon portefeuille clients en 6 mois. L'IA me suggère les meilleures opportunités.",
-    rating: 5,
-  },
-  {
-    name: "Fatou Sow",
-    role: "Responsable Commerciale",
-    region: "Abidjan",
-    quote: "Le processus de vente guidée m'a permis de réduire mon temps de souscription de 50%. Mes clients adorent la rapidité.",
-    rating: 5,
-  },
-  {
-    name: "Ibrahima Ndiaye",
-    role: "Commercial",
-    region: "Saint-Louis",
-    quote: "Je n'ai plus besoin de papier. Tout est digitalisé, de la prospection à l'émission de la police.",
-    rating: 5,
-  },
-];
-
+const features = [{
+  icon: Target,
+  title: "Pipeline Leads Intelligent",
+  description: "Gérez vos prospects avec un CRM intégré et des relances automatisées."
+}, {
+  icon: Zap,
+  title: "Vente Guidée 6 Étapes",
+  description: "Processus de vente structuré avec calcul de prime en temps réel."
+}, {
+  icon: BarChart3,
+  title: "Recommandations IA",
+  description: "L'IA analyse votre portefeuille et suggère des actions commerciales."
+}, {
+  icon: FileCheck,
+  title: "KYC & Compliance",
+  description: "Collecte et vérification des documents réglementaires intégrées."
+}];
+const stats = [{
+  value: "500+",
+  label: "Commerciaux actifs"
+}, {
+  value: "+35%",
+  label: "Productivité moyenne"
+}, {
+  value: "2.5x",
+  label: "Taux de conversion"
+}, {
+  value: "24/7",
+  label: "Support disponible"
+}];
+const benefits = ["Accès à tous les produits Sanlam Allianz", "Formation continue et certification", "Commissions attractives et transparentes", "Outils digitaux premium inclus", "Support dédié et réactif", "Communauté de commerciaux active"];
+const testimonials = [{
+  name: "Amadou Diallo",
+  role: "Commercial Senior",
+  region: "Dakar",
+  quote: "Grâce à la plateforme, j'ai doublé mon portefeuille clients en 6 mois. L'IA me suggère les meilleures opportunités.",
+  rating: 5
+}, {
+  name: "Fatou Sow",
+  role: "Responsable Commerciale",
+  region: "Abidjan",
+  quote: "Le processus de vente guidée m'a permis de réduire mon temps de souscription de 50%. Mes clients adorent la rapidité.",
+  rating: 5
+}, {
+  name: "Ibrahima Ndiaye",
+  role: "Commercial",
+  region: "Saint-Louis",
+  quote: "Je n'ai plus besoin de papier. Tout est digitalisé, de la prospection à l'émission de la police.",
+  rating: 5
+}];
 const Commercial = () => {
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       <Header />
       
       {/* Hero Section */}
@@ -112,12 +80,10 @@ const Commercial = () => {
 
               {/* Stats Row */}
               <div className="grid grid-cols-4 gap-4 py-6">
-                {stats.map((stat) => (
-                  <div key={stat.label} className="text-center">
+                {stats.map(stat => <div key={stat.label} className="text-center">
                     <p className="text-2xl md:text-3xl font-bold text-white">{stat.value}</p>
                     <p className="text-xs text-white/70">{stat.label}</p>
-                  </div>
-                ))}
+                  </div>)}
               </div>
 
               {/* CTA Buttons */}
@@ -137,23 +103,13 @@ const Commercial = () => {
               </div>
 
               {/* Demo Access */}
-              <div className="p-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
-                <p className="text-white/80 text-sm mb-2">🔐 Accès démo disponible</p>
-                <p className="text-white text-xs">
-                  Email: <span className="font-mono">b2btest@box.africa</span> | 
-                  Mot de passe: <span className="font-mono">123456</span>
-                </p>
-              </div>
+              
             </div>
 
             {/* Right Content - Dashboard Preview */}
             <div className="hidden lg:block relative">
               <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-white/20">
-                <img 
-                  src={dashboardPreview} 
-                  alt="Dashboard Commercial" 
-                  className="w-full h-auto"
-                />
+                <img src={dashboardPreview} alt="Dashboard Commercial" className="w-full h-auto" />
                 <div className="absolute inset-0 bg-gradient-to-t from-primary/50 to-transparent" />
               </div>
               {/* Floating Badge */}
@@ -186,18 +142,13 @@ const Commercial = () => {
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature) => (
-              <div
-                key={feature.title}
-                className="group p-6 rounded-2xl border bg-card hover:shadow-medium hover:border-primary/20 transition-all duration-300"
-              >
+            {features.map(feature => <div key={feature.title} className="group p-6 rounded-2xl border bg-card hover:shadow-medium hover:border-primary/20 transition-all duration-300">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary transition-colors">
                   <feature.icon className="w-6 h-6 text-primary group-hover:text-white" />
                 </div>
                 <h3 className="font-semibold text-lg text-foreground mb-2">{feature.title}</h3>
                 <p className="text-sm text-muted-foreground">{feature.description}</p>
-              </div>
-            ))}
+              </div>)}
           </div>
         </div>
       </section>
@@ -215,18 +166,10 @@ const Commercial = () => {
               </p>
               
               <ul className="space-y-3">
-                {[
-                  "Vue 360° de votre activité commerciale",
-                  "Alertes et rappels automatisés",
-                  "Calcul de prime instantané",
-                  "Signature électronique intégrée",
-                  "Reporting et analytics avancés",
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3">
+                {["Vue 360° de votre activité commerciale", "Alertes et rappels automatisés", "Calcul de prime instantané", "Signature électronique intégrée", "Reporting et analytics avancés"].map(item => <li key={item} className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-[hsl(var(--bright-green))]" />
                     <span className="text-foreground">{item}</span>
-                  </li>
-                ))}
+                  </li>)}
               </ul>
 
               <Link to="/auth?broker=true">
@@ -239,11 +182,7 @@ const Commercial = () => {
 
             <div className="relative">
               <div className="rounded-2xl overflow-hidden shadow-xl border">
-                <img 
-                  src={dashboardPreview} 
-                  alt="Dashboard Preview" 
-                  className="w-full h-auto"
-                />
+                <img src={dashboardPreview} alt="Dashboard Preview" className="w-full h-auto" />
               </div>
             </div>
           </div>
@@ -256,14 +195,12 @@ const Commercial = () => {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="order-2 lg:order-1">
               <div className="grid grid-cols-2 gap-4">
-                {benefits.map((benefit, index) => (
-                  <div key={benefit} className="flex items-start gap-3 p-4 rounded-xl bg-muted">
+                {benefits.map((benefit, index) => <div key={benefit} className="flex items-start gap-3 p-4 rounded-xl bg-muted">
                     <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                       <CheckCircle className="w-4 h-4 text-primary" />
                     </div>
                     <span className="text-sm text-foreground">{benefit}</span>
-                  </div>
-                ))}
+                  </div>)}
               </div>
             </div>
 
@@ -299,12 +236,11 @@ const Commercial = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial) => (
-              <div key={testimonial.name} className="p-6 rounded-2xl bg-background border hover:shadow-medium transition-all">
+            {testimonials.map(testimonial => <div key={testimonial.name} className="p-6 rounded-2xl bg-background border hover:shadow-medium transition-all">
                 <div className="flex gap-1 mb-4">
-                  {Array.from({ length: testimonial.rating }).map((_, i) => (
-                    <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                  ))}
+                  {Array.from({
+                length: testimonial.rating
+              }).map((_, i) => <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />)}
                 </div>
                 <p className="text-foreground mb-4 italic">"{testimonial.quote}"</p>
                 <div className="flex items-center gap-3">
@@ -316,8 +252,7 @@ const Commercial = () => {
                     <p className="text-xs text-muted-foreground">{testimonial.role} • {testimonial.region}</p>
                   </div>
                 </div>
-              </div>
-            ))}
+              </div>)}
           </div>
         </div>
       </section>
@@ -347,8 +282,6 @@ const Commercial = () => {
       </section>
 
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default Commercial;

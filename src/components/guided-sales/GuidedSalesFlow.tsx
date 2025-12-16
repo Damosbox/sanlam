@@ -384,8 +384,8 @@ export const GuidedSalesFlow = () => {
             </div>
           </div>
 
-          {/* Desktop Summary Card - only show from step 2 onwards */}
-          {state.currentStep > 1 && state.currentStep < 6 && (
+          {/* Desktop Summary Card - only show from step 4 onwards */}
+          {state.currentStep > 3 && state.currentStep < 6 && (
             <div className="hidden lg:block">
               <QuoteSummaryCard 
                 state={state} 
@@ -398,8 +398,8 @@ export const GuidedSalesFlow = () => {
         </div>
       </main>
 
-      {/* Mobile Drawer - only show from step 2 onwards */}
-      {state.currentStep > 1 && state.currentStep < 6 && (
+      {/* Mobile Drawer - only show from step 4 onwards */}
+      {state.currentStep > 3 && state.currentStep < 6 && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50">
           <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
             <DrawerTrigger asChild>

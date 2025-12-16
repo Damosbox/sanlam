@@ -3,7 +3,7 @@ import { Check, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface StepNavigationProps {
-  currentStep: number;
+  currentStep: number; // 0-indexed
   totalSteps: number;
   stepNames: string[];
   onStepClick: (step: number) => void;
@@ -23,15 +23,14 @@ export const StepNavigation = ({
     return (
       <div className="flex items-center gap-1.5">
         {Array.from({ length: totalSteps }).map((_, index) => {
-          const stepNumber = index + 1;
-          const isCompleted = stepNumber < currentStep;
-          const isCurrent = stepNumber === currentStep;
-          const isClickable = stepNumber <= currentStep;
+          const isCompleted = index < currentStep;
+          const isCurrent = index === currentStep;
+          const isClickable = index <= currentStep;
           
           return (
             <button
               key={index}
-              onClick={() => isClickable && onStepClick(stepNumber)}
+              onClick={() => isClickable && onStepClick(index)}
               disabled={!isClickable}
               className={cn(
                 "h-1.5 rounded-full transition-all duration-300",
@@ -46,7 +45,7 @@ export const StepNavigation = ({
           );
         })}
         <span className="ml-2 text-sm text-muted-foreground">
-          {stepNames[currentStep - 1]}
+          {stepNames[currentStep]}
         </span>
       </div>
     );
@@ -54,7 +53,7 @@ export const StepNavigation = ({
 
   return (
     <nav aria-label="Progress" className="flex items-center gap-3">
-      {onPrev && currentStep > 1 && currentStep < totalSteps && (
+      {onPrev && currentStep > 0 && currentStep < totalSteps - 1 && (
         <Button 
           variant="ghost" 
           size="sm" 
@@ -67,15 +66,14 @@ export const StepNavigation = ({
       )}
       <ol className="flex items-center gap-2">
         {stepNames.map((name, index) => {
-          const stepNumber = index + 1;
-          const isCompleted = stepNumber < currentStep;
-          const isCurrent = stepNumber === currentStep;
-          const isClickable = stepNumber <= currentStep;
+          const isCompleted = index < currentStep;
+          const isCurrent = index === currentStep;
+          const isClickable = index <= currentStep;
           
           return (
             <li key={name} className="flex items-center">
               <button
-                onClick={() => isClickable && onStepClick(stepNumber)}
+                onClick={() => isClickable && onStepClick(index)}
                 disabled={!isClickable}
                 className={cn(
                   "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200",
@@ -91,7 +89,7 @@ export const StepNavigation = ({
                     "flex h-5 w-5 items-center justify-center rounded-full text-xs",
                     isCurrent ? "bg-primary-foreground/20" : "bg-muted"
                   )}>
-                    {stepNumber}
+                    {index + 1}
                   </span>
                 )}
                 <span className="hidden xl:inline">{name}</span>

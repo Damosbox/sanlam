@@ -224,7 +224,7 @@ export const ClientIdentificationStep = ({ state, onUpdate, onNext }: ClientIden
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[400px] p-0" align="start">
-              <Command>
+              <Command shouldFilter={false}>
                 <CommandInput
                   placeholder="Nom, téléphone..."
                   value={searchTerm}

@@ -24,6 +24,7 @@ export interface NeedsAnalysisData {
   // Auto specific
   vehicleType?: string;
   vehicleBrand?: string;
+  vehicleModel?: string;
   vehicleUsage?: UsageType;
   vehicleFirstCirculationDate?: string;
   vehicleVenalValue?: number;

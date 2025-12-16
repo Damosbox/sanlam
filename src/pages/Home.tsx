@@ -1,4 +1,5 @@
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Car, Heart, GraduationCap, PiggyBank, Home as HomeIcon, Shield, ArrowRight, Calculator, MessageCircle, FileText, ChevronRight, Users, Clock, Award } from "lucide-react";
 import heroImage from "@/assets/hero-woman.jpg";
@@ -284,6 +285,8 @@ const Home = () => {
           </Link>
         </div>
       </section>
+
+      <Footer />
     </div>
   );
 };

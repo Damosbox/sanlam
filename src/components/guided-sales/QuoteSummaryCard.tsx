@@ -212,7 +212,7 @@ export const QuoteSummaryCard = ({ state, onNext, nextLabel, disabled, onApplySu
             tooltip={tooltips.fraisAccessoires} 
           />
           <PremiumLine 
-            label="Taxes (14%)" 
+            label="Taxes (14,5%)" 
             value={formatFCFADecimal(premium.taxes)} 
             tooltip={tooltips.taxes} 
           />

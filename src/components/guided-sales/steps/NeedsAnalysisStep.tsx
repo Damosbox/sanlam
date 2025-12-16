@@ -432,6 +432,28 @@ export const NeedsAnalysisStep = ({
                 })} />
                 </div>
               </div>
+
+              {/* Row 5: Périodicité du contrat */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Périodicité du contrat
+                  </Label>
+                  <Select value={needsAnalysis.contractPeriodicity || "1_year"} onValueChange={v => onUpdate({
+                  contractPeriodicity: v as any
+                })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner la durée" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1_month">1 mois (750 FCFA frais)</SelectItem>
+                      <SelectItem value="3_months">3 mois (2 250 FCFA frais)</SelectItem>
+                      <SelectItem value="6_months">6 mois (3 250 FCFA frais)</SelectItem>
+                      <SelectItem value="1_year">1 an (5 000 FCFA frais)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="habitation" className="mt-6 space-y-6">

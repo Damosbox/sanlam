@@ -366,8 +366,8 @@ export const GuidedSalesFlow = () => {
             </div>
           </div>
 
-          {/* Desktop Summary Card - only show from step 3 onwards */}
-          {state.currentStep > 2 && state.currentStep < 5 && (
+          {/* Desktop Summary Card - show from step 2 (Coverage) onwards */}
+          {state.currentStep >= 2 && state.currentStep < 5 && (
             <div className="hidden lg:block">
               <QuoteSummaryCard 
                 state={state} 

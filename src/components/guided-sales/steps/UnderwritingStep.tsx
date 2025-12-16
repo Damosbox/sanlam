@@ -7,15 +7,12 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-
 interface UnderwritingStepProps {
   state: GuidedSalesState;
   onUpdate: (data: Partial<GuidedSalesState["underwriting"]>) => void;
   onNext: () => void;
 }
-
 type RuleStatus = "green" | "yellow" | "red";
-
 interface UnderwritingRule {
   id: string;
   label: string;
@@ -24,10 +21,12 @@ interface UnderwritingRule {
   requiresDocument?: boolean;
   requiresEscalation?: boolean;
 }
-
 const evaluateUnderwritingRules = (state: GuidedSalesState): UnderwritingRule[] => {
   const rules: UnderwritingRule[] = [];
-  const { needsAnalysis, coverage } = state;
+  const {
+    needsAnalysis,
+    coverage
+  } = state;
 
   // Règle 1: Historique sinistres
   if (needsAnalysis.hasClaimHistory) {
@@ -51,7 +50,6 @@ const evaluateUnderwritingRules = (state: GuidedSalesState): UnderwritingRule[] 
   const vehicleVenalValue = needsAnalysis.vehicleVenalValue || 0;
   const vehicleNewValue = needsAnalysis.vehicleNewValue || 0;
   const maxValue = Math.max(vehicleVenalValue, vehicleNewValue);
-  
   if (maxValue > 50000000) {
     rules.push({
       id: "vehicle_value",
@@ -132,24 +130,25 @@ const evaluateUnderwritingRules = (state: GuidedSalesState): UnderwritingRule[] 
       });
     }
   }
-
   return rules;
 };
-
-export const UnderwritingStep = ({ state, onUpdate, onNext }: UnderwritingStepProps) => {
+export const UnderwritingStep = ({
+  state,
+  onUpdate,
+  onNext
+}: UnderwritingStepProps) => {
   const [uploadedDocs, setUploadedDocs] = useState<Record<string, boolean>>({});
   const rules = evaluateUnderwritingRules(state);
-
   const hasBlockingRule = rules.some(r => r.status === "red");
   const hasVigilanceRule = rules.some(r => r.status === "yellow");
   const pendingDocuments = rules.filter(r => r.requiresDocument && !uploadedDocs[r.id]);
-
   const canValidate = !hasBlockingRule && pendingDocuments.length === 0;
-
   const handleDocumentUpload = (ruleId: string) => {
-    setUploadedDocs(prev => ({ ...prev, [ruleId]: true }));
+    setUploadedDocs(prev => ({
+      ...prev,
+      [ruleId]: true
+    }));
   };
-
   const getStatusIcon = (status: RuleStatus) => {
     switch (status) {
       case "green":
@@ -160,7 +159,6 @@ export const UnderwritingStep = ({ state, onUpdate, onNext }: UnderwritingStepPr
         return <XCircle className="h-5 w-5 text-red-600" />;
     }
   };
-
   const getStatusStyles = (status: RuleStatus) => {
     switch (status) {
       case "green":
@@ -171,7 +169,6 @@ export const UnderwritingStep = ({ state, onUpdate, onNext }: UnderwritingStepPr
         return "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800";
     }
   };
-
   const getTitleStyles = (status: RuleStatus) => {
     switch (status) {
       case "green":
@@ -182,7 +179,6 @@ export const UnderwritingStep = ({ state, onUpdate, onNext }: UnderwritingStepPr
         return "text-red-800 dark:text-red-300";
     }
   };
-
   const getDescStyles = (status: RuleStatus) => {
     switch (status) {
       case "green":
@@ -193,14 +189,12 @@ export const UnderwritingStep = ({ state, onUpdate, onNext }: UnderwritingStepPr
         return "text-red-700 dark:text-red-400";
     }
   };
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       <div className="text-center">
         <div className="h-12 w-12 mx-auto rounded-lg bg-muted flex items-center justify-center mb-4">
           <Shield className="h-6 w-6 text-muted-foreground" />
         </div>
-        <h1 className="text-2xl font-bold text-foreground">Vérification Technique (Underwriting)</h1>
+        <h1 className="text-2xl font-bold text-foreground">Analyse de risques</h1>
         <p className="text-muted-foreground mt-1">
           Analyse automatique des risques basée sur les informations saisies.
         </p>
@@ -208,8 +202,7 @@ export const UnderwritingStep = ({ state, onUpdate, onNext }: UnderwritingStepPr
 
       <Card>
         <CardContent className="pt-6 space-y-4">
-          {rules.map((rule) => (
-            <Alert key={rule.id} className={getStatusStyles(rule.status)}>
+          {rules.map(rule => <Alert key={rule.id} className={getStatusStyles(rule.status)}>
               {getStatusIcon(rule.status)}
               <AlertTitle className={`${getTitleStyles(rule.status)} font-semibold`}>
                 {rule.label}
@@ -217,87 +210,59 @@ export const UnderwritingStep = ({ state, onUpdate, onNext }: UnderwritingStepPr
               <AlertDescription className={getDescStyles(rule.status)}>
                 {rule.message}
                 
-                {rule.requiresDocument && !uploadedDocs[rule.id] && (
-                  <div className="mt-3 flex items-center gap-2">
+                {rule.requiresDocument && !uploadedDocs[rule.id] && <div className="mt-3 flex items-center gap-2">
                     <Label htmlFor={`doc-${rule.id}`} className="sr-only">
                       Télécharger justificatif
                     </Label>
-                    <Input
-                      id={`doc-${rule.id}`}
-                      type="file"
-                      className="max-w-xs text-xs h-8"
-                      onChange={() => handleDocumentUpload(rule.id)}
-                    />
+                    <Input id={`doc-${rule.id}`} type="file" className="max-w-xs text-xs h-8" onChange={() => handleDocumentUpload(rule.id)} />
                     <Upload className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                )}
+                  </div>}
                 
-                {rule.requiresDocument && uploadedDocs[rule.id] && (
-                  <div className="mt-2 flex items-center gap-2 text-emerald-600">
+                {rule.requiresDocument && uploadedDocs[rule.id] && <div className="mt-2 flex items-center gap-2 text-emerald-600">
                     <CheckCircle2 className="h-4 w-4" />
                     <span className="text-sm">Document téléchargé</span>
-                  </div>
-                )}
+                  </div>}
 
-                {rule.requiresEscalation && (
-                  <div className="mt-3">
+                {rule.requiresEscalation && <div className="mt-3">
                     <Button variant="outline" size="sm" className="text-red-600 border-red-300 hover:bg-red-50">
                       Demander validation manager
                     </Button>
-                  </div>
-                )}
+                  </div>}
               </AlertDescription>
-            </Alert>
-          ))}
+            </Alert>)}
         </CardContent>
       </Card>
 
       {/* Résumé de validation */}
-      <Card className={cn(
-        "border-2",
-        canValidate ? "border-emerald-300 bg-emerald-50/50" : 
-        hasBlockingRule ? "border-red-300 bg-red-50/50" : 
-        "border-amber-300 bg-amber-50/50"
-      )}>
+      <Card className={cn("border-2", canValidate ? "border-emerald-300 bg-emerald-50/50" : hasBlockingRule ? "border-red-300 bg-red-50/50" : "border-amber-300 bg-amber-50/50")}>
         <CardContent className="pt-4 pb-4">
-          {canValidate ? (
-            <div className="flex items-center gap-3">
+          {canValidate ? <div className="flex items-center gap-3">
               <CheckCircle2 className="h-6 w-6 text-emerald-600" />
               <div>
                 <p className="font-semibold text-emerald-800">Feu Vert - Passage automatique</p>
                 <p className="text-sm text-emerald-700">Toutes les vérifications sont validées.</p>
               </div>
-            </div>
-          ) : hasBlockingRule ? (
-            <div className="flex items-center gap-3">
+            </div> : hasBlockingRule ? <div className="flex items-center gap-3">
               <XCircle className="h-6 w-6 text-red-600" />
               <div>
                 <p className="font-semibold text-red-800">Blocage - Escalade requise</p>
                 <p className="text-sm text-red-700">Une validation manager est nécessaire pour continuer.</p>
               </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
+            </div> : <div className="flex items-center gap-3">
               <AlertTriangle className="h-6 w-6 text-amber-600" />
               <div>
                 <p className="font-semibold text-amber-800">Vigilance - Documents requis</p>
                 <p className="text-sm text-amber-700">{pendingDocuments.length} justificatif(s) à fournir.</p>
               </div>
-            </div>
-          )}
+            </div>}
         </CardContent>
       </Card>
 
       {/* Next Button */}
       <div className="flex justify-end pt-4">
-        <Button 
-          onClick={onNext}
-          size="lg" 
-          disabled={hasBlockingRule}
-        >
+        <Button onClick={onNext} size="lg" disabled={hasBlockingRule}>
           {canValidate ? "Continuer vers la signature" : hasBlockingRule ? "En attente manager" : "Continuer avec vigilance"}
         </Button>
       </div>
-    </div>
-  );
+    </div>;
 };

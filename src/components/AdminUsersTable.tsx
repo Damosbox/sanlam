@@ -8,8 +8,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Shield, User, Briefcase } from "lucide-react";
+import { Shield, User, Briefcase, Phone } from "lucide-react";
 
 interface UserWithRole {
   id: string;
@@ -28,6 +28,9 @@ interface UserWithRole {
   user_roles: Array<{
     role: "admin" | "broker" | "customer";
   }>;
+  broker_settings?: {
+    otp_verification_enabled: boolean;
+  } | null;
 }
 
 export const AdminUsersTable = () => {
@@ -48,7 +51,7 @@ export const AdminUsersTable = () => {
 
       if (error) throw error;
 
-      // Fetch roles separately
+      // Fetch roles and broker settings separately
       const usersWithRoles = await Promise.all(
         (data || []).map(async (user) => {
           const { data: roles } = await supabase
@@ -56,9 +59,16 @@ export const AdminUsersTable = () => {
             .select("role")
             .eq("user_id", user.id);
 
+          const { data: settings } = await supabase
+            .from("broker_settings")
+            .select("otp_verification_enabled")
+            .eq("broker_id", user.id)
+            .maybeSingle();
+
           return {
             ...user,
             user_roles: roles || [],
+            broker_settings: settings,
           };
         })
       );
@@ -104,6 +114,48 @@ export const AdminUsersTable = () => {
     }
   };
 
+  const toggleOTPVerification = async (userId: string, currentEnabled: boolean) => {
+    try {
+      // Check if settings exist
+      const { data: existing } = await supabase
+        .from("broker_settings")
+        .select("id")
+        .eq("broker_id", userId)
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing settings
+        const { error } = await supabase
+          .from("broker_settings")
+          .update({ otp_verification_enabled: !currentEnabled })
+          .eq("broker_id", userId);
+
+        if (error) throw error;
+      } else {
+        // Create new settings
+        const { error } = await supabase
+          .from("broker_settings")
+          .insert({ broker_id: userId, otp_verification_enabled: !currentEnabled });
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Succès",
+        description: `Vérification OTP ${!currentEnabled ? "activée" : "désactivée"}`,
+      });
+      
+      fetchUsers();
+    } catch (error) {
+      console.error("Error toggling OTP:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier les paramètres OTP",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getRoleIcon = (role: string) => {
     switch (role) {
       case "admin":
@@ -142,6 +194,12 @@ export const AdminUsersTable = () => {
             <TableHead>Utilisateur</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Rôle actuel</TableHead>
+            <TableHead>
+              <div className="flex items-center gap-1">
+                <Phone className="w-4 h-4" />
+                OTP Téléphone
+              </div>
+            </TableHead>
             <TableHead>Date création</TableHead>
             <TableHead className="text-right">Modifier rôle</TableHead>
           </TableRow>
@@ -149,6 +207,8 @@ export const AdminUsersTable = () => {
         <TableBody>
           {users.map((user) => {
             const currentRole = user.user_roles[0]?.role || "customer";
+            const isBrokerOrAdmin = currentRole === "broker" || currentRole === "admin";
+            const otpEnabled = user.broker_settings?.otp_verification_enabled || false;
             
             return (
               <TableRow key={user.id}>
@@ -159,6 +219,21 @@ export const AdminUsersTable = () => {
                   {user.email || "N/A"}
                 </TableCell>
                 <TableCell>{getRoleBadge(currentRole)}</TableCell>
+                <TableCell>
+                  {isBrokerOrAdmin ? (
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={otpEnabled}
+                        onCheckedChange={() => toggleOTPVerification(user.id, otpEnabled)}
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {otpEnabled ? "Activé" : "Désactivé"}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">-</span>
+                  )}
+                </TableCell>
                 <TableCell>
                   {new Date(user.created_at).toLocaleDateString()}
                 </TableCell>

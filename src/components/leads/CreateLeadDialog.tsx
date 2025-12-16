@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { UserPlus, Pencil, ChevronDown, User, Briefcase, Car, MapPin } from "luc
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import type { Tables } from "@/integrations/supabase/types";
+import { PhoneOTPVerification } from "./PhoneOTPVerification";
 
 const leadFormSchema = z.object({
   first_name: z.string().trim().min(1, "Prénom requis").max(50),
@@ -101,8 +102,29 @@ export const CreateLeadDialog = ({ open, onOpenChange, lead, mode = "create" }: 
   const [additionalData, setAdditionalData] = useState(emptyAdditionalData);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [showAdditional, setShowAdditional] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [whatsappVerified, setWhatsappVerified] = useState(false);
 
   const isEditMode = mode === "edit" && lead;
+
+  // Fetch broker settings to check if OTP is enabled
+  const { data: brokerSettings } = useQuery({
+    queryKey: ["broker-settings"],
+    queryFn: async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return null;
+      
+      const { data } = await supabase
+        .from("broker_settings")
+        .select("otp_verification_enabled")
+        .eq("broker_id", userData.user.id)
+        .maybeSingle();
+      
+      return data;
+    },
+  });
+
+  const otpEnabled = brokerSettings?.otp_verification_enabled || false;
 
   useEffect(() => {
     if (isEditMode && lead) {
@@ -123,6 +145,8 @@ export const CreateLeadDialog = ({ open, onOpenChange, lead, mode = "create" }: 
       setAdditionalData(emptyAdditionalData);
       setFormErrors({});
       setShowAdditional(false);
+      setPhoneVerified(false);
+      setWhatsappVerified(false);
     }
   }, [isEditMode, lead, open]);
 
@@ -367,28 +391,53 @@ export const CreateLeadDialog = ({ open, onOpenChange, lead, mode = "create" }: 
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="phone">Téléphone</Label>
-                <Input
-                  id="phone"
-                  type="tel"
+            {otpEnabled ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <PhoneOTPVerification
+                  label="Téléphone"
                   value={formData.phone}
-                  onChange={(e) => updateFormField("phone", e.target.value)}
-                  placeholder="+221 77 000 00 00"
+                  onChange={(value) => {
+                    updateFormField("phone", value);
+                    setPhoneVerified(false);
+                  }}
+                  onVerified={() => setPhoneVerified(true)}
+                  isVerified={phoneVerified}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="whatsapp">WhatsApp</Label>
-                <Input
-                  id="whatsapp"
-                  type="tel"
+                <PhoneOTPVerification
+                  label="WhatsApp"
                   value={formData.whatsapp}
-                  onChange={(e) => updateFormField("whatsapp", e.target.value)}
-                  placeholder="+221 77 000 00 00"
+                  onChange={(value) => {
+                    updateFormField("whatsapp", value);
+                    setWhatsappVerified(false);
+                  }}
+                  onVerified={() => setWhatsappVerified(true)}
+                  isVerified={whatsappVerified}
                 />
               </div>
-            </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Téléphone</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => updateFormField("phone", e.target.value)}
+                    placeholder="+221 77 000 00 00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="whatsapp">WhatsApp</Label>
+                  <Input
+                    id="whatsapp"
+                    type="tel"
+                    value={formData.whatsapp}
+                    onChange={(e) => updateFormField("whatsapp", e.target.value)}
+                    placeholder="+221 77 000 00 00"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

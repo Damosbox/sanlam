@@ -56,10 +56,10 @@ const plans: { tier: PlanTier; name: string; price: number; coverages: { name: s
 ];
 
 const assistanceOptions = [
-  { id: "avantage", name: "Avantage", description: "Assistance de base", price: 15000 },
-  { id: "confort", name: "Confort", description: "Assistance étendue + dépannage", price: 25000 },
-  { id: "relax", name: "Relax", description: "Assistance premium + véhicule relais", price: 35000 },
-  { id: "liberte", name: "Liberté", description: "Assistance tout inclus 0km", price: 45000 },
+  { id: "avantage", name: "Avantage", description: "Assistance de base", price: 0 },
+  { id: "confort", name: "Confort", description: "Assistance étendue + dépannage", price: 43510 },
+  { id: "relax", name: "Relax", description: "Assistance premium + véhicule relais", price: 62975 },
+  { id: "liberte", name: "Liberté", description: "Assistance tout inclus 0km", price: 91600 },
 ];
 
 const additionalOptions = [
@@ -212,7 +212,9 @@ export const CoverageStep = ({ state, onUpdate, onPremiumUpdate, onNext }: Cover
                 >
                   <span className="font-medium">{option.name}</span>
                   <span className="text-xs text-muted-foreground text-center mt-1">{option.description}</span>
-                  <span className="text-sm font-semibold text-primary mt-2">+{formatFCFA(option.price)}</span>
+                  <span className="text-sm font-semibold text-primary mt-2">
+                    {option.price === 0 ? "Gratuit" : `+${formatFCFA(option.price)}`}
+                  </span>
                 </Label>
               </div>
             ))}

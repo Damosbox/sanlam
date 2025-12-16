@@ -24,21 +24,14 @@ const getSeatsCoefficient = (seats: number): number => {
   return 1.3;
 };
 
-// Coefficient BNS (Bonus/Malus)
+// Coefficient BNS (Bonus uniquement)
 const BNS_COEFFICIENTS: Record<string, number> = {
-  "bonus_50": 0.50,
-  "bonus_40": 0.60,
-  "bonus_30": 0.70,
-  "bonus_25": 0.75,
-  "bonus_20": 0.80,
-  "bonus_15": 0.85,
-  "bonus_10": 0.90,
-  "bonus_5": 0.95,
-  "neutre": 1.0,
-  "malus_10": 1.10,
-  "malus_25": 1.25,
-  "malus_50": 1.50,
-  "malus_100": 2.0,
+  "bonus_0": 1.0,      // 0% - Neutre
+  "bonus_10": 0.90,    // 10% de réduction
+  "bonus_19": 0.81,    // 19% de réduction
+  "bonus_25": 0.75,    // 25% de réduction
+  "bonus_30": 0.70,    // 30% de réduction
+  "bonus_35": 0.65,    // 35% de réduction
 };
 
 // Tarif des garanties optionnelles (% de la valeur vénale)
@@ -67,11 +60,26 @@ const PLAN_COVERAGES: Record<PlanTier, string[]> = {
 };
 
 // Constantes fiscales CIMA
-const TAX_RATE = 0.14;           // 14% de taxes
-const ACCESSORIES_FEE = 10000;   // Frais d'accessoires fixes
-const FGA_RATE = 0.02;           // 2% Fond de Garantie Auto
-const FGA_MIN = 5000;            // Minimum FGA
-const CEDEAO_FEE = 5000;         // Carte brune CEDEAO
+const TAX_RATE = 0.145;          // 14,5% de taxes
+
+// Frais d'accessoires selon la périodicité du contrat
+const ACCESSORIES_FEES: Record<string, number> = {
+  "1_month": 750,
+  "3_months": 2250,
+  "6_months": 3250,
+  "1_year": 5000,
+};
+
+const FGA_RATE = 0.02;           // 2% du RC (Responsabilité Civile)
+const CEDEAO_FEE = 1000;         // Carte brune CEDEAO: 1 000 FCFA
+
+// Tarifs d'assistance
+const ASSISTANCE_PRICES: Record<string, number> = {
+  "avantage": 0,       // Gratuit
+  "confort": 43510,    // 43 510 FCFA
+  "relax": 62975,      // 62 975 FCFA
+  "liberte": 91600,    // 91 600 FCFA
+};
 
 export interface AutoPremiumBreakdown {
   primeRC: number;              // Prime Responsabilité Civile
@@ -127,25 +135,26 @@ export const calculateAutoPremium = (state: GuidedSalesState): AutoPremiumBreakd
     }
   });
 
-  // 3. Prime nette
-  const primeNette = primeRC + primeGaranties;
+  // 3. Prime nette (RC + garanties optionnelles + assistance)
+  const assistancePrice = ASSISTANCE_PRICES[coverage.assistanceLevel || "avantage"] || 0;
+  const primeNette = primeRC + primeGaranties + assistancePrice;
 
-  // 4. Frais d'accessoires (fixe)
-  const fraisAccessoires = ACCESSORIES_FEE;
+  // 4. Frais d'accessoires (selon périodicité - par défaut 1 an)
+  const fraisAccessoires = ACCESSORIES_FEES["1_year"];
 
-  // 5. Taxes fiscales (14% sur prime nette)
+  // 5. Taxes fiscales (14,5% sur prime nette)
   const taxes = Math.round(primeNette * TAX_RATE);
 
-  // 6. Prime TTC
+  // 6. Prime TTC (prime nette + frais d'accessoires + taxes)
   const primeTTC = primeNette + fraisAccessoires + taxes;
 
-  // 7. FGA (2% de la prime nette, minimum 5000)
-  const fga = Math.max(FGA_MIN, Math.round(primeNette * FGA_RATE));
+  // 7. FGA (2% de la RC - responsabilité civile obligatoire)
+  const fga = Math.round(primeRC * FGA_RATE);
 
-  // 8. CEDEAO
+  // 8. CEDEAO (1 000 FCFA)
   const cedeao = CEDEAO_FEE;
 
-  // 9. Total à payer
+  // 9. Prime Totale à payer (Prime TTC + FGA + CEDEAO)
   const totalAPayer = primeTTC + fga + cedeao;
 
   return {

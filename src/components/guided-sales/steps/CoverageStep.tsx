@@ -8,6 +8,7 @@ import { Check, X, Star, Calendar } from "lucide-react";
 import { GuidedSalesState, PlanTier, ContractPeriodicity } from "../types";
 import { cn } from "@/lib/utils";
 import { formatFCFA } from "@/utils/formatCurrency";
+import { MobileCoverageStickyBar } from "../MobileCoverageStickyBar";
 
 interface CoverageStepProps {
   state: GuidedSalesState;
@@ -327,12 +328,22 @@ export const CoverageStep = ({ state, onUpdate, onNeedsUpdate, onPremiumUpdate, 
         </CardContent>
       </Card>
 
-      {/* Next Button */}
-      <div className="flex justify-end pt-4">
+      {/* Desktop Next Button - Hidden on mobile */}
+      <div className="hidden sm:flex justify-end pt-4 pb-4">
         <Button onClick={onNext} size="lg">
           Passer à la vérification
         </Button>
       </div>
+
+      {/* Mobile Sticky Bar */}
+      <MobileCoverageStickyBar
+        state={state}
+        totalPrice={calculateTotal(selectedPlan.price, coverage.additionalOptions, coverage.assistanceLevel, selectedPeriodicity)}
+        periodicityLabel={getPeriodicityLabel(selectedPeriodicity)}
+        onNext={onNext}
+        plans={plans}
+        onPlanSelect={handlePlanSelect}
+      />
     </div>
   );
 };

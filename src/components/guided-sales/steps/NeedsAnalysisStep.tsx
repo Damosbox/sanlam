@@ -234,7 +234,7 @@ export const NeedsAnalysisStep = ({
             </TabsList>
 
             {/* Progress bar under tabs */}
-            <div className="h-1.5 bg-primary rounded-full mt-4" />
+            
 
             {/* Common Fields */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mt-6">

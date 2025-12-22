@@ -354,7 +354,7 @@ export const GuidedSalesFlow = () => {
         }
         return <NeedsAnalysisStep state={state} onUpdate={updateNeedsAnalysis} onNext={nextStep} />;
       case 3:
-        return <CoverageStep state={state} onUpdate={updateCoverage} onPremiumUpdate={updatePremium} onNext={nextStep} />;
+        return <CoverageStep state={state} onUpdate={updateCoverage} onNeedsUpdate={updateNeedsAnalysis} onPremiumUpdate={updatePremium} onNext={nextStep} />;
       case 4:
         return <UnderwritingStep state={state} onUpdate={updateUnderwriting} onNext={nextStep} />;
       case 5:

@@ -4,14 +4,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Check, X, Star } from "lucide-react";
-import { GuidedSalesState, PlanTier } from "../types";
+import { Check, X, Star, Calendar } from "lucide-react";
+import { GuidedSalesState, PlanTier, ContractPeriodicity } from "../types";
 import { cn } from "@/lib/utils";
 import { formatFCFA } from "@/utils/formatCurrency";
 
 interface CoverageStepProps {
   state: GuidedSalesState;
   onUpdate: (data: Partial<GuidedSalesState["coverage"]>) => void;
+  onNeedsUpdate: (data: Partial<GuidedSalesState["needsAnalysis"]>) => void;
   onPremiumUpdate: (premium: GuidedSalesState["calculatedPremium"]) => void;
   onNext: () => void;
 }
@@ -66,8 +67,15 @@ const additionalOptions = [
   { id: "bris_glace", name: "Bris de Glace Sans Franchise", description: "Pare-brise, vitres latérales et optiques", price: 29500 },
 ];
 
+const periodicityOptions: { id: ContractPeriodicity; name: string; months: number; discount: number }[] = [
+  { id: "1_month", name: "1 mois", months: 1, discount: 0 },
+  { id: "3_months", name: "3 mois", months: 3, discount: 0 },
+  { id: "6_months", name: "6 mois", months: 6, discount: 0.05 },
+  { id: "1_year", name: "12 mois", months: 12, discount: 0.10 },
+];
+
 // Determine recommended plan based on vehicle age
-const getRecommendedPlan = (vehicleDate?: string): PlanTier => {
+const getRecommendedPlanFn = (vehicleDate?: string): PlanTier => {
   if (!vehicleDate) return "standard";
   
   const vehicleYear = new Date(vehicleDate).getFullYear();
@@ -79,20 +87,36 @@ const getRecommendedPlan = (vehicleDate?: string): PlanTier => {
   return "basic"; // Older vehicles: basic coverage
 };
 
-export const CoverageStep = ({ state, onUpdate, onPremiumUpdate, onNext }: CoverageStepProps) => {
-  const { coverage } = state;
+export const CoverageStep = ({ state, onUpdate, onNeedsUpdate, onPremiumUpdate, onNext }: CoverageStepProps) => {
+  const { coverage, needsAnalysis } = state;
   const selectedPlan = plans.find(p => p.tier === coverage.planTier) || plans[1];
+  const selectedPeriodicity = needsAnalysis.contractPeriodicity || "1_year";
   
   // Get recommended plan based on vehicle first circulation date
-  const recommendedPlan = getRecommendedPlan(state.needsAnalysis.vehicleFirstCirculationDate);
+  const recommendedPlan = getRecommendedPlanFn(state.needsAnalysis.vehicleFirstCirculationDate);
 
-  const calculateTotal = (planPrice: number, options: string[], assistanceId?: string) => {
+  // Calculate price based on periodicity
+  const calculatePeriodicityPrice = (annualPrice: number, periodicity: ContractPeriodicity) => {
+    const option = periodicityOptions.find(p => p.id === periodicity);
+    if (!option) return annualPrice;
+    const monthlyPrice = annualPrice / 12;
+    const basePrice = monthlyPrice * option.months;
+    const discount = basePrice * option.discount;
+    return Math.round(basePrice - discount);
+  };
+
+  const calculateTotal = (planPrice: number, options: string[], assistanceId?: string, periodicity: ContractPeriodicity = "1_year") => {
     const optionsTotal = options.reduce((sum, optId) => {
       const opt = additionalOptions.find(o => o.id === optId);
       return sum + (opt?.price || 0);
     }, 0);
     const assistancePrice = assistanceOptions.find(a => a.id === assistanceId)?.price || 0;
-    return planPrice + optionsTotal + assistancePrice;
+    const annualTotal = planPrice + optionsTotal + assistancePrice;
+    return calculatePeriodicityPrice(annualTotal, periodicity);
+  };
+
+  const handlePeriodicityChange = (periodicity: ContractPeriodicity) => {
+    onNeedsUpdate({ contractPeriodicity: periodicity });
   };
 
   const handlePlanSelect = (tier: PlanTier) => {
@@ -110,6 +134,16 @@ export const CoverageStep = ({ state, onUpdate, onPremiumUpdate, onNext }: Cover
     onUpdate({ assistanceLevel: assistanceId });
   };
 
+  // Get label for periodicity
+  const getPeriodicityLabel = (periodicity: ContractPeriodicity) => {
+    const option = periodicityOptions.find(p => p.id === periodicity);
+    if (!option) return "/an";
+    if (option.months === 1) return "/mois";
+    if (option.months === 3) return "/trim.";
+    if (option.months === 6) return "/sem.";
+    return "/an";
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -119,11 +153,52 @@ export const CoverageStep = ({ state, onUpdate, onPremiumUpdate, onNext }: Cover
         </p>
       </div>
 
+      {/* Periodicity Selection */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Calendar className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold">Durée du contrat</h3>
+          </div>
+          <RadioGroup
+            value={selectedPeriodicity}
+            onValueChange={(v) => handlePeriodicityChange(v as ContractPeriodicity)}
+            className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+          >
+            {periodicityOptions.map((option) => (
+              <div key={option.id}>
+                <RadioGroupItem
+                  value={option.id}
+                  id={`periodicity-${option.id}`}
+                  className="peer sr-only"
+                />
+                <Label
+                  htmlFor={`periodicity-${option.id}`}
+                  className={cn(
+                    "flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 cursor-pointer transition-all",
+                    "hover:bg-accent hover:text-accent-foreground",
+                    "peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5"
+                  )}
+                >
+                  <span className="font-semibold text-lg">{option.name}</span>
+                  {option.discount > 0 && (
+                    <Badge variant="secondary" className="mt-2 text-xs bg-emerald-100 text-emerald-700">
+                      -{option.discount * 100}% réduction
+                    </Badge>
+                  )}
+                </Label>
+              </div>
+            ))}
+          </RadioGroup>
+        </CardContent>
+      </Card>
+
       {/* Plan Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {plans.map((plan) => {
           const isRecommended = plan.tier === recommendedPlan;
           const isSelected = coverage.planTier === plan.tier;
+          const periodicPrice = calculatePeriodicityPrice(plan.price, selectedPeriodicity);
           
           return (
             <Card
@@ -177,8 +252,8 @@ export const CoverageStep = ({ state, onUpdate, onPremiumUpdate, onNext }: Cover
                 </div>
 
                 <div className="pt-4 border-t">
-                  <span className="text-xl font-bold">{formatFCFA(plan.price)}</span>
-                  <span className="text-muted-foreground text-sm">/an</span>
+                  <span className="text-xl font-bold">{formatFCFA(periodicPrice)}</span>
+                  <span className="text-muted-foreground text-sm">{getPeriodicityLabel(selectedPeriodicity)}</span>
                 </div>
               </CardContent>
             </Card>

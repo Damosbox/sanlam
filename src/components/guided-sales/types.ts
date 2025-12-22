@@ -83,6 +83,7 @@ export interface NeedsAnalysisData {
   vehicleType?: string;
   vehicleBrand?: string;
   vehicleModel?: string;
+  vehicleYear?: number; // Année du véhicule sélectionné
   vehicleUsage?: UsageType;
   vehicleFirstCirculationDate?: string;
   vehicleVenalValue?: number;

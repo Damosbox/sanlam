@@ -226,7 +226,38 @@ export const NeedsAnalysisStep = ({
                 </div>
               </div>
 
-              {/* Row 2: Date mise en circulation + Valeur vénale */}
+              {/* Row 2: Valeur neuve + Valeur vénale */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Valeur neuve
+                  </Label>
+                  <div className="relative">
+                    <Input type="number" placeholder="Valeur à l'achat neuf" value={needsAnalysis.vehicleNewValue || ""} onChange={e => onUpdate({
+                    vehicleNewValue: Number(e.target.value)
+                  })} className="pr-14" />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                      FCFA
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Valeur vénale
+                  </Label>
+                  <div className="relative">
+                    <Input type="number" placeholder="Valeur actuelle du véhicule" value={needsAnalysis.vehicleVenalValue || ""} onChange={e => onUpdate({
+                    vehicleVenalValue: Number(e.target.value)
+                  })} className="pr-14" />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                      FCFA
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 3: Date mise en circulation + BNS */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">
@@ -247,37 +278,6 @@ export const NeedsAnalysisStep = ({
                     })} disabled={date => date > new Date()} initialFocus className={cn("p-3 pointer-events-auto")} />
                     </PopoverContent>
                   </Popover>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                    Valeur vénale
-                  </Label>
-                  <div className="relative">
-                    <Input type="number" placeholder="Valeur actuelle du véhicule" value={needsAnalysis.vehicleVenalValue || ""} onChange={e => onUpdate({
-                    vehicleVenalValue: Number(e.target.value)
-                  })} className="pr-14" />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                      FCFA
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Row 3: Valeur neuve + BNS */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                    Valeur neuve
-                  </Label>
-                  <div className="relative">
-                    <Input type="number" placeholder="Valeur à l'achat neuf" value={needsAnalysis.vehicleNewValue || ""} onChange={e => onUpdate({
-                    vehicleNewValue: Number(e.target.value)
-                  })} className="pr-14" />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                      FCFA
-                    </span>
-                  </div>
                 </div>
 
                 <div className="space-y-2">

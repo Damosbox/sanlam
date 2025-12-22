@@ -236,24 +236,6 @@ export const NeedsAnalysisStep = ({
             {/* Progress bar under tabs */}
             
 
-            {/* Common Fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mt-6">
-              
-
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Budget estimé
-                </Label>
-                <div className="relative">
-                  <Input type="number" value={needsAnalysis.budget} onChange={e => onUpdate({
-                  budget: Number(e.target.value)
-                })} className="pr-12" />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                    FCFA/an
-                  </span>
-                </div>
-              </div>
-            </div>
 
             {/* Product-specific fields */}
             <TabsContent value="auto" className="mt-6 space-y-6">

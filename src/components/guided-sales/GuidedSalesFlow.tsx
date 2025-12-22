@@ -2,13 +2,14 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { QuoteSummaryCard } from "./QuoteSummaryCard";
+import { ProductSelectionStep } from "./steps/ProductSelectionStep";
 import { ClientIdentificationStep } from "./steps/ClientIdentificationStep";
 import { NeedsAnalysisStep } from "./steps/NeedsAnalysisStep";
 import { CoverageStep } from "./steps/CoverageStep";
 import { UnderwritingStep } from "./steps/UnderwritingStep";
 import { BindingStep } from "./steps/BindingStep";
 import { IssuanceStep } from "./steps/IssuanceStep";
-import { GuidedSalesState, initialState, PlanTier } from "./types";
+import { GuidedSalesState, initialState, PlanTier, ProductCategory, SelectedProductType } from "./types";
 import { StepNavigation } from "./StepNavigation";
 import { ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -16,9 +17,9 @@ import { formatFCFA } from "@/utils/formatCurrency";
 import { calculateAutoPremium, convertToCalculatedPremium } from "@/utils/autoPremiumCalculator";
 import { supabase } from "@/integrations/supabase/client";
 
-const TOTAL_STEPS = 6;
-const stepLabels = ["Identifier le client", "Générer Devis Rapide", "Passer à la Vérification", "Confirmer", "Émettre la police", "Terminer"];
-const stepNames = ["Identification", "Besoin", "Couverture", "Vérification", "Signature", "Émission"];
+const TOTAL_STEPS = 7;
+const stepLabels = ["Choisir le produit", "Identifier le client", "Générer Devis Rapide", "Passer à la Vérification", "Confirmer", "Émettre la police", "Terminer"];
+const stepNames = ["Produit", "Identification", "Besoin", "Couverture", "Vérification", "Signature", "Émission"];
 
 // Type pour les recommandations IA
 interface AIRecommendation {
@@ -102,6 +103,16 @@ export const GuidedSalesFlow = () => {
       return () => clearTimeout(timer);
     }
   }, [state.currentStep]);
+
+  const updateProductSelection = (data: { category: ProductCategory; selectedProduct: SelectedProductType }) => {
+    setState(prev => ({
+      ...prev,
+      productSelection: {
+        ...prev.productSelection,
+        ...data
+      }
+    }));
+  };
 
   const updateClientIdentification = (data: Partial<GuidedSalesState["clientIdentification"]>) => {
     setState(prev => ({
@@ -292,16 +303,18 @@ export const GuidedSalesFlow = () => {
   const renderStep = () => {
     switch (state.currentStep) {
       case 0:
-        return <ClientIdentificationStep state={state} onUpdate={updateClientIdentification} onNext={nextStep} />;
+        return <ProductSelectionStep state={state} onUpdate={updateProductSelection} onNext={nextStep} />;
       case 1:
-        return <NeedsAnalysisStep state={state} onUpdate={updateNeedsAnalysis} onNext={nextStep} />;
+        return <ClientIdentificationStep state={state} onUpdate={updateClientIdentification} onNext={nextStep} />;
       case 2:
-        return <CoverageStep state={state} onUpdate={updateCoverage} onPremiumUpdate={updatePremium} onNext={nextStep} />;
+        return <NeedsAnalysisStep state={state} onUpdate={updateNeedsAnalysis} onNext={nextStep} />;
       case 3:
-        return <UnderwritingStep state={state} onUpdate={updateUnderwriting} onNext={nextStep} />;
+        return <CoverageStep state={state} onUpdate={updateCoverage} onPremiumUpdate={updatePremium} onNext={nextStep} />;
       case 4:
-        return <BindingStep state={state} onUpdate={updateBinding} onNext={nextStep} />;
+        return <UnderwritingStep state={state} onUpdate={updateUnderwriting} onNext={nextStep} />;
       case 5:
+        return <BindingStep state={state} onUpdate={updateBinding} onNext={nextStep} />;
+      case 6:
         return <IssuanceStep state={state} onReset={resetFlow} />;
       default:
         return null;
@@ -326,7 +339,7 @@ export const GuidedSalesFlow = () => {
       {/* Step Progress - Mobile */}
       <div className="lg:hidden px-4 py-3 border-b bg-background/95 backdrop-blur sticky top-0 z-10">
         <div className="flex items-center gap-3">
-          {state.currentStep > 0 && state.currentStep < 6 && (
+          {state.currentStep > 0 && state.currentStep < 7 && (
             <Button variant="ghost" size="icon" onClick={prevStep} className="shrink-0 -ml-2">
               <ChevronLeft className="h-5 w-5" />
             </Button>
@@ -366,8 +379,8 @@ export const GuidedSalesFlow = () => {
             </div>
           </div>
 
-          {/* Desktop Summary Card - show from step 2 (Coverage) onwards */}
-          {state.currentStep >= 2 && state.currentStep < 5 && (
+          {/* Desktop Summary Card - show from step 3 (Coverage) onwards */}
+          {state.currentStep >= 3 && state.currentStep < 6 && (
             <div className="hidden lg:block">
               <QuoteSummaryCard 
                 state={state} 

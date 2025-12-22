@@ -1,8 +1,15 @@
 export type ProductType = "auto" | "habitation" | "sante" | "vie";
+export type ProductCategory = "vie" | "non_vie";
+export type SelectedProductType = "auto" | "molo_molo" | "pack_obseques";
 export type ClientType = "prospect" | "existing";
 export type UsageType = "prive" | "professionnel" | "taxi" | "livraison";
 export type PlanTier = "basic" | "standard" | "premium";
 export type ContractPeriodicity = "1_month" | "3_months" | "6_months" | "1_year";
+
+export interface ProductSelectionData {
+  category: ProductCategory;
+  selectedProduct: SelectedProductType;
+}
 
 export interface ClientIdentificationData {
   firstName: string;
@@ -97,6 +104,7 @@ export interface IssuanceData {
 
 export interface GuidedSalesState {
   currentStep: number;
+  productSelection: ProductSelectionData;
   clientIdentification: ClientIdentificationData;
   needsAnalysis: NeedsAnalysisData;
   quickQuote: QuickQuoteData;
@@ -121,6 +129,10 @@ export interface GuidedSalesState {
 
 export const initialState: GuidedSalesState = {
   currentStep: 0,
+  productSelection: {
+    category: "non_vie",
+    selectedProduct: "auto",
+  },
   clientIdentification: {
     firstName: "",
     lastName: "",

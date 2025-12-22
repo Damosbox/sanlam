@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,155 +15,14 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { GuidedSalesState, ProductType } from "../types";
+import { VEHICLES, PRIORITY_BRANDS, formatYearRange, getAvailableYears, Vehicle } from "@/data/vehicles";
 
-// Liste des véhicules populaires pour l'autocomplétion
-const POPULAR_VEHICLES = [{
-  brand: "Toyota",
-  model: "Corolla"
-}, {
-  brand: "Toyota",
-  model: "Camry"
-}, {
-  brand: "Toyota",
-  model: "RAV4"
-}, {
-  brand: "Toyota",
-  model: "Land Cruiser"
-}, {
-  brand: "Toyota",
-  model: "Hilux"
-}, {
-  brand: "Toyota",
-  model: "Yaris"
-}, {
-  brand: "Peugeot",
-  model: "208"
-}, {
-  brand: "Peugeot",
-  model: "308"
-}, {
-  brand: "Peugeot",
-  model: "3008"
-}, {
-  brand: "Peugeot",
-  model: "5008"
-}, {
-  brand: "Peugeot",
-  model: "508"
-}, {
-  brand: "Renault",
-  model: "Clio"
-}, {
-  brand: "Renault",
-  model: "Duster"
-}, {
-  brand: "Renault",
-  model: "Megane"
-}, {
-  brand: "Renault",
-  model: "Captur"
-}, {
-  brand: "Mercedes",
-  model: "Classe C"
-}, {
-  brand: "Mercedes",
-  model: "Classe E"
-}, {
-  brand: "Mercedes",
-  model: "GLE"
-}, {
-  brand: "Mercedes",
-  model: "GLC"
-}, {
-  brand: "BMW",
-  model: "Série 3"
-}, {
-  brand: "BMW",
-  model: "Série 5"
-}, {
-  brand: "BMW",
-  model: "X3"
-}, {
-  brand: "BMW",
-  model: "X5"
-}, {
-  brand: "Hyundai",
-  model: "Tucson"
-}, {
-  brand: "Hyundai",
-  model: "Santa Fe"
-}, {
-  brand: "Hyundai",
-  model: "i10"
-}, {
-  brand: "Hyundai",
-  model: "i20"
-}, {
-  brand: "Kia",
-  model: "Sportage"
-}, {
-  brand: "Kia",
-  model: "Sorento"
-}, {
-  brand: "Kia",
-  model: "Picanto"
-}, {
-  brand: "Honda",
-  model: "CR-V"
-}, {
-  brand: "Honda",
-  model: "Civic"
-}, {
-  brand: "Honda",
-  model: "Accord"
-}, {
-  brand: "Nissan",
-  model: "Qashqai"
-}, {
-  brand: "Nissan",
-  model: "X-Trail"
-}, {
-  brand: "Nissan",
-  model: "Patrol"
-}, {
-  brand: "Volkswagen",
-  model: "Golf"
-}, {
-  brand: "Volkswagen",
-  model: "Polo"
-}, {
-  brand: "Volkswagen",
-  model: "Tiguan"
-}, {
-  brand: "Ford",
-  model: "Ranger"
-}, {
-  brand: "Ford",
-  model: "Focus"
-}, {
-  brand: "Ford",
-  model: "Fiesta"
-}, {
-  brand: "Mitsubishi",
-  model: "Pajero"
-}, {
-  brand: "Mitsubishi",
-  model: "L200"
-}, {
-  brand: "Suzuki",
-  model: "Swift"
-}, {
-  brand: "Suzuki",
-  model: "Vitara"
-}, {
-  brand: "Suzuki",
-  model: "Jimny"
-}];
 interface NeedsAnalysisStepProps {
   state: GuidedSalesState;
   onUpdate: (data: Partial<GuidedSalesState["needsAnalysis"]>) => void;
   onNext: () => void;
 }
+
 export const NeedsAnalysisStep = ({
   state,
   onUpdate,
@@ -178,28 +37,82 @@ export const NeedsAnalysisStep = ({
   // Valeur affichée dans le champ
   const vehicleDisplayValue = useMemo(() => {
     if (needsAnalysis.vehicleBrand && needsAnalysis.vehicleModel) {
-      return `${needsAnalysis.vehicleBrand} ${needsAnalysis.vehicleModel}`;
+      const yearSuffix = needsAnalysis.vehicleYear ? ` (${needsAnalysis.vehicleYear})` : "";
+      return `${needsAnalysis.vehicleBrand} ${needsAnalysis.vehicleModel}${yearSuffix}`;
     }
     if (needsAnalysis.vehicleBrand) {
       return needsAnalysis.vehicleBrand;
     }
     return "";
+  }, [needsAnalysis.vehicleBrand, needsAnalysis.vehicleModel, needsAnalysis.vehicleYear]);
+
+  // Véhicule sélectionné pour afficher les années disponibles
+  const selectedVehicle = useMemo(() => {
+    if (needsAnalysis.vehicleBrand && needsAnalysis.vehicleModel) {
+      return VEHICLES.find(
+        v => v.brand === needsAnalysis.vehicleBrand && v.model === needsAnalysis.vehicleModel
+      );
+    }
+    return null;
   }, [needsAnalysis.vehicleBrand, needsAnalysis.vehicleModel]);
 
-  // Filtrer les suggestions
+  // Années disponibles pour le véhicule sélectionné
+  const availableYears = useMemo(() => {
+    if (selectedVehicle) {
+      return getAvailableYears(selectedVehicle.startYear, selectedVehicle.endYear);
+    }
+    return [];
+  }, [selectedVehicle]);
+
+  // Filtrer les suggestions avec groupement par marque
   const filteredVehicles = useMemo(() => {
-    if (!vehicleSearchTerm) return POPULAR_VEHICLES.slice(0, 10);
-    const search = vehicleSearchTerm.toLowerCase();
-    return POPULAR_VEHICLES.filter(v => v.brand.toLowerCase().includes(search) || v.model.toLowerCase().includes(search) || `${v.brand} ${v.model}`.toLowerCase().includes(search)).slice(0, 10);
+    const search = vehicleSearchTerm.toLowerCase().trim();
+    
+    let results: Vehicle[];
+    if (!search) {
+      // Sans recherche, afficher les marques prioritaires
+      results = VEHICLES.filter(v => PRIORITY_BRANDS.includes(v.brand)).slice(0, 20);
+    } else {
+      results = VEHICLES.filter(v => 
+        v.brand.toLowerCase().includes(search) || 
+        v.model.toLowerCase().includes(search) || 
+        `${v.brand} ${v.model}`.toLowerCase().includes(search)
+      ).slice(0, 20);
+    }
+
+    // Trier par marques prioritaires puis alphabétique
+    return results.sort((a, b) => {
+      const aPriority = PRIORITY_BRANDS.indexOf(a.brand);
+      const bPriority = PRIORITY_BRANDS.indexOf(b.brand);
+      if (aPriority !== -1 && bPriority !== -1) {
+        if (aPriority !== bPriority) return aPriority - bPriority;
+      } else if (aPriority !== -1) return -1;
+      else if (bPriority !== -1) return 1;
+      
+      if (a.brand !== b.brand) return a.brand.localeCompare(b.brand);
+      return a.model.localeCompare(b.model);
+    });
   }, [vehicleSearchTerm]);
-  const handleSelectVehicle = (brand: string, model: string) => {
+
+  // Grouper les véhicules par marque pour l'affichage
+  const groupedVehicles = useMemo(() => {
+    const groups: Record<string, Vehicle[]> = {};
+    filteredVehicles.forEach(v => {
+      if (!groups[v.brand]) groups[v.brand] = [];
+      groups[v.brand].push(v);
+    });
+    return groups;
+  }, [filteredVehicles]);
+
+  const handleSelectVehicle = useCallback((vehicle: Vehicle) => {
     onUpdate({
-      vehicleBrand: brand,
-      vehicleModel: model
+      vehicleBrand: vehicle.brand,
+      vehicleModel: vehicle.model,
+      vehicleYear: undefined // Reset year when changing vehicle
     });
     setVehicleSearchOpen(false);
     setVehicleSearchTerm("");
-  };
+  }, [onUpdate]);
   return <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Besoin</h1>

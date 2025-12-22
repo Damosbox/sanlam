@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { QuoteSummaryCard } from "./QuoteSummaryCard";
+import { SalesAssistant } from "./SalesAssistant";
 import { ProductSelectionStep } from "./steps/ProductSelectionStep";
 import { ClientIdentificationStep } from "./steps/ClientIdentificationStep";
 import { NeedsAnalysisStep } from "./steps/NeedsAnalysisStep";
@@ -424,14 +424,14 @@ export const GuidedSalesFlow = () => {
             </div>
           </div>
 
-          {/* Desktop Summary Card - show from step 3 (Coverage) onwards */}
+          {/* Desktop Sales Assistant - show from step 3 (Coverage) onwards */}
           {state.currentStep >= 3 && state.currentStep < 6 && (
             <div className="hidden lg:block">
-              <QuoteSummaryCard 
+              <SalesAssistant 
                 state={state} 
                 onNext={nextStep} 
                 nextLabel={stepLabels[state.currentStep]}
-                onApplySuggestion={handleApplySuggestion}
+                onPlanChange={(plan) => updateCoverage({ planTier: plan })}
               />
             </div>
           )}

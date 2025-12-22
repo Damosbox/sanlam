@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.ocr-identity]
 verify_jwt = true
+
+[functions.sales-assistant]
+verify_jwt = false

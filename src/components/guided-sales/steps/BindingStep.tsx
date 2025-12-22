@@ -43,7 +43,7 @@ export const BindingStep = ({
   } = state;
   return <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Signature & Engagement</h1>
+        <h1 className="text-2xl font-bold text-foreground">Finaliser la cotation</h1>
         <p className="text-muted-foreground mt-1">
           Finalisez le contrat avec la signature électronique.
         </p>

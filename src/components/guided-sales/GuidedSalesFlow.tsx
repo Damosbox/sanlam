@@ -5,16 +5,20 @@ import { QuoteSummaryCard } from "./QuoteSummaryCard";
 import { ProductSelectionStep } from "./steps/ProductSelectionStep";
 import { ClientIdentificationStep } from "./steps/ClientIdentificationStep";
 import { NeedsAnalysisStep } from "./steps/NeedsAnalysisStep";
+import { MoloMoloNeedsStep } from "./steps/MoloMoloNeedsStep";
+import { PackObsequesNeedsStep } from "./steps/PackObsequesNeedsStep";
 import { CoverageStep } from "./steps/CoverageStep";
 import { UnderwritingStep } from "./steps/UnderwritingStep";
 import { BindingStep } from "./steps/BindingStep";
 import { IssuanceStep } from "./steps/IssuanceStep";
-import { GuidedSalesState, initialState, PlanTier, ProductCategory, SelectedProductType } from "./types";
+import { GuidedSalesState, initialState, PlanTier, ProductCategory, SelectedProductType, MoloMoloData, PackObsequesData } from "./types";
 import { StepNavigation } from "./StepNavigation";
 import { ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatFCFA } from "@/utils/formatCurrency";
 import { calculateAutoPremium, convertToCalculatedPremium } from "@/utils/autoPremiumCalculator";
+import { calculateMoloMoloPremium, convertMoloMoloToCalculatedPremium } from "@/utils/moloMoloPremiumCalculator";
+import { calculatePackObsequesPremium, convertPackObsequesToCalculatedPremium } from "@/utils/packObsequesPremiumCalculator";
 import { supabase } from "@/integrations/supabase/client";
 
 const TOTAL_STEPS = 7;
@@ -133,11 +137,46 @@ export const GuidedSalesFlow = () => {
           ...data
         }
       };
-      // Recalcul dynamique avec le nouvel état
-      const breakdown = calculateAutoPremium(newState);
-      const premium = convertToCalculatedPremium(breakdown);
+      // Recalcul dynamique avec le nouvel état (seulement pour auto)
+      if (prev.productSelection.selectedProduct === "auto") {
+        const breakdown = calculateAutoPremium(newState);
+        const premium = convertToCalculatedPremium(breakdown);
+        return {
+          ...newState,
+          calculatedPremium: premium
+        };
+      }
+      return newState;
+    });
+  };
+
+  const updateMoloMoloData = (data: Partial<MoloMoloData>) => {
+    setState(prev => {
+      const newMoloMoloData = {
+        ...prev.moloMoloData!,
+        ...data
+      };
+      const breakdown = calculateMoloMoloPremium(newMoloMoloData);
+      const premium = convertMoloMoloToCalculatedPremium(breakdown);
       return {
-        ...newState,
+        ...prev,
+        moloMoloData: newMoloMoloData,
+        calculatedPremium: premium
+      };
+    });
+  };
+
+  const updatePackObsequesData = (data: Partial<PackObsequesData>) => {
+    setState(prev => {
+      const newPackObsequesData = {
+        ...prev.packObsequesData!,
+        ...data
+      };
+      const breakdown = calculatePackObsequesPremium(newPackObsequesData);
+      const premium = convertPackObsequesToCalculatedPremium(breakdown);
+      return {
+        ...prev,
+        packObsequesData: newPackObsequesData,
         calculatedPremium: premium
       };
     });
@@ -307,6 +346,12 @@ export const GuidedSalesFlow = () => {
       case 1:
         return <ClientIdentificationStep state={state} onUpdate={updateClientIdentification} onNext={nextStep} />;
       case 2:
+        // Afficher le bon formulaire selon le produit sélectionné
+        if (state.productSelection.selectedProduct === "molo_molo") {
+          return <MoloMoloNeedsStep state={state} onUpdate={updateMoloMoloData} onNext={nextStep} />;
+        } else if (state.productSelection.selectedProduct === "pack_obseques") {
+          return <PackObsequesNeedsStep state={state} onUpdate={updatePackObsequesData} onNext={nextStep} />;
+        }
         return <NeedsAnalysisStep state={state} onUpdate={updateNeedsAnalysis} onNext={nextStep} />;
       case 3:
         return <CoverageStep state={state} onUpdate={updateCoverage} onPremiumUpdate={updatePremium} onNext={nextStep} />;

@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Car, Heart, Landmark, Construction } from "lucide-react";
 import { GuidedSalesState, ProductCategory, SelectedProductType } from "../types";
-import { toast } from "sonner";
 
 interface ProductSelectionStepProps {
   state: GuidedSalesState;
@@ -50,10 +49,6 @@ const ProductCard = ({ icon, title, description, onSelect, disabled, comingSoon 
 
 export const ProductSelectionStep = ({ state, onUpdate, onNext }: ProductSelectionStepProps) => {
   const handleSelectProduct = (category: ProductCategory, product: SelectedProductType) => {
-    if (product === "molo_molo" || product === "pack_obseques") {
-      toast.info("Ce parcours sera bientôt disponible");
-      return;
-    }
     onUpdate({ category, selectedProduct: product });
     onNext();
   };
@@ -91,14 +86,12 @@ export const ProductSelectionStep = ({ state, onUpdate, onNext }: ProductSelecti
               title="Molo Molo"
               description="Contrat d'épargne et de prévoyance pour sécuriser votre avenir et celui de votre famille"
               onSelect={() => handleSelectProduct("vie", "molo_molo")}
-              comingSoon
             />
             <ProductCard
               icon={<Landmark className="h-8 w-8 text-primary" />}
               title="Pack Obsèques"
               description="Garantit le versement d'un capital défini en cas de décès pour couvrir les frais funéraires"
               onSelect={() => handleSelectProduct("vie", "pack_obseques")}
-              comingSoon
             />
           </div>
         </TabsContent>

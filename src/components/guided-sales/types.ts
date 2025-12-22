@@ -5,6 +5,56 @@ export type ClientType = "prospect" | "existing";
 export type UsageType = "prive" | "professionnel" | "taxi" | "livraison";
 export type PlanTier = "basic" | "standard" | "premium";
 export type ContractPeriodicity = "1_month" | "3_months" | "6_months" | "1_year";
+export type ViePeriodicite = "mensuelle" | "trimestrielle" | "semestrielle" | "annuelle";
+
+// Données spécifiques Pack Obsèques
+export interface PackObsequesData {
+  periodicity: ViePeriodicite;
+  nombreEnfants: number;
+  nombreAscendants: number;
+  // Infos souscripteur
+  subscriberName: string;
+  subscriberFamilySituation: string;
+  subscriberBirthDate: string;
+  subscriberIdType: string;
+  subscriberIdNumber: string;
+  subscriberProfession: string;
+  subscriberEmail: string;
+  subscriberPhone: string;
+  // Infos assuré (si différent du souscripteur)
+  insuredIsDifferent: boolean;
+  insuredName?: string;
+  insuredBirthDate?: string;
+  insuredIdType?: string;
+  insuredIdNumber?: string;
+  insuredProfession?: string;
+  insuredEmail?: string;
+  insuredPhone?: string;
+  // Conjoint
+  spouseBirthDate?: string;
+}
+
+// Données spécifiques Molo Molo
+export interface MoloMoloData {
+  montantCotisation: number;
+  periodicity: ViePeriodicite;
+  dureeContrat: number;
+  // Infos souscripteur
+  subscriberName: string;
+  subscriberFamilySituation: string;
+  subscriberBirthDate: string;
+  subscriberIdType: string;
+  subscriberIdNumber: string;
+  subscriberProfession: string;
+  subscriberEmail: string;
+  subscriberPhone: string;
+  // Bénéficiaires
+  beneficiaries: Array<{
+    name: string;
+    relationship: string;
+    percentage: number;
+  }>;
+}
 
 export interface ProductSelectionData {
   category: ProductCategory;
@@ -112,6 +162,9 @@ export interface GuidedSalesState {
   underwriting: UnderwritingData;
   binding: BindingData;
   issuance: IssuanceData;
+  // Données spécifiques produits Vie
+  moloMoloData?: MoloMoloData;
+  packObsequesData?: PackObsequesData;
   calculatedPremium: {
     primeNette: number;
     fraisAccessoires: number;
@@ -172,6 +225,36 @@ export const initialState: GuidedSalesState = {
   issuance: {
     policyNumber: "",
     documentsGenerated: [],
+  },
+  // Données Molo Molo par défaut
+  moloMoloData: {
+    montantCotisation: 10000,
+    periodicity: "mensuelle",
+    dureeContrat: 10,
+    subscriberName: "",
+    subscriberFamilySituation: "",
+    subscriberBirthDate: "",
+    subscriberIdType: "",
+    subscriberIdNumber: "",
+    subscriberProfession: "",
+    subscriberEmail: "",
+    subscriberPhone: "",
+    beneficiaries: [],
+  },
+  // Données Pack Obsèques par défaut
+  packObsequesData: {
+    periodicity: "mensuelle",
+    nombreEnfants: 0,
+    nombreAscendants: 0,
+    subscriberName: "",
+    subscriberFamilySituation: "",
+    subscriberBirthDate: "",
+    subscriberIdType: "",
+    subscriberIdNumber: "",
+    subscriberProfession: "",
+    subscriberEmail: "",
+    subscriberPhone: "",
+    insuredIsDifferent: false,
   },
   calculatedPremium: {
     primeNette: 45000,

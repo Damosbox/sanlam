@@ -37,7 +37,7 @@ export default function PortfolioPage() {
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [clientSheetOpen, setClientSheetOpen] = useState(false);
 
-  // Fetch prospects (leads)
+  // Fetch prospects (leads) with quotation counts
   const {
     data: leads = [],
     isLoading: leadsLoading
@@ -51,7 +51,18 @@ export default function PortfolioPage() {
         ascending: false
       });
       if (error) throw error;
-      return data as Lead[];
+      
+      // Fetch quotation counts for each lead
+      const leadsWithQuotations = await Promise.all((data || []).map(async (lead) => {
+        const { count } = await supabase
+          .from("lead_notes")
+          .select("*", { count: 'exact', head: true })
+          .eq("lead_id", lead.id)
+          .ilike("content", "%[DEVIS]%");
+        return { ...lead, quotationsCount: count || 0 };
+      }));
+      
+      return leadsWithQuotations;
     }
   });
 
@@ -147,7 +158,8 @@ export default function PortfolioPage() {
       whatsapp: lead.whatsapp,
       status: lead.status,
       product_interest: lead.product_interest,
-      source: lead.source
+      source: lead.source,
+      quotationsCount: (lead as any).quotationsCount || 0
     }));
     const clientItems: PortfolioItem[] = clients.map(client => ({
       id: client.id,
@@ -242,6 +254,14 @@ export default function PortfolioPage() {
       }
     }
   };
+  const handleQuickQuoteFromTable = (item: PortfolioItem) => {
+    const lead = leads.find(l => l.id === item.id);
+    if (lead) {
+      setQuoteDialogLead(lead as Lead);
+      setQuoteDialogOpen(true);
+    }
+  };
+  
   const handleQuickQuote = (lead: Lead) => {
     setQuoteDialogLead(lead);
     setQuoteDialogOpen(true);
@@ -322,7 +342,7 @@ export default function PortfolioPage() {
       </div>
 
       {/* Table */}
-      <PortfolioDataTable items={filteredItems} density={viewDensity} onSelectItem={handleSelectItem} />
+      <PortfolioDataTable items={filteredItems} density={viewDensity} onSelectItem={handleSelectItem} onQuickQuote={handleQuickQuoteFromTable} />
 
       {/* Lead Detail Sheet */}
       <LeadDetailSheet lead={selectedLead} open={leadSheetOpen} onOpenChange={setLeadSheetOpen} onQuickQuote={handleQuickQuote} onStatusChange={handleStatusChange} onEditLead={handleEditLead} />

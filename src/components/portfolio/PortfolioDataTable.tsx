@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Phone, MessageCircle, Mail, MoreHorizontal, Eye, UserCheck, Clock, Inbox } from "lucide-react";
+import { Phone, MessageCircle, Mail, MoreHorizontal, Eye, UserCheck, Clock, Inbox, FileText } from "lucide-react";
 import { LeadStatusBadge } from "@/components/leads/LeadStatusBadge";
 import { toast } from "sonner";
 
@@ -28,15 +28,17 @@ export interface PortfolioItem {
   source?: string | null;
   claimsCount?: number;
   subscriptionsCount?: number;
+  quotationsCount?: number;
 }
 
 interface PortfolioDataTableProps {
   items: PortfolioItem[];
   density?: "compact" | "standard";
   onSelectItem: (item: PortfolioItem) => void;
+  onQuickQuote?: (item: PortfolioItem) => void;
 }
 
-export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }: PortfolioDataTableProps) => {
+export const PortfolioDataTable = ({ items, density = "standard", onSelectItem, onQuickQuote }: PortfolioDataTableProps) => {
   const navigate = useNavigate();
 
   const handleCall = (e: React.MouseEvent, phone: string | null) => {
@@ -108,6 +110,7 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }
             <TableHead className="w-[220px]">Nom</TableHead>
             <TableHead>Contact</TableHead>
             <TableHead className="hidden md:table-cell">Type</TableHead>
+            <TableHead className="hidden lg:table-cell text-center">Cotations</TableHead>
             <TableHead className="hidden lg:table-cell text-center">Contrats</TableHead>
             <TableHead className="hidden lg:table-cell text-center">Sinistres</TableHead>
             <TableHead>Statut</TableHead>
@@ -163,6 +166,11 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }
                 )}
               </TableCell>
               <TableCell className={`hidden lg:table-cell ${rowPadding} text-center`}>
+                <Badge variant="outline" className="text-xs">
+                  {item.quotationsCount || 0}
+                </Badge>
+              </TableCell>
+              <TableCell className={`hidden lg:table-cell ${rowPadding} text-center`}>
                 {item.type === "client" ? (
                   <button
                     className="text-primary hover:underline font-medium"
@@ -213,6 +221,20 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }
               </TableCell>
               <TableCell className={`${rowPadding} text-right`}>
                 <div className="flex items-center justify-end gap-1">
+                  {item.type === "prospect" && onQuickQuote && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onQuickQuote(item);
+                      }}
+                      title="Devis rapide"
+                    >
+                      <FileText className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"

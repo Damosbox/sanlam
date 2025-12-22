@@ -187,7 +187,7 @@ export const NeedsAnalysisStep = ({
                           </div>
                         </CommandEmpty>
                         <CommandGroup heading="Véhicules populaires">
-                          {filteredVehicles.map(vehicle => <CommandItem key={`${vehicle.brand}-${vehicle.model}`} onSelect={() => handleSelectVehicle(vehicle.brand, vehicle.model)} className="cursor-pointer">
+                          {filteredVehicles.map(vehicle => <CommandItem key={`${vehicle.brand}-${vehicle.model}`} onSelect={() => handleSelectVehicle(vehicle)} className="cursor-pointer">
                               <Car className="mr-2 h-4 w-4 text-muted-foreground" />
                               <span className="font-medium">{vehicle.brand}</span>
                               <span className="ml-1 text-muted-foreground">{vehicle.model}</span>

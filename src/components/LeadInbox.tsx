@@ -11,7 +11,6 @@ import type { Tables } from "@/integrations/supabase/types";
 import { LeadsDataTable } from "./leads/LeadsDataTable";
 import { LeadCards } from "./leads/LeadCards";
 import { LeadDetailSheet } from "./leads/LeadDetailSheet";
-import { QuickQuoteDialog } from "./leads/QuickQuoteDialog";
 import { CreateLeadDialog } from "./leads/CreateLeadDialog";
 import { statusConfig } from "./leads/LeadStatusBadge";
 import * as XLSX from "xlsx";
@@ -26,8 +25,6 @@ export const LeadInbox = () => {
   const [viewDensity, setViewDensity] = useState<ViewDensity>("standard");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
-  const [quoteDialogLead, setQuoteDialogLead] = useState<Lead | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editDialogLead, setEditDialogLead] = useState<Lead | null>(null);
@@ -131,11 +128,6 @@ export const LeadInbox = () => {
     setSheetOpen(true);
   };
 
-  const handleQuickQuote = (lead: Lead) => {
-    setQuoteDialogLead(lead);
-    setQuoteDialogOpen(true);
-  };
-
   const handleEditLead = (lead: Lead) => {
     setEditDialogLead(lead);
     setEditDialogOpen(true);
@@ -225,7 +217,7 @@ export const LeadInbox = () => {
 
       {/* Data Display */}
       {viewDensity === "card" ? (
-        <LeadCards leads={filteredLeads} onSelectLead={handleSelectLead} onQuickQuote={handleQuickQuote} />
+        <LeadCards leads={filteredLeads} onSelectLead={handleSelectLead} />
       ) : (
         <LeadsDataTable leads={filteredLeads} density={viewDensity} onSelectLead={handleSelectLead} />
       )}
@@ -234,25 +226,16 @@ export const LeadInbox = () => {
       <LeadDetailSheet 
         lead={selectedLead} 
         open={sheetOpen} 
-        onOpenChange={setSheetOpen} 
-        onQuickQuote={handleQuickQuote} 
+        onOpenChange={setSheetOpen}
         onStatusChange={handleStatusChange}
         onEditLead={handleEditLead}
-      />
-
-      {/* Quick Quote Dialog */}
-      <QuickQuoteDialog 
-        lead={quoteDialogLead} 
-        open={quoteDialogOpen} 
-        onOpenChange={setQuoteDialogOpen} 
-        onStatusChange={handleStatusChange} 
       />
 
       {/* Create Lead Dialog */}
       <CreateLeadDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
 
       {/* Edit Lead Dialog */}
-      <CreateLeadDialog 
+      <CreateLeadDialog
         open={editDialogOpen} 
         onOpenChange={setEditDialogOpen} 
         lead={editDialogLead}

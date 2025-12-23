@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { PortfolioDataTable, PortfolioItem } from "@/components/portfolio/PortfolioDataTable";
 import { LeadDetailSheet } from "@/components/leads/LeadDetailSheet";
 import { ClientDetailSheet } from "@/components/clients/ClientDetailSheet";
-import { QuickQuoteDialog } from "@/components/leads/QuickQuoteDialog";
 import { CreateLeadDialog } from "@/components/leads/CreateLeadDialog";
 import type { Tables } from "@/integrations/supabase/types";
 import * as XLSX from "xlsx";
@@ -27,8 +26,6 @@ export default function PortfolioPage() {
   // Lead states
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [leadSheetOpen, setLeadSheetOpen] = useState(false);
-  const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
-  const [quoteDialogLead, setQuoteDialogLead] = useState<Lead | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editDialogLead, setEditDialogLead] = useState<Lead | null>(null);
@@ -254,18 +251,6 @@ export default function PortfolioPage() {
       }
     }
   };
-  const handleQuickQuoteFromTable = (item: PortfolioItem) => {
-    const lead = leads.find(l => l.id === item.id);
-    if (lead) {
-      setQuoteDialogLead(lead as Lead);
-      setQuoteDialogOpen(true);
-    }
-  };
-  
-  const handleQuickQuote = (lead: Lead) => {
-    setQuoteDialogLead(lead);
-    setQuoteDialogOpen(true);
-  };
   const handleEditLead = (lead: Lead) => {
     setEditDialogLead(lead);
     setEditDialogOpen(true);
@@ -342,16 +327,13 @@ export default function PortfolioPage() {
       </div>
 
       {/* Table */}
-      <PortfolioDataTable items={filteredItems} density={viewDensity} onSelectItem={handleSelectItem} onQuickQuote={handleQuickQuoteFromTable} />
+      <PortfolioDataTable items={filteredItems} density={viewDensity} onSelectItem={handleSelectItem} />
 
       {/* Lead Detail Sheet */}
-      <LeadDetailSheet lead={selectedLead} open={leadSheetOpen} onOpenChange={setLeadSheetOpen} onQuickQuote={handleQuickQuote} onStatusChange={handleStatusChange} onEditLead={handleEditLead} />
+      <LeadDetailSheet lead={selectedLead} open={leadSheetOpen} onOpenChange={setLeadSheetOpen} onStatusChange={handleStatusChange} onEditLead={handleEditLead} />
 
       {/* Client Detail Sheet */}
       <ClientDetailSheet client={selectedClient} open={clientSheetOpen} onOpenChange={setClientSheetOpen} />
-
-      {/* Quick Quote Dialog */}
-      <QuickQuoteDialog lead={quoteDialogLead} open={quoteDialogOpen} onOpenChange={setQuoteDialogOpen} onStatusChange={handleStatusChange} />
 
       {/* Create Lead Dialog */}
       <CreateLeadDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />

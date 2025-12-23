@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Phone, MessageCircle, Mail, MoreHorizontal, Eye, UserCheck, Clock, Inbox, FileText } from "lucide-react";
+import { Phone, MessageCircle, Mail, MoreHorizontal, Eye, UserCheck, Clock, Inbox, ShoppingCart } from "lucide-react";
 import { LeadStatusBadge } from "@/components/leads/LeadStatusBadge";
 import { toast } from "sonner";
 
@@ -35,10 +35,9 @@ interface PortfolioDataTableProps {
   items: PortfolioItem[];
   density?: "compact" | "standard";
   onSelectItem: (item: PortfolioItem) => void;
-  onQuickQuote?: (item: PortfolioItem) => void;
 }
 
-export const PortfolioDataTable = ({ items, density = "standard", onSelectItem, onQuickQuote }: PortfolioDataTableProps) => {
+export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }: PortfolioDataTableProps) => {
   const navigate = useNavigate();
 
   const handleCall = (e: React.MouseEvent, phone: string | null) => {
@@ -221,18 +220,18 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem, 
               </TableCell>
               <TableCell className={`${rowPadding} text-right`}>
                 <div className="flex items-center justify-end gap-1">
-                  {item.type === "prospect" && onQuickQuote && (
+                  {item.type === "prospect" && (
                     <Button
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onQuickQuote(item);
+                        navigate(`/b2b/sales?contactId=${item.id}&type=prospect`);
                       }}
-                      title="Devis rapide"
+                      title="Vente guidée"
                     >
-                      <FileText className="h-4 w-4" />
+                      <ShoppingCart className="h-4 w-4" />
                     </Button>
                   )}
                   <Button

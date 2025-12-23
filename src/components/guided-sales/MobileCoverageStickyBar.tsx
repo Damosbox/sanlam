@@ -86,8 +86,8 @@ export const MobileCoverageStickyBar = ({
 
   return (
     <>
-      {/* Sticky Bottom Bar - Only visible on mobile */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t shadow-lg p-3 sm:hidden">
+      {/* Sticky Bottom Bar - Visible on mobile and tablet, hidden on desktop */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t shadow-lg p-3 lg:hidden">
         <div className="flex items-center justify-between gap-3">
           <div className="flex-1 min-w-0">
             <p className="text-lg font-bold text-primary truncate">

@@ -9,7 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, MessageCircle, Mail, FileText, Send, User, Shield, StickyNote, UserPlus, Pencil, Database, ShoppingCart } from "lucide-react";
+import { Phone, MessageCircle, Mail, Send, User, Shield, StickyNote, UserPlus, Pencil, Database, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -26,7 +26,6 @@ interface LeadDetailSheetProps {
   lead: Lead | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onQuickQuote: (lead: Lead) => void;
   onStatusChange: (leadId: string, status: Lead["status"]) => void;
   onEditLead?: (lead: Lead) => void;
 }
@@ -35,7 +34,6 @@ export const LeadDetailSheet = ({
   lead, 
   open, 
   onOpenChange, 
-  onQuickQuote,
   onStatusChange,
   onEditLead
 }: LeadDetailSheetProps) => {
@@ -182,15 +180,6 @@ export const LeadDetailSheet = ({
                 Modifier
               </Button>
             )}
-            <Button 
-              size="sm" 
-              onClick={() => onQuickQuote(lead)}
-              variant="outline"
-              className="gap-1.5"
-            >
-              <FileText className="h-4 w-4" />
-              Devis rapide
-            </Button>
             <Button 
               size="sm" 
               onClick={handleGuidedSales}

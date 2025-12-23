@@ -1,7 +1,8 @@
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Phone, MessageCircle, FileText, Clock } from "lucide-react";
+import { Phone, MessageCircle, ShoppingCart, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { LeadStatusBadge } from "./LeadStatusBadge";
@@ -12,10 +13,10 @@ type Lead = Tables<"leads">;
 interface LeadCardsProps {
   leads: Lead[];
   onSelectLead: (lead: Lead) => void;
-  onQuickQuote: (lead: Lead) => void;
 }
 
-export const LeadCards = ({ leads, onSelectLead, onQuickQuote }: LeadCardsProps) => {
+export const LeadCards = ({ leads, onSelectLead }: LeadCardsProps) => {
+  const navigate = useNavigate();
   const handleCall = (e: React.MouseEvent, phone: string | null) => {
     e.stopPropagation();
     if (phone) window.open(`tel:${phone}`, "_blank");
@@ -113,11 +114,11 @@ export const LeadCards = ({ leads, onSelectLead, onQuickQuote }: LeadCardsProps)
                   className="ml-auto h-8 gap-1.5 text-xs"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onQuickQuote(lead);
+                    navigate(`/b2b/sales?contactId=${lead.id}&type=prospect`);
                   }}
                 >
-                  <FileText className="h-3.5 w-3.5" />
-                  Devis
+                  <ShoppingCart className="h-3.5 w-3.5" />
+                  Vente
                 </Button>
               </div>
             </CardContent>

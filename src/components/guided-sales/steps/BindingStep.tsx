@@ -4,40 +4,20 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
-import { Mail, MessageSquare, Smartphone, PenTool, FileText, CreditCard, Phone, Wallet, Send, Copy, Check } from "lucide-react";
-import { GuidedSalesState } from "../types";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Mail, MessageSquare, Smartphone, PenTool, FileText, CreditCard, Phone, Wallet, Copy, Check, Fingerprint, Send } from "lucide-react";
+import { GuidedSalesState, PaymentChannel } from "../types";
 import { cn } from "@/lib/utils";
 import { formatFCFA } from "@/utils/formatCurrency";
 import { useState } from "react";
 import { toast } from "sonner";
+import { PaymentStatusDialog } from "./PaymentStatusDialog";
 
 interface BindingStepProps {
   state: GuidedSalesState;
   onUpdate: (data: Partial<GuidedSalesState["binding"]>) => void;
   onNext: () => void;
 }
-
-const signatureChannels = [{
-  id: "email",
-  label: "Email",
-  icon: Mail,
-  description: "Envoi du contrat par email"
-}, {
-  id: "sms",
-  label: "SMS",
-  icon: MessageSquare,
-  description: "Lien de signature par SMS"
-}, {
-  id: "whatsapp",
-  label: "WhatsApp",
-  icon: Smartphone,
-  description: "Partage via WhatsApp"
-}, {
-  id: "presential",
-  label: "Signature Présentielle",
-  icon: PenTool,
-  description: "Signature sur tablette agent"
-}];
 
 const paymentMethods = [{
   id: "card",
@@ -65,19 +45,25 @@ const paymentMethods = [{
   description: "MTN Mobile Money"
 }];
 
+const paymentChannelOptions = [
+  { id: "email" as PaymentChannel, label: "Email", icon: Mail },
+  { id: "sms" as PaymentChannel, label: "SMS", icon: MessageSquare },
+  { id: "whatsapp" as PaymentChannel, label: "WhatsApp", icon: Smartphone },
+];
+
 export const BindingStep = ({
   state,
   onUpdate,
   onNext
 }: BindingStepProps) => {
   const { binding } = state;
-  const [selectedPayment, setSelectedPayment] = useState<string>("wave");
-  const [clientPhone, setClientPhone] = useState(state.clientIdentification?.phone || "");
-  const [clientEmail, setClientEmail] = useState(state.clientIdentification?.email || "");
   const [linkCopied, setLinkCopied] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpInput, setOtpInput] = useState("");
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
   // Generate payment link (mock)
-  const paymentLink = `https://pay.sanlam.sn/q/${Date.now().toString(36)}`;
+  const paymentLink = `https://pay.sanlam.ci/q/${Date.now().toString(36)}`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(paymentLink);
@@ -86,28 +72,83 @@ export const BindingStep = ({
     setTimeout(() => setLinkCopied(false), 2000);
   };
 
-  const handleSendPaymentLink = () => {
-    const channel = binding.signatureChannel;
-    if (channel === "email" && clientEmail) {
-      toast.success(`Lien de paiement envoyé par email à ${clientEmail}`);
-    } else if (channel === "sms" && clientPhone) {
-      toast.success(`Lien de paiement envoyé par SMS au ${clientPhone}`);
-    } else if (channel === "whatsapp" && clientPhone) {
-      window.open(`https://wa.me/${clientPhone.replace(/\s/g, "")}?text=${encodeURIComponent(`Bonjour, voici votre lien de paiement pour votre assurance: ${paymentLink}`)}`, "_blank");
-      toast.success("Redirection vers WhatsApp...");
-    } else if (channel === "presential") {
-      toast.success("Mode paiement en présence activé");
+  // Signature handlers
+  const handlePresentialSignature = () => {
+    toast.success("Zone de signature ouverte sur tablette");
+    onUpdate({ signatureCompleted: true });
+  };
+
+  const handleSendOtp = () => {
+    if (!binding.clientPhone) {
+      toast.error("Veuillez renseigner le numéro de téléphone");
+      return;
+    }
+    // Generate mock OTP
+    const mockOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    setOtpCode(mockOtp);
+    onUpdate({ signatureOtpSent: true });
+    toast.success(`Code OTP envoyé au ${binding.clientPhone} (Code: ${mockOtp})`);
+  };
+
+  const handleVerifyOtp = () => {
+    if (otpInput === otpCode) {
+      onUpdate({ signatureOtpVerified: true, signatureCompleted: true });
+      toast.success("Signature électronique validée !");
     } else {
-      toast.error("Veuillez renseigner les coordonnées du client");
+      toast.error("Code OTP incorrect");
     }
   };
+
+  // Payment channel handlers
+  const handleChannelToggle = (channel: PaymentChannel) => {
+    const current = binding.paymentChannels || [];
+    const updated = current.includes(channel)
+      ? current.filter(c => c !== channel)
+      : [...current, channel];
+    onUpdate({ paymentChannels: updated });
+  };
+
+  const handleSendPaymentLink = () => {
+    if (!binding.signatureCompleted) {
+      toast.error("Veuillez d'abord finaliser la signature");
+      return;
+    }
+
+    const channels = binding.paymentChannels || [];
+    if (channels.length === 0) {
+      toast.error("Veuillez sélectionner au moins un canal d'envoi");
+      return;
+    }
+
+    // Validate contact info
+    if (channels.includes("email") && !binding.clientEmail) {
+      toast.error("Veuillez renseigner l'email du client");
+      return;
+    }
+    if ((channels.includes("sms") || channels.includes("whatsapp")) && !binding.clientPhone) {
+      toast.error("Veuillez renseigner le téléphone du client");
+      return;
+    }
+
+    // Show payment dialog
+    setShowPaymentDialog(true);
+    onUpdate({ paymentLinkSent: true });
+  };
+
+  const handlePaymentReceived = () => {
+    onUpdate({ paymentReceived: true });
+    onNext();
+  };
+
+  const needsPhone = binding.paymentChannels?.includes("sms") || binding.paymentChannels?.includes("whatsapp");
+  const needsEmail = binding.paymentChannels?.includes("email");
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Finaliser la cotation</h1>
+        <h1 className="text-2xl font-bold text-foreground">Finaliser le contrat</h1>
         <p className="text-muted-foreground mt-1">
-          Sélectionnez le mode de paiement et envoyez le lien au client.
+          Signez le contrat puis envoyez le lien de paiement au client.
         </p>
       </div>
 
@@ -138,14 +179,137 @@ export const BindingStep = ({
         </CardContent>
       </Card>
 
+      {/* Signature Section */}
+      <Card>
+        <CardContent className="pt-6">
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <Fingerprint className="h-5 w-5" />
+            Signature du contrat
+            {binding.signatureCompleted && (
+              <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                ✓ Signée
+              </span>
+            )}
+          </h3>
+          
+          <RadioGroup 
+            value={binding.signatureType} 
+            onValueChange={v => onUpdate({ signatureType: v as "presential" | "electronic", signatureCompleted: false, signatureOtpSent: false, signatureOtpVerified: false })} 
+            className="grid grid-cols-2 gap-3"
+          >
+            {/* Presential Signature */}
+            <div>
+              <RadioGroupItem value="presential" id="sig-presential" className="peer sr-only" />
+              <Label 
+                htmlFor="sig-presential" 
+                className={cn(
+                  "flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-all",
+                  "hover:bg-muted peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5"
+                )}
+              >
+                <div className={cn(
+                  "h-10 w-10 rounded-full flex items-center justify-center",
+                  binding.signatureType === "presential" ? "bg-primary text-primary-foreground" : "bg-muted"
+                )}>
+                  <PenTool className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Signature sur place</p>
+                  <p className="text-xs text-muted-foreground">Sur tablette agent</p>
+                </div>
+              </Label>
+            </div>
+
+            {/* Electronic Signature */}
+            <div>
+              <RadioGroupItem value="electronic" id="sig-electronic" className="peer sr-only" />
+              <Label 
+                htmlFor="sig-electronic" 
+                className={cn(
+                  "flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-all",
+                  "hover:bg-muted peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5"
+                )}
+              >
+                <div className={cn(
+                  "h-10 w-10 rounded-full flex items-center justify-center",
+                  binding.signatureType === "electronic" ? "bg-primary text-primary-foreground" : "bg-muted"
+                )}>
+                  <Smartphone className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Signature électronique</p>
+                  <p className="text-xs text-muted-foreground">Via OTP</p>
+                </div>
+              </Label>
+            </div>
+          </RadioGroup>
+
+          {/* Presential Signature Action */}
+          {binding.signatureType === "presential" && !binding.signatureCompleted && (
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+              <p className="text-sm text-muted-foreground mb-3">
+                Ouvrez la zone de signature sur votre tablette pour que le client puisse signer.
+              </p>
+              <Button onClick={handlePresentialSignature}>
+                <PenTool className="h-4 w-4 mr-2" />
+                Ouvrir tablette de signature
+              </Button>
+            </div>
+          )}
+
+          {/* Electronic Signature OTP Flow */}
+          {binding.signatureType === "electronic" && (
+            <div className="mt-4 space-y-4">
+              <div>
+                <Label htmlFor="sig-phone" className="text-sm">Téléphone du client</Label>
+                <Input
+                  id="sig-phone"
+                  type="tel"
+                  placeholder="+225 07 12 34 56 78"
+                  value={binding.clientPhone}
+                  onChange={(e) => onUpdate({ clientPhone: e.target.value })}
+                  className="mt-1"
+                  disabled={binding.signatureOtpSent}
+                />
+              </div>
+
+              {!binding.signatureOtpSent ? (
+                <Button onClick={handleSendOtp}>
+                  <Send className="h-4 w-4 mr-2" />
+                  Envoyer le code OTP
+                </Button>
+              ) : !binding.signatureOtpVerified ? (
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="otp-input" className="text-sm">Code OTP reçu</Label>
+                    <Input
+                      id="otp-input"
+                      type="text"
+                      placeholder="123456"
+                      value={otpInput}
+                      onChange={(e) => setOtpInput(e.target.value)}
+                      className="mt-1"
+                      maxLength={6}
+                    />
+                  </div>
+                  <Button onClick={handleVerifyOtp}>
+                    Vérifier et signer
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Payment Method Selection */}
       <Card>
         <CardContent className="pt-6">
           <h3 className="font-semibold mb-4">Mode de paiement</h3>
           
           <RadioGroup 
-            value={selectedPayment} 
-            onValueChange={setSelectedPayment} 
+            value={binding.paymentMethod || "wave"} 
+            onValueChange={v => onUpdate({ paymentMethod: v })} 
             className="grid grid-cols-2 gap-3"
           >
             {paymentMethods.map(method => (
@@ -172,72 +336,13 @@ export const BindingStep = ({
         </CardContent>
       </Card>
 
-      {/* Signature Channel Selection */}
+      {/* Payment Link Sharing */}
       <Card>
         <CardContent className="pt-6">
-          <h3 className="font-semibold mb-4">Envoyer au client via</h3>
-          
-          <RadioGroup 
-            value={binding.signatureChannel} 
-            onValueChange={v => onUpdate({ signatureChannel: v as any })} 
-            className="grid grid-cols-2 sm:grid-cols-4 gap-3"
-          >
-            {signatureChannels.map(channel => (
-              <div key={channel.id}>
-                <RadioGroupItem value={channel.id} id={channel.id} className="peer sr-only" />
-                <Label 
-                  htmlFor={channel.id} 
-                  className={cn(
-                    "flex flex-col items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all text-center",
-                    "hover:bg-muted peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5"
-                  )}
-                >
-                  <div className={cn(
-                    "h-10 w-10 rounded-full flex items-center justify-center",
-                    binding.signatureChannel === channel.id 
-                      ? "bg-primary text-primary-foreground" 
-                      : "bg-muted"
-                  )}>
-                    <channel.icon className="h-5 w-5" />
-                  </div>
-                  <p className="font-medium text-sm">{channel.label}</p>
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
-
-          {/* Contact fields based on selected channel */}
-          <div className="mt-4 space-y-3">
-            {(binding.signatureChannel === "sms" || binding.signatureChannel === "whatsapp") && (
-              <div>
-                <Label htmlFor="client-phone" className="text-sm">Téléphone du client</Label>
-                <Input
-                  id="client-phone"
-                  type="tel"
-                  placeholder="+221 77 123 45 67"
-                  value={clientPhone}
-                  onChange={(e) => setClientPhone(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-            )}
-            {binding.signatureChannel === "email" && (
-              <div>
-                <Label htmlFor="client-email" className="text-sm">Email du client</Label>
-                <Input
-                  id="client-email"
-                  type="email"
-                  placeholder="client@email.com"
-                  value={clientEmail}
-                  onChange={(e) => setClientEmail(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-            )}
-          </div>
+          <h3 className="font-semibold mb-4">Partager le lien de paiement</h3>
 
           {/* Payment Link */}
-          <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+          <div className="p-4 bg-muted/50 rounded-lg mb-4">
             <p className="text-sm text-muted-foreground mb-2">Lien de paiement</p>
             <div className="flex items-center gap-2">
               <code className="flex-1 text-xs bg-background p-2 rounded border truncate">
@@ -249,11 +354,67 @@ export const BindingStep = ({
             </div>
           </div>
 
+          {/* Channel Selection (Multi-select) */}
+          <div className="mb-4">
+            <Label className="text-sm mb-3 block">Canaux d'envoi (multi-sélection)</Label>
+            <div className="flex flex-wrap gap-3">
+              {paymentChannelOptions.map(channel => (
+                <div
+                  key={channel.id}
+                  className={cn(
+                    "flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all",
+                    binding.paymentChannels?.includes(channel.id) 
+                      ? "border-primary bg-primary/5" 
+                      : "hover:bg-muted"
+                  )}
+                  onClick={() => handleChannelToggle(channel.id)}
+                >
+                  <Checkbox
+                    checked={binding.paymentChannels?.includes(channel.id) || false}
+                    onCheckedChange={() => handleChannelToggle(channel.id)}
+                  />
+                  <channel.icon className="h-4 w-4" />
+                  <span className="text-sm font-medium">{channel.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Contact fields based on selected channels */}
+          <div className="space-y-3 mb-4">
+            {needsEmail && (
+              <div>
+                <Label htmlFor="payment-email" className="text-sm">Email du client</Label>
+                <Input
+                  id="payment-email"
+                  type="email"
+                  placeholder="client@email.com"
+                  value={binding.clientEmail}
+                  onChange={(e) => onUpdate({ clientEmail: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+            )}
+            {needsPhone && (
+              <div>
+                <Label htmlFor="payment-phone" className="text-sm">Téléphone du client</Label>
+                <Input
+                  id="payment-phone"
+                  type="tel"
+                  placeholder="+225 07 12 34 56 78"
+                  value={binding.clientPhone}
+                  onChange={(e) => onUpdate({ clientPhone: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+            )}
+          </div>
+
           {/* Documents */}
-          <Separator className="my-6" />
-          <h4 className="font-medium mb-3">Documents à envoyer</h4>
-          <div className="flex flex-wrap gap-2">
-            {["Devis", "IPID", "CG"].map(doc => (
+          <Separator className="my-4" />
+          <h4 className="font-medium mb-3 text-sm">Documents joints</h4>
+          <div className="flex flex-wrap gap-2 mb-6">
+            {["Devis", "IPID", "Conditions Générales"].map(doc => (
               <div key={doc} className="flex items-center gap-1.5 text-xs bg-muted px-2 py-1 rounded">
                 <FileText className="h-3 w-3" />
                 <span>{doc}</span>
@@ -261,25 +422,32 @@ export const BindingStep = ({
             ))}
           </div>
 
-          <div className="mt-6 flex flex-col sm:flex-row gap-3">
-            <Button 
-              className="flex-1" 
-              size="lg" 
-              onClick={handleSendPaymentLink}
-            >
-              <Send className="h-4 w-4 mr-2" />
-              Envoyer au client
-            </Button>
-            <Button 
-              variant="outline" 
-              size="lg" 
-              onClick={onNext}
-            >
-              Émettre la police
-            </Button>
-          </div>
+          {/* Send Button */}
+          <Button 
+            className="w-full" 
+            size="lg" 
+            onClick={handleSendPaymentLink}
+            disabled={!binding.signatureCompleted || (binding.paymentChannels?.length || 0) === 0}
+          >
+            <Send className="h-4 w-4 mr-2" />
+            Envoyer le lien de paiement
+          </Button>
+
+          {!binding.signatureCompleted && (
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              Veuillez d'abord finaliser la signature du contrat
+            </p>
+          )}
         </CardContent>
       </Card>
+
+      {/* Payment Status Dialog */}
+      <PaymentStatusDialog
+        open={showPaymentDialog}
+        onOpenChange={setShowPaymentDialog}
+        onPaymentReceived={handlePaymentReceived}
+        channels={binding.paymentChannels || []}
+      />
     </div>
   );
 };

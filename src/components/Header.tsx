@@ -88,9 +88,9 @@ export const Header = () => {
           </Link>
 
           <div className="flex items-center gap-4">
-            <a href="tel:+221338591000" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+            <a href="tel:+2252720259700" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
               <Phone className="w-4 h-4" />
-              <span className="hidden sm:inline">+221 33 859 10 00</span>
+              <span className="hidden sm:inline">(+225) 27 20 25 97 00</span>
             </a>
             
             {user && <LogoutButton />}
@@ -132,9 +132,9 @@ export const Header = () => {
             </div>
             
             <div className="flex items-center gap-4">
-              <a href="tel:+221338591000" className="flex items-center gap-2 text-sm text-white/80 hover:text-white">
+              <a href="tel:+2252720259700" className="flex items-center gap-2 text-sm text-white/80 hover:text-white">
                 <Phone className="w-4 h-4" />
-                <span className="hidden sm:inline">+221 33 859 10 00</span>
+                <span className="hidden sm:inline">(+225) 27 20 25 97 00</span>
               </a>
               
               {user ? (

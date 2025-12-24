@@ -4,8 +4,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Check, X, Star, Calendar } from "lucide-react";
-import { GuidedSalesState, PlanTier, ContractPeriodicity } from "../types";
+import { Check, X, Star, Calendar, Shield, Heart, Users, FileText } from "lucide-react";
+import { GuidedSalesState, PlanTier, ContractPeriodicity, SelectedProductType } from "../types";
 import { cn } from "@/lib/utils";
 import { formatFCFA } from "@/utils/formatCurrency";
 import { MobileCoverageStickyBar } from "../MobileCoverageStickyBar";
@@ -18,7 +18,8 @@ interface CoverageStepProps {
   onNext: () => void;
 }
 
-const plans: { tier: PlanTier; name: string; price: number; coverages: { name: string; included: boolean }[] }[] = [
+// Plans Auto
+const autoPlans: { tier: PlanTier; name: string; price: number; coverages: { name: string; included: boolean }[] }[] = [
   {
     tier: "basic",
     name: "Basic",
@@ -57,20 +58,69 @@ const plans: { tier: PlanTier; name: string; price: number; coverages: { name: s
   },
 ];
 
-const assistanceOptions = [
+// Plans Vie (Molo Molo / Pack Obsèques)
+const viePlans: { tier: PlanTier; name: string; price: number; coverages: { name: string; included: boolean }[] }[] = [
+  {
+    tier: "basic",
+    name: "Essentiel",
+    price: 0,
+    coverages: [
+      { name: "Capital Décès", included: true },
+      { name: "Épargne Garantie", included: true },
+      { name: "Exonération de prime", included: false },
+      { name: "Double capital accident", included: false },
+      { name: "Rente éducation", included: false },
+    ],
+  },
+  {
+    tier: "standard",
+    name: "Confort",
+    price: 0,
+    coverages: [
+      { name: "Capital Décès", included: true },
+      { name: "Épargne Garantie", included: true },
+      { name: "Exonération de prime", included: true },
+      { name: "Double capital accident", included: false },
+      { name: "Rente éducation", included: false },
+    ],
+  },
+  {
+    tier: "premium",
+    name: "Sérénité",
+    price: 0,
+    coverages: [
+      { name: "Capital Décès", included: true },
+      { name: "Épargne Garantie", included: true },
+      { name: "Exonération de prime", included: true },
+      { name: "Double capital accident", included: true },
+      { name: "Rente éducation", included: true },
+    ],
+  },
+];
+
+// Options Auto
+const autoAssistanceOptions = [
   { id: "avantage", name: "Avantage", description: "Assistance de base", price: 0 },
   { id: "confort", name: "Confort", description: "Assistance étendue + dépannage", price: 43510 },
   { id: "relax", name: "Relax", description: "Assistance premium + véhicule relais", price: 62975 },
   { id: "liberte", name: "Liberté", description: "Assistance tout inclus 0km", price: 91600 },
 ];
 
-const additionalOptions = [
-  { id: "bris_glace", name: "Bris de Glace Sans Franchise", description: "Pare-brise, vitres latérales et optiques", price: 29500 },
-  { id: "defense_recours", name: "Défense et Recours", description: "Protection juridique en cas de litige", price: 8459 },
-  { id: "individuel_conducteur", name: "Individuel Conducteur", description: "Capital décès/infirmité + frais médicaux", price: 2800 },
-  { id: "recours_anticipe", name: "Recours Anticipé", description: "Avance sur indemnisation en cas de sinistre", price: 12000 },
-  { id: "protection_gps", name: "Protection GPS/GSM", description: "Couverture des équipements électroniques", price: 15000 },
-  { id: "vol_accessoires", name: "Vol Accessoires", description: "Vol d'accessoires sans effraction du véhicule", price: 25000 },
+const autoAdditionalOptions = [
+  { id: "bris_glace", name: "Bris de Glace", description: "Pare-brise, vitres latérales", price: 29500 },
+  { id: "defense_recours", name: "Défense et Recours", description: "Protection juridique", price: 8459 },
+  { id: "individuel_conducteur", name: "Individuel Conducteur", description: "Capital décès/infirmité", price: 2800 },
+  { id: "recours_anticipe", name: "Recours Anticipé", description: "Avance sur indemnisation", price: 12000 },
+  { id: "protection_gps", name: "Protection GPS/GSM", description: "Équipements électroniques", price: 15000 },
+  { id: "vol_accessoires", name: "Vol Accessoires", description: "Vol sans effraction", price: 25000 },
+];
+
+// Options Vie
+const vieAdditionalOptions = [
+  { id: "exoneration_prime", name: "Exonération de prime", description: "En cas d'invalidité", price: 0, icon: Shield },
+  { id: "double_capital", name: "Double capital accident", description: "Doublement en cas d'accident", price: 0, icon: Heart },
+  { id: "rente_education", name: "Rente éducation", description: "Pour les enfants", price: 0, icon: Users },
+  { id: "capital_maladies", name: "Capital maladies graves", description: "Versement anticipé", price: 0, icon: FileText },
 ];
 
 const periodicityOptions: { id: ContractPeriodicity; name: string; months: number; discount: number }[] = [
@@ -79,6 +129,11 @@ const periodicityOptions: { id: ContractPeriodicity; name: string; months: numbe
   { id: "6_months", name: "6 mois", months: 6, discount: 0.05 },
   { id: "1_year", name: "12 mois", months: 12, discount: 0.10 },
 ];
+
+// Helper to check if product is vie
+const isVieProduct = (product: SelectedProductType): boolean => {
+  return product === "molo_molo" || product === "pack_obseques";
+};
 
 // Determine recommended plan based on vehicle age
 const getRecommendedPlanFn = (vehicleDate?: string): PlanTier => {
@@ -95,11 +150,18 @@ const getRecommendedPlanFn = (vehicleDate?: string): PlanTier => {
 
 export const CoverageStep = ({ state, onUpdate, onNeedsUpdate, onPremiumUpdate, onNext }: CoverageStepProps) => {
   const { coverage, needsAnalysis } = state;
+  const selectedProduct = state.productSelection.selectedProduct;
+  const isVie = isVieProduct(selectedProduct);
+  
+  // Select the correct plans based on product type
+  const plans = isVie ? viePlans : autoPlans;
+  const additionalOptions = isVie ? vieAdditionalOptions : autoAdditionalOptions;
+  
   const selectedPlan = plans.find(p => p.tier === coverage.planTier) || plans[1];
   const selectedPeriodicity = needsAnalysis.contractPeriodicity || "1_year";
   
-  // Get recommended plan based on vehicle first circulation date
-  const recommendedPlan = getRecommendedPlanFn(state.needsAnalysis.vehicleFirstCirculationDate);
+  // Get recommended plan based on vehicle first circulation date (only for auto)
+  const recommendedPlan = isVie ? "standard" : getRecommendedPlanFn(state.needsAnalysis.vehicleFirstCirculationDate);
 
   // Calculate price based on periodicity
   const calculatePeriodicityPrice = (annualPrice: number, periodicity: ContractPeriodicity) => {
@@ -116,7 +178,7 @@ export const CoverageStep = ({ state, onUpdate, onNeedsUpdate, onPremiumUpdate, 
       const opt = additionalOptions.find(o => o.id === optId);
       return sum + (opt?.price || 0);
     }, 0);
-    const assistancePrice = assistanceOptions.find(a => a.id === assistanceId)?.price || 0;
+    const assistancePrice = !isVie ? (autoAssistanceOptions.find(a => a.id === assistanceId)?.price || 0) : 0;
     const annualTotal = planPrice + optionsTotal + assistancePrice;
     return calculatePeriodicityPrice(annualTotal, periodicity);
   };
@@ -153,183 +215,234 @@ export const CoverageStep = ({ state, onUpdate, onNeedsUpdate, onPremiumUpdate, 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Niveaux de Couverture</h1>
+        <h1 className="text-2xl font-bold text-foreground">
+          {isVie ? "Garanties & Options" : "Niveaux de Couverture"}
+        </h1>
         <p className="text-muted-foreground mt-1">
-          Choisissez le pack adapté aux besoins de protection.
+          {isVie 
+            ? "Personnalisez votre contrat avec des garanties supplémentaires."
+            : "Choisissez le pack adapté aux besoins de protection."
+          }
         </p>
       </div>
 
-      {/* Periodicity Selection */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Calendar className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold">Durée du contrat</h3>
-          </div>
-          <RadioGroup
-            value={selectedPeriodicity}
-            onValueChange={(v) => handlePeriodicityChange(v as ContractPeriodicity)}
-            className="grid grid-cols-2 sm:grid-cols-4 gap-3"
-          >
-            {periodicityOptions.map((option) => (
-              <div key={option.id}>
-                <RadioGroupItem
-                  value={option.id}
-                  id={`periodicity-${option.id}`}
-                  className="peer sr-only"
-                />
-                <Label
-                  htmlFor={`periodicity-${option.id}`}
-                  className={cn(
-                    "flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 cursor-pointer transition-all",
-                    "hover:bg-accent hover:text-accent-foreground",
-                    "peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5"
-                  )}
-                >
-                  <span className="font-semibold text-lg">{option.name}</span>
-                  {option.discount > 0 && (
-                    <Badge variant="secondary" className="mt-2 text-xs bg-emerald-100 text-emerald-700">
-                      -{option.discount * 100}% réduction
-                    </Badge>
-                  )}
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
-        </CardContent>
-      </Card>
-
-      {/* Plan Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {plans.map((plan) => {
-          const isRecommended = plan.tier === recommendedPlan;
-          const isSelected = coverage.planTier === plan.tier;
-          const periodicPrice = calculatePeriodicityPrice(plan.price, selectedPeriodicity);
-          
-          return (
-            <Card
-              key={plan.tier}
-              className={cn(
-                "relative cursor-pointer transition-all duration-200 hover:shadow-md",
-                isSelected && "ring-2 ring-primary border-primary",
-                isRecommended && !isSelected && "ring-1 ring-emerald-500 border-emerald-500"
-              )}
-              onClick={() => handlePlanSelect(plan.tier)}
+      {/* Periodicity Selection - Only for Auto */}
+      {!isVie && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Calendar className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold">Durée du contrat</h3>
+            </div>
+            <RadioGroup
+              value={selectedPeriodicity}
+              onValueChange={(v) => handlePeriodicityChange(v as ContractPeriodicity)}
+              className="grid grid-cols-2 sm:grid-cols-4 gap-3"
             >
-              {/* Recommended Badge */}
-              {isRecommended && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-                  <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white gap-1">
-                    <Star className="h-3 w-3 fill-current" />
-                    Recommandée
-                  </Badge>
-                </div>
-              )}
-              
-              {/* Selected Checkmark */}
-              {isSelected && (
-                <div className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-primary flex items-center justify-center z-10">
-                  <Check className="h-4 w-4 text-primary-foreground" />
-                </div>
-              )}
-              
-              <CardContent className={cn("pt-6 space-y-4", isRecommended && "pt-8")}>
-                <h3 className={cn(
-                  "text-lg font-semibold",
-                  isSelected && "text-primary",
-                  isRecommended && !isSelected && "text-emerald-600"
-                )}>
-                  {plan.name}
-                </h3>
-                
-                <div className="space-y-2">
-                  {plan.coverages.map((cov) => (
-                    <div key={cov.name} className="flex items-center gap-2 text-sm">
-                      {cov.included ? (
-                        <Check className="h-4 w-4 text-emerald-500 shrink-0" />
-                      ) : (
-                        <X className="h-4 w-4 text-muted-foreground/40 shrink-0" />
-                      )}
-                      <span className={cn(!cov.included && "text-muted-foreground/60")}>
-                        {cov.name}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="pt-4 border-t">
-                  <span className="text-xl font-bold">{formatFCFA(periodicPrice)}</span>
-                  <span className="text-muted-foreground text-sm">{getPeriodicityLabel(selectedPeriodicity)}</span>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Assistance Auto Block */}
-      <Card>
-        <CardContent className="pt-6">
-          <h3 className="font-semibold mb-4">Assistance Auto</h3>
-          <RadioGroup
-            value={coverage.assistanceLevel || ""}
-            onValueChange={handleAssistanceChange}
-            className="grid grid-cols-2 sm:grid-cols-4 gap-3"
-          >
-            {assistanceOptions.map((option) => (
-              <div key={option.id}>
-                <RadioGroupItem
-                  value={option.id}
-                  id={option.id}
-                  className="peer sr-only"
-                />
-                <Label
-                  htmlFor={option.id}
-                  className={cn(
-                    "flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 cursor-pointer transition-all",
-                    "hover:bg-accent hover:text-accent-foreground",
-                    "peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5"
-                  )}
-                >
-                  <span className="font-medium">{option.name}</span>
-                  <span className="text-xs text-muted-foreground text-center mt-1">{option.description}</span>
-                  <span className="text-sm font-semibold text-primary mt-2">
-                    {option.price === 0 ? "Gratuit" : `+${formatFCFA(option.price)}`}
-                  </span>
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
-        </CardContent>
-      </Card>
-
-      {/* Additional Options */}
-      <Card>
-        <CardContent className="pt-6">
-          <h3 className="font-semibold mb-4">Options Additionnelles</h3>
-          <div className="space-y-4">
-            {additionalOptions.map((option) => (
-              <div
-                key={option.id}
-                className="flex items-start justify-between py-3 border-b last:border-0"
-              >
-                <div className="flex items-start gap-3">
-                  <Checkbox
-                    id={option.id}
-                    checked={coverage.additionalOptions.includes(option.id)}
-                    onCheckedChange={(checked) => handleOptionToggle(option.id, checked as boolean)}
+              {periodicityOptions.map((option) => (
+                <div key={option.id}>
+                  <RadioGroupItem
+                    value={option.id}
+                    id={`periodicity-${option.id}`}
+                    className="peer sr-only"
                   />
-                  <div>
-                    <Label htmlFor={option.id} className="font-medium cursor-pointer">
-                      {option.name}
-                    </Label>
-                    <p className="text-sm text-muted-foreground">{option.description}</p>
-                  </div>
+                  <Label
+                    htmlFor={`periodicity-${option.id}`}
+                    className={cn(
+                      "flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 cursor-pointer transition-all",
+                      "hover:bg-accent hover:text-accent-foreground",
+                      "peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5"
+                    )}
+                  >
+                    <span className="font-semibold text-lg">{option.name}</span>
+                    {option.discount > 0 && (
+                      <Badge variant="secondary" className="mt-2 text-xs bg-emerald-100 text-emerald-700">
+                        -{option.discount * 100}% réduction
+                      </Badge>
+                    )}
+                  </Label>
                 </div>
-                <span className="text-primary font-medium">+{formatFCFA(option.price)}</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </RadioGroup>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Plan Cards - Only for Auto */}
+      {!isVie && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {plans.map((plan) => {
+            const isRecommended = plan.tier === recommendedPlan;
+            const isSelected = coverage.planTier === plan.tier;
+            const periodicPrice = calculatePeriodicityPrice(plan.price, selectedPeriodicity);
+            
+            return (
+              <Card
+                key={plan.tier}
+                className={cn(
+                  "relative cursor-pointer transition-all duration-200 hover:shadow-md",
+                  isSelected && "ring-2 ring-primary border-primary",
+                  isRecommended && !isSelected && "ring-1 ring-emerald-500 border-emerald-500"
+                )}
+                onClick={() => handlePlanSelect(plan.tier)}
+              >
+                {/* Recommended Badge */}
+                {isRecommended && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+                    <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white gap-1">
+                      <Star className="h-3 w-3 fill-current" />
+                      Recommandée
+                    </Badge>
+                  </div>
+                )}
+                
+                {/* Selected Checkmark */}
+                {isSelected && (
+                  <div className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-primary flex items-center justify-center z-10">
+                    <Check className="h-4 w-4 text-primary-foreground" />
+                  </div>
+                )}
+                
+                <CardContent className={cn("pt-6 space-y-4", isRecommended && "pt-8")}>
+                  <h3 className={cn(
+                    "text-lg font-semibold",
+                    isSelected && "text-primary",
+                    isRecommended && !isSelected && "text-emerald-600"
+                  )}>
+                    {plan.name}
+                  </h3>
+                  
+                  <div className="space-y-2">
+                    {plan.coverages.map((cov) => (
+                      <div key={cov.name} className="flex items-center gap-2 text-sm">
+                        {cov.included ? (
+                          <Check className="h-4 w-4 text-emerald-500 shrink-0" />
+                        ) : (
+                          <X className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+                        )}
+                        <span className={cn(!cov.included && "text-muted-foreground/60")}>
+                          {cov.name}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-4 border-t">
+                    <span className="text-xl font-bold">{formatFCFA(periodicPrice)}</span>
+                    <span className="text-muted-foreground text-sm">{getPeriodicityLabel(selectedPeriodicity)}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Assistance Auto Block - Only for Auto */}
+      {!isVie && (
+        <Card>
+          <CardContent className="pt-6">
+            <h3 className="font-semibold mb-4">Assistance Auto</h3>
+            <RadioGroup
+              value={coverage.assistanceLevel || ""}
+              onValueChange={handleAssistanceChange}
+              className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+            >
+              {autoAssistanceOptions.map((option) => (
+                <div key={option.id}>
+                  <RadioGroupItem
+                    value={option.id}
+                    id={option.id}
+                    className="peer sr-only"
+                  />
+                  <Label
+                    htmlFor={option.id}
+                    className={cn(
+                      "flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 cursor-pointer transition-all",
+                      "hover:bg-accent hover:text-accent-foreground",
+                      "peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5"
+                    )}
+                  >
+                    <span className="font-medium">{option.name}</span>
+                    <span className="text-xs text-muted-foreground text-center mt-1">{option.description}</span>
+                    <span className="text-sm font-semibold text-primary mt-2">
+                      {option.price === 0 ? "Gratuit" : `+${formatFCFA(option.price)}`}
+                    </span>
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Additional Options - Condensed layout for Vie, original for Auto */}
+      <Card>
+        <CardContent className="pt-6">
+          <h3 className="font-semibold mb-4">
+            {isVie ? "Garanties Optionnelles" : "Options Additionnelles"}
+          </h3>
+          
+          {isVie ? (
+            // Vie: Compact grid layout with checkboxes
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {vieAdditionalOptions.map((option) => {
+                const IconComponent = option.icon;
+                const isChecked = coverage.additionalOptions.includes(option.id);
+                return (
+                  <label
+                    key={option.id}
+                    htmlFor={`vie-opt-${option.id}`}
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all",
+                      isChecked 
+                        ? "border-primary bg-primary/5" 
+                        : "border-muted hover:border-primary/50 hover:bg-accent/50"
+                    )}
+                  >
+                    <Checkbox
+                      id={`vie-opt-${option.id}`}
+                      checked={isChecked}
+                      onCheckedChange={(checked) => handleOptionToggle(option.id, checked as boolean)}
+                    />
+                    <IconComponent className={cn(
+                      "h-5 w-5 shrink-0",
+                      isChecked ? "text-primary" : "text-muted-foreground"
+                    )} />
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium text-sm">{option.name}</span>
+                      <p className="text-xs text-muted-foreground truncate">{option.description}</p>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          ) : (
+            // Auto: Original vertical layout
+            <div className="space-y-4">
+              {autoAdditionalOptions.map((option) => (
+                <div
+                  key={option.id}
+                  className="flex items-start justify-between py-3 border-b last:border-0"
+                >
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id={option.id}
+                      checked={coverage.additionalOptions.includes(option.id)}
+                      onCheckedChange={(checked) => handleOptionToggle(option.id, checked as boolean)}
+                    />
+                    <div>
+                      <Label htmlFor={option.id} className="font-medium cursor-pointer">
+                        {option.name}
+                      </Label>
+                      <p className="text-sm text-muted-foreground">{option.description}</p>
+                    </div>
+                  </div>
+                  <span className="text-primary font-medium">+{formatFCFA(option.price)}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

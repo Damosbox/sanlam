@@ -375,9 +375,9 @@ export const BindingStep = ({
                   <Button 
                     onClick={handleSendPaymentLink}
                     disabled={!binding.signatureCompleted || (binding.paymentChannels?.length || 0) === 0}
-                    size="sm"
+                    className="bg-primary hover:bg-primary/90"
                   >
-                    <Send className="h-4 w-4 mr-1" />
+                    <Send className="h-4 w-4 mr-2" />
                     Envoyer le lien
                   </Button>
                 </div>

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Car, Heart, GraduationCap, PiggyBank, Home as HomeIcon, Shield, ArrowRight, Calculator, MessageCircle, FileText, ChevronRight, Users, Clock, Award } from "lucide-react";
+import { Car, Heart, GraduationCap, PiggyBank, Home as HomeIcon, Shield, ArrowRight, Calculator, MessageCircle, FileText, ChevronRight, Users, Clock, Award, MapPin, Phone, Mail } from "lucide-react";
 import heroImage from "@/assets/hero-woman.jpg";
 import productAutoImg from "@/assets/product-auto.jpg";
 import productHabitationImg from "@/assets/product-habitation.jpg";
@@ -312,6 +312,117 @@ const Home = () => {
               <p className="text-muted-foreground text-sm">
                 La force de deux leaders mondiaux : Sanlam et Allianz, au service de votre sérénité.
               </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Nos Agences Section */}
+      <section className="py-16 bg-muted">
+        <div className="container">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+              Nos Agences en Côte d'Ivoire
+            </h2>
+            <p className="text-muted-foreground">
+              Retrouvez-nous dans nos différentes agences à Abidjan pour un accompagnement personnalisé.
+            </p>
+          </div>
+
+          {/* Sièges principaux */}
+          <div className="grid md:grid-cols-3 gap-6 mb-10">
+            <div className="p-6 rounded-2xl border bg-card hover:shadow-medium transition-all">
+              <h3 className="font-bold text-lg text-primary mb-4">SanlamAllianz Vie</h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex items-start gap-3">
+                  <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <p className="text-muted-foreground">2 Boulevard Roume, Plateau<br />01 BP 1741 Abidjan 01</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <a href="tel:+22527202597" className="text-foreground hover:text-primary transition-colors">(+225) 27 20 25 97 00</a>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <a href="mailto:saci-infovie@sanlamallianz.com" className="text-foreground hover:text-primary transition-colors text-xs">saci-infovie@sanlamallianz.com</a>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-2xl border bg-card hover:shadow-medium transition-all">
+              <h3 className="font-bold text-lg text-primary mb-4">SanlamAllianz Non-Vie</h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex items-start gap-3">
+                  <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <p className="text-muted-foreground">3 Boulevard Roume, Plateau<br />01 BP 3832 Abidjan 01</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <a href="tel:+22527202536" className="text-foreground hover:text-primary transition-colors">(+225) 27 20 25 36 00</a>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <a href="mailto:saci-infos@sanlamallianz.com" className="text-foreground hover:text-primary transition-colors text-xs">saci-infos@sanlamallianz.com</a>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-2xl border bg-card hover:shadow-medium transition-all">
+              <h3 className="font-bold text-lg text-primary mb-4">Relation Client</h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex items-start gap-3">
+                  <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <p className="text-muted-foreground">3 Boulevard Roume, Plateau<br />01 BP 3832 Abidjan 01</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <a href="tel:+22527202777" className="text-foreground hover:text-primary transition-colors">(+225) 27 20 27 77 77</a>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <a href="mailto:saci-relationclient@sanlamallianz.com" className="text-foreground hover:text-primary transition-colors text-xs">saci-relationclient@sanlamallianz.com</a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Espaces services */}
+          <h3 className="text-xl font-semibold text-foreground mb-6">Espaces Services</h3>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-4 rounded-xl border bg-card hover:shadow-soft transition-all">
+              <h4 className="font-semibold text-foreground mb-2">Cocody - 2 Plateaux</h4>
+              <p className="text-xs text-muted-foreground mb-2">Boulevard Latrille, voisin Lunetterie Alain Afflelou</p>
+              <div className="flex items-center gap-2 text-xs">
+                <Phone className="w-3 h-3 text-primary" />
+                <span className="text-foreground">07 48 35 44 51</span>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl border bg-card hover:shadow-soft transition-all">
+              <h4 className="font-semibold text-foreground mb-2">Cocody - II Plateaux</h4>
+              <p className="text-xs text-muted-foreground mb-2">Bd Latrille, face Patisserie Abidjanaise</p>
+              <div className="flex items-center gap-2 text-xs">
+                <Phone className="w-3 h-3 text-primary" />
+                <span className="text-foreground">07 07 93 52 14</span>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl border bg-card hover:shadow-soft transition-all">
+              <h4 className="font-semibold text-foreground mb-2">Koumassi</h4>
+              <p className="text-xs text-muted-foreground mb-2">Boulevard VGE, Immeuble Privilège 2020</p>
+              <div className="flex items-center gap-2 text-xs">
+                <Phone className="w-3 h-3 text-primary" />
+                <span className="text-foreground">07 07 90 64 80</span>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl border bg-card hover:shadow-soft transition-all">
+              <h4 className="font-semibold text-foreground mb-2">Plateau</h4>
+              <p className="text-xs text-muted-foreground mb-2">2, Boulevard Roume</p>
+              <div className="flex items-center gap-2 text-xs">
+                <Phone className="w-3 h-3 text-primary" />
+                <span className="text-foreground">27 20 25 36 00</span>
+              </div>
             </div>
           </div>
         </div>

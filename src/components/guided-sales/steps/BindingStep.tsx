@@ -302,26 +302,33 @@ export const BindingStep = ({
         </CardContent>
       </Card>
 
-      {/* Payment Method Selection */}
+      {/* Unified Payment Method & Link Sharing Section */}
       <Card>
         <CardContent className="pt-6">
-          <h3 className="font-semibold mb-4">Mode de paiement</h3>
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Mode de paiement
+          </h3>
           
-          <RadioGroup 
-            value={binding.paymentMethod || "wave"} 
-            onValueChange={v => onUpdate({ paymentMethod: v })} 
-            className="grid grid-cols-2 gap-3"
-          >
-            {paymentMethods.map(method => (
-              <div key={method.id}>
-                <RadioGroupItem value={method.id} id={`payment-${method.id}`} className="peer sr-only" />
-                <Label 
-                  htmlFor={`payment-${method.id}`} 
+          <div className="grid grid-cols-2 gap-3">
+            {paymentMethods.map(method => {
+              const isSelected = binding.paymentMethod === method.id;
+              return (
+                <div
+                  key={method.id}
                   className={cn(
-                    "flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-all",
-                    "hover:bg-muted peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5"
+                    "relative flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-all",
+                    isSelected 
+                      ? "border-primary bg-primary/5 ring-1 ring-primary" 
+                      : "hover:bg-muted"
                   )}
+                  onClick={() => onUpdate({ paymentMethod: method.id })}
                 >
+                  {isSelected && (
+                    <div className="absolute top-2 right-2">
+                      <Check className="h-4 w-4 text-primary" />
+                    </div>
+                  )}
                   <div className={cn("h-10 w-10 rounded-full flex items-center justify-center text-white", method.color)}>
                     <method.icon className="h-5 w-5" />
                   </div>
@@ -329,114 +336,120 @@ export const BindingStep = ({
                     <p className="font-medium text-sm">{method.label}</p>
                     <p className="text-xs text-muted-foreground truncate">{method.description}</p>
                   </div>
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
-        </CardContent>
-      </Card>
-
-      {/* Payment Link Sharing */}
-      <Card>
-        <CardContent className="pt-6">
-          <h3 className="font-semibold mb-4">Partager le lien de paiement</h3>
-
-          {/* Payment Link */}
-          <div className="p-4 bg-muted/50 rounded-lg mb-4">
-            <p className="text-sm text-muted-foreground mb-2">Lien de paiement</p>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 text-xs bg-background p-2 rounded border truncate">
-                {paymentLink}
-              </code>
-              <Button variant="outline" size="icon" onClick={handleCopyLink}>
-                {linkCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
-
-          {/* Channel Selection (Multi-select) */}
-          <div className="mb-4">
-            <Label className="text-sm mb-3 block">Canaux d'envoi (multi-sélection)</Label>
-            <div className="flex flex-wrap gap-3">
-              {paymentChannelOptions.map(channel => (
-                <div
-                  key={channel.id}
-                  className={cn(
-                    "flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all",
-                    binding.paymentChannels?.includes(channel.id) 
-                      ? "border-primary bg-primary/5" 
-                      : "hover:bg-muted"
-                  )}
-                  onClick={() => handleChannelToggle(channel.id)}
-                >
-                  <Checkbox
-                    checked={binding.paymentChannels?.includes(channel.id) || false}
-                    onCheckedChange={() => handleChannelToggle(channel.id)}
-                  />
-                  <channel.icon className="h-4 w-4" />
-                  <span className="text-sm font-medium">{channel.label}</span>
                 </div>
-              ))}
+              );
+            })}
+          </div>
+
+          {/* Conditional Payment Link Sharing - appears after payment method selection */}
+          {binding.paymentMethod && (
+            <div className="mt-6 pt-6 border-t space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <h4 className="font-medium text-sm flex items-center gap-2">
+                <Send className="h-4 w-4" />
+                Partager le lien de paiement
+              </h4>
+
+              {/* Payment Link */}
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground mb-2">Lien de paiement</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs bg-background p-2 rounded border truncate">
+                    {paymentLink}
+                  </code>
+                  <Button variant="outline" size="icon" onClick={handleCopyLink}>
+                    {linkCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Channel Selection (Multi-select) */}
+              <div>
+                <Label className="text-sm mb-3 block">Canaux d'envoi</Label>
+                <div className="flex flex-wrap gap-3">
+                  {paymentChannelOptions.map(channel => (
+                    <div
+                      key={channel.id}
+                      className={cn(
+                        "flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all",
+                        binding.paymentChannels?.includes(channel.id) 
+                          ? "border-primary bg-primary/5" 
+                          : "hover:bg-muted"
+                      )}
+                      onClick={() => handleChannelToggle(channel.id)}
+                    >
+                      <Checkbox
+                        checked={binding.paymentChannels?.includes(channel.id) || false}
+                        onCheckedChange={() => handleChannelToggle(channel.id)}
+                      />
+                      <channel.icon className="h-4 w-4" />
+                      <span className="text-sm font-medium">{channel.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Contact fields based on selected channels */}
+              {(needsEmail || needsPhone) && (
+                <div className="space-y-3">
+                  {needsEmail && (
+                    <div>
+                      <Label htmlFor="payment-email" className="text-sm">Email du client</Label>
+                      <Input
+                        id="payment-email"
+                        type="email"
+                        placeholder="client@email.com"
+                        value={binding.clientEmail}
+                        onChange={(e) => onUpdate({ clientEmail: e.target.value })}
+                        className="mt-1"
+                      />
+                    </div>
+                  )}
+                  {needsPhone && (
+                    <div>
+                      <Label htmlFor="payment-phone" className="text-sm">Téléphone du client</Label>
+                      <Input
+                        id="payment-phone"
+                        type="tel"
+                        placeholder="+225 07 12 34 56 78"
+                        value={binding.clientPhone}
+                        onChange={(e) => onUpdate({ clientPhone: e.target.value })}
+                        className="mt-1"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Documents */}
+              <div>
+                <h4 className="font-medium mb-2 text-sm">Documents joints</h4>
+                <div className="flex flex-wrap gap-2">
+                  {["Devis", "IPID", "Conditions Générales"].map(doc => (
+                    <div key={doc} className="flex items-center gap-1.5 text-xs bg-muted px-2 py-1 rounded">
+                      <FileText className="h-3 w-3" />
+                      <span>{doc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Send Button */}
+              <Button 
+                className="w-full" 
+                size="lg" 
+                onClick={handleSendPaymentLink}
+                disabled={!binding.signatureCompleted || (binding.paymentChannels?.length || 0) === 0}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Envoyer le lien de paiement
+              </Button>
+
+              {!binding.signatureCompleted && (
+                <p className="text-xs text-muted-foreground text-center">
+                  Veuillez d'abord finaliser la signature du contrat
+                </p>
+              )}
             </div>
-          </div>
-
-          {/* Contact fields based on selected channels */}
-          <div className="space-y-3 mb-4">
-            {needsEmail && (
-              <div>
-                <Label htmlFor="payment-email" className="text-sm">Email du client</Label>
-                <Input
-                  id="payment-email"
-                  type="email"
-                  placeholder="client@email.com"
-                  value={binding.clientEmail}
-                  onChange={(e) => onUpdate({ clientEmail: e.target.value })}
-                  className="mt-1"
-                />
-              </div>
-            )}
-            {needsPhone && (
-              <div>
-                <Label htmlFor="payment-phone" className="text-sm">Téléphone du client</Label>
-                <Input
-                  id="payment-phone"
-                  type="tel"
-                  placeholder="+225 07 12 34 56 78"
-                  value={binding.clientPhone}
-                  onChange={(e) => onUpdate({ clientPhone: e.target.value })}
-                  className="mt-1"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Documents */}
-          <Separator className="my-4" />
-          <h4 className="font-medium mb-3 text-sm">Documents joints</h4>
-          <div className="flex flex-wrap gap-2 mb-6">
-            {["Devis", "IPID", "Conditions Générales"].map(doc => (
-              <div key={doc} className="flex items-center gap-1.5 text-xs bg-muted px-2 py-1 rounded">
-                <FileText className="h-3 w-3" />
-                <span>{doc}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Send Button */}
-          <Button 
-            className="w-full" 
-            size="lg" 
-            onClick={handleSendPaymentLink}
-            disabled={!binding.signatureCompleted || (binding.paymentChannels?.length || 0) === 0}
-          >
-            <Send className="h-4 w-4 mr-2" />
-            Envoyer le lien de paiement
-          </Button>
-
-          {!binding.signatureCompleted && (
-            <p className="text-xs text-muted-foreground text-center mt-2">
-              Veuillez d'abord finaliser la signature du contrat
-            </p>
           )}
         </CardContent>
       </Card>

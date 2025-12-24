@@ -21,6 +21,8 @@ const productLabels: Record<ProductType, string> = {
   habitation: "Multirisque Habitation",
   sante: "Complémentaire Santé",
   vie: "Prévoyance Vie",
+  mrh: "Multirisque Habitation",
+  assistance_voyage: "Assistance Voyage",
 };
 
 // Définitions des termes techniques pour les infobulles

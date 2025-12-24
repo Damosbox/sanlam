@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Car, Heart, Landmark, Construction } from "lucide-react";
+import { Car, Heart, Landmark, Construction, Home, Plane } from "lucide-react";
 import { GuidedSalesState, ProductCategory, SelectedProductType } from "../types";
 
 interface ProductSelectionStepProps {
@@ -75,6 +75,18 @@ export const ProductSelectionStep = ({ state, onUpdate, onNext }: ProductSelecti
               title="Assurance Auto"
               description="Assurance automobile tous risques ou responsabilité civile pour véhicules particuliers et professionnels"
               onSelect={() => handleSelectProduct("non_vie", "auto")}
+            />
+            <ProductCard
+              icon={<Home className="h-8 w-8 text-primary" />}
+              title="Multirisque Habitation"
+              description="Protection complète de votre logement et de vos biens contre les risques locatifs et dommages"
+              onSelect={() => handleSelectProduct("non_vie", "mrh")}
+            />
+            <ProductCard
+              icon={<Plane className="h-8 w-8 text-primary" />}
+              title="Assistance Voyage"
+              description="Couverture médicale et assistance rapatriement pour vos déplacements à l'étranger"
+              onSelect={() => handleSelectProduct("non_vie", "assistance_voyage")}
             />
           </div>
         </TabsContent>

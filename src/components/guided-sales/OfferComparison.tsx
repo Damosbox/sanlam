@@ -64,6 +64,16 @@ const highlightsByProduct: Record<SelectedProductType, Record<PlanTier, string[]
     standard: ["Capital 3M FCFA", "Conjoint + 2 enfants", "1 ascendant inclus"],
     basic: ["Capital 1.5M FCFA", "Souscripteur seul"],
   },
+  mrh: {
+    premium: ["Bâtiment + Contenu", "Tous risques informatique", "RC familiale incluse"],
+    standard: ["Bâtiment + Contenu", "Risques locatifs", "Vol inclus"],
+    basic: ["Risques locatifs", "Incendie + Dégâts des eaux"],
+  },
+  assistance_voyage: {
+    premium: ["Frais médicaux 100M", "Rapatriement illimité", "Annulation voyage"],
+    standard: ["Frais médicaux 50M", "Rapatriement inclus", "Bagages couverts"],
+    basic: ["Frais médicaux 20M", "Rapatriement basique"],
+  },
 };
 
 export const OfferComparison = ({ state, onSelectPlan }: OfferComparisonProps) => {

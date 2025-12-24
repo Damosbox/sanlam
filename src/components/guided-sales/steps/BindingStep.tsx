@@ -362,41 +362,19 @@ export const BindingStep = ({
                 Partager le lien de paiement
               </h4>
 
-              {/* Payment Link with Send Button */}
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <p className="text-sm text-muted-foreground mb-2">Lien de paiement</p>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 text-xs bg-background p-2 rounded border truncate">
-                    {paymentLink}
-                  </code>
-                  <Button variant="outline" size="icon" onClick={handleCopyLink}>
-                    {linkCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                  <Button 
-                    onClick={handleSendPaymentLink}
-                    disabled={!binding.signatureCompleted || (binding.paymentChannels?.length || 0) === 0}
-                    className="bg-primary hover:bg-primary/90"
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    Envoyer le lien
-                  </Button>
-                </div>
-              </div>
-
-              {/* Channel Selection (Multi-select) */}
+              {/* Channel Selection (Multi-select) - Horizontal alignment */}
               <div>
-                <Label className="text-sm mb-3 block">Canaux d'envoi</Label>
-                <div className="flex flex-wrap gap-3">
+                <Label className="text-sm mb-2 block">Canaux d'envoi</Label>
+                <div className="flex gap-4">
                   {paymentChannelOptions.map(channel => (
-                    <div
+                    <label
                       key={channel.id}
                       className={cn(
-                        "flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all",
+                        "flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-all",
                         binding.paymentChannels?.includes(channel.id) 
                           ? "border-primary bg-primary/5" 
                           : "hover:bg-muted"
                       )}
-                      onClick={() => handleChannelToggle(channel.id)}
                     >
                       <Checkbox
                         checked={binding.paymentChannels?.includes(channel.id) || false}
@@ -404,16 +382,16 @@ export const BindingStep = ({
                       />
                       <channel.icon className="h-4 w-4" />
                       <span className="text-sm font-medium">{channel.label}</span>
-                    </div>
+                    </label>
                   ))}
                 </div>
               </div>
 
               {/* Contact fields based on selected channels */}
               {(needsEmail || needsPhone) && (
-                <div className="space-y-3">
+                <div className="flex gap-4">
                   {needsEmail && (
-                    <div>
+                    <div className="flex-1">
                       <Label htmlFor="payment-email" className="text-sm">Email du client</Label>
                       <Input
                         id="payment-email"
@@ -426,7 +404,7 @@ export const BindingStep = ({
                     </div>
                   )}
                   {needsPhone && (
-                    <div>
+                    <div className="flex-1">
                       <Label htmlFor="payment-phone" className="text-sm">Téléphone du client</Label>
                       <Input
                         id="payment-phone"
@@ -440,6 +418,32 @@ export const BindingStep = ({
                   )}
                 </div>
               )}
+
+              {/* Payment Link with Send Button */}
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground mb-2">Lien de paiement</p>
+                <div className="flex items-center gap-2">
+                  <a 
+                    href={paymentLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex-1 text-xs bg-background p-2 rounded border truncate text-primary hover:underline"
+                  >
+                    {paymentLink}
+                  </a>
+                  <Button variant="outline" size="icon" onClick={handleCopyLink}>
+                    {linkCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                  <Button 
+                    onClick={handleSendPaymentLink}
+                    disabled={!binding.signatureCompleted || (binding.paymentChannels?.length || 0) === 0}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Envoyer le lien
+                  </Button>
+                </div>
+              </div>
 
               {/* Documents */}
               <div>

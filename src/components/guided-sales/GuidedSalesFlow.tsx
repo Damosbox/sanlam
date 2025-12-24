@@ -23,7 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const TOTAL_STEPS = 7;
 const stepLabels = ["Choisir le produit", "Identifier le client", "Générer Devis Rapide", "Passer à la Vérification", "Confirmer", "Émettre la police", "Terminer"];
-const stepNames = ["Produit", "Identification", "Besoin", "Couverture", "Vérification", "Signature", "Émission"];
+const stepNames = ["Produit", "Identification", "Besoin", "Couverture", "Vérification", "Signature et paiement", "Émission"];
 
 // Type pour les recommandations IA
 interface AIRecommendation {

@@ -66,6 +66,11 @@ const assistanceOptions = [
 
 const additionalOptions = [
   { id: "bris_glace", name: "Bris de Glace Sans Franchise", description: "Pare-brise, vitres latérales et optiques", price: 29500 },
+  { id: "defense_recours", name: "Défense et Recours", description: "Protection juridique en cas de litige", price: 8459 },
+  { id: "individuel_conducteur", name: "Individuel Conducteur", description: "Capital décès/infirmité + frais médicaux", price: 2800 },
+  { id: "recours_anticipe", name: "Recours Anticipé", description: "Avance sur indemnisation en cas de sinistre", price: 12000 },
+  { id: "protection_gps", name: "Protection GPS/GSM", description: "Couverture des équipements électroniques", price: 15000 },
+  { id: "vol_accessoires", name: "Vol Accessoires", description: "Vol d'accessoires sans effraction du véhicule", price: 25000 },
 ];
 
 const periodicityOptions: { id: ContractPeriodicity; name: string; months: number; discount: number }[] = [

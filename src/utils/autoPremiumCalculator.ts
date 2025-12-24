@@ -1,4 +1,4 @@
-import { GuidedSalesState, UsageType, PlanTier, ContractPeriodicity } from "@/components/guided-sales/types";
+import { GuidedSalesState, UsageType, PlanTier, ContractPeriodicity, EnergyType } from "@/components/guided-sales/types";
 
 // Barème RC de base par puissance fiscale (en FCFA)
 const RC_BASE_RATES: Record<string, number> = {
@@ -15,6 +15,14 @@ const USAGE_COEFFICIENTS: Record<UsageType, number> = {
   professionnel: 1.25,
   taxi: 1.5,
   livraison: 1.35,
+};
+
+// Coefficient par type d'énergie (nouveau)
+const ENERGY_COEFFICIENTS: Record<EnergyType, number> = {
+  essence: 1.0,
+  diesel: 1.05,
+  electrique: 0.90,
+  hybride: 0.95,
 };
 
 // Coefficient par nombre de places
@@ -41,6 +49,16 @@ const OPTIONAL_COVERAGE_RATES: Record<string, number> = {
   dommages: 0.025,      // 2.5%
   brisGlaces: 0.005,    // 0.5%
   tiersCollision: 0.012, // 1.2%
+};
+
+// Primes fixes pour garanties additionnelles (FCFA/an)
+const FIXED_GUARANTEE_PRICES: Record<string, number> = {
+  defense_recours: 8459,
+  individuel_conducteur: 2800,
+  recours_anticipe: 12000,
+  protection_gps: 15000,
+  vol_accessoires: 25000,
+  bris_glace: 29500,
 };
 
 // Coefficient de réduction franchise (plus la franchise est haute, moins la prime est élevée)
@@ -70,6 +88,14 @@ const ACCESSORIES_FEES: Record<string, number> = {
   "1_year": 5000,
 };
 
+// Coefficient de fractionnement réel (comme dans le tarificateur Excel)
+const FRACTIONNEMENT_COEFFICIENTS: Record<ContractPeriodicity, number> = {
+  "1_year": 1.0,       // Annuel - pas de majoration
+  "6_months": 0.55,    // Semestriel (+10% coût)
+  "3_months": 0.30,    // Trimestriel (+20% coût)
+  "1_month": 0.12,     // Mensuel (+44% coût)
+};
+
 const FGA_RATE = 0.02;           // 2% du RC (Responsabilité Civile)
 const CEDEAO_FEE = 1000;         // Carte brune CEDEAO: 1 000 FCFA
 
@@ -79,6 +105,14 @@ const ASSISTANCE_PRICES: Record<string, number> = {
   "confort": 43510,    // 43 510 FCFA
   "relax": 62975,      // 62 975 FCFA
   "liberte": 91600,    // 91 600 FCFA
+};
+
+const getFiscalPowerRange = (power: number): string => {
+  if (power <= 5) return "1-5";
+  if (power <= 10) return "6-10";
+  if (power <= 15) return "11-15";
+  if (power <= 20) return "16-20";
+  return "21+";
 };
 
 export interface AutoPremiumBreakdown {
@@ -93,14 +127,6 @@ export interface AutoPremiumBreakdown {
   totalAPayer: number;          // Total à payer
 }
 
-const getFiscalPowerRange = (power: number): string => {
-  if (power <= 5) return "1-5";
-  if (power <= 10) return "6-10";
-  if (power <= 15) return "11-15";
-  if (power <= 20) return "16-20";
-  return "21+";
-};
-
 export const calculateAutoPremium = (state: GuidedSalesState): AutoPremiumBreakdown => {
   const { needsAnalysis, quickQuote, coverage } = state;
 
@@ -108,59 +134,75 @@ export const calculateAutoPremium = (state: GuidedSalesState): AutoPremiumBreakd
   const fiscalPower = needsAnalysis.vehicleFiscalPower || 7;
   const usage = needsAnalysis.vehicleUsage || "prive";
   const seats = needsAnalysis.vehicleSeats || 5;
-  const venalValue = needsAnalysis.vehicleVenalValue || quickQuote.insuredValue * 655.957 || 5000000; // Convert to FCFA if needed
-  const bonusMalus = needsAnalysis.bonusMalus || quickQuote.bonusMalus || "neutre";
+  const energy = needsAnalysis.vehicleEnergy || "essence";
+  const venalValue = needsAnalysis.vehicleVenalValue || quickQuote.insuredValue * 655.957 || 5000000;
+  const bonusMalus = needsAnalysis.bonusMalus || quickQuote.bonusMalus || "bonus_0";
 
-  // 1. Calcul de la prime RC de base
+  // 1. Calcul de la prime RC de base avec coefficient énergie
   const rcBaseRate = RC_BASE_RATES[getFiscalPowerRange(fiscalPower)];
   const usageCoef = USAGE_COEFFICIENTS[usage];
   const seatsCoef = getSeatsCoefficient(seats);
+  const energyCoef = ENERGY_COEFFICIENTS[energy];
   const bnsCoef = BNS_COEFFICIENTS[bonusMalus] || 1.0;
 
-  const primeRC = Math.round(rcBaseRate * usageCoef * seatsCoef * bnsCoef);
+  const primeRC = Math.round(rcBaseRate * usageCoef * seatsCoef * energyCoef * bnsCoef);
 
-  // 2. Calcul des garanties optionnelles avec impact franchise
+  // 2. Calcul des garanties optionnelles (% valeur vénale) avec impact franchise
   const franchise = quickQuote.franchise || 0;
   const franchiseCoef = getFranchiseCoefficient(franchise);
   
   const planCoverages = PLAN_COVERAGES[coverage.planTier];
-  const allCoverages = [...new Set([...planCoverages, ...coverage.additionalOptions])];
   
-  let primeGaranties = 0;
-  allCoverages.forEach(cov => {
+  let primeGarantiesVariables = 0;
+  planCoverages.forEach(cov => {
     const rate = OPTIONAL_COVERAGE_RATES[cov];
     if (rate) {
-      // La franchise réduit le coût des garanties dommages
-      primeGaranties += Math.round(venalValue * rate * franchiseCoef);
+      primeGarantiesVariables += Math.round(venalValue * rate * franchiseCoef);
     }
   });
 
-  // 3. Prime nette (RC + garanties optionnelles + assistance)
-  const assistancePrice = ASSISTANCE_PRICES[coverage.assistanceLevel || "avantage"] || 0;
-  const primeNette = primeRC + primeGaranties + assistancePrice;
+  // 3. Calcul des garanties additionnelles à prime fixe
+  let primeGarantiesFixes = 0;
+  coverage.additionalOptions.forEach(optId => {
+    const fixedPrice = FIXED_GUARANTEE_PRICES[optId];
+    if (fixedPrice) {
+      primeGarantiesFixes += fixedPrice;
+    }
+  });
 
-  // 4. Frais d'accessoires (selon périodicité du contrat)
+  const primeGaranties = primeGarantiesVariables + primeGarantiesFixes;
+
+  // 4. Prime nette annuelle (RC + garanties optionnelles + assistance)
+  const assistancePrice = ASSISTANCE_PRICES[coverage.assistanceLevel || "avantage"] || 0;
+  const primeNetteAnnuelle = primeRC + primeGaranties + assistancePrice;
+
+  // 5. Appliquer le coefficient de fractionnement
   const periodicity: ContractPeriodicity = needsAnalysis.contractPeriodicity || "1_year";
+  const fractionnementCoef = FRACTIONNEMENT_COEFFICIENTS[periodicity];
+  const primeNette = Math.round(primeNetteAnnuelle * fractionnementCoef);
+
+  // 6. Frais d'accessoires (selon périodicité du contrat)
   const fraisAccessoires = ACCESSORIES_FEES[periodicity];
 
-  // 5. Taxes fiscales (14,5% sur prime nette)
+  // 7. Taxes fiscales (14,5% sur prime nette fractionnée)
   const taxes = Math.round(primeNette * TAX_RATE);
 
-  // 6. Prime TTC (prime nette + frais d'accessoires + taxes)
+  // 8. Prime TTC (prime nette + frais d'accessoires + taxes)
   const primeTTC = primeNette + fraisAccessoires + taxes;
 
-  // 7. FGA (2% de la RC - responsabilité civile obligatoire)
-  const fga = Math.round(primeRC * FGA_RATE);
+  // 9. FGA (2% de la RC fractionnée)
+  const primeRCFractionnee = Math.round(primeRC * fractionnementCoef);
+  const fga = Math.round(primeRCFractionnee * FGA_RATE);
 
-  // 8. CEDEAO (1 000 FCFA)
+  // 10. CEDEAO (1 000 FCFA - fixe)
   const cedeao = CEDEAO_FEE;
 
-  // 9. Prime Totale à payer (Prime TTC + FGA + CEDEAO)
+  // 11. Prime Totale à payer (Prime TTC + FGA + CEDEAO)
   const totalAPayer = primeTTC + fga + cedeao;
 
   return {
-    primeRC,
-    primeGaranties,
+    primeRC: primeRCFractionnee,
+    primeGaranties: Math.round(primeGaranties * fractionnementCoef),
     primeNette,
     fraisAccessoires,
     taxes,

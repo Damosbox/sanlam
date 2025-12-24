@@ -89,19 +89,19 @@ export const IssuanceStep = ({ state, onReset }: IssuanceStepProps) => {
             Sur une échelle de 0 à 10, recommanderiez-vous ce processus de souscription ?
           </p>
           
-          <div className="flex justify-center gap-1 sm:gap-2 mb-3">
-            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(score => (
+          <div className="flex justify-center gap-2 sm:gap-3 mb-3">
+            {[1, 2, 3, 4, 5].map(score => (
               <button
                 key={score}
                 onClick={() => handleNpsSelect(score)}
                 disabled={npsSubmitted}
                 className={cn(
-                  "w-8 h-8 sm:w-9 sm:h-9 rounded-full border text-sm font-medium transition-all",
+                  "w-10 h-10 sm:w-12 sm:h-12 rounded-full border text-base font-medium transition-all",
                   npsScore === score 
                     ? "bg-primary text-primary-foreground border-primary" 
                     : "hover:bg-muted",
-                  score <= 6 ? "border-red-200 dark:border-red-800" : 
-                  score <= 8 ? "border-yellow-200 dark:border-yellow-800" : 
+                  score <= 2 ? "border-red-200 dark:border-red-800" : 
+                  score <= 3 ? "border-yellow-200 dark:border-yellow-800" : 
                   "border-green-200 dark:border-green-800",
                   npsSubmitted && "opacity-50 cursor-not-allowed"
                 )}

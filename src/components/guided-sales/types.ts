@@ -5,6 +5,8 @@ export type ClientType = "prospect" | "existing";
 export type UsageType = "prive" | "professionnel" | "taxi" | "livraison";
 export type PlanTier = "basic" | "standard" | "premium";
 export type ContractPeriodicity = "1_month" | "3_months" | "6_months" | "1_year";
+export type SignatureType = "presential" | "electronic";
+export type PaymentChannel = "email" | "sms" | "whatsapp";
 export type ViePeriodicite = "mensuelle" | "trimestrielle" | "semestrielle" | "annuelle";
 export type EnergyType = "essence" | "diesel" | "electrique" | "hybride";
 export type TravelZone = "afrique" | "europe" | "amerique" | "asie" | "monde";
@@ -161,8 +163,16 @@ export interface UnderwritingData {
 }
 
 export interface BindingData {
-  signatureChannel: "email" | "sms" | "whatsapp" | "presential";
+  signatureType: SignatureType;
+  signatureOtpSent: boolean;
+  signatureOtpVerified: boolean;
   signatureCompleted: boolean;
+  paymentMethod: string;
+  paymentChannels: PaymentChannel[];
+  paymentLinkSent: boolean;
+  paymentReceived: boolean;
+  clientPhone: string;
+  clientEmail: string;
 }
 
 export interface IssuanceData {
@@ -237,8 +247,16 @@ export const initialState: GuidedSalesState = {
     manualReviewRequested: false,
   },
   binding: {
-    signatureChannel: "email",
+    signatureType: "presential",
+    signatureOtpSent: false,
+    signatureOtpVerified: false,
     signatureCompleted: false,
+    paymentMethod: "wave",
+    paymentChannels: [],
+    paymentLinkSent: false,
+    paymentReceived: false,
+    clientPhone: "",
+    clientEmail: "",
   },
   issuance: {
     policyNumber: "",

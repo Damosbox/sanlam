@@ -159,14 +159,24 @@ const Home = () => {
               </div>
             </div>
 
-            {/* Right Content - Hero Image */}
+            {/* Right Content - Hero Image with preloading */}
             <div className="relative hidden lg:block">
-              <div className="relative overflow-hidden rounded-2xl shadow-2xl w-full max-w-md ml-auto">
+              <div className="relative overflow-hidden rounded-2xl shadow-2xl w-full max-w-md ml-auto aspect-square">
+                {/* Preload all images for instant switching */}
+                <div className="hidden">
+                  {Object.values(productImages).map((src, idx) => (
+                    <img key={idx} src={src} alt="" loading="eager" />
+                  ))}
+                </div>
                 <img 
                   key={displayedImage}
                   src={displayedImage} 
                   alt="Famille protégée par Sanlam Allianz" 
-                  className="w-full h-auto object-cover transition-opacity duration-300 animate-fade-in"
+                  loading="eager"
+                  decoding="async"
+                  width={448}
+                  height={448}
+                  className="w-full h-full object-cover transition-opacity duration-300 animate-fade-in"
                 />
                 {/* Overlay avec icône du produit survolé */}
                 {hoveredProduct && (

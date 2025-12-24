@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -5,6 +6,16 @@ import { Car, Heart, GraduationCap, PiggyBank, Home as HomeIcon, Shield, ArrowRi
 import heroImage from "@/assets/hero-woman.jpg";
 import { useNavigate, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+
+// Images par produit - utilise heroImage comme fallback pour tous
+const productImages: Record<string, string> = {
+  "Assurance Auto": heroImage,
+  "Assurance Habitation": heroImage,
+  "Assurance Santé": heroImage,
+  "Assurance Vie": heroImage,
+  "Épargne Plus": heroImage,
+  "Educ'Plus": heroImage,
+};
 
 const productCards = [
   {
@@ -80,6 +91,10 @@ const stats = [
 
 const Home = () => {
   const navigate = useNavigate();
+  const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
+  
+  // Image à afficher selon le produit survolé
+  const displayedImage = hoveredProduct ? productImages[hoveredProduct] : heroImage;
 
   return (
     <div className="min-h-screen bg-background">
@@ -101,7 +116,14 @@ const Home = () => {
                   <Link
                     key={product.title}
                     to={product.href}
-                    className="group flex items-center gap-3 p-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
+                    onMouseEnter={() => setHoveredProduct(product.title)}
+                    onMouseLeave={() => setHoveredProduct(null)}
+                    className={cn(
+                      "group flex items-center gap-3 p-4 rounded-xl backdrop-blur-sm border border-white/20 transition-all duration-300",
+                      hoveredProduct === product.title 
+                        ? "bg-white/25 scale-[1.02]" 
+                        : "bg-white/10 hover:bg-white/20"
+                    )}
                   >
                     <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
                       <product.icon className="w-5 h-5 text-white" />
@@ -133,11 +155,22 @@ const Home = () => {
 
             {/* Right Content - Hero Image */}
             <div className="relative hidden lg:block">
-              <img 
-                src={heroImage} 
-                alt="Famille protégée par Sanlam Allianz" 
-                className="rounded-2xl shadow-2xl w-full max-w-md ml-auto"
-              />
+              <div className="relative overflow-hidden rounded-2xl shadow-2xl w-full max-w-md ml-auto">
+                <img 
+                  key={displayedImage}
+                  src={displayedImage} 
+                  alt="Famille protégée par Sanlam Allianz" 
+                  className="w-full h-auto object-cover transition-opacity duration-300 animate-fade-in"
+                />
+                {/* Overlay avec icône du produit survolé */}
+                {hoveredProduct && (
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary/40 to-transparent flex items-end justify-center pb-8 animate-fade-in">
+                    <div className="bg-white/90 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg">
+                      <p className="text-primary font-semibold text-sm">{hoveredProduct}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
               {/* Floating Badge */}
               <div className="absolute -bottom-4 -left-4 bg-white rounded-xl shadow-lg p-4 animate-fade-in">
                 <div className="flex items-center gap-3">

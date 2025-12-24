@@ -259,44 +259,57 @@ export const BindingStep = ({
 
           {/* Electronic Signature OTP Flow */}
           {binding.signatureType === "electronic" && (
-            <div className="mt-4 space-y-4">
-              <div>
-                <Label htmlFor="sig-phone" className="text-sm">Téléphone du client</Label>
-                <Input
-                  id="sig-phone"
-                  type="tel"
-                  placeholder="+225 07 12 34 56 78"
-                  value={binding.clientPhone}
-                  onChange={(e) => onUpdate({ clientPhone: e.target.value })}
-                  className="mt-1"
-                  disabled={binding.signatureOtpSent}
-                />
-              </div>
+            <div className="mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                {/* Phone + Send OTP */}
+                <div>
+                  <Label htmlFor="sig-phone" className="text-sm">Téléphone du client</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      id="sig-phone"
+                      type="tel"
+                      placeholder="+225 07 12 34 56 78"
+                      value={binding.clientPhone}
+                      onChange={(e) => onUpdate({ clientPhone: e.target.value })}
+                      disabled={binding.signatureOtpSent}
+                      className="flex-1"
+                    />
+                    <Button 
+                      onClick={handleSendOtp} 
+                      disabled={binding.signatureOtpSent}
+                      size="sm"
+                    >
+                      <Send className="h-4 w-4 mr-1" />
+                      Envoyer OTP
+                    </Button>
+                  </div>
+                </div>
 
-              {!binding.signatureOtpSent ? (
-                <Button onClick={handleSendOtp}>
-                  <Send className="h-4 w-4 mr-2" />
-                  Envoyer le code OTP
-                </Button>
-              ) : !binding.signatureOtpVerified ? (
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="otp-input" className="text-sm">Code OTP reçu</Label>
+                {/* OTP Input + Verify */}
+                <div>
+                  <Label htmlFor="otp-input" className="text-sm">Code OTP reçu</Label>
+                  <div className="flex gap-2 mt-1">
                     <Input
                       id="otp-input"
                       type="text"
                       placeholder="123456"
                       value={otpInput}
                       onChange={(e) => setOtpInput(e.target.value)}
-                      className="mt-1"
                       maxLength={6}
+                      disabled={!binding.signatureOtpSent || binding.signatureOtpVerified}
+                      className="flex-1"
                     />
+                    <Button 
+                      onClick={handleVerifyOtp}
+                      disabled={!binding.signatureOtpSent || binding.signatureOtpVerified}
+                      size="sm"
+                    >
+                      <Check className="h-4 w-4 mr-1" />
+                      Vérifier
+                    </Button>
                   </div>
-                  <Button onClick={handleVerifyOtp}>
-                    Vérifier et signer
-                  </Button>
                 </div>
-              ) : null}
+              </div>
             </div>
           )}
         </CardContent>
@@ -349,7 +362,7 @@ export const BindingStep = ({
                 Partager le lien de paiement
               </h4>
 
-              {/* Payment Link */}
+              {/* Payment Link with Send Button */}
               <div className="p-4 bg-muted/50 rounded-lg">
                 <p className="text-sm text-muted-foreground mb-2">Lien de paiement</p>
                 <div className="flex items-center gap-2">
@@ -358,6 +371,14 @@ export const BindingStep = ({
                   </code>
                   <Button variant="outline" size="icon" onClick={handleCopyLink}>
                     {linkCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                  <Button 
+                    onClick={handleSendPaymentLink}
+                    disabled={!binding.signatureCompleted || (binding.paymentChannels?.length || 0) === 0}
+                    size="sm"
+                  >
+                    <Send className="h-4 w-4 mr-1" />
+                    Envoyer le lien
                   </Button>
                 </div>
               </div>
@@ -433,16 +454,6 @@ export const BindingStep = ({
                 </div>
               </div>
 
-              {/* Send Button */}
-              <Button 
-                className="w-full" 
-                size="lg" 
-                onClick={handleSendPaymentLink}
-                disabled={!binding.signatureCompleted || (binding.paymentChannels?.length || 0) === 0}
-              >
-                <Send className="h-4 w-4 mr-2" />
-                Envoyer le lien de paiement
-              </Button>
 
               {!binding.signatureCompleted && (
                 <p className="text-xs text-muted-foreground text-center">

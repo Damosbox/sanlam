@@ -4,17 +4,23 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Car, Heart, GraduationCap, PiggyBank, Home as HomeIcon, Shield, ArrowRight, Calculator, MessageCircle, FileText, ChevronRight, Users, Clock, Award } from "lucide-react";
 import heroImage from "@/assets/hero-woman.jpg";
+import productAutoImg from "@/assets/product-auto.jpg";
+import productHabitationImg from "@/assets/product-habitation.jpg";
+import productSanteImg from "@/assets/product-sante.jpg";
+import productVieImg from "@/assets/product-vie.jpg";
+import productEpargneImg from "@/assets/product-epargne.jpg";
+import productEducationImg from "@/assets/product-education.jpg";
 import { useNavigate, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
-// Images par produit - utilise heroImage comme fallback pour tous
+// Images par produit
 const productImages: Record<string, string> = {
-  "Assurance Auto": heroImage,
-  "Assurance Habitation": heroImage,
-  "Assurance Santé": heroImage,
-  "Assurance Vie": heroImage,
-  "Épargne Plus": heroImage,
-  "Educ'Plus": heroImage,
+  "Assurance Auto": productAutoImg,
+  "Assurance Habitation": productHabitationImg,
+  "Assurance Santé": productSanteImg,
+  "Assurance Vie": productVieImg,
+  "Épargne Plus": productEpargneImg,
+  "Educ'Plus": productEducationImg,
 };
 
 const productCards = [

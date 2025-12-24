@@ -12,6 +12,7 @@ import productEpargneImg from "@/assets/product-epargne.jpg";
 import productEducationImg from "@/assets/product-education.jpg";
 import { useNavigate, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import AgenciesMap from "@/components/AgenciesMap";
 
 // Images par produit
 const productImages: Record<string, string> = {
@@ -426,22 +427,10 @@ const Home = () => {
             </div>
           </div>
 
-          {/* Carte Google Maps */}
+          {/* Carte interactive */}
           <div className="mt-10">
             <h3 className="text-xl font-semibold text-foreground mb-6">Nous trouver</h3>
-            <div className="rounded-2xl overflow-hidden border bg-card shadow-soft">
-              <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3972.312647867881!2d-4.024068425405689!3d5.322159194635854!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xfc1ebdc39b4ef25%3A0x5e40d5f9b6a9f8c2!2sBoulevard%20Roume%2C%20Abidjan%2C%20C%C3%B4te%20d&#39;Ivoire!5e0!3m2!1sfr!2sfr!4v1703000000000!5m2!1sfr!2sfr"
-                width="100%"
-                height="400"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                title="Localisation Sanlam Allianz - Boulevard Roume, Abidjan"
-                className="w-full"
-              />
-            </div>
+            <AgenciesMap />
           </div>
         </div>
       </section>

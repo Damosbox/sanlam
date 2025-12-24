@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Car, Home, HeartPulse, Shield, CalendarIcon, Search, Check } from "lucide-react";
+import { Car, Home, HeartPulse, Shield, CalendarIcon, Search, Check, Plane } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -27,6 +27,8 @@ const productTypeConfig: Record<ProductType, { icon: typeof Car; label: string }
   habitation: { icon: Home, label: "Assurance Habitation" },
   sante: { icon: HeartPulse, label: "Assurance Santé" },
   vie: { icon: Shield, label: "Assurance Vie" },
+  mrh: { icon: Home, label: "Multirisque Habitation" },
+  assistance_voyage: { icon: Plane, label: "Assistance Voyage" },
 };
 
 export const NeedsAnalysisStep = ({
@@ -294,7 +296,54 @@ export const NeedsAnalysisStep = ({
         </div>
       </div>
 
-      {/* Row 5: Périodicité du contrat */}
+      {/* Row 5: Énergie + Catégorie socio-professionnelle */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            Énergie
+          </Label>
+          <Select value={needsAnalysis.vehicleEnergy || "essence"} onValueChange={v => onUpdate({
+            vehicleEnergy: v as any
+          })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Type d'énergie" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="essence">Essence</SelectItem>
+              <SelectItem value="diesel">Diesel</SelectItem>
+              <SelectItem value="electrique">Électrique</SelectItem>
+              <SelectItem value="hybride">Hybride</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            Catégorie socio-professionnelle
+          </Label>
+          <Select value={needsAnalysis.socioProfessionalCategory || ""} onValueChange={v => onUpdate({
+            socioProfessionalCategory: v
+          })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Sélectionner..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="salarie_public">Salarié public</SelectItem>
+              <SelectItem value="salarie_prive">Salarié privé</SelectItem>
+              <SelectItem value="commercant">Commerçant</SelectItem>
+              <SelectItem value="profession_liberale">Profession libérale</SelectItem>
+              <SelectItem value="artisan">Artisan</SelectItem>
+              <SelectItem value="agriculteur">Agriculteur</SelectItem>
+              <SelectItem value="retraite">Retraité</SelectItem>
+              <SelectItem value="etudiant">Étudiant</SelectItem>
+              <SelectItem value="sans_emploi">Sans emploi</SelectItem>
+              <SelectItem value="autre">Autre</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Row 6: Périodicité du contrat */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
@@ -525,6 +574,191 @@ export const NeedsAnalysisStep = ({
     </div>
   );
 
+  const renderMRHFields = () => (
+    <div className="space-y-6">
+      {/* Row 1: Valeur bâtiment / Loyer */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            Valeur du bâtiment / Loyer annuel
+          </Label>
+          <div className="relative">
+            <Input type="number" placeholder="Valeur ou loyer annuel" value={needsAnalysis.buildingValue || needsAnalysis.rentValue || ""} onChange={e => onUpdate({
+              buildingValue: Number(e.target.value)
+            })} className="pr-14" />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+              FCFA
+            </span>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            Valeur du contenu
+          </Label>
+          <div className="relative">
+            <Input type="number" placeholder="Valeur des biens mobiliers" value={needsAnalysis.contentValue || ""} onChange={e => onUpdate({
+              contentValue: Number(e.target.value)
+            })} className="pr-14" />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+              FCFA
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Row 2: Équipement informatique + Nombre de pièces */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            Tous risques informatique (Optionnel)
+          </Label>
+          <div className="relative">
+            <Input type="number" placeholder="Valeur équipements IT" value={needsAnalysis.itEquipmentValue || ""} onChange={e => onUpdate({
+              itEquipmentValue: Number(e.target.value)
+            })} className="pr-14" />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+              FCFA
+            </span>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            Nombre de pièces
+          </Label>
+          <Input type="number" placeholder="ex: 4" value={needsAnalysis.numberOfRooms || ""} onChange={e => onUpdate({
+            numberOfRooms: Number(e.target.value)
+          })} />
+        </div>
+      </div>
+
+      {/* Row 3: Adresse géographique */}
+      <div className="space-y-2">
+        <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+          Adresse géographique
+        </Label>
+        <Input placeholder="Adresse complète du bien" value={needsAnalysis.propertyAddress || ""} onChange={e => onUpdate({
+          propertyAddress: e.target.value
+        })} />
+      </div>
+    </div>
+  );
+
+  const renderAssistanceVoyageFields = () => (
+    <div className="space-y-6">
+      {/* Row 1: Destination + Date de naissance */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            Destination - Zone
+          </Label>
+          <Select value={needsAnalysis.travelZone || "afrique"} onValueChange={v => onUpdate({
+            travelZone: v as any
+          })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Sélectionner la zone" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="afrique">Afrique</SelectItem>
+              <SelectItem value="europe">Europe</SelectItem>
+              <SelectItem value="amerique">Amérique</SelectItem>
+              <SelectItem value="asie">Asie</SelectItem>
+              <SelectItem value="monde">Monde entier</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            Date de naissance
+          </Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !needsAnalysis.travelerBirthDate && "text-muted-foreground")}>
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {needsAnalysis.travelerBirthDate ? format(new Date(needsAnalysis.travelerBirthDate), "PPP", {
+                  locale: fr
+                }) : <span>Sélectionner une date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={needsAnalysis.travelerBirthDate ? new Date(needsAnalysis.travelerBirthDate) : undefined} onSelect={date => onUpdate({
+                travelerBirthDate: date?.toISOString()
+              })} disabled={date => date > new Date()} initialFocus className={cn("p-3 pointer-events-auto")} />
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+
+      {/* Row 2: Date de départ + Nombre de jours */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            Date de départ
+          </Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !needsAnalysis.departureDate && "text-muted-foreground")}>
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {needsAnalysis.departureDate ? format(new Date(needsAnalysis.departureDate), "PPP", {
+                  locale: fr
+                }) : <span>Sélectionner une date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={needsAnalysis.departureDate ? new Date(needsAnalysis.departureDate) : undefined} onSelect={date => onUpdate({
+                departureDate: date?.toISOString()
+              })} disabled={date => date < new Date()} initialFocus className={cn("p-3 pointer-events-auto")} />
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            Nombre de jours
+          </Label>
+          <Input type="number" placeholder="ex: 14" value={needsAnalysis.numberOfDays || ""} onChange={e => onUpdate({
+            numberOfDays: Number(e.target.value)
+          })} />
+        </div>
+      </div>
+
+      {/* Row 3: Date de retour + Numéro de passeport */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            Date de retour
+          </Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !needsAnalysis.returnDate && "text-muted-foreground")}>
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {needsAnalysis.returnDate ? format(new Date(needsAnalysis.returnDate), "PPP", {
+                  locale: fr
+                }) : <span>Sélectionner une date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={needsAnalysis.returnDate ? new Date(needsAnalysis.returnDate) : undefined} onSelect={date => onUpdate({
+                returnDate: date?.toISOString()
+              })} disabled={date => date < new Date()} initialFocus className={cn("p-3 pointer-events-auto")} />
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            N° Passeport
+          </Label>
+          <Input placeholder="Numéro de passeport" value={needsAnalysis.passportNumber || ""} onChange={e => onUpdate({
+            passportNumber: e.target.value
+          })} />
+        </div>
+      </div>
+    </div>
+  );
+
   const renderProductFields = () => {
     switch (productType) {
       case "auto":
@@ -535,6 +769,10 @@ export const NeedsAnalysisStep = ({
         return renderSanteFields();
       case "vie":
         return renderVieFields();
+      case "mrh":
+        return renderMRHFields();
+      case "assistance_voyage":
+        return renderAssistanceVoyageFields();
       default:
         return renderAutoFields();
     }

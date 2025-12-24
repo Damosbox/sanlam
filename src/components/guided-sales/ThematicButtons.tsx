@@ -36,6 +36,18 @@ const topicsByProduct: Record<SelectedProductType, ThematicTopic[]> = {
     { id: "prise_en_charge", label: "Prise en charge", description: "Services funéraires inclus dans le pack", icon: HandCoins },
     { id: "famille", label: "Famille couverte", description: "Conjoint, enfants et ascendants assurés", icon: UserCheck },
   ],
+  mrh: [
+    { id: "incendie", label: "Incendie", description: "Couverture et indemnisation en cas d'incendie", icon: Shield },
+    { id: "vol", label: "Vol", description: "Conditions de prise en charge du vol", icon: Shield },
+    { id: "degats_eaux", label: "Dégâts des eaux", description: "Dommages liés aux fuites et inondations", icon: Shield },
+    { id: "rc_familiale", label: "RC Familiale", description: "Responsabilité civile vie privée", icon: Users },
+  ],
+  assistance_voyage: [
+    { id: "frais_medicaux", label: "Frais médicaux", description: "Prise en charge des soins à l'étranger", icon: Heart },
+    { id: "rapatriement", label: "Rapatriement", description: "Conditions de rapatriement sanitaire", icon: Globe },
+    { id: "bagages", label: "Bagages", description: "Indemnisation en cas de perte ou vol", icon: Shield },
+    { id: "annulation", label: "Annulation", description: "Remboursement en cas d'annulation de voyage", icon: FileCheck },
+  ],
 };
 
 export const ThematicButtons = ({ productType, onTopicClick }: ThematicButtonsProps) => {

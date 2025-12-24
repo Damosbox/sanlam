@@ -1,11 +1,13 @@
-export type ProductType = "auto" | "habitation" | "sante" | "vie";
+export type ProductType = "auto" | "habitation" | "sante" | "vie" | "mrh" | "assistance_voyage";
 export type ProductCategory = "vie" | "non_vie";
-export type SelectedProductType = "auto" | "molo_molo" | "pack_obseques";
+export type SelectedProductType = "auto" | "molo_molo" | "pack_obseques" | "mrh" | "assistance_voyage";
 export type ClientType = "prospect" | "existing";
 export type UsageType = "prive" | "professionnel" | "taxi" | "livraison";
 export type PlanTier = "basic" | "standard" | "premium";
 export type ContractPeriodicity = "1_month" | "3_months" | "6_months" | "1_year";
 export type ViePeriodicite = "mensuelle" | "trimestrielle" | "semestrielle" | "annuelle";
+export type EnergyType = "essence" | "diesel" | "electrique" | "hybride";
+export type TravelZone = "afrique" | "europe" | "amerique" | "asie" | "monde";
 
 // Données spécifiques Pack Obsèques
 export interface PackObsequesData {
@@ -79,11 +81,11 @@ export interface NeedsAnalysisData {
   country: string;
   specificRisks: string;
   contactPreference: "whatsapp" | "sms" | "email";
-  // Auto specific
+  // Auto VP specific
   vehicleType?: string;
   vehicleBrand?: string;
   vehicleModel?: string;
-  vehicleYear?: number; // Année du véhicule sélectionné
+  vehicleYear?: number;
   vehicleUsage?: UsageType;
   vehicleFirstCirculationDate?: string;
   vehicleVenalValue?: number;
@@ -91,13 +93,21 @@ export interface NeedsAnalysisData {
   bonusMalus?: string;
   vehicleFiscalPower?: number;
   vehicleSeats?: number;
+  vehicleEnergy?: EnergyType;
+  socioProfessionalCategory?: string;
   contractPeriodicity?: ContractPeriodicity;
   hasClaimHistory?: boolean;
-  // Habitation specific
+  // MRH specific
+  buildingValue?: number;
+  rentValue?: number;
+  contentValue?: number;
+  itEquipmentValue?: number;
+  numberOfRooms?: number;
+  propertyAddress?: string;
+  // Habitation specific (legacy)
   housingType?: "appartement" | "maison";
   materials?: "dur" | "semi-dur" | "leger";
   surface?: number;
-  contentValue?: number;
   security?: string[];
   // Santé specific
   beneficiaryCount?: number;
@@ -112,6 +122,13 @@ export interface NeedsAnalysisData {
   familyStatus?: string;
   monthlyIncome?: number;
   objective?: "protection" | "epargne" | "mixte";
+  // Assistance Voyage specific
+  travelZone?: TravelZone;
+  travelerBirthDate?: string;
+  departureDate?: string;
+  returnDate?: string;
+  numberOfDays?: number;
+  passportNumber?: string;
 }
 
 export interface QuickQuoteData {

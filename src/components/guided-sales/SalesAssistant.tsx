@@ -7,7 +7,6 @@ import { GuidedSalesState, PlanTier, SelectedProductType } from "./types";
 import { formatFCFA } from "@/utils/formatCurrency";
 import { SalesAIChat } from "./SalesAIChat";
 import { ThematicButtons } from "./ThematicButtons";
-import { OfferComparison } from "./OfferComparison";
 
 interface SalesAssistantProps {
   state: GuidedSalesState;
@@ -30,7 +29,6 @@ export const SalesAssistant = ({
   onNext, 
   nextLabel, 
   disabled,
-  onPlanChange 
 }: SalesAssistantProps) => {
   const [activeTopic, setActiveTopic] = useState<string | undefined>();
   const totalAPayer = state.calculatedPremium.totalAPayer;
@@ -43,10 +41,6 @@ export const SalesAssistant = ({
   const handleClearTopic = useCallback(() => {
     setActiveTopic(undefined);
   }, []);
-
-  const handlePlanSelect = useCallback((plan: PlanTier) => {
-    onPlanChange(plan);
-  }, [onPlanChange]);
 
   return (
     <Card className="sticky top-20 overflow-hidden">
@@ -81,14 +75,6 @@ export const SalesAssistant = ({
         <ThematicButtons 
           productType={state.productSelection.selectedProduct}
           onTopicClick={handleTopicClick}
-        />
-
-        <Separator />
-
-        {/* Offer Comparison */}
-        <OfferComparison 
-          state={state}
-          onSelectPlan={handlePlanSelect}
         />
 
         <Separator />

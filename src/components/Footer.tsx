@@ -49,20 +49,20 @@ export const Footer = () => {
             </Link>
             
             <div className="space-y-3 text-sm text-white/80">
-              <a href="tel:+221338591000" className="flex items-center gap-2 hover:text-white transition-colors">
+              <a href="tel:+22527202597000" className="flex items-center gap-2 hover:text-white transition-colors">
                 <Phone className="w-4 h-4" />
-                +221 33 859 10 00
+                (+225) 27 20 25 97 00
               </a>
-              <a href="mailto:contact@sanlamallianz.sn" className="flex items-center gap-2 hover:text-white transition-colors">
+              <a href="mailto:contact@sanlamallianz.ci" className="flex items-center gap-2 hover:text-white transition-colors">
                 <Mail className="w-4 h-4" />
-                contact@sanlamallianz.sn
+                contact@sanlamallianz.ci
               </a>
               <div className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
                 <span>
                   Immeuble Sanlam Allianz<br />
-                  Place de l'Indépendance<br />
-                  Dakar, Sénégal
+                  Boulevard Roume, Le Plateau<br />
+                  Abidjan, Côte d'Ivoire
                 </span>
               </div>
             </div>

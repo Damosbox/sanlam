@@ -114,13 +114,13 @@ export const NeedsAnalysisStep = ({
     setVehicleSearchTerm("");
   }, [onUpdate]);
 
-  // Render product-specific fields
+  // Render product-specific fields - Ordre Excel exact
   const renderAutoFields = () => (
     <div className="space-y-6">
-      {/* Row 1: Marque + Modèle unifié avec autocomplétion */}
+      {/* 1. Marque et modèle avec autocomplétion */}
       <div className="space-y-2">
         <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-          Véhicule (Marque & Modèle)
+          1. Véhicule (Marque & Modèle)
         </Label>
         <Popover open={vehicleSearchOpen} onOpenChange={setVehicleSearchOpen}>
           <PopoverTrigger asChild>
@@ -169,11 +169,11 @@ export const NeedsAnalysisStep = ({
         </Popover>
       </div>
 
-      {/* Row 2: Usage */}
+      {/* 2. Usage */}
       <div className="grid grid-cols-1 gap-4 sm:gap-6">
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            Usage
+            2. Usage
           </Label>
           <RadioGroup value={needsAnalysis.vehicleUsage || "prive"} onValueChange={v => onUpdate({
             vehicleUsage: v as any
@@ -194,11 +194,47 @@ export const NeedsAnalysisStep = ({
         </div>
       </div>
 
-      {/* Row 2: Valeur neuve + Valeur vénale */}
+      {/* 3. Puissance fiscale + 4. Énergie */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            Valeur neuve
+            3. Puissance fiscale
+          </Label>
+          <div className="relative">
+            <Input type="number" placeholder="ex: 7" value={needsAnalysis.vehicleFiscalPower || ""} onChange={e => onUpdate({
+              vehicleFiscalPower: Number(e.target.value)
+            })} className="pr-10" />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+              CV
+            </span>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            4. Énergie
+          </Label>
+          <Select value={needsAnalysis.vehicleEnergy || "essence"} onValueChange={v => onUpdate({
+            vehicleEnergy: v as any
+          })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Type d'énergie" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="essence">Essence</SelectItem>
+              <SelectItem value="diesel">Diesel</SelectItem>
+              <SelectItem value="electrique">Électrique</SelectItem>
+              <SelectItem value="hybride">Hybride</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* 5. Valeur Neuve + 6. Valeur Vénale */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            5. Valeur neuve
           </Label>
           <div className="relative">
             <Input type="number" placeholder="Valeur à l'achat neuf" value={needsAnalysis.vehicleNewValue || ""} onChange={e => onUpdate({
@@ -212,7 +248,7 @@ export const NeedsAnalysisStep = ({
 
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            Valeur vénale
+            6. Valeur vénale
           </Label>
           <div className="relative">
             <Input type="number" placeholder="Valeur actuelle du véhicule" value={needsAnalysis.vehicleVenalValue || ""} onChange={e => onUpdate({
@@ -225,11 +261,11 @@ export const NeedsAnalysisStep = ({
         </div>
       </div>
 
-      {/* Row 3: Date mise en circulation + BNS */}
+      {/* 7. Date mise en circulation + 8. Nombre de places */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            Date de mise en circulation
+            7. Date de mise en circulation
           </Label>
           <Popover>
             <PopoverTrigger asChild>
@@ -250,7 +286,19 @@ export const NeedsAnalysisStep = ({
 
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            BNS (Bonus)
+            8. Nombre de places
+          </Label>
+          <Input type="number" placeholder="ex: 5" value={needsAnalysis.vehicleSeats || ""} onChange={e => onUpdate({
+            vehicleSeats: Number(e.target.value)
+          })} />
+        </div>
+      </div>
+
+      {/* 9. BNS + 10. Catégorie socio-professionnelle */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            9. BNS (Bonus)
           </Label>
           <Select value={needsAnalysis.bonusMalus || "bonus_0"} onValueChange={v => onUpdate({
             bonusMalus: v
@@ -268,58 +316,10 @@ export const NeedsAnalysisStep = ({
             </SelectContent>
           </Select>
         </div>
-      </div>
-
-      {/* Row 4: Puissance fiscale + Nombre de places */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-        <div className="space-y-2">
-          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            Puissance fiscale
-          </Label>
-          <div className="relative">
-            <Input type="number" placeholder="ex: 7" value={needsAnalysis.vehicleFiscalPower || ""} onChange={e => onUpdate({
-              vehicleFiscalPower: Number(e.target.value)
-            })} className="pr-10" />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-              CV
-            </span>
-          </div>
-        </div>
 
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            Nombre de places
-          </Label>
-          <Input type="number" placeholder="ex: 5" value={needsAnalysis.vehicleSeats || ""} onChange={e => onUpdate({
-            vehicleSeats: Number(e.target.value)
-          })} />
-        </div>
-      </div>
-
-      {/* Row 5: Énergie + Catégorie socio-professionnelle */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-        <div className="space-y-2">
-          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            Énergie
-          </Label>
-          <Select value={needsAnalysis.vehicleEnergy || "essence"} onValueChange={v => onUpdate({
-            vehicleEnergy: v as any
-          })}>
-            <SelectTrigger>
-              <SelectValue placeholder="Type d'énergie" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="essence">Essence</SelectItem>
-              <SelectItem value="diesel">Diesel</SelectItem>
-              <SelectItem value="electrique">Électrique</SelectItem>
-              <SelectItem value="hybride">Hybride</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            Catégorie socio-professionnelle
+            10. Catégorie socio-professionnelle
           </Label>
           <Select value={needsAnalysis.socioProfessionalCategory || ""} onValueChange={v => onUpdate({
             socioProfessionalCategory: v
@@ -338,28 +338,6 @@ export const NeedsAnalysisStep = ({
               <SelectItem value="etudiant">Étudiant</SelectItem>
               <SelectItem value="sans_emploi">Sans emploi</SelectItem>
               <SelectItem value="autre">Autre</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Row 6: Périodicité du contrat */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-        <div className="space-y-2">
-          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            Périodicité du contrat
-          </Label>
-          <Select value={needsAnalysis.contractPeriodicity || "1_year"} onValueChange={v => onUpdate({
-            contractPeriodicity: v as any
-          })}>
-            <SelectTrigger>
-              <SelectValue placeholder="Sélectionner la durée" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1_month">1 mois (750 FCFA frais)</SelectItem>
-              <SelectItem value="3_months">3 mois (2 250 FCFA frais)</SelectItem>
-              <SelectItem value="6_months">6 mois (3 250 FCFA frais)</SelectItem>
-              <SelectItem value="1_year">1 an (5 000 FCFA frais)</SelectItem>
             </SelectContent>
           </Select>
         </div>

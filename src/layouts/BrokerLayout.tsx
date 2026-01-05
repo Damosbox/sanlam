@@ -5,6 +5,7 @@ import { Header } from "@/components/Header";
 import { Separator } from "@/components/ui/separator";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BrokerAIChatWidget } from "@/components/broker/BrokerAIChatWidget";
 
 function MobileMenuButton() {
   const { toggleSidebar, isMobile } = useSidebar();
@@ -54,6 +55,7 @@ export function BrokerLayout() {
       <SidebarProvider defaultOpen={true}>
         <BrokerLayoutContent />
       </SidebarProvider>
+      <BrokerAIChatWidget />
     </div>
   );
 }

@@ -127,7 +127,7 @@ export const Header = () => {
                     : "border-transparent text-white/70 hover:text-white"
                 )}
               >
-                Commercial
+                Intermédiaires
               </Link>
             </div>
             

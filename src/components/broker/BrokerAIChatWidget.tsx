@@ -124,15 +124,14 @@ export function BrokerAIChatWidget() {
           className={cn(
             "fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg",
             "bg-primary hover:bg-primary/90 text-primary-foreground",
-            "transition-all duration-300 hover:scale-110",
-            !isOpen && "animate-pulse"
+            "transition-all duration-300 hover:scale-110"
           )}
         >
           <Bot className="h-6 w-6" />
         </Button>
       </SheetTrigger>
 
-      <SheetContent side="right" className="w-full sm:w-[400px] p-0 flex flex-col">
+      <SheetContent side="right" className="w-full sm:w-[400px] p-0 flex flex-col h-auto max-h-[600px] top-auto bottom-20 right-4 rounded-xl border shadow-2xl">
         <SheetHeader className="p-4 border-b bg-gradient-to-r from-primary/10 to-primary/5">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center">

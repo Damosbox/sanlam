@@ -162,6 +162,8 @@ export interface UnderwritingData {
   manualReviewRequested: boolean;
 }
 
+export type IntermediaryStatus = "agent" | "courtier" | "inspecteur" | "directeur";
+
 export interface BindingData {
   signatureType: SignatureType;
   signatureOtpSent: boolean;
@@ -173,6 +175,9 @@ export interface BindingData {
   paymentReceived: boolean;
   clientPhone: string;
   clientEmail: string;
+  // Cash payment fields
+  cashPaymentReceiptNumber?: string;
+  cashPaymentReceiptImage?: string;
 }
 
 export interface IssuanceData {

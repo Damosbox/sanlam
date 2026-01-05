@@ -92,9 +92,18 @@ export const PhoneOTPVerification = ({
         body: { action: "verify", phoneNumber: value, otpCode },
       });
 
-      if (error) throw error;
+      // Handle edge function error response (400 status returns as data, not error)
+      if (error) {
+        console.error("OTP verify error:", error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de vérifier le code",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      if (data.success) {
+      if (data?.success) {
         onVerified();
         setShowOTPInput(false);
         setDemoOtp(null);
@@ -103,17 +112,20 @@ export const PhoneOTPVerification = ({
           description: "Numéro vérifié avec succès",
         });
       } else {
+        // OTP was invalid or expired - show user-friendly message
         toast({
-          title: "Erreur",
-          description: data.error || "Code invalide",
+          title: "Code incorrect",
+          description: data?.error || "Le code entré est invalide ou a expiré. Veuillez réessayer.",
           variant: "destructive",
         });
+        // Clear the input so user can try again
+        setOtpCode("");
       }
     } catch (error) {
       console.error("OTP verify error:", error);
       toast({
         title: "Erreur",
-        description: "Impossible de vérifier le code",
+        description: "Impossible de vérifier le code. Veuillez réessayer.",
         variant: "destructive",
       });
     } finally {

@@ -40,13 +40,6 @@ const productCards = [
     color: "text-primary"
   },
   {
-    icon: Heart,
-    title: "Assurance Santé",
-    description: "Prenez soin de votre santé",
-    href: "/b2c",
-    color: "text-primary"
-  },
-  {
     icon: Shield,
     title: "Assurance Vie",
     description: "Soutenez vos proches",
@@ -58,13 +51,6 @@ const productCards = [
     title: "Épargne Plus",
     description: "Faites fructifier votre épargne",
     href: "/simulateur-epargne",
-    color: "text-primary"
-  },
-  {
-    icon: GraduationCap,
-    title: "Educ'Plus",
-    description: "Préparez l'avenir de vos enfants",
-    href: "/simulateur-education",
     color: "text-primary"
   },
 ];
@@ -108,17 +94,17 @@ const Home = () => {
       <Header />
       
       {/* Hero Section - Blue Background like ia.ca */}
-      <section className="relative overflow-hidden gradient-activated py-16 md:py-24">
+      <section className="relative overflow-hidden gradient-activated py-12 md:py-20">
         <div className="container relative">
-          <div className="grid lg:grid-cols-2 gap-8 items-start">
+          <div className="grid lg:grid-cols-2 gap-10 items-start">
             {/* Left Content - Product Cards */}
-            <div className="space-y-6">
+            <div className="space-y-8">
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight">
                 Notre offre en assurance et épargne
               </h1>
               
               {/* Product Cards Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {productCards.map((product) => (
                   <Link
                     key={product.title}

@@ -5,8 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Mail, MessageSquare, Smartphone, PenTool, FileText, CreditCard, Phone, Wallet, Copy, Check, Fingerprint, Send } from "lucide-react";
-import { GuidedSalesState, PaymentChannel } from "../types";
+import { Mail, MessageSquare, Smartphone, PenTool, FileText, CreditCard, Phone, Wallet, Copy, Check, Fingerprint, Send, Banknote, Receipt, Camera } from "lucide-react";
+import { GuidedSalesState, PaymentChannel, IntermediaryStatus } from "../types";
 import { cn } from "@/lib/utils";
 import { formatFCFA } from "@/utils/formatCurrency";
 import { useState } from "react";
@@ -24,25 +24,36 @@ const paymentMethods = [{
   label: "Carte Bancaire",
   icon: CreditCard,
   color: "bg-blue-500",
-  description: "Visa, Mastercard"
+  description: "Visa, Mastercard",
+  requiresStatus: null
 }, {
   id: "wave",
   label: "Wave",
   icon: Wallet,
   color: "bg-[#1DC8F2]",
-  description: "Paiement Wave"
+  description: "Paiement Wave",
+  requiresStatus: null
 }, {
   id: "orange_money",
   label: "Orange Money",
   icon: Phone,
   color: "bg-orange-500",
-  description: "Paiement Orange Money"
+  description: "Paiement Orange Money",
+  requiresStatus: null
 }, {
   id: "mtn_momo",
   label: "MTN MoMo",
   icon: Phone,
   color: "bg-yellow-500",
-  description: "MTN Mobile Money"
+  description: "MTN Mobile Money",
+  requiresStatus: null
+}, {
+  id: "cash",
+  label: "Espèces",
+  icon: Banknote,
+  color: "bg-green-600",
+  description: "Paiement en espèces",
+  requiresStatus: ["agent", "inspecteur", "directeur"] as IntermediaryStatus[]
 }];
 
 const paymentChannelOptions = [
@@ -62,8 +73,19 @@ export const BindingStep = ({
   const [otpInput, setOtpInput] = useState("");
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
+  // Mock intermediary status - in production, this would come from user profile/auth
+  const intermediaryStatus: IntermediaryStatus = "agent";
+
+  // Filter payment methods based on intermediary status
+  const availablePaymentMethods = paymentMethods.filter(method => {
+    if (!method.requiresStatus) return true;
+    return method.requiresStatus.includes(intermediaryStatus);
+  });
+
   // Generate payment link (mock)
   const paymentLink = `https://pay.sanlam.ci/q/${Date.now().toString(36)}`;
+
+  const isCashPayment = binding.paymentMethod === "cash";
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(paymentLink);
@@ -135,9 +157,52 @@ export const BindingStep = ({
     onUpdate({ paymentLinkSent: true });
   };
 
+  const handleCashPaymentConfirm = () => {
+    if (!binding.signatureCompleted) {
+      toast.error("Veuillez d'abord finaliser la signature");
+      return;
+    }
+
+    if (!binding.cashPaymentReceiptNumber) {
+      toast.error("Veuillez renseigner le numéro de pièce/reçu");
+      return;
+    }
+
+    // For cash payment, we need at least one channel for document delivery
+    const channels = binding.paymentChannels || [];
+    if (channels.length === 0) {
+      toast.error("Veuillez sélectionner au moins un canal pour l'envoi des documents");
+      return;
+    }
+
+    // Validate contact info
+    if (channels.includes("email") && !binding.clientEmail) {
+      toast.error("Veuillez renseigner l'email du client");
+      return;
+    }
+    if ((channels.includes("sms") || channels.includes("whatsapp")) && !binding.clientPhone) {
+      toast.error("Veuillez renseigner le téléphone du client");
+      return;
+    }
+
+    // Show payment dialog (skips waiting for payment step for cash)
+    setShowPaymentDialog(true);
+    onUpdate({ paymentLinkSent: true, paymentReceived: true });
+  };
+
+  const handleReceiptScan = () => {
+    // In production, this would open camera/file picker
+    toast.info("Ouverture de la caméra pour scanner le reçu...");
+  };
+
   const handlePaymentReceived = () => {
     onUpdate({ paymentReceived: true });
     onNext();
+  };
+
+  const handleShowCrossSell = () => {
+    // Handle cross-sell action - could open a modal or navigate
+    toast.success("Redirection vers l'offre cross-sell...");
   };
 
   const needsPhone = binding.paymentChannels?.includes("sms") || binding.paymentChannels?.includes("whatsapp");
@@ -324,7 +389,7 @@ export const BindingStep = ({
           </h3>
           
           <div className="grid grid-cols-2 gap-3">
-            {paymentMethods.map(method => {
+            {availablePaymentMethods.map(method => {
               const isSelected = binding.paymentMethod === method.id;
               return (
                 <div
@@ -354,8 +419,126 @@ export const BindingStep = ({
             })}
           </div>
 
-          {/* Conditional Payment Link Sharing - appears after payment method selection */}
-          {binding.paymentMethod && (
+          {/* Cash Payment Section */}
+          {isCashPayment && (
+            <div className="mt-6 pt-6 border-t space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <h4 className="font-medium text-sm flex items-center gap-2">
+                <Receipt className="h-4 w-4" />
+                Justificatif de paiement
+              </h4>
+              
+              <div className="grid grid-cols-2 gap-4">
+                {/* Receipt Number */}
+                <div>
+                  <Label htmlFor="receipt-number" className="text-sm">N° de pièce / reçu *</Label>
+                  <Input
+                    id="receipt-number"
+                    placeholder="Ex: REC-2025-001234"
+                    value={binding.cashPaymentReceiptNumber || ""}
+                    onChange={(e) => onUpdate({ cashPaymentReceiptNumber: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+                
+                {/* Receipt Scan */}
+                <div>
+                  <Label className="text-sm">Scan du reçu (optionnel)</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Input 
+                      type="file" 
+                      accept="image/*"
+                      className="flex-1"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          onUpdate({ cashPaymentReceiptImage: file.name });
+                          toast.success(`Fichier "${file.name}" sélectionné`);
+                        }
+                      }}
+                    />
+                    <Button variant="outline" size="icon" onClick={handleReceiptScan}>
+                      <Camera className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Channel Selection for document delivery */}
+              <div>
+                <Label className="text-sm mb-2 block">Canaux d'envoi des documents</Label>
+                <div className="flex gap-4">
+                  {paymentChannelOptions.map(channel => (
+                    <label
+                      key={channel.id}
+                      className={cn(
+                        "flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-all",
+                        binding.paymentChannels?.includes(channel.id) 
+                          ? "border-primary bg-primary/5" 
+                          : "hover:bg-muted"
+                      )}
+                    >
+                      <Checkbox
+                        checked={binding.paymentChannels?.includes(channel.id) || false}
+                        onCheckedChange={() => handleChannelToggle(channel.id)}
+                      />
+                      <channel.icon className="h-4 w-4" />
+                      <span className="text-sm font-medium">{channel.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Contact fields based on selected channels */}
+              {(needsEmail || needsPhone) && (
+                <div className="flex gap-4">
+                  {needsEmail && (
+                    <div className="flex-1">
+                      <Label htmlFor="cash-email" className="text-sm">Email du client</Label>
+                      <Input
+                        id="cash-email"
+                        type="email"
+                        placeholder="client@email.com"
+                        value={binding.clientEmail}
+                        onChange={(e) => onUpdate({ clientEmail: e.target.value })}
+                        className="mt-1"
+                      />
+                    </div>
+                  )}
+                  {needsPhone && (
+                    <div className="flex-1">
+                      <Label htmlFor="cash-phone" className="text-sm">Téléphone du client</Label>
+                      <Input
+                        id="cash-phone"
+                        type="tel"
+                        placeholder="+225 07 12 34 56 78"
+                        value={binding.clientPhone}
+                        onChange={(e) => onUpdate({ clientPhone: e.target.value })}
+                        className="mt-1"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <Button 
+                onClick={handleCashPaymentConfirm}
+                disabled={!binding.signatureCompleted || !binding.cashPaymentReceiptNumber}
+                className="w-full bg-green-600 hover:bg-green-700"
+              >
+                <Check className="h-4 w-4 mr-2" />
+                Confirmer le paiement en espèces
+              </Button>
+
+              {!binding.signatureCompleted && (
+                <p className="text-xs text-muted-foreground text-center">
+                  Veuillez d'abord finaliser la signature du contrat
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Conditional Payment Link Sharing - appears after payment method selection (non-cash) */}
+          {binding.paymentMethod && !isCashPayment && (
             <div className="mt-6 pt-6 border-t space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
               <h4 className="font-medium text-sm flex items-center gap-2">
                 <Send className="h-4 w-4" />
@@ -475,6 +658,10 @@ export const BindingStep = ({
         onOpenChange={setShowPaymentDialog}
         onPaymentReceived={handlePaymentReceived}
         channels={binding.paymentChannels || []}
+        clientEmail={binding.clientEmail}
+        clientPhone={binding.clientPhone}
+        productType={state.productSelection.selectedProduct}
+        onShowCrossSell={handleShowCrossSell}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Search, User, Loader2, UserPlus, Pencil, ChevronDown, ChevronUp } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, User, Loader2, UserPlus, Pencil, ChevronDown, ChevronUp, FileImage, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { GuidedSalesState } from "../types";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { PhoneOTPVerification } from "@/components/leads/PhoneOTPVerification";
 
 interface ClientIdentificationStepProps {
   state: GuidedSalesState;
@@ -32,6 +34,9 @@ export const ClientIdentificationStep = ({ state, onUpdate, onNext }: ClientIden
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormExpanded, setIsFormExpanded] = useState(false);
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [isProcessingOCR, setIsProcessingOCR] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const data = state.clientIdentification;
 
@@ -161,9 +166,73 @@ export const ClientIdentificationStep = ({ state, onUpdate, onNext }: ClientIden
     setIsFormExpanded(true);
   };
 
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove the data:image/...;base64, prefix
+        const base64 = result.split(",")[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+    });
+  };
+
+  const handleOCRUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsProcessingOCR(true);
+    try {
+      const base64 = await fileToBase64(file);
+
+      const { data: ocrData, error } = await supabase.functions.invoke("ocr-identity", {
+        body: { imageBase64: base64 },
+      });
+
+      if (error) throw error;
+
+      if (ocrData?.extracted) {
+        const extracted = ocrData.extracted;
+        onUpdate({
+          firstName: extracted.firstName || data.firstName || "",
+          lastName: extracted.lastName || data.lastName || "",
+          identityDocumentType: extracted.documentType || "",
+          identityDocumentNumber: extracted.documentNumber || "",
+        });
+        setIsFormExpanded(true);
+        toast({
+          title: "Données extraites",
+          description: "Les informations ont été préremplies depuis la pièce d'identité",
+        });
+      } else {
+        toast({
+          title: "OCR incomplet",
+          description: "Impossible d'extraire toutes les informations. Veuillez les saisir manuellement.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("OCR error:", error);
+      toast({
+        title: "Erreur OCR",
+        description: "Impossible de lire la pièce d'identité",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingOCR(false);
+      // Reset the input so the same file can be selected again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
   const isLinked = !!data.linkedContactId;
   const hasManualData = !isLinked && (data.firstName || data.lastName || data.phone || data.email);
-  const canProceed = data.firstName && data.lastName && data.phone;
+  const canProceed = data.firstName && data.lastName && data.phone && isPhoneVerified;
 
   return (
     <div className="space-y-6">
@@ -375,6 +444,43 @@ export const ClientIdentificationStep = ({ state, onUpdate, onNext }: ClientIden
                 </div>
               )}
 
+              {/* ID Document OCR Scanner */}
+              <Card className="border-dashed">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <FileImage className="h-8 w-8 text-muted-foreground flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="font-medium">Scanner une pièce d'identité</p>
+                      <p className="text-sm text-muted-foreground">
+                        CNI, Passeport ou Permis de conduire
+                      </p>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      hidden
+                      ref={fileInputRef}
+                      onChange={handleOCRUpload}
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isProcessingOCR}
+                    >
+                      {isProcessingOCR ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Camera className="mr-2 h-4 w-4" />
+                          Scanner
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">Prénom *</Label>
@@ -396,17 +502,46 @@ export const ClientIdentificationStep = ({ state, onUpdate, onNext }: ClientIden
                 </div>
               </div>
 
+              {/* Identity Document Fields */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Téléphone *</Label>
+                  <Label>Type de pièce d'identité</Label>
+                  <Select
+                    value={data.identityDocumentType || ""}
+                    onValueChange={(v) => onUpdate({ identityDocumentType: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CNI">CNI</SelectItem>
+                      <SelectItem value="Passeport">Passeport</SelectItem>
+                      <SelectItem value="Permis de conduire">Permis de conduire</SelectItem>
+                      <SelectItem value="Carte consulaire">Carte consulaire</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="identityDocumentNumber">Numéro du document</Label>
                   <Input
-                    id="phone"
-                    type="tel"
-                    value={data.phone}
-                    onChange={(e) => onUpdate({ phone: e.target.value })}
-                    placeholder="+225 07 XX XX XX XX"
+                    id="identityDocumentNumber"
+                    value={data.identityDocumentNumber || ""}
+                    onChange={(e) => onUpdate({ identityDocumentNumber: e.target.value })}
+                    placeholder="N° du document"
                   />
                 </div>
+              </div>
+
+              {/* Phone with OTP Verification */}
+              <div className="grid grid-cols-2 gap-4">
+                <PhoneOTPVerification
+                  label="Téléphone WhatsApp *"
+                  value={data.phone}
+                  onChange={(value) => onUpdate({ phone: value })}
+                  onVerified={() => setIsPhoneVerified(true)}
+                  isVerified={isPhoneVerified}
+                  placeholder="+225 07 XX XX XX XX"
+                />
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input

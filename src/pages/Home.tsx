@@ -205,38 +205,114 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Compact Client Banner with Stats */}
-      <section className="py-8 bg-muted border-b">
+      {/* Quick Actions Section */}
+      <section className="py-16 bg-background">
         <div className="container">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            {/* Left - Client CTA */}
-            <div className="flex items-center gap-4">
-              <div className="hidden sm:flex items-center gap-6">
-                {stats.map((stat) => (
-                  <div key={stat.label} className="flex items-center gap-2">
-                    <stat.icon className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="text-lg font-bold text-foreground">{stat.value}</p>
-                      <p className="text-xs text-muted-foreground">{stat.label}</p>
-                    </div>
-                  </div>
-                ))}
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-8">
+            Prêt à passer à l'action?
+          </h2>
+          
+          <div className="grid md:grid-cols-3 gap-4">
+            {quickActions.map((action) => (
+              <Link
+                key={action.title}
+                to={action.href}
+                className="group flex items-center gap-4 p-5 rounded-xl border bg-card hover:shadow-medium hover:border-primary/20 transition-all duration-300"
+              >
+                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+                  <action.icon className="w-6 h-6 text-primary group-hover:text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-foreground">{action.title}</h3>
+                  <p className="text-sm text-muted-foreground">{action.description}</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Already Client Section */}
+      <section className="py-16 bg-muted">
+        <div className="container">
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+                Je suis déjà client
+              </h2>
+              <p className="text-muted-foreground mb-6">
+                Accédez à votre espace personnel pour gérer vos contrats, déclarer un sinistre ou contacter votre conseiller.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Link to="/auth">
+                  <Button>
+                    Accéder à mon espace
+                  </Button>
+                </Link>
+                <Link to="/b2c">
+                  <Button variant="outline">
+                    Déclarer un sinistre
+                  </Button>
+                </Link>
               </div>
             </div>
             
-            {/* Right - Actions */}
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-muted-foreground hidden sm:inline">Déjà client ?</span>
-              <Link to="/auth">
-                <Button size="sm">
-                  Mon espace
-                </Button>
-              </Link>
-              <Link to="/b2c">
-                <Button variant="outline" size="sm">
-                  Déclarer un sinistre
-                </Button>
-              </Link>
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-4">
+              {stats.map((stat) => (
+                <div key={stat.label} className="text-center p-4 rounded-xl bg-background shadow-soft">
+                  <stat.icon className="w-8 h-8 text-primary mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trust Section */}
+      <section className="py-16 bg-background">
+        <div className="container">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+              Pourquoi choisir Sanlam Allianz?
+            </h2>
+            <p className="text-muted-foreground">
+              Leader de l'assurance en Afrique de l'Ouest, nous vous accompagnons depuis plus de 15 ans avec des solutions adaptées à vos besoins.
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="p-6 rounded-2xl border bg-card hover:shadow-medium transition-all">
+              <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                <Shield className="w-7 h-7 text-primary" />
+              </div>
+              <h3 className="font-semibold text-lg text-foreground mb-2">Protection complète</h3>
+              <p className="text-muted-foreground text-sm">
+                Des garanties étendues pour vous protéger vous et votre famille en toutes circonstances.
+              </p>
+            </div>
+            
+            <div className="p-6 rounded-2xl border bg-card hover:shadow-medium transition-all">
+              <div className="w-14 h-14 rounded-xl bg-[hsl(var(--bright-green))]/10 flex items-center justify-center mb-4">
+                <Clock className="w-7 h-7 text-[hsl(var(--bright-green))]" />
+              </div>
+              <h3 className="font-semibold text-lg text-foreground mb-2">Réactivité 24/7</h3>
+              <p className="text-muted-foreground text-sm">
+                Une équipe disponible à tout moment pour répondre à vos urgences et vos questions.
+              </p>
+            </div>
+            
+            <div className="p-6 rounded-2xl border bg-card hover:shadow-medium transition-all">
+              <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center mb-4">
+                <Award className="w-7 h-7 text-accent" />
+              </div>
+              <h3 className="font-semibold text-lg text-foreground mb-2">Expertise reconnue</h3>
+              <p className="text-muted-foreground text-sm">
+                La force de deux leaders mondiaux : Sanlam et Allianz, au service de votre sérénité.
+              </p>
             </div>
           </div>
         </div>

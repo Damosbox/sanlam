@@ -127,7 +127,7 @@ export const Header = () => {
                     : "border-transparent text-white/70 hover:text-white"
                 )}
               >
-                Commercial
+                Intermédiaires
               </Link>
             </div>
             
@@ -168,77 +168,7 @@ export const Header = () => {
               <img src={sanlamLogo} alt="Sanlam Allianz" className="h-8 w-auto sm:h-10" />
             </Link>
 
-            {/* Show navigation menu only on public pages */}
-            {isPublicPage && !isCommercialPage && (
-              <NavigationMenu className="hidden md:flex">
-                <NavigationMenuList>
-                  <NavigationMenuItem>
-                    <NavigationMenuTrigger className="bg-transparent">
-                      <Shield className="w-4 h-4 mr-2 text-primary" />
-                      Assurance
-                    </NavigationMenuTrigger>
-                    <NavigationMenuContent>
-                      <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
-                        {insuranceProducts.map((product) => (
-                          <li key={product.name}>
-                            <NavigationMenuLink asChild>
-                              <Link
-                                to={product.href}
-                                className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent/10 hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <product.icon className="w-4 h-4 text-primary" />
-                                  <div className="text-sm font-medium leading-none">{product.name}</div>
-                                </div>
-                                <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                                  {product.description}
-                                </p>
-                              </Link>
-                            </NavigationMenuLink>
-                          </li>
-                        ))}
-                      </ul>
-                    </NavigationMenuContent>
-                  </NavigationMenuItem>
-
-                  <NavigationMenuItem>
-                    <NavigationMenuTrigger className="bg-transparent">
-                      <PiggyBank className="w-4 h-4 mr-2 text-primary" />
-                      Épargne & Retraite
-                    </NavigationMenuTrigger>
-                    <NavigationMenuContent>
-                      <ul className="grid w-[400px] gap-3 p-4">
-                        {savingsProducts.map((product) => (
-                          <li key={product.name}>
-                            <NavigationMenuLink asChild>
-                              <Link
-                                to={product.href}
-                                className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent/10 hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <product.icon className="w-4 h-4 text-primary" />
-                                  <div className="text-sm font-medium leading-none">{product.name}</div>
-                                </div>
-                                <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                                  {product.description}
-                                </p>
-                              </Link>
-                            </NavigationMenuLink>
-                          </li>
-                        ))}
-                      </ul>
-                    </NavigationMenuContent>
-                  </NavigationMenuItem>
-
-                  <NavigationMenuItem>
-                    <Link to="/sinistres" className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors">
-                      <TrendingUp className="w-4 h-4 text-primary" />
-                      Sinistres
-                    </Link>
-                  </NavigationMenuItem>
-                </NavigationMenuList>
-              </NavigationMenu>
-            )}
+            {/* Sub-menus hidden as per request */}
 
             {/* Commercial navigation */}
             {isCommercialPage && (

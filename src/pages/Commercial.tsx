@@ -169,12 +169,6 @@ const Commercial = () => {
                   </li>)}
               </ul>
 
-              <Link to="/auth?broker=true">
-                <Button size="lg">
-                  Essayer gratuitement
-                  <ChevronRight className="w-5 h-5 ml-1" />
-                </Button>
-              </Link>
             </div>
 
             <div className="relative">

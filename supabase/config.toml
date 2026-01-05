@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.send-policy-documents]
 verify_jwt = false
+
+[functions.send-survey]
+verify_jwt = false
+
+[functions.process-survey-triggers]
+verify_jwt = false

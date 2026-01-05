@@ -12,6 +12,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import SavingsSimulator from "./pages/SavingsSimulator";
 import EducationSimulator from "./pages/EducationSimulator";
+import SurveyResponse from "./pages/SurveyResponse";
 import RoleProtectedRoute from "./components/RoleProtectedRoute";
 
 // Product landing pages
@@ -55,6 +56,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/simulateur-epargne" element={<SavingsSimulator />} />
           <Route path="/simulateur-education" element={<EducationSimulator />} />
+          <Route path="/survey/:token" element={<SurveyResponse />} />
           <Route path="/b2c" element={
             <RoleProtectedRoute allowedRoles={["customer", "admin"]}>
               <B2C />

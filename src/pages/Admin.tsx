@@ -3,12 +3,13 @@ import { StatCard } from "@/components/StatCard";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, Shield, TrendingUp, AlertCircle, Database, Zap, FileText, Users, GitBranch, Trophy } from "lucide-react";
+import { Brain, Shield, TrendingUp, AlertCircle, Database, Zap, FileText, Users, GitBranch, Trophy, ClipboardList } from "lucide-react";
 import { AdminClaimsTable } from "@/components/AdminClaimsTable";
 import { AdminUsersTable } from "@/components/AdminUsersTable";
 import { AdminAnalytics } from "@/components/AdminAnalytics";
 import { AdminSubscriptionsTable } from "@/components/AdminSubscriptionsTable";
 import { AdminLoyalty } from "@/components/admin/AdminLoyalty";
+import { AdminSurveys } from "@/components/admin/AdminSurveys";
 
 import { AdminDataGenerator } from "@/components/AdminDataGenerator";
 import { AdminFormBuilder } from "@/components/admin/AdminFormBuilder";
@@ -52,7 +53,7 @@ const Admin = () => {
         {/* Main Management Tabs */}
         <div className="mt-12">
           <Tabs defaultValue="claims" className="space-y-6">
-            <TabsList className="grid w-full max-w-[1200px] grid-cols-8">
+            <TabsList className="grid w-full max-w-[1400px] grid-cols-9">
               <TabsTrigger value="claims" className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
                 Sinistres
@@ -69,6 +70,10 @@ const Admin = () => {
                 <Trophy className="w-4 h-4" />
                 Fidélité
               </TabsTrigger>
+              <TabsTrigger value="surveys" className="flex items-center gap-2">
+                <ClipboardList className="w-4 h-4" />
+                Enquêtes
+              </TabsTrigger>
               <TabsTrigger value="data" className="flex items-center gap-2">
                 <Database className="w-4 h-4" />
                 Données Test
@@ -83,7 +88,7 @@ const Admin = () => {
               </TabsTrigger>
               <TabsTrigger value="forms" className="flex items-center gap-2">
                 <FileText className="w-4 h-4" />
-                Formulaires Produits
+                Formulaires
               </TabsTrigger>
             </TabsList>
 
@@ -122,6 +127,10 @@ const Admin = () => {
 
             <TabsContent value="loyalty" className="space-y-4">
               <AdminLoyalty />
+            </TabsContent>
+
+            <TabsContent value="surveys" className="space-y-4">
+              <AdminSurveys />
             </TabsContent>
 
             <TabsContent value="data" className="space-y-4">

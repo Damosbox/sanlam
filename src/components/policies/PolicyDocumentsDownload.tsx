@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { 
   Download, 
@@ -12,15 +11,19 @@ import {
   Car, 
   FileSpreadsheet,
   Loader2,
-  FolderDown
+  FolderDown,
+  Send
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import JSZip from "jszip";
+import { DocumentResendDialog } from "./DocumentResendDialog";
 
 interface PolicyDocumentsDownloadProps {
   subscriptionId: string;
   policyNumber: string;
+  clientEmail?: string | null;
+  clientPhone?: string | null;
 }
 
 const documentTypeConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
@@ -34,10 +37,15 @@ const documentTypeConfig: Record<string, { label: string; icon: React.ElementTyp
 
 export const PolicyDocumentsDownload = ({ 
   subscriptionId, 
-  policyNumber 
+  policyNumber,
+  clientEmail,
+  clientPhone,
 }: PolicyDocumentsDownloadProps) => {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadingAll, setDownloadingAll] = useState(false);
+  const [resendDialogOpen, setResendDialogOpen] = useState(false);
+  const [selectedDocForResend, setSelectedDocForResend] = useState<any[]>([]);
+  const queryClient = useQueryClient();
 
   const { data: documents = [], isLoading } = useQuery({
     queryKey: ["policy-documents", subscriptionId],
@@ -52,6 +60,24 @@ export const PolicyDocumentsDownload = ({
       return data;
     },
   });
+
+  const handleResendAll = () => {
+    setSelectedDocForResend(documents);
+    setResendDialogOpen(true);
+  };
+
+  const handleResendOne = (doc: any) => {
+    setSelectedDocForResend([doc]);
+    setResendDialogOpen(true);
+  };
+
+  const handleResendDialogClose = (open: boolean) => {
+    setResendDialogOpen(open);
+    if (!open) {
+      // Refresh documents to show updated send info
+      queryClient.invalidateQueries({ queryKey: ["policy-documents", subscriptionId] });
+    }
+  };
 
   const handleDownload = async (doc: any) => {
     setDownloadingId(doc.id);
@@ -141,73 +167,115 @@ export const PolicyDocumentsDownload = ({
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">
-          {documents.length} document{documents.length > 1 ? "s" : ""}
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleDownloadAll}
-          disabled={downloadingAll}
-          className="gap-1.5 text-xs"
-        >
-          {downloadingAll ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <FolderDown className="h-3.5 w-3.5" />
-          )}
-          Tout télécharger
-        </Button>
-      </div>
+    <>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs text-muted-foreground">
+            {documents.length} document{documents.length > 1 ? "s" : ""}
+          </span>
+          <div className="flex gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleResendAll}
+              className="gap-1.5 text-xs"
+            >
+              <Send className="h-3.5 w-3.5" />
+              Renvoyer
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadAll}
+              disabled={downloadingAll}
+              className="gap-1.5 text-xs"
+            >
+              {downloadingAll ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <FolderDown className="h-3.5 w-3.5" />
+              )}
+              Télécharger
+            </Button>
+          </div>
+        </div>
 
-      <div className="space-y-2">
-        {documents.map((doc) => {
-          const config = documentTypeConfig[doc.document_type] || {
-            label: doc.document_type,
-            icon: FileText,
-            color: "text-muted-foreground"
-          };
-          const DocIcon = config.icon;
+        <div className="space-y-2">
+          {documents.map((doc) => {
+            const config = documentTypeConfig[doc.document_type] || {
+              label: doc.document_type,
+              icon: FileText,
+              color: "text-muted-foreground"
+            };
+            const DocIcon = config.icon;
 
-          return (
-            <Card key={doc.id} className="overflow-hidden">
-              <CardContent className="p-3 flex items-center gap-3">
-                <div className={`${config.color}`}>
-                  <DocIcon className="h-5 w-5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm truncate">
-                    {config.label}
+            return (
+              <Card key={doc.id} className="overflow-hidden">
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`${config.color}`}>
+                      <DocIcon className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm truncate">
+                        {config.label}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {doc.generated_at && format(new Date(doc.generated_at), "dd MMM yyyy", { locale: fr })}
+                        {doc.file_size && (
+                          <span className="ml-2">
+                            ({(doc.file_size / 1024).toFixed(0)} KB)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleResendOne(doc)}
+                        title="Renvoyer"
+                      >
+                        <Send className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDownload(doc)}
+                        disabled={downloadingId === doc.id}
+                        title="Télécharger"
+                      >
+                        {downloadingId === doc.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {doc.generated_at && format(new Date(doc.generated_at), "dd MMM yyyy", { locale: fr })}
-                    {doc.file_size && (
-                      <span className="ml-2">
-                        ({(doc.file_size / 1024).toFixed(0)} KB)
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDownload(doc)}
-                  disabled={downloadingId === doc.id}
-                  className="shrink-0"
-                >
-                  {downloadingId === doc.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Download className="h-4 w-4" />
+                  {/* Show last sent info */}
+                  {doc.last_sent_at && (
+                    <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
+                      Envoyé le {format(new Date(doc.last_sent_at), "dd/MM/yyyy à HH:mm", { locale: fr })}
+                      {doc.sent_to_email && <span className="ml-1">à {doc.sent_to_email}</span>}
+                    </div>
                   )}
-                </Button>
-              </CardContent>
-            </Card>
-          );
-        })}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </div>
-    </div>
+
+      <DocumentResendDialog
+        open={resendDialogOpen}
+        onOpenChange={handleResendDialogClose}
+        documents={selectedDocForResend}
+        clientEmail={clientEmail}
+        clientPhone={clientPhone}
+        policyNumber={policyNumber}
+        subscriptionId={subscriptionId}
+      />
+    </>
   );
 };

@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, FileText, Share2, FolderOpen, ArrowLeft } from "lucide-react";
+import { CheckCircle2, FileText, Share2, FolderOpen, ArrowLeft, Send, Download } from "lucide-react";
 import { GuidedSalesState } from "../types";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { UpsellModal } from "./UpsellModal";
+import { DocumentResendDialog } from "@/components/policies/DocumentResendDialog";
 
 interface IssuanceStepProps {
   state: GuidedSalesState;
@@ -27,6 +28,18 @@ export const IssuanceStep = ({ state, onReset }: IssuanceStepProps) => {
   const [npsScore, setNpsScore] = useState<number | null>(null);
   const [npsComment, setNpsComment] = useState("");
   const [npsSubmitted, setNpsSubmitted] = useState(false);
+  
+  // Document resend dialog state
+  const [resendDialogOpen, setResendDialogOpen] = useState(false);
+  const [selectedDocsForResend, setSelectedDocsForResend] = useState<any[]>([]);
+
+  // Mock documents for the issued policy
+  const mockDocuments = [
+    { id: "doc-1", document_name: "Reçu de paiement", document_type: "facture", file_url: null },
+    { id: "doc-2", document_name: "Conditions Particulières (CP)", document_type: "attestation", file_url: null },
+    { id: "doc-3", document_name: "Attestation d'assurance", document_type: "attestation", file_url: null },
+    { id: "doc-4", document_name: "Conditions générales", document_type: "conditions_generales", file_url: null },
+  ];
 
   // Show upsell modal automatically after a short delay (simulating post-payment webhook)
   useEffect(() => {
@@ -60,14 +73,39 @@ export const IssuanceStep = ({ state, onReset }: IssuanceStepProps) => {
     if (npsScore !== null) {
       setNpsSubmitted(true);
       toast.success("Merci pour votre avis !");
-      // Here you would typically send the NPS data to your backend
       console.log("NPS submitted:", { score: npsScore, comment: npsComment });
     }
   };
 
+  const handleResendAll = () => {
+    setSelectedDocsForResend(mockDocuments);
+    setResendDialogOpen(true);
+  };
+
+  const handleResendOne = (doc: any) => {
+    setSelectedDocsForResend([doc]);
+    setResendDialogOpen(true);
+  };
+
+  const handleDownloadAll = () => {
+    toast.info("Téléchargement du dossier complet...");
+    // In a real implementation, this would trigger a ZIP download
+  };
+
   return (
     <div className="space-y-6">
-      {/* Upsell Modal - appears after payment/webhook, before NPS */}
+      {/* Document Resend Dialog */}
+      <DocumentResendDialog
+        open={resendDialogOpen}
+        onOpenChange={setResendDialogOpen}
+        documents={selectedDocsForResend}
+        clientEmail={state.binding?.clientEmail || state.clientIdentification?.email}
+        clientPhone={state.binding?.clientPhone || state.clientIdentification?.phone}
+        policyNumber={policyNumber}
+        subscriptionId="mock-subscription-id"
+      />
+
+      {/* Upsell Modal */}
       <UpsellModal
         open={showUpsellModal}
         onClose={handleUpsellClose}
@@ -109,21 +147,36 @@ export const IssuanceStep = ({ state, onReset }: IssuanceStepProps) => {
 
       <Card>
         <CardContent className="pt-6">
-          <h3 className="font-semibold mb-4">Documents disponibles</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold">Documents disponibles</h3>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={handleResendAll}>
+                <Send className="h-4 w-4" />
+                Renvoyer tout
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownloadAll}>
+                <Download className="h-4 w-4" />
+                Télécharger
+              </Button>
+            </div>
+          </div>
           
           <div className="space-y-3">
-            {[
-              { name: "Reçu de paiement", type: "PDF" },
-              { name: "Conditions Particulières (CP)", type: "PDF" },
-              { name: "Attestation d'assurance", type: "PDF" },
-              { name: "Conditions générales", type: "PDF" },
-            ].map((doc) => (
-              <div key={doc.name} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors">
+            {mockDocuments.map((doc) => (
+              <div key={doc.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-3">
                   <FileText className="h-5 w-5 text-primary" />
-                  <span className="font-medium">{doc.name}</span>
+                  <span className="font-medium">{doc.document_name}</span>
                 </div>
-                <Badge variant="secondary">{doc.type}</Badge>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="icon" onClick={() => handleResendOne(doc)}>
+                    <Send className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => toast.info("Téléchargement...")}>
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Badge variant="secondary">PDF</Badge>
+                </div>
               </div>
             ))}
           </div>

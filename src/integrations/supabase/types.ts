@@ -1154,6 +1154,10 @@ export type Database = {
           file_url: string | null
           generated_at: string | null
           id: string
+          last_sent_at: string | null
+          sent_to_email: string | null
+          sent_to_phone: string | null
+          sent_via: string[] | null
           subscription_id: string
         }
         Insert: {
@@ -1164,6 +1168,10 @@ export type Database = {
           file_url?: string | null
           generated_at?: string | null
           id?: string
+          last_sent_at?: string | null
+          sent_to_email?: string | null
+          sent_to_phone?: string | null
+          sent_via?: string[] | null
           subscription_id: string
         }
         Update: {
@@ -1174,6 +1182,10 @@ export type Database = {
           file_url?: string | null
           generated_at?: string | null
           id?: string
+          last_sent_at?: string | null
+          sent_to_email?: string | null
+          sent_to_phone?: string | null
+          sent_via?: string[] | null
           subscription_id?: string
         }
         Relationships: [

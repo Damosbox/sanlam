@@ -357,7 +357,9 @@ export const ClientDetailSheet = ({
                           </div>
                           <PolicyDocumentsDownload 
                             subscriptionId={sub.id} 
-                            policyNumber={sub.policy_number} 
+                            policyNumber={sub.policy_number}
+                            clientEmail={client.email}
+                            clientPhone={client.phone}
                           />
                         </div>
                       </CardContent>

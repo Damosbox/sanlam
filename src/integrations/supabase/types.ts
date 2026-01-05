@@ -1425,6 +1425,202 @@ export type Database = {
           },
         ]
       }
+      survey_responses: {
+        Row: {
+          answers: Json
+          comment: string | null
+          id: string
+          nps_score: number | null
+          submitted_at: string | null
+          survey_send_id: string | null
+        }
+        Insert: {
+          answers?: Json
+          comment?: string | null
+          id?: string
+          nps_score?: number | null
+          submitted_at?: string | null
+          survey_send_id?: string | null
+        }
+        Update: {
+          answers?: Json
+          comment?: string | null
+          id?: string
+          nps_score?: number | null
+          submitted_at?: string | null
+          survey_send_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_responses_survey_send_id_fkey"
+            columns: ["survey_send_id"]
+            isOneToOne: false
+            referencedRelation: "survey_sends"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_rules: {
+        Row: {
+          channels: string[] | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          max_reminders: number | null
+          name: string
+          reminder_delays: number[] | null
+          survey_template_id: string | null
+          trigger_delay_hours: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          channels?: string[] | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_reminders?: number | null
+          name: string
+          reminder_delays?: number[] | null
+          survey_template_id?: string | null
+          trigger_delay_hours?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          channels?: string[] | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_reminders?: number | null
+          name?: string
+          reminder_delays?: number[] | null
+          survey_template_id?: string | null
+          trigger_delay_hours?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_rules_survey_template_id_fkey"
+            columns: ["survey_template_id"]
+            isOneToOne: false
+            referencedRelation: "survey_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_sends: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          next_reminder_at: string | null
+          opened_at: string | null
+          recipient_id: string
+          recipient_type: string
+          reminder_count: number | null
+          rule_id: string | null
+          scheduled_at: string
+          send_channel: string | null
+          sent_at: string | null
+          status: string | null
+          survey_template_id: string | null
+          trigger_source_id: string | null
+          trigger_source_type: string | null
+          unique_token: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          next_reminder_at?: string | null
+          opened_at?: string | null
+          recipient_id: string
+          recipient_type: string
+          reminder_count?: number | null
+          rule_id?: string | null
+          scheduled_at: string
+          send_channel?: string | null
+          sent_at?: string | null
+          status?: string | null
+          survey_template_id?: string | null
+          trigger_source_id?: string | null
+          trigger_source_type?: string | null
+          unique_token?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          next_reminder_at?: string | null
+          opened_at?: string | null
+          recipient_id?: string
+          recipient_type?: string
+          reminder_count?: number | null
+          rule_id?: string | null
+          scheduled_at?: string
+          send_channel?: string | null
+          sent_at?: string | null
+          status?: string | null
+          survey_template_id?: string | null
+          trigger_source_id?: string | null
+          trigger_source_type?: string | null
+          unique_token?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_sends_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "survey_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_sends_survey_template_id_fkey"
+            columns: ["survey_template_id"]
+            isOneToOne: false
+            referencedRelation: "survey_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_templates: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          questions: Json
+          target_audience: string
+          trigger_event: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          questions?: Json
+          target_audience: string
+          trigger_event: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          questions?: Json
+          target_audience?: string
+          trigger_event?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_attributes: {
         Row: {
           age_range: string | null

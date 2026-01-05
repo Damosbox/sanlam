@@ -23,7 +23,8 @@ import {
   CheckCircle,
   XCircle,
   FolderOpen,
-  ShoppingCart
+  ShoppingCart,
+  Download
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -32,6 +33,7 @@ import { ClientDocumentsSection } from "./ClientDocumentsSection";
 import { ClientAdditionalDataSection } from "./ClientAdditionalDataSection";
 import { ClientKYCSection } from "./ClientKYCSection";
 import { ClientNotesSection } from "./ClientNotesSection";
+import { PolicyDocumentsDownload } from "@/components/policies/PolicyDocumentsDownload";
 
 interface Client {
   id: string;
@@ -344,6 +346,19 @@ export const ClientDetailSheet = ({
                               {format(new Date(sub.end_date), "dd/MM/yyyy")}
                             </div>
                           </div>
+                        </div>
+                        
+                        {/* Policy Documents Section */}
+                        <Separator className="my-3" />
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm font-medium">
+                            <Download className="h-4 w-4 text-muted-foreground" />
+                            Documents de la police
+                          </div>
+                          <PolicyDocumentsDownload 
+                            subscriptionId={sub.id} 
+                            policyNumber={sub.policy_number} 
+                          />
                         </div>
                       </CardContent>
                     </Card>

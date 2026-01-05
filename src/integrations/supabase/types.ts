@@ -1145,6 +1145,47 @@ export type Database = {
         }
         Relationships: []
       }
+      policy_documents: {
+        Row: {
+          created_at: string
+          document_name: string
+          document_type: string
+          file_size: number | null
+          file_url: string | null
+          generated_at: string | null
+          id: string
+          subscription_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_name: string
+          document_type: string
+          file_size?: number | null
+          file_url?: string | null
+          generated_at?: string | null
+          id?: string
+          subscription_id: string
+        }
+        Update: {
+          created_at?: string
+          document_name?: string
+          document_type?: string
+          file_size?: number | null
+          file_url?: string | null
+          generated_at?: string | null
+          id?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "policy_documents_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           base_premium: number
@@ -1216,6 +1257,65 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      quotations: {
+        Row: {
+          broker_id: string
+          coverage_details: Json | null
+          created_at: string
+          id: string
+          lead_id: string | null
+          notes: string | null
+          payment_link: string | null
+          payment_status: string
+          premium_amount: number
+          premium_frequency: string
+          product_name: string
+          product_type: string
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          broker_id: string
+          coverage_details?: Json | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          payment_link?: string | null
+          payment_status?: string
+          premium_amount: number
+          premium_frequency?: string
+          product_name: string
+          product_type: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          broker_id?: string
+          coverage_details?: Json | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          payment_link?: string | null
+          payment_status?: string
+          premium_amount?: number
+          premium_frequency?: string
+          product_name?: string
+          product_type?: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       referral_tracking: {
         Row: {

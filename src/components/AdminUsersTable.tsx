@@ -120,6 +120,31 @@ export const AdminUsersTable = () => {
     }
   };
 
+  const updatePartnerType = async (userId: string, newPartnerType: PartnerType) => {
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ partner_type: newPartnerType })
+        .eq("id", userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Type de partenaire mis à jour",
+      });
+      
+      fetchUsers();
+    } catch (error) {
+      console.error("Error updating partner type:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour le type de partenaire",
+        variant: "destructive",
+      });
+    }
+  };
+
   const toggleOTPVerification = async (userId: string, currentEnabled: boolean) => {
     try {
       // Check if settings exist
@@ -243,6 +268,7 @@ export const AdminUsersTable = () => {
                   OTP Téléphone
                 </div>
               </TableHead>
+              <TableHead>Type partenaire</TableHead>
               <TableHead>Date création</TableHead>
               <TableHead className="text-right">Modifier rôle</TableHead>
             </TableRow>
@@ -276,6 +302,25 @@ export const AdminUsersTable = () => {
                         {otpEnabled ? "Activé" : "Désactivé"}
                       </span>
                     </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">-</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {currentRole === "broker" ? (
+                    <Select
+                      value={user.partner_type || ""}
+                      onValueChange={(value) => updatePartnerType(user.id, value as PartnerType)}
+                    >
+                      <SelectTrigger className="w-[160px]">
+                        <SelectValue placeholder="Sélectionner..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="agent_mandataire">Agent Mandataire</SelectItem>
+                        <SelectItem value="courtier">Courtier</SelectItem>
+                        <SelectItem value="agent_independant">Agent Indépendant</SelectItem>
+                      </SelectContent>
+                    </Select>
                   ) : (
                     <span className="text-xs text-muted-foreground">-</span>
                   )}

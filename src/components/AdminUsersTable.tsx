@@ -19,11 +19,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Shield, User, Briefcase, Phone } from "lucide-react";
+import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
 
 interface UserWithRole {
   id: string;
   email: string | null;
   display_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
   created_at: string;
   user_roles: Array<{
     role: "admin" | "broker" | "customer";
@@ -46,7 +49,7 @@ export const AdminUsersTable = () => {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, email, display_name, created_at")
+        .select("id, email, display_name, first_name, last_name, created_at")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -187,23 +190,28 @@ export const AdminUsersTable = () => {
   }
 
   return (
-    <div className="rounded-lg border bg-card">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Utilisateur</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Rôle actuel</TableHead>
-            <TableHead>
-              <div className="flex items-center gap-1">
-                <Phone className="w-4 h-4" />
-                OTP Téléphone
-              </div>
-            </TableHead>
-            <TableHead>Date création</TableHead>
-            <TableHead className="text-right">Modifier rôle</TableHead>
-          </TableRow>
-        </TableHeader>
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <CreateUserDialog onUserCreated={fetchUsers} />
+      </div>
+      <div className="rounded-lg border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Prénom</TableHead>
+              <TableHead>Nom</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Rôle actuel</TableHead>
+              <TableHead>
+                <div className="flex items-center gap-1">
+                  <Phone className="w-4 h-4" />
+                  OTP Téléphone
+                </div>
+              </TableHead>
+              <TableHead>Date création</TableHead>
+              <TableHead className="text-right">Modifier rôle</TableHead>
+            </TableRow>
+          </TableHeader>
         <TableBody>
           {users.map((user) => {
             const currentRole = user.user_roles[0]?.role || "customer";
@@ -213,7 +221,10 @@ export const AdminUsersTable = () => {
             return (
               <TableRow key={user.id}>
                 <TableCell className="font-medium">
-                  {user.display_name || "N/A"}
+                  {user.first_name || "-"}
+                </TableCell>
+                <TableCell className="font-medium">
+                  {user.last_name || "-"}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {user.email || "N/A"}
@@ -256,7 +267,8 @@ export const AdminUsersTable = () => {
             );
           })}
         </TableBody>
-      </Table>
+        </Table>
+      </div>
     </div>
   );
 };

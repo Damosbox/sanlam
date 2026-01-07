@@ -21,12 +21,15 @@ import {
 import { Shield, User, Briefcase, Phone } from "lucide-react";
 import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
 
+type PartnerType = "agent_mandataire" | "courtier" | "agent_independant";
+
 interface UserWithRole {
   id: string;
   email: string | null;
   display_name: string | null;
   first_name: string | null;
   last_name: string | null;
+  partner_type: PartnerType | null;
   created_at: string;
   user_roles: Array<{
     role: "admin" | "broker" | "customer";
@@ -49,7 +52,7 @@ export const AdminUsersTable = () => {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, email, display_name, first_name, last_name, created_at")
+        .select("id, email, display_name, first_name, last_name, partner_type, created_at")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -170,17 +173,49 @@ export const AdminUsersTable = () => {
     }
   };
 
-  const getRoleBadge = (role: string) => {
+  const getPartnerTypeLabel = (partnerType: PartnerType | null): string => {
+    switch (partnerType) {
+      case "agent_mandataire":
+        return "Agent Mandataire";
+      case "courtier":
+        return "Courtier";
+      case "agent_independant":
+        return "Agent Indépendant";
+      default:
+        return "";
+    }
+  };
+
+  const getRoleLabel = (role: string): string => {
+    switch (role) {
+      case "admin":
+        return "Admin";
+      case "broker":
+        return "Partenaire";
+      case "customer":
+        return "Client";
+      default:
+        return role;
+    }
+  };
+
+  const getRoleBadge = (role: string, partnerType: PartnerType | null) => {
     const variants: Record<string, "default" | "secondary" | "outline"> = {
       admin: "default",
       broker: "secondary",
       customer: "outline",
     };
 
+    const label = getRoleLabel(role);
+    const partnerTypeLabel = role === "broker" ? getPartnerTypeLabel(partnerType) : "";
+
     return (
       <Badge variant={variants[role] || "outline"} className="flex items-center gap-1 w-fit">
         {getRoleIcon(role)}
-        <span className="capitalize">{role}</span>
+        <span>
+          {label}
+          {partnerTypeLabel && <span className="ml-1 text-xs opacity-75">({partnerTypeLabel})</span>}
+        </span>
       </Badge>
     );
   };
@@ -229,7 +264,7 @@ export const AdminUsersTable = () => {
                 <TableCell className="text-muted-foreground">
                   {user.email || "N/A"}
                 </TableCell>
-                <TableCell>{getRoleBadge(currentRole)}</TableCell>
+                <TableCell>{getRoleBadge(currentRole, user.partner_type)}</TableCell>
                 <TableCell>
                   {isBrokerOrAdmin ? (
                     <div className="flex items-center gap-2">
@@ -257,8 +292,8 @@ export const AdminUsersTable = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="customer">Customer</SelectItem>
-                      <SelectItem value="broker">Broker</SelectItem>
+                      <SelectItem value="customer">Client</SelectItem>
+                      <SelectItem value="broker">Partenaire</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>

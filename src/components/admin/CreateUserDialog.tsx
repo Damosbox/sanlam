@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { UserPlus, RefreshCw, Eye, EyeOff, Copy } from "lucide-react";
@@ -25,6 +26,8 @@ import { UserPlus, RefreshCw, Eye, EyeOff, Copy } from "lucide-react";
 interface CreateUserDialogProps {
   onUserCreated: () => void;
 }
+
+type PartnerType = "agent_mandataire" | "courtier" | "agent_independant";
 
 export const CreateUserDialog = ({ onUserCreated }: CreateUserDialogProps) => {
   const [open, setOpen] = useState(false);
@@ -38,6 +41,7 @@ export const CreateUserDialog = ({ onUserCreated }: CreateUserDialogProps) => {
     email: "",
     password: "",
     role: "customer" as "admin" | "broker" | "customer",
+    partnerType: null as PartnerType | null,
   });
 
   const generatePassword = () => {
@@ -65,6 +69,7 @@ export const CreateUserDialog = ({ onUserCreated }: CreateUserDialogProps) => {
       email: "",
       password: "",
       role: "customer",
+      partnerType: null,
     });
     setShowPassword(false);
   };
@@ -89,6 +94,17 @@ export const CreateUserDialog = ({ onUserCreated }: CreateUserDialogProps) => {
         toast({
           title: "Erreur",
           description: "Le mot de passe doit contenir au moins 6 caractères",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Validate partner type if role is broker (partenaire)
+      if (formData.role === "broker" && !formData.partnerType) {
+        toast({
+          title: "Erreur",
+          description: "Veuillez sélectionner un type de partenaire",
           variant: "destructive",
         });
         setLoading(false);
@@ -253,19 +269,51 @@ export const CreateUserDialog = ({ onUserCreated }: CreateUserDialogProps) => {
               <Select
                 value={formData.role}
                 onValueChange={(value: "admin" | "broker" | "customer") => 
-                  setFormData({ ...formData, role: value })
+                  setFormData({ ...formData, role: value, partnerType: value === "broker" ? formData.partnerType : null })
                 }
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="customer">Customer</SelectItem>
-                  <SelectItem value="broker">Broker</SelectItem>
+                  <SelectItem value="customer">Client</SelectItem>
+                  <SelectItem value="broker">Partenaire</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {formData.role === "broker" && (
+              <div className="space-y-3">
+                <Label>Type de partenaire</Label>
+                <RadioGroup
+                  value={formData.partnerType || ""}
+                  onValueChange={(value: PartnerType) => 
+                    setFormData({ ...formData, partnerType: value })
+                  }
+                  className="space-y-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="agent_mandataire" id="agent_mandataire" />
+                    <Label htmlFor="agent_mandataire" className="font-normal cursor-pointer">
+                      Agent Mandataire
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="courtier" id="courtier" />
+                    <Label htmlFor="courtier" className="font-normal cursor-pointer">
+                      Courtier
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="agent_independant" id="agent_independant" />
+                    <Label htmlFor="agent_independant" className="font-normal cursor-pointer">
+                      Agent Indépendant
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>

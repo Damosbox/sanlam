@@ -1246,6 +1246,7 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
+          partner_type: Database["public"]["Enums"]["partner_type"] | null
           phone: string | null
           provider: string | null
           updated_at: string
@@ -1258,6 +1259,7 @@ export type Database = {
           first_name?: string | null
           id: string
           last_name?: string | null
+          partner_type?: Database["public"]["Enums"]["partner_type"] | null
           phone?: string | null
           provider?: string | null
           updated_at?: string
@@ -1270,6 +1272,7 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          partner_type?: Database["public"]["Enums"]["partner_type"] | null
           phone?: string | null
           provider?: string | null
           updated_at?: string
@@ -1832,6 +1835,7 @@ export type Database = {
         | "renewal"
         | "app_download"
         | "survey"
+      partner_type: "agent_mandataire" | "courtier" | "agent_independant"
       recurrence_period: "daily" | "weekly" | "monthly" | "yearly" | "once"
       referral_status: "pending" | "completed" | "rewarded"
       reward_type:
@@ -2009,6 +2013,7 @@ export const Constants = {
         "app_download",
         "survey",
       ],
+      partner_type: ["agent_mandataire", "courtier", "agent_independant"],
       recurrence_period: ["daily", "weekly", "monthly", "yearly", "once"],
       referral_status: ["pending", "completed", "rewarded"],
       reward_type: [

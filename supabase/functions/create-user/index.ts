@@ -6,12 +6,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+type PartnerType = 'agent_mandataire' | 'courtier' | 'agent_independant';
+
 interface CreateUserRequest {
   email: string;
   password: string;
   firstName: string;
   lastName: string;
   role: 'admin' | 'broker' | 'customer';
+  partnerType?: PartnerType | null;
 }
 
 serve(async (req) => {
@@ -70,7 +73,7 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { email, password, firstName, lastName, role }: CreateUserRequest = await req.json();
+    const { email, password, firstName, lastName, role, partnerType }: CreateUserRequest = await req.json();
 
     // Validate inputs
     if (!email || !password || !firstName || !lastName || !role) {
@@ -95,7 +98,18 @@ serve(async (req) => {
       );
     }
 
-    console.log('Creating user:', { email, firstName, lastName, role });
+    // Validate partner type if role is broker (partenaire)
+    if (role === 'broker') {
+      const validPartnerTypes = ['agent_mandataire', 'courtier', 'agent_independant'];
+      if (!partnerType || !validPartnerTypes.includes(partnerType)) {
+        return new Response(
+          JSON.stringify({ error: 'Type de partenaire obligatoire pour les partenaires' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    console.log('Creating user:', { email, firstName, lastName, role, partnerType });
 
     // Create user via Admin API
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
@@ -134,14 +148,21 @@ serve(async (req) => {
 
     console.log('User created:', newUser.user.id);
 
-    // Update profile with first_name and last_name
+    // Update profile with first_name, last_name, and partner_type if applicable
+    const profileUpdateData: Record<string, unknown> = {
+      first_name: firstName,
+      last_name: lastName,
+      display_name: `${firstName} ${lastName}`,
+    };
+
+    // Add partner_type if role is broker
+    if (role === 'broker' && partnerType) {
+      profileUpdateData.partner_type = partnerType;
+    }
+
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
-      .update({
-        first_name: firstName,
-        last_name: lastName,
-        display_name: `${firstName} ${lastName}`,
-      })
+      .update(profileUpdateData)
       .eq('id', newUser.user.id);
 
     if (profileError) {

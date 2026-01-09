@@ -15,17 +15,21 @@ interface ScreeningRequest {
   nationality?: string;
 }
 
-interface PPEResult {
+interface ScreeningResult {
+  // PPE Results
   isPPE: boolean;
-  position?: string;
-  country?: string;
-  relationship?: string;
+  ppePosition?: string;
+  ppeCountry?: string;
+  ppeRelationship?: string;
+  // AML Results  
+  amlRiskLevel: 'low' | 'medium' | 'high';
+  amlFlags: string[];
+  // Meta
   source: string;
   reference: string;
 }
 
 // Simulated PPE database for demo purposes
-// In production, this would call WorldCheck, ComplyAdvantage, or similar services
 const simulatedPPEDatabase = [
   { 
     pattern: /^(paul|jean|pierre)\s+(biya|kagame|sassou)/i,
@@ -35,7 +39,7 @@ const simulatedPPEDatabase = [
     relationship: "lui_meme"
   },
   {
-    pattern: /ministre|president|premier/i,
+    pattern: /ministre|president|premier|senateur|depute/i,
     isPPE: true,
     position: "Fonction gouvernementale",
     country: "Non spécifié",
@@ -43,28 +47,77 @@ const simulatedPPEDatabase = [
   }
 ];
 
-function performPPEScreening(firstName: string, lastName: string): PPEResult {
+// Simulated AML risk factors
+const amlRiskFactors = [
+  { pattern: /offshore|panama|caiman|jersey/i, flag: "Juridiction à risque", riskIncrease: 1 },
+  { pattern: /crypto|bitcoin|ethereum/i, flag: "Activités crypto", riskIncrease: 0.5 },
+  { pattern: /cash|espece|liquide/i, flag: "Transactions en espèces", riskIncrease: 0.5 },
+];
+
+function performScreening(firstName: string, lastName: string, nationality?: string): ScreeningResult {
   const fullName = `${firstName} ${lastName}`;
+  const reference = `LCB-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
   
-  // Check against simulated database
+  // PPE Check
+  let isPPE = false;
+  let ppePosition: string | undefined;
+  let ppeCountry: string | undefined;
+  let ppeRelationship: string | undefined;
+
   for (const entry of simulatedPPEDatabase) {
     if (entry.pattern.test(fullName)) {
-      return {
-        isPPE: true,
-        position: entry.position,
-        country: entry.country,
-        relationship: entry.relationship,
-        source: "WorldCheck Simulation",
-        reference: `WC-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`
-      };
+      isPPE = true;
+      ppePosition = entry.position;
+      ppeCountry = entry.country;
+      ppeRelationship = entry.relationship;
+      break;
     }
   }
 
-  // No match found - person is not a PPE
+  // AML Check
+  const amlFlags: string[] = [];
+  let riskScore = 0;
+
+  // Base risk from nationality (simulated)
+  const highRiskCountries = ['russia', 'iran', 'north korea', 'syria'];
+  if (nationality && highRiskCountries.some(c => nationality.toLowerCase().includes(c))) {
+    amlFlags.push("Pays à risque élevé");
+    riskScore += 2;
+  }
+
+  // Check name against sanctions patterns (simulated)
+  for (const factor of amlRiskFactors) {
+    if (factor.pattern.test(fullName)) {
+      amlFlags.push(factor.flag);
+      riskScore += factor.riskIncrease;
+    }
+  }
+
+  // PPE increases AML risk
+  if (isPPE) {
+    amlFlags.push("Personne Politiquement Exposée");
+    riskScore += 1;
+  }
+
+  // Determine risk level
+  let amlRiskLevel: 'low' | 'medium' | 'high';
+  if (riskScore >= 2) {
+    amlRiskLevel = 'high';
+  } else if (riskScore >= 1) {
+    amlRiskLevel = 'medium';
+  } else {
+    amlRiskLevel = 'low';
+  }
+
   return {
-    isPPE: false,
-    source: "WorldCheck Simulation",
-    reference: `WC-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`
+    isPPE,
+    ppePosition,
+    ppeCountry,
+    ppeRelationship,
+    amlRiskLevel,
+    amlFlags,
+    source: "LCB-FT Screening Service (Simulation)",
+    reference
   };
 }
 
@@ -100,19 +153,27 @@ serve(async (req) => {
     // Simulate processing delay (1-2 seconds)
     await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
 
-    // Perform the screening
-    const result = performPPEScreening(firstName, lastName);
+    // Perform the unified screening (PPE + AML)
+    const result = performScreening(firstName, lastName, nationality);
 
     // Update the database with results
     const updateData = {
+      // PPE data
       is_ppe: result.isPPE,
-      ppe_position: result.position || null,
-      ppe_country: result.country || null,
-      ppe_relationship: result.relationship || null,
+      ppe_position: result.ppePosition || null,
+      ppe_country: result.ppeCountry || null,
+      ppe_relationship: result.ppeRelationship || null,
       ppe_screening_status: 'completed',
       ppe_screening_date: new Date().toISOString(),
       ppe_screening_source: result.source,
       ppe_screening_reference: result.reference,
+      // AML data - automatically set from screening
+      aml_verified: true,
+      aml_verified_at: new Date().toISOString(),
+      aml_risk_level: result.amlRiskLevel,
+      aml_notes: result.amlFlags.length > 0 
+        ? `Flags détectés: ${result.amlFlags.join(', ')}`
+        : 'Aucun flag détecté',
       updated_at: new Date().toISOString()
     };
 
@@ -141,10 +202,15 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         result: {
+          // PPE
           isPPE: result.isPPE,
-          position: result.position,
-          country: result.country,
-          relationship: result.relationship,
+          ppePosition: result.ppePosition,
+          ppeCountry: result.ppeCountry,
+          ppeRelationship: result.ppeRelationship,
+          // AML
+          amlRiskLevel: result.amlRiskLevel,
+          amlFlags: result.amlFlags,
+          // Meta
           screeningDate: new Date().toISOString(),
           source: result.source,
           reference: result.reference
@@ -154,7 +220,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('PPE Screening error:', error);
+    console.error('LCB-FT Screening error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ error: errorMessage }),

@@ -9,9 +9,9 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Shield, AlertTriangle, CheckCircle, FileCheck } from "lucide-react";
+import { Save, Shield, AlertTriangle, CheckCircle, FileCheck, Search, Loader2, RefreshCw } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -24,18 +24,50 @@ interface KYCFormData {
   identity_document_type: string;
   identity_document_number: string;
   identity_expiry_date: string;
-  is_ppe: boolean;
-  ppe_position: string;
-  ppe_country: string;
-  ppe_relationship: string;
   aml_verified: boolean;
   aml_risk_level: string;
   aml_notes: string;
 }
 
+interface KYCData {
+  id: string;
+  client_id: string;
+  identity_verified: boolean | null;
+  identity_document_type: string | null;
+  identity_document_number: string | null;
+  identity_expiry_date: string | null;
+  is_ppe: boolean | null;
+  ppe_position: string | null;
+  ppe_country: string | null;
+  ppe_relationship: string | null;
+  ppe_screening_status: string | null;
+  ppe_screening_date: string | null;
+  ppe_screening_source: string | null;
+  ppe_screening_reference: string | null;
+  aml_verified: boolean | null;
+  aml_risk_level: string | null;
+  aml_notes: string | null;
+  updated_at: string;
+}
+
 export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [isScreening, setIsScreening] = useState(false);
+
+  // Fetch client profile to get name for screening
+  const { data: clientProfile } = useQuery({
+    queryKey: ["client-profile", clientId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("first_name, last_name")
+        .eq("id", clientId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const { data: kycData, isLoading } = useQuery({
     queryKey: ["client-kyc", clientId],
@@ -46,7 +78,7 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
         .eq("client_id", clientId)
         .maybeSingle();
       if (error) throw error;
-      return data;
+      return data as KYCData | null;
     },
   });
 
@@ -56,10 +88,6 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
       identity_document_type: "",
       identity_document_number: "",
       identity_expiry_date: "",
-      is_ppe: false,
-      ppe_position: "",
-      ppe_country: "",
-      ppe_relationship: "",
       aml_verified: false,
       aml_risk_level: "",
       aml_notes: "",
@@ -73,10 +101,6 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
         identity_document_type: kycData.identity_document_type || "",
         identity_document_number: kycData.identity_document_number || "",
         identity_expiry_date: kycData.identity_expiry_date || "",
-        is_ppe: kycData.is_ppe || false,
-        ppe_position: kycData.ppe_position || "",
-        ppe_country: kycData.ppe_country || "",
-        ppe_relationship: kycData.ppe_relationship || "",
         aml_verified: kycData.aml_verified || false,
         aml_risk_level: kycData.aml_risk_level || "",
         aml_notes: kycData.aml_notes || "",
@@ -115,14 +139,63 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
     },
   });
 
+  const handlePPEScreening = async () => {
+    if (!clientProfile?.first_name || !clientProfile?.last_name) {
+      toast({ 
+        title: "Informations manquantes", 
+        description: "Le nom du client est requis pour le screening",
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    setIsScreening(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("screen-ppe", {
+        body: {
+          clientId,
+          entityType: "client",
+          firstName: clientProfile.first_name,
+          lastName: clientProfile.last_name,
+        },
+      });
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ["client-kyc", clientId] });
+      
+      toast({ 
+        title: "Screening terminé",
+        description: data.result.isPPE 
+          ? "⚠️ PPE détecté - Vérification requise" 
+          : "✓ Aucune PPE détectée"
+      });
+    } catch (error) {
+      console.error("Screening error:", error);
+      toast({ 
+        title: "Erreur de screening", 
+        description: "Impossible de contacter le service de vérification",
+        variant: "destructive" 
+      });
+    } finally {
+      setIsScreening(false);
+    }
+  };
+
   const onSubmit = (data: KYCFormData) => {
     saveMutation.mutate(data);
   };
 
   const identityVerified = watch("identity_verified");
-  const isPPE = watch("is_ppe");
   const amlVerified = watch("aml_verified");
   const amlRiskLevel = watch("aml_risk_level");
+
+  // PPE data from screening (read-only)
+  const isPPE = kycData?.is_ppe || false;
+  const screeningStatus = kycData?.ppe_screening_status || "pending";
+  const screeningDate = kycData?.ppe_screening_date;
+  const screeningSource = kycData?.ppe_screening_source;
+  const screeningReference = kycData?.ppe_screening_reference;
 
   if (isLoading) {
     return <div className="text-center py-4 text-sm text-muted-foreground">Chargement...</div>;
@@ -137,6 +210,17 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
 
   const status = getKYCStatus();
   const StatusIcon = status.icon;
+
+  const getRelationshipLabel = (rel: string | null) => {
+    switch (rel) {
+      case "lui_meme": return "Lui-même";
+      case "conjoint": return "Conjoint(e)";
+      case "parent": return "Parent";
+      case "enfant": return "Enfant";
+      case "associe": return "Associé proche";
+      default: return rel || "";
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -212,7 +296,7 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
         </CardContent>
       </Card>
 
-      {/* Conformité LCB-FT (PPE + AML fusionnés) */}
+      {/* Conformité LCB-FT (PPE screening + AML) */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -221,58 +305,95 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* PPE Status - Read-only, détecté par OCR */}
+          {/* PPE Screening Section */}
           <div className="rounded-lg border p-3 bg-muted/30">
-            <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Statut PPE (détection automatique)
-              </span>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Screening PPE
+                </span>
+              </div>
+              
+              {/* Screening button */}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handlePPEScreening}
+                disabled={isScreening}
+                className="h-7 text-xs"
+              >
+                {isScreening ? (
+                  <>
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                    Vérification...
+                  </>
+                ) : screeningStatus === "completed" ? (
+                  <>
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Relancer
+                  </>
+                ) : (
+                  <>
+                    <Search className="h-3 w-3 mr-1" />
+                    Lancer le screening
+                  </>
+                )}
+              </Button>
             </div>
             
-            {isPPE ? (
-              <div className="space-y-2">
-                <Badge className="bg-amber-100 text-amber-700 gap-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  PPE Détecté
-                </Badge>
-                
-                <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
-                  {watch("ppe_position") && (
-                    <div>
-                      <span className="text-xs text-muted-foreground">Position:</span>
-                      <p className="font-medium">{watch("ppe_position")}</p>
-                    </div>
-                  )}
-                  {watch("ppe_country") && (
-                    <div>
-                      <span className="text-xs text-muted-foreground">Pays:</span>
-                      <p className="font-medium">{watch("ppe_country")}</p>
-                    </div>
-                  )}
-                  {watch("ppe_relationship") && (
-                    <div className="col-span-2">
-                      <span className="text-xs text-muted-foreground">Relation:</span>
-                      <p className="font-medium">
-                        {watch("ppe_relationship") === "lui_meme" ? "Lui-même" :
-                         watch("ppe_relationship") === "conjoint" ? "Conjoint(e)" :
-                         watch("ppe_relationship") === "parent" ? "Parent" :
-                         watch("ppe_relationship") === "enfant" ? "Enfant" :
-                         watch("ppe_relationship") === "associe" ? "Associé proche" :
-                         watch("ppe_relationship")}
-                      </p>
-                    </div>
-                  )}
-                </div>
-                
-                <p className="text-xs text-muted-foreground italic mt-2">
-                  📄 Détecté via scan de document
-                </p>
+            {/* Screening status display */}
+            {screeningStatus === "pending" && !isScreening && (
+              <div className="text-sm text-muted-foreground italic">
+                Aucun screening effectué
               </div>
-            ) : (
-              <div className="flex items-center gap-2 text-sm text-emerald-600">
-                <CheckCircle className="h-4 w-4" />
-                <span>Aucune PPE détectée</span>
+            )}
+
+            {screeningStatus === "completed" && (
+              <div className="space-y-2">
+                {isPPE ? (
+                  <>
+                    <Badge className="bg-amber-100 text-amber-700 gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      PPE Détecté
+                    </Badge>
+                    
+                    <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
+                      {kycData?.ppe_position && (
+                        <div>
+                          <span className="text-xs text-muted-foreground">Position:</span>
+                          <p className="font-medium">{kycData.ppe_position}</p>
+                        </div>
+                      )}
+                      {kycData?.ppe_country && (
+                        <div>
+                          <span className="text-xs text-muted-foreground">Pays:</span>
+                          <p className="font-medium">{kycData.ppe_country}</p>
+                        </div>
+                      )}
+                      {kycData?.ppe_relationship && (
+                        <div className="col-span-2">
+                          <span className="text-xs text-muted-foreground">Relation:</span>
+                          <p className="font-medium">{getRelationshipLabel(kycData.ppe_relationship)}</p>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center gap-2 text-sm text-emerald-600">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>Aucune PPE détectée</span>
+                  </div>
+                )}
+                
+                {/* Screening metadata */}
+                <div className="mt-3 pt-2 border-t border-dashed text-xs text-muted-foreground">
+                  <p>
+                    📄 Screening effectué le {screeningDate && format(new Date(screeningDate), "dd/MM/yyyy à HH:mm", { locale: fr })}
+                  </p>
+                  <p>Source: {screeningSource} • Réf: {screeningReference}</p>
+                </div>
               </div>
             )}
           </div>

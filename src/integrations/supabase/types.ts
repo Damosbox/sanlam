@@ -372,6 +372,10 @@ export type Database = {
           ppe_country: string | null
           ppe_position: string | null
           ppe_relationship: string | null
+          ppe_screening_date: string | null
+          ppe_screening_reference: string | null
+          ppe_screening_source: string | null
+          ppe_screening_status: string | null
           updated_at: string
         }
         Insert: {
@@ -390,6 +394,10 @@ export type Database = {
           ppe_country?: string | null
           ppe_position?: string | null
           ppe_relationship?: string | null
+          ppe_screening_date?: string | null
+          ppe_screening_reference?: string | null
+          ppe_screening_source?: string | null
+          ppe_screening_status?: string | null
           updated_at?: string
         }
         Update: {
@@ -408,6 +416,10 @@ export type Database = {
           ppe_country?: string | null
           ppe_position?: string | null
           ppe_relationship?: string | null
+          ppe_screening_date?: string | null
+          ppe_screening_reference?: string | null
+          ppe_screening_source?: string | null
+          ppe_screening_status?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -747,6 +759,10 @@ export type Database = {
           ppe_country: string | null
           ppe_position: string | null
           ppe_relationship: string | null
+          ppe_screening_date: string | null
+          ppe_screening_reference: string | null
+          ppe_screening_source: string | null
+          ppe_screening_status: string | null
           updated_at: string
         }
         Insert: {
@@ -765,6 +781,10 @@ export type Database = {
           ppe_country?: string | null
           ppe_position?: string | null
           ppe_relationship?: string | null
+          ppe_screening_date?: string | null
+          ppe_screening_reference?: string | null
+          ppe_screening_source?: string | null
+          ppe_screening_status?: string | null
           updated_at?: string
         }
         Update: {
@@ -783,6 +803,10 @@ export type Database = {
           ppe_country?: string | null
           ppe_position?: string | null
           ppe_relationship?: string | null
+          ppe_screening_date?: string | null
+          ppe_screening_reference?: string | null
+          ppe_screening_source?: string | null
+          ppe_screening_status?: string | null
           updated_at?: string
         }
         Relationships: [

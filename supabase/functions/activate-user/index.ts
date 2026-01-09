@@ -33,16 +33,18 @@ serve(async (req) => {
       throw new Error("Non autorisé");
     }
     
-    // Check if user is admin
+    // Check if user is admin or broker
     const { data: roleData } = await supabaseAdmin
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
-      .eq("role", "admin")
+      .in("role", ["admin", "broker"])
+      .order("role", { ascending: true })
+      .limit(1)
       .single();
     
     if (!roleData) {
-      throw new Error("Accès refusé - Admin requis");
+      throw new Error("Accès refusé - Admin ou Partenaire requis");
     }
     
     const { email } = await req.json();

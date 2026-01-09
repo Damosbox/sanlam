@@ -24,8 +24,12 @@ import {
   XCircle,
   FolderOpen,
   ShoppingCart,
-  Download
+  Download,
+  UserCheck,
+  Loader2
 } from "lucide-react";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatFCFA } from "@/utils/formatCurrency";
@@ -75,6 +79,8 @@ export const ClientDetailSheet = ({
   onOpenChange 
 }: ClientDetailSheetProps) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [activating, setActivating] = useState(false);
   // Fetch claims for active clients
   const { data: claims = [], isLoading: claimsLoading } = useQuery({
     queryKey: ["client-claims", client?.id],
@@ -132,6 +138,39 @@ export const ClientDetailSheet = ({
     if (client) {
       navigate(`/b2b/sales?contactId=${client.id}&type=client`);
       onOpenChange(false);
+    }
+  };
+
+  const handleActivateClient = async () => {
+    if (!client?.email) {
+      toast({
+        title: "Erreur",
+        description: "Ce client n'a pas d'email configuré",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setActivating(true);
+    try {
+      const { error } = await supabase.functions.invoke("activate-user", {
+        body: { email: client.email },
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Email envoyé",
+        description: `Un email d'activation a été envoyé à ${client.email}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible d'envoyer l'email d'activation",
+        variant: "destructive",
+      });
+    } finally {
+      setActivating(false);
     }
   };
 
@@ -211,6 +250,22 @@ export const ClientDetailSheet = ({
             <Button variant="ghost" size="sm" onClick={handleEmail} disabled={!client.email}>
               <Mail className="h-4 w-4" />
             </Button>
+            {client.type === "pending" && client.email && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleActivateClient}
+                disabled={activating}
+                className="text-emerald-600 border-emerald-300 hover:bg-emerald-50 gap-1.5"
+              >
+                {activating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <UserCheck className="h-4 w-4" />
+                )}
+                Activer
+              </Button>
+            )}
             <Button 
               size="sm" 
               onClick={handleGuidedSales}
@@ -277,11 +332,27 @@ export const ClientDetailSheet = ({
                 <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
                   <div className="flex items-start gap-3">
                     <Clock className="h-5 w-5 text-amber-600 mt-0.5" />
-                    <div>
+                    <div className="flex-1">
                       <p className="font-medium text-amber-800">Client en attente</p>
                       <p className="text-sm text-amber-700 mt-1">
                         Ce prospect a été converti mais n'a pas encore créé son compte client.
                       </p>
+                      {client.email && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleActivateClient}
+                          disabled={activating}
+                          className="mt-3 text-amber-700 border-amber-400 hover:bg-amber-100 gap-1.5"
+                        >
+                          {activating ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Mail className="h-4 w-4" />
+                          )}
+                          Envoyer l'email d'activation
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>

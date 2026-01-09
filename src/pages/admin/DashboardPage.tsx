@@ -1,4 +1,5 @@
 import { AdminAnalytics } from "@/components/AdminAnalytics";
+import { AdminNPSByProduct } from "@/components/admin/AdminNPSByProduct";
 
 export default function DashboardPage() {
   return (
@@ -11,6 +12,8 @@ export default function DashboardPage() {
       </div>
       
       <AdminAnalytics />
+      
+      <AdminNPSByProduct />
     </div>
   );
 }

@@ -146,7 +146,7 @@ export const ClientDetailSheet = ({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-lg p-0 flex flex-col">
+      <SheetContent className="w-full sm:max-w-2xl p-0 flex flex-col">
         <SheetHeader className="p-6 pb-4 border-b bg-slate-50/50">
           <div className="flex items-start gap-4">
             <Avatar className="h-14 w-14 border-2 border-primary/20">

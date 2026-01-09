@@ -18,7 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Shield, User, Briefcase, Phone } from "lucide-react";
+import { Shield, User, Briefcase, Phone, Mail, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
 
 type PartnerType = "agent_mandataire" | "courtier" | "agent_independant";
@@ -42,6 +43,7 @@ interface UserWithRole {
 export const AdminUsersTable = () => {
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activatingUser, setActivatingUser] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -187,6 +189,31 @@ export const AdminUsersTable = () => {
     }
   };
 
+  const handleActivateUser = async (userId: string, email: string) => {
+    setActivatingUser(userId);
+    try {
+      const { data, error } = await supabase.functions.invoke("activate-user", {
+        body: { email },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Email envoyé",
+        description: `Un email d'activation a été envoyé à ${email}`,
+      });
+    } catch (error: any) {
+      console.error("Error activating user:", error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible d'envoyer l'email d'activation",
+        variant: "destructive",
+      });
+    } finally {
+      setActivatingUser(null);
+    }
+  };
+
   const getRoleIcon = (role: string) => {
     switch (role) {
       case "admin":
@@ -270,6 +297,7 @@ export const AdminUsersTable = () => {
               </TableHead>
               <TableHead>Type partenaire</TableHead>
               <TableHead>Date création</TableHead>
+              <TableHead>Actions</TableHead>
               <TableHead className="text-right">Modifier rôle</TableHead>
             </TableRow>
           </TableHeader>
@@ -327,6 +355,23 @@ export const AdminUsersTable = () => {
                 </TableCell>
                 <TableCell>
                   {new Date(user.created_at).toLocaleDateString()}
+                </TableCell>
+                <TableCell>
+                  {currentRole === "customer" && user.email && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleActivateUser(user.id, user.email!)}
+                      disabled={activatingUser === user.id}
+                    >
+                      {activatingUser === user.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Mail className="w-4 h-4 mr-1" />
+                      )}
+                      Activer
+                    </Button>
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
                   <Select

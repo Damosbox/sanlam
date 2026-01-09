@@ -1,12 +1,13 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle2, Loader2, Settings, Send, Download, ArrowLeft, MessageCircle, Sparkles } from "lucide-react";
+import { CheckCircle2, Loader2, CreditCard, FileText, Send, Download, ArrowLeft, MessageCircle, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { SelectedProductType } from "../types";
+import { Progress } from "@/components/ui/progress";
 
-type ProcessStep = 'waiting-payment' | 'payment-received' | 'generating-documents' | 'documents-sent' | 'sending-tips' | 'tips-sent';
+type ProcessStep = 'payment-processing' | 'payment-received' | 'generating-documents' | 'documents-ready' | 'sending-documents' | 'documents-sent' | 'sending-tips' | 'tips-sent';
 
 interface PaymentStatusDialogProps {
   open: boolean;
@@ -19,48 +20,75 @@ interface PaymentStatusDialogProps {
   onShowCrossSell?: () => void;
 }
 
-interface StepItemProps {
-  icon: React.ReactNode;
+interface VisualStepProps {
+  stepNumber: number;
   title: string;
   subtitle: string;
-  isComplete: boolean;
-  isActive: boolean;
+  icon: React.ReactNode;
+  status: 'pending' | 'active' | 'complete';
+  isLast?: boolean;
 }
 
-const StepItem = ({ icon, title, subtitle, isComplete, isActive }: StepItemProps) => (
-  <div className={cn(
-    "flex items-center gap-4 p-4 rounded-xl transition-all duration-500",
-    isActive && "bg-muted/50"
-  )}>
-    <div className={cn(
-      "h-12 w-12 rounded-full flex items-center justify-center transition-all duration-500",
-      isComplete ? "bg-green-100" : "bg-muted"
-    )}>
-      {isComplete ? (
-        <CheckCircle2 className="h-6 w-6 text-green-600" />
-      ) : isActive ? (
-        <div className="relative">
-          {icon}
-          <Loader2 className="h-4 w-4 text-primary animate-spin absolute -bottom-1 -right-1" />
-        </div>
-      ) : (
-        icon
+const VisualStep = ({ stepNumber, title, subtitle, icon, status, isLast = false }: VisualStepProps) => (
+  <div className="flex items-start gap-4">
+    {/* Step indicator with connecting line */}
+    <div className="flex flex-col items-center">
+      <div className={cn(
+        "h-14 w-14 rounded-full flex items-center justify-center transition-all duration-500 shadow-sm",
+        status === 'complete' && "bg-green-500 scale-100",
+        status === 'active' && "bg-primary animate-pulse scale-110 shadow-lg shadow-primary/30",
+        status === 'pending' && "bg-muted scale-95 opacity-50"
+      )}>
+        {status === 'complete' ? (
+          <CheckCircle2 className="h-7 w-7 text-white animate-scale-in" />
+        ) : status === 'active' ? (
+          <div className="relative">
+            {icon}
+            <div className="absolute -inset-2 rounded-full border-2 border-primary/30 animate-ping" />
+          </div>
+        ) : (
+          icon
+        )}
+      </div>
+      {/* Connecting line */}
+      {!isLast && (
+        <div className={cn(
+          "w-1 h-12 rounded-full transition-all duration-700",
+          status === 'complete' ? "bg-green-500" : "bg-muted"
+        )} />
       )}
     </div>
-    <div className="flex-1">
+    
+    {/* Step content */}
+    <div className="pt-2 flex-1">
+      <div className="flex items-center gap-2">
+        <span className={cn(
+          "text-xs font-bold px-2 py-0.5 rounded-full transition-colors",
+          status === 'complete' && "bg-green-100 text-green-700",
+          status === 'active' && "bg-primary/10 text-primary",
+          status === 'pending' && "bg-muted text-muted-foreground"
+        )}>
+          Étape {stepNumber}
+        </span>
+        {status === 'active' && (
+          <Loader2 className="h-4 w-4 text-primary animate-spin" />
+        )}
+      </div>
       <p className={cn(
-        "font-semibold transition-colors duration-300",
-        isComplete ? "text-green-700" : isActive ? "text-foreground" : "text-muted-foreground"
+        "font-semibold text-lg mt-1 transition-colors duration-300",
+        status === 'complete' && "text-green-700",
+        status === 'active' && "text-foreground",
+        status === 'pending' && "text-muted-foreground"
       )}>
         {title}
       </p>
-      <p className="text-sm text-muted-foreground">{subtitle}</p>
+      <p className={cn(
+        "text-sm transition-colors",
+        status === 'pending' ? "text-muted-foreground/50" : "text-muted-foreground"
+      )}>
+        {subtitle}
+      </p>
     </div>
-    {isComplete && (
-      <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center animate-scale-in">
-        <CheckCircle2 className="h-5 w-5 text-white" />
-      </div>
-    )}
   </div>
 );
 
@@ -127,56 +155,91 @@ export const PaymentStatusDialog = ({
   clientPhone,
   onShowCrossSell,
 }: PaymentStatusDialogProps) => {
-  const [currentStep, setCurrentStep] = useState<ProcessStep>('waiting-payment');
+  const [currentStep, setCurrentStep] = useState<ProcessStep>('payment-processing');
+  const [progress, setProgress] = useState(0);
+
+  // Progress animation
+  useEffect(() => {
+    if (!open) return;
+    
+    const stepProgress: Record<ProcessStep, number> = {
+      'payment-processing': 10,
+      'payment-received': 25,
+      'generating-documents': 45,
+      'documents-ready': 60,
+      'sending-documents': 75,
+      'documents-sent': 85,
+      'sending-tips': 92,
+      'tips-sent': 100
+    };
+    
+    const targetProgress = stepProgress[currentStep];
+    const interval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= targetProgress) {
+          clearInterval(interval);
+          return targetProgress;
+        }
+        return prev + 1;
+      });
+    }, 30);
+    
+    return () => clearInterval(interval);
+  }, [currentStep, open]);
 
   useEffect(() => {
-    if (open && currentStep === 'waiting-payment') {
-      const timer1 = setTimeout(() => {
-        setCurrentStep('payment-received');
-      }, 3000);
-      return () => clearTimeout(timer1);
+    if (open && currentStep === 'payment-processing') {
+      const timer = setTimeout(() => setCurrentStep('payment-received'), 2000);
+      return () => clearTimeout(timer);
     }
   }, [open, currentStep]);
 
   useEffect(() => {
     if (currentStep === 'payment-received') {
-      const timer2 = setTimeout(() => {
-        setCurrentStep('generating-documents');
-      }, 1500);
-      return () => clearTimeout(timer2);
+      const timer = setTimeout(() => setCurrentStep('generating-documents'), 1000);
+      return () => clearTimeout(timer);
     }
   }, [currentStep]);
 
   useEffect(() => {
     if (currentStep === 'generating-documents') {
-      const timer3 = setTimeout(() => {
-        setCurrentStep('documents-sent');
-      }, 2500);
-      return () => clearTimeout(timer3);
+      const timer = setTimeout(() => setCurrentStep('documents-ready'), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentStep]);
+
+  useEffect(() => {
+    if (currentStep === 'documents-ready') {
+      const timer = setTimeout(() => setCurrentStep('sending-documents'), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [currentStep]);
+
+  useEffect(() => {
+    if (currentStep === 'sending-documents') {
+      const timer = setTimeout(() => setCurrentStep('documents-sent'), 1500);
+      return () => clearTimeout(timer);
     }
   }, [currentStep]);
 
   useEffect(() => {
     if (currentStep === 'documents-sent') {
-      const timer4 = setTimeout(() => {
-        setCurrentStep('sending-tips');
-      }, 1000);
-      return () => clearTimeout(timer4);
+      const timer = setTimeout(() => setCurrentStep('sending-tips'), 800);
+      return () => clearTimeout(timer);
     }
   }, [currentStep]);
 
   useEffect(() => {
     if (currentStep === 'sending-tips') {
-      const timer5 = setTimeout(() => {
-        setCurrentStep('tips-sent');
-      }, 1500);
-      return () => clearTimeout(timer5);
+      const timer = setTimeout(() => setCurrentStep('tips-sent'), 1200);
+      return () => clearTimeout(timer);
     }
   }, [currentStep]);
 
   useEffect(() => {
     if (!open) {
-      setCurrentStep('waiting-payment');
+      setCurrentStep('payment-processing');
+      setProgress(0);
     }
   }, [open]);
 
@@ -201,12 +264,24 @@ export const PaymentStatusDialog = ({
   const isAllComplete = currentStep === 'tips-sent';
   const channelText = channels.map(c => channelLabels[c] || c).join(", ");
 
-  const getStepNumber = (step: ProcessStep): number => {
-    const steps: ProcessStep[] = ['waiting-payment', 'payment-received', 'generating-documents', 'documents-sent', 'sending-tips', 'tips-sent'];
-    return steps.indexOf(step);
+  // Map current step to visual step status
+  const getStepStatus = (stepRange: ProcessStep[]): 'pending' | 'active' | 'complete' => {
+    const stepOrder: ProcessStep[] = [
+      'payment-processing', 'payment-received', 
+      'generating-documents', 'documents-ready',
+      'sending-documents', 'documents-sent',
+      'sending-tips', 'tips-sent'
+    ];
+    
+    const currentIndex = stepOrder.indexOf(currentStep);
+    const lastStepIndex = stepOrder.indexOf(stepRange[stepRange.length - 1]);
+    const firstStepIndex = stepOrder.indexOf(stepRange[0]);
+    
+    if (currentIndex > lastStepIndex) return 'complete';
+    if (currentIndex >= firstStepIndex && currentIndex <= lastStepIndex) return 'active';
+    return 'pending';
   };
 
-  const stepNum = getStepNumber(currentStep);
   const tip = productTips[productType] || productTips.auto;
   const crossSell = crossSellOffers[productType] || crossSellOffers.auto;
 
@@ -214,61 +289,94 @@ export const PaymentStatusDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader className="text-center pb-2">
-          {isAllComplete && (
+          {isAllComplete ? (
             <div className="flex justify-center mb-4">
-              <div className="h-16 w-16 rounded-full bg-green-500 flex items-center justify-center animate-scale-in shadow-lg">
-                <CheckCircle2 className="h-10 w-10 text-white" />
+              <div className="h-20 w-20 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center animate-scale-in shadow-xl shadow-green-500/30">
+                <CheckCircle2 className="h-12 w-12 text-white" />
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-center mb-4">
+              <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center shadow-lg shadow-primary/20">
+                <Loader2 className="h-8 w-8 text-white animate-spin" />
               </div>
             </div>
           )}
           <DialogTitle className="text-xl">
-            {isAllComplete ? "Finalisation terminée" : "Finalisation en cours"}
+            {isAllComplete ? "Souscription finalisée !" : "Finalisation en cours..."}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-2 py-4">
-          {/* Step 1: Payment */}
-          <StepItem
-            icon={<CheckCircle2 className="h-6 w-6 text-primary" />}
-            title="Paiement reçu"
-            subtitle="Transaction confirmée"
-            isComplete={stepNum >= 1}
-            isActive={stepNum === 0}
+        {/* Progress bar */}
+        {!isAllComplete && (
+          <div className="px-2 pb-2">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+              <span>Progression</span>
+              <span className="font-semibold text-primary">{Math.round(progress)}%</span>
+            </div>
+            <Progress value={progress} className="h-2" />
+          </div>
+        )}
+
+        {/* Visual steps */}
+        <div className="py-4 px-2">
+          <VisualStep
+            stepNumber={1}
+            icon={<CreditCard className="h-6 w-6 text-white" />}
+            title="Paiement en cours"
+            subtitle={getStepStatus(['payment-processing', 'payment-received']) === 'complete' 
+              ? "Transaction confirmée ✓" 
+              : "Vérification de la transaction..."}
+            status={getStepStatus(['payment-processing', 'payment-received'])}
           />
 
-          {/* Step 2: Document Generation */}
-          <StepItem
-            icon={<Settings className="h-6 w-6 text-muted-foreground" />}
-            title="Génération des documents"
-            subtitle="Contrat et annexes créés"
-            isComplete={stepNum >= 3}
-            isActive={stepNum === 2}
+          <VisualStep
+            stepNumber={2}
+            icon={<FileText className="h-6 w-6 text-white" />}
+            title="Génération de la police"
+            subtitle={getStepStatus(['generating-documents', 'documents-ready']) === 'complete'
+              ? "Contrat et annexes créés ✓"
+              : "Création du contrat et des annexes..."}
+            status={getStepStatus(['generating-documents', 'documents-ready'])}
           />
 
-          {/* Step 3: Sending to client */}
-          <StepItem
-            icon={<Send className="h-6 w-6 text-muted-foreground" />}
-            title="Envoi au client"
-            subtitle={`Envoyé à ${clientEmail} par ${channelText}`}
-            isComplete={stepNum >= 3}
-            isActive={stepNum === 2}
-          />
-
-          {/* Step 4: Sending tips */}
-          <StepItem
-            icon={<MessageCircle className="h-6 w-6 text-muted-foreground" />}
-            title="Envoi des conseils"
-            subtitle={`Message envoyé ${clientPhone ? `au ${clientPhone}` : "au client"}`}
-            isComplete={stepNum >= 5}
-            isActive={stepNum === 4}
+          <VisualStep
+            stepNumber={3}
+            icon={<Send className="h-6 w-6 text-white" />}
+            title="Transmission des documents"
+            subtitle={getStepStatus(['sending-documents', 'documents-sent', 'sending-tips', 'tips-sent']) === 'complete'
+              ? `Envoyé à ${clientEmail} via ${channelText} ✓`
+              : `Envoi vers ${clientEmail} via ${channelText}...`}
+            status={getStepStatus(['sending-documents', 'documents-sent', 'sending-tips', 'tips-sent'])}
+            isLast
           />
         </div>
 
+        {/* Status message when processing */}
+        {!isAllComplete && (
+          <div className="text-center py-2">
+            <p className="text-sm text-muted-foreground animate-pulse">
+              {currentStep === 'payment-processing' && "⏳ Vérification du paiement en cours..."}
+              {currentStep === 'payment-received' && "✓ Paiement confirmé ! Préparation des documents..."}
+              {currentStep === 'generating-documents' && "📄 Génération du contrat d'assurance..."}
+              {currentStep === 'documents-ready' && "✓ Documents prêts ! Préparation de l'envoi..."}
+              {currentStep === 'sending-documents' && "📤 Envoi des documents au client..."}
+              {currentStep === 'documents-sent' && "✓ Documents envoyés ! Préparation des conseils..."}
+              {currentStep === 'sending-tips' && "💬 Envoi du message de conseils personnalisés..."}
+            </p>
+          </div>
+        )}
+
         {isAllComplete && (
           <div className="space-y-4 pt-2 animate-fade-in">
-            <p className="text-center text-lg font-semibold text-green-700">
-              C'est fait ! Les documents ont été envoyés
-            </p>
+            <div className="text-center">
+              <p className="text-lg font-semibold text-green-700">
+                🎉 Félicitations ! La souscription est finalisée
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Tous les documents ont été envoyés au client
+              </p>
+            </div>
             
             {/* Product tip card */}
             <Card className="bg-blue-50 border-blue-200">
@@ -282,12 +390,12 @@ export const PaymentStatusDialog = ({
             </Card>
 
             {/* Cross-sell offer */}
-            <Card className="border-amber-200 bg-amber-50">
+            <Card className="border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles className="h-5 w-5 text-amber-600" />
-                  <span className="font-semibold text-amber-900">Offre exclusive !</span>
-                  <span className="ml-auto text-sm font-bold text-amber-700 bg-amber-200 px-2 py-0.5 rounded">
+                  <span className="font-semibold text-amber-900">Offre exclusive client !</span>
+                  <span className="ml-auto text-sm font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1 rounded-full shadow-sm">
                     {crossSell.discount}
                   </span>
                 </div>
@@ -297,8 +405,8 @@ export const PaymentStatusDialog = ({
                   <Button variant="outline" size="sm" onClick={handleContinue} className="flex-1">
                     Non merci
                   </Button>
-                  <Button size="sm" onClick={handleCrossSell} className="flex-1 bg-amber-600 hover:bg-amber-700">
-                    En savoir plus
+                  <Button size="sm" onClick={handleCrossSell} className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+                    Proposer au client
                   </Button>
                 </div>
               </CardContent>
@@ -322,18 +430,6 @@ export const PaymentStatusDialog = ({
                 Retour au tableau de bord
               </Button>
             </div>
-          </div>
-        )}
-
-        {!isAllComplete && (
-          <div className="flex justify-center pt-4">
-            <p className="text-sm text-muted-foreground animate-pulse">
-              {currentStep === 'waiting-payment' && "En attente de la confirmation du paiement..."}
-              {currentStep === 'payment-received' && "Préparation des documents..."}
-              {currentStep === 'generating-documents' && "Génération et envoi en cours..."}
-              {currentStep === 'documents-sent' && "Préparation du message de conseils..."}
-              {currentStep === 'sending-tips' && "Envoi du message de conseils..."}
-            </p>
           </div>
         )}
       </DialogContent>

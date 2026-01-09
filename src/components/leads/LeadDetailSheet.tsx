@@ -9,7 +9,25 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, MessageCircle, Mail, Send, User, Shield, StickyNote, UserPlus, Pencil, Database, ShoppingCart } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Phone, 
+  MessageCircle, 
+  Mail, 
+  Send, 
+  User, 
+  Shield, 
+  StickyNote, 
+  UserPlus, 
+  Pencil, 
+  Database, 
+  ShoppingCart,
+  FileText,
+  CreditCard,
+  Calendar,
+  FolderOpen
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -17,6 +35,7 @@ import { LeadStatusBadge, statusConfig } from "./LeadStatusBadge";
 import { LeadKYCSection } from "./LeadKYCSection";
 import { ConvertToClientSection } from "./ConvertToClientSection";
 import { AdditionalDataSection } from "./AdditionalDataSection";
+import { formatFCFA } from "@/utils/formatCurrency";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"leads">;
@@ -64,6 +83,22 @@ export const LeadDetailSheet = ({
     enabled: !!lead?.id,
   });
 
+  // Fetch quotations for this lead
+  const { data: quotations = [], isLoading: quotationsLoading } = useQuery({
+    queryKey: ["lead-quotations", lead?.id],
+    queryFn: async () => {
+      if (!lead?.id) return [];
+      const { data, error } = await supabase
+        .from("quotations")
+        .select("*")
+        .eq("lead_id", lead.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!lead?.id,
+  });
+
   const addNoteMutation = useMutation({
     mutationFn: async (content: string) => {
       const { data: userData } = await supabase.auth.getUser();
@@ -101,13 +136,26 @@ export const LeadDetailSheet = ({
     if (lead?.email) window.open(`mailto:${lead.email}`, "_blank");
   };
 
+  const getPaymentStatusBadge = (status: string) => {
+    switch (status) {
+      case "paid":
+        return <Badge className="bg-emerald-100 text-emerald-700">Payé</Badge>;
+      case "pending_payment":
+        return <Badge className="bg-amber-100 text-amber-700">En attente</Badge>;
+      case "expired":
+        return <Badge className="bg-red-100 text-red-700">Expiré</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
   if (!lead) return null;
 
   const initials = `${lead.first_name?.[0] || ""}${lead.last_name?.[0] || ""}`.toUpperCase();
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-md p-0 flex flex-col">
+      <SheetContent className="w-full sm:max-w-5xl p-0 flex flex-col">
         <SheetHeader className="p-6 pb-4 border-b bg-slate-50/50">
           <div className="flex items-start gap-4">
             <Avatar className="h-14 w-14 border-2 border-primary/20">
@@ -192,10 +240,19 @@ export const LeadDetailSheet = ({
         </SheetHeader>
 
         <Tabs defaultValue="info" className="flex-1 flex flex-col overflow-hidden min-h-0">
-          <TabsList className="mx-6 mt-2 grid w-auto grid-cols-4 shrink-0">
+          <TabsList className="mx-6 mt-2 grid w-auto grid-cols-5 shrink-0">
             <TabsTrigger value="info" className="gap-1.5 text-xs">
-              <StickyNote className="h-3.5 w-3.5" />
+              <User className="h-3.5 w-3.5" />
               Infos
+            </TabsTrigger>
+            <TabsTrigger value="quotations" className="gap-1.5 text-xs">
+              <FileText className="h-3.5 w-3.5" />
+              Cotations
+              {quotations.length > 0 && (
+                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                  {quotations.length}
+                </Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger value="data" className="gap-1.5 text-xs">
               <Database className="h-3.5 w-3.5" />
@@ -213,6 +270,24 @@ export const LeadDetailSheet = ({
 
           <ScrollArea className="flex-1 min-h-0">
             <TabsContent value="info" className="mt-0 p-6 space-y-4">
+              {/* Portfolio Summary */}
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-3 bg-blue-50 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-700">{quotations.length}</div>
+                      <div className="text-xs text-muted-foreground">Cotations</div>
+                    </div>
+                    <div className="text-center p-3 bg-emerald-50 rounded-lg">
+                      <div className="text-2xl font-bold text-emerald-700">
+                        {quotations.filter(q => q.payment_status === "paid").length}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Payées</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Notes complémentaires */}
               {lead.notes && (
                 <div className="space-y-2">
@@ -290,6 +365,68 @@ export const LeadDetailSheet = ({
                   )}
                 </div>
               </div>
+            </TabsContent>
+
+            {/* Quotations Tab */}
+            <TabsContent value="quotations" className="mt-0 p-6 space-y-3">
+              {quotationsLoading ? (
+                <div className="text-center py-8 text-muted-foreground">Chargement...</div>
+              ) : quotations.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                  <p>Aucune cotation pour ce prospect</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleGuidedSales}
+                    className="mt-4 gap-1.5"
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                    Créer une cotation
+                  </Button>
+                </div>
+              ) : (
+                quotations.map((quotation) => (
+                  <Card key={quotation.id} className="overflow-hidden">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <div className="font-medium">{quotation.product_name}</div>
+                          <Badge variant="outline" className="text-xs">
+                            {quotation.product_type}
+                          </Badge>
+                        </div>
+                        {getPaymentStatusBadge(quotation.payment_status)}
+                      </div>
+                      <Separator className="my-3" />
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <div className="text-muted-foreground text-xs">Prime</div>
+                          <div className="font-medium flex items-center gap-1">
+                            <CreditCard className="h-3.5 w-3.5" />
+                            {formatFCFA(quotation.premium_amount)}
+                            <span className="text-xs text-muted-foreground">/ {quotation.premium_frequency}</span>
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground text-xs">Valide jusqu'au</div>
+                          <div className="font-medium flex items-center gap-1">
+                            <Calendar className="h-3.5 w-3.5" />
+                            {quotation.valid_until 
+                              ? format(new Date(quotation.valid_until), "dd/MM/yyyy")
+                              : "N/A"}
+                          </div>
+                        </div>
+                      </div>
+                      {quotation.notes && (
+                        <div className="mt-3 p-2 bg-slate-50 rounded text-sm text-muted-foreground">
+                          {quotation.notes}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </TabsContent>
 
             <TabsContent value="data" className="mt-0 p-6">

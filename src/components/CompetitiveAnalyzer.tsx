@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Upload, FileText, Loader2, TrendingUp, TrendingDown, Shield, Target } from "lucide-react";
+import { Upload, FileText, Loader2, TrendingUp, TrendingDown, Shield, Target, Link2, Tags } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,12 +12,29 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ClientValueNote } from "@/components/ClientValueNote";
+import { Checkbox } from "@/components/ui/checkbox";
+
+// Catégories strictes pour les produits concurrents
+const PRODUCT_CATEGORIES = [
+  { id: "auto", label: "Assurance Auto", description: "Responsabilité civile, tous risques, dommages" },
+  { id: "mrh", label: "Multirisque Habitation", description: "Protection du logement et biens" },
+  { id: "sante", label: "Assurance Santé", description: "Frais médicaux, hospitalisation" },
+  { id: "vie", label: "Assurance Vie", description: "Épargne, décès, rente" },
+  { id: "prevoyance", label: "Prévoyance", description: "Décès, invalidité, obsèques" },
+  { id: "voyage", label: "Assistance Voyage", description: "Couverture internationale" },
+  { id: "rc_pro", label: "RC Professionnelle", description: "Responsabilité civile entreprise" },
+  { id: "flotte", label: "Flotte Auto", description: "Véhicules d'entreprise" },
+  { id: "collective", label: "Santé Collective", description: "Contrats groupe entreprise" },
+] as const;
+
+type ProductCategory = typeof PRODUCT_CATEGORIES[number]["id"];
 
 export const CompetitiveAnalyzer = () => {
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [competitorName, setCompetitorName] = useState("");
-  const [selectedProductId, setSelectedProductId] = useState<string>("");
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<ProductCategory | "">("");
   const [products, setProducts] = useState<any[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState("");
@@ -48,6 +65,47 @@ export const CompetitiveAnalyzer = () => {
     }
     
     setProducts(data || []);
+  };
+
+  // Filtrer les produits Sanlam par catégorie sélectionnée
+  const filteredProducts = selectedCategory
+    ? products.filter(p => {
+        const categoryMap: Record<string, string[]> = {
+          auto: ["Auto", "Automobile"],
+          mrh: ["Habitation", "MRH", "Multirisque"],
+          sante: ["Santé", "Sante", "Health"],
+          vie: ["Vie", "Life", "Épargne"],
+          prevoyance: ["Prévoyance", "Obsèques", "Décès"],
+          voyage: ["Voyage", "Travel", "Assistance"],
+          rc_pro: ["RC Pro", "Responsabilité", "Professionnel"],
+          flotte: ["Flotte", "Fleet", "Véhicules"],
+          collective: ["Collective", "Groupe", "Entreprise"],
+        };
+        const keywords = categoryMap[selectedCategory] || [];
+        return keywords.some(kw => 
+          p.name?.toLowerCase().includes(kw.toLowerCase()) || 
+          p.category?.toLowerCase().includes(kw.toLowerCase())
+        );
+      })
+    : products;
+
+  const handleProductToggle = (productId: string) => {
+    setSelectedProductIds(prev => 
+      prev.includes(productId) 
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
+  const handleSelectAllCategory = () => {
+    const categoryProductIds = filteredProducts.map(p => p.id);
+    const allSelected = categoryProductIds.every(id => selectedProductIds.includes(id));
+    
+    if (allSelected) {
+      setSelectedProductIds(prev => prev.filter(id => !categoryProductIds.includes(id)));
+    } else {
+      setSelectedProductIds(prev => [...new Set([...prev, ...categoryProductIds])]);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,7 +158,8 @@ export const CompetitiveAnalyzer = () => {
             documentType: file.type,
             filename: file.name,
             competitorName: competitorName || null,
-            productId: (selectedProductId && selectedProductId !== "auto") ? selectedProductId : null,
+            productIds: selectedProductIds.length > 0 ? selectedProductIds : null,
+            category: selectedCategory || null,
             clientContext: clientContext || null,
             companyStrengths: companyStrengths || null,
             customQuestions: customQuestions || null
@@ -194,25 +253,122 @@ export const CompetitiveAnalyzer = () => {
             />
           </div>
 
+          {/* Catégorisation stricte du produit concurrent */}
           <div className="space-y-2">
-            <Label htmlFor="product-select">Produit à comparer (optionnel)</Label>
+            <Label className="flex items-center gap-2">
+              <Tags className="h-4 w-4" />
+              Catégorie du produit concurrent
+            </Label>
             <Select 
-              value={selectedProductId} 
-              onValueChange={setSelectedProductId}
+              value={selectedCategory} 
+              onValueChange={(val) => {
+                setSelectedCategory(val as ProductCategory | "");
+                setSelectedProductIds([]);
+              }}
               disabled={isAnalyzing}
             >
-              <SelectTrigger id="product-select">
-                <SelectValue placeholder="Auto-détection du produit concurrent" />
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner la catégorie du produit concurrent" />
               </SelectTrigger>
               <SelectContent className="bg-background z-50">
-                <SelectItem value="auto">Auto-détection</SelectItem>
-                {products.map((product) => (
-                  <SelectItem key={product.id} value={product.id}>
-                    {product.name} ({product.category})
+                <SelectItem value="">Auto-détection</SelectItem>
+                {PRODUCT_CATEGORIES.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    <div className="flex flex-col">
+                      <span>{cat.label}</span>
+                      <span className="text-xs text-muted-foreground">{cat.description}</span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              Catégoriser le produit concurrent permet une comparaison plus précise
+            </p>
+          </div>
+
+          {/* Liaison multi-produits Sanlam */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Link2 className="h-4 w-4" />
+              Produits Sanlam à comparer
+            </Label>
+            <Card className="border-dashed">
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm text-muted-foreground">
+                    {selectedCategory 
+                      ? `Produits de la catégorie "${PRODUCT_CATEGORIES.find(c => c.id === selectedCategory)?.label}"`
+                      : "Tous les produits Sanlam disponibles"
+                    }
+                  </p>
+                  {filteredProducts.length > 0 && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={handleSelectAllCategory}
+                      disabled={isAnalyzing}
+                    >
+                      {filteredProducts.every(p => selectedProductIds.includes(p.id)) 
+                        ? "Tout désélectionner" 
+                        : "Tout sélectionner"
+                      }
+                    </Button>
+                  )}
+                </div>
+                
+                {filteredProducts.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    {selectedCategory 
+                      ? "Aucun produit trouvé dans cette catégorie" 
+                      : "Chargement des produits..."
+                    }
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                    {filteredProducts.map((product) => (
+                      <div 
+                        key={product.id} 
+                        className={`flex items-center space-x-3 p-2 rounded-lg border cursor-pointer transition-colors ${
+                          selectedProductIds.includes(product.id) 
+                            ? "bg-primary/10 border-primary" 
+                            : "hover:bg-muted"
+                        }`}
+                        onClick={() => !isAnalyzing && handleProductToggle(product.id)}
+                      >
+                        <Checkbox 
+                          checked={selectedProductIds.includes(product.id)}
+                          disabled={isAnalyzing}
+                          onCheckedChange={() => handleProductToggle(product.id)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{product.name}</p>
+                          <p className="text-xs text-muted-foreground">{product.category}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {selectedProductIds.length > 0 && (
+                  <div className="mt-3 pt-3 border-t">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {selectedProductIds.length} produit(s) sélectionné(s) pour la comparaison :
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedProductIds.map(id => {
+                        const product = products.find(p => p.id === id);
+                        return product ? (
+                          <Badge key={id} variant="secondary" className="text-xs">
+                            {product.name}
+                          </Badge>
+                        ) : null;
+                      })}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           <div className="space-y-2">

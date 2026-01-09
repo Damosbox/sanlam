@@ -246,7 +246,11 @@ export default function PortfolioPage() {
     } else {
       const client = clients.find(c => c.id === item.id);
       if (client) {
-        setSelectedClient(client);
+        // Map client_status to type for ClientDetailSheet compatibility
+        setSelectedClient({
+          ...client,
+          type: client.client_status, // ClientDetailSheet expects "type" not "client_status"
+        });
         setClientSheetOpen(true);
       }
     }

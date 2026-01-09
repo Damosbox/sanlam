@@ -20,17 +20,17 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ icon, title, description, onSelect, disabled, comingSoon }: ProductCardProps) => (
-  <Card className="bg-blue-50 dark:bg-blue-950/30 border-0 hover:shadow-lg transition-all duration-300 group">
-    <CardContent className="p-6 flex flex-col items-center text-center gap-4">
+  <Card className="bg-blue-50 dark:bg-blue-950/30 border-0 hover:shadow-lg transition-all duration-300 group h-full">
+    <CardContent className="p-6 flex flex-col items-center text-center gap-4 h-full">
       <div className="w-16 h-16 rounded-full bg-white dark:bg-background flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
         {icon}
       </div>
-      <div>
+      <div className="flex-grow">
         <h3 className="font-semibold text-lg text-foreground mb-2">{title}</h3>
         <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
       </div>
       {comingSoon ? (
-        <div className="flex items-center gap-2 text-muted-foreground text-sm">
+        <div className="flex items-center gap-2 text-muted-foreground text-sm mt-auto">
           <Construction className="h-4 w-4" />
           <span>Parcours en construction</span>
         </div>
@@ -38,7 +38,7 @@ const ProductCard = ({ icon, title, description, onSelect, disabled, comingSoon 
         <Button 
           onClick={onSelect} 
           disabled={disabled}
-          className="w-full mt-2"
+          className="w-full mt-auto"
         >
           Démarrer le devis
         </Button>

@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
 import Commercial from "./pages/Commercial";
 import B2C from "./pages/B2C";
-import Admin from "./pages/Admin";
 import ClaimNew from "./pages/ClaimNew";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -40,6 +39,21 @@ import ClaimsPage from "./pages/broker/ClaimsPage";
 import PoliciesPage from "./pages/broker/PoliciesPage";
 import AnalysisPage from "./pages/broker/AnalysisPage";
 import MessagesPage from "./pages/broker/MessagesPage";
+
+// Admin pages
+import { AdminLayout } from "./layouts/AdminLayout";
+import AdminDashboardPage from "./pages/admin/DashboardPage";
+import AdminClaimsPage from "./pages/admin/ClaimsPage";
+import AdminSubscriptionsPage from "./pages/admin/SubscriptionsPage";
+import AdminUsersPage from "./pages/admin/UsersPage";
+import AdminPermissionsPage from "./pages/admin/PermissionsPage";
+import AdminAuditPage from "./pages/admin/AuditPage";
+import AdminLoyaltyPage from "./pages/admin/LoyaltyPage";
+import AdminSurveysPage from "./pages/admin/SurveysPage";
+import AdminFormsPage from "./pages/admin/FormsPage";
+import AdminAIMonitoringPage from "./pages/admin/AIMonitoringPage";
+import AdminCompetitivePage from "./pages/admin/CompetitivePage";
+import AdminTestDataPage from "./pages/admin/TestDataPage";
 
 const queryClient = new QueryClient();
 
@@ -102,11 +116,27 @@ const App = () => (
             <Route path="messages" element={<MessagesPage />} />
           </Route>
 
+          {/* Admin Routes with Sidebar Layout */}
           <Route path="/admin" element={
             <RoleProtectedRoute allowedRoles={["admin"]}>
-              <Admin />
+              <AdminLayout />
             </RoleProtectedRoute>
-          } />
+          }>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboardPage />} />
+            <Route path="claims" element={<AdminClaimsPage />} />
+            <Route path="subscriptions" element={<AdminSubscriptionsPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="permissions" element={<AdminPermissionsPage />} />
+            <Route path="audit" element={<AdminAuditPage />} />
+            <Route path="loyalty" element={<AdminLoyaltyPage />} />
+            <Route path="surveys" element={<AdminSurveysPage />} />
+            <Route path="forms" element={<AdminFormsPage />} />
+            <Route path="ai" element={<AdminAIMonitoringPage />} />
+            <Route path="competitive" element={<AdminCompetitivePage />} />
+            <Route path="data" element={<AdminTestDataPage />} />
+          </Route>
+
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

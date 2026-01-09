@@ -19,7 +19,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Eye, MoreHorizontal, Download, Send, Phone, MessageCircle, Mail } from "lucide-react";
+import { Eye, MoreHorizontal, Download, Send, Phone, MessageCircle, Mail, RefreshCw, Pencil, XCircle, FileEdit } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { PolicyDetailSheet } from "./policies/PolicyDetailSheet";
 
 interface Subscription {
@@ -41,6 +42,7 @@ interface Subscription {
 }
 
 export const BrokerSubscriptions = () => {
+  const { toast } = useToast();
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPolicy, setSelectedPolicy] = useState<Subscription | null>(null);
@@ -121,6 +123,27 @@ export const BrokerSubscriptions = () => {
 
   const handleEmail = (email?: string) => {
     if (email) window.open(`mailto:${email}`, "_self");
+  };
+
+  const handleRenew = (policy: Subscription) => {
+    toast({
+      title: "Renouvellement initié",
+      description: `Demande de renouvellement pour la police ${policy.policy_number}`,
+    });
+  };
+
+  const handleModify = (policy: Subscription) => {
+    toast({
+      title: "Modification de police",
+      description: `Ouverture de l'avenant pour ${policy.policy_number}`,
+    });
+  };
+
+  const handleTerminate = (policy: Subscription) => {
+    toast({
+      title: "Résiliation demandée",
+      description: `Demande de résiliation pour la police ${policy.policy_number}`,
+    });
   };
 
   if (loading) {
@@ -215,6 +238,25 @@ export const BrokerSubscriptions = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleOpenSheet(sub)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Voir détails
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => handleRenew(sub)}>
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Renouveler
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleModify(sub)}>
+                            <FileEdit className="mr-2 h-4 w-4" />
+                            Modifier / Avenant
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => handleTerminate(sub)} className="text-destructive focus:text-destructive">
+                            <XCircle className="mr-2 h-4 w-4" />
+                            Résilier
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => handleOpenSheet(sub)}>
                             <Download className="mr-2 h-4 w-4" />
                             Télécharger documents

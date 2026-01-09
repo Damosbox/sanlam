@@ -22,6 +22,7 @@ export const CompetitiveAnalyzer = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState("");
   const [analysis, setAnalysis] = useState<any>(null);
+  const [customQuestions, setCustomQuestions] = useState("");
   const [clientContext, setClientContext] = useState("");
   const [companyStrengths, setCompanyStrengths] = useState(`- Délai moyen de règlement < 10 jours sur sinistres simples
 - Réseau garages agréés 300+ en Côte d'Ivoire
@@ -101,7 +102,8 @@ export const CompetitiveAnalyzer = () => {
             competitorName: competitorName || null,
             productId: (selectedProductId && selectedProductId !== "auto") ? selectedProductId : null,
             clientContext: clientContext || null,
-            companyStrengths: companyStrengths || null
+            companyStrengths: companyStrengths || null,
+            customQuestions: customQuestions || null
           }
         });
 
@@ -237,6 +239,21 @@ export const CompetitiveAnalyzer = () => {
             />
             <p className="text-xs text-muted-foreground">
               Ces atouts seront utilisés pour personnaliser l'analyse et la note de valeur client
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="custom-questions">Questions spécifiques pour ce concurrent (optionnel)</Label>
+            <Textarea
+              id="custom-questions"
+              placeholder="Ex: Quelles sont les exclusions cachées ? Comparer les délais de carence. Points faibles sur le service client..."
+              value={customQuestions}
+              onChange={(e) => setCustomQuestions(e.target.value)}
+              disabled={isAnalyzing}
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground">
+              Ajoutez des questions ou points de comparaison spécifiques que l'IA doit analyser
             </p>
           </div>
 

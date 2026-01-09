@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { Shield, AlertTriangle, FileCheck, Save, Loader2 } from "lucide-react";
+import { Shield, AlertTriangle, FileCheck, Save, Loader2, Search, RefreshCw, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -21,6 +21,10 @@ interface LeadKYCData {
   ppe_position: string | null;
   ppe_country: string | null;
   ppe_relationship: string | null;
+  ppe_screening_status: string | null;
+  ppe_screening_date: string | null;
+  ppe_screening_source: string | null;
+  ppe_screening_reference: string | null;
   aml_verified: boolean;
   aml_verified_at: string | null;
   aml_risk_level: "low" | "medium" | "high" | null;
@@ -38,6 +42,7 @@ interface LeadKYCSectionProps {
 export const LeadKYCSection = ({ leadId }: LeadKYCSectionProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [isScreening, setIsScreening] = useState(false);
   
   const [formData, setFormData] = useState<Omit<LeadKYCData, "id">>({
     lead_id: leadId,
@@ -45,6 +50,10 @@ export const LeadKYCSection = ({ leadId }: LeadKYCSectionProps) => {
     ppe_position: null,
     ppe_country: null,
     ppe_relationship: null,
+    ppe_screening_status: null,
+    ppe_screening_date: null,
+    ppe_screening_source: null,
+    ppe_screening_reference: null,
     aml_verified: false,
     aml_verified_at: null,
     aml_risk_level: null,
@@ -53,6 +62,21 @@ export const LeadKYCSection = ({ leadId }: LeadKYCSectionProps) => {
     identity_document_number: null,
     identity_expiry_date: null,
     identity_verified: false,
+  });
+
+  // Fetch lead profile to get name for screening
+  const { data: leadProfile } = useQuery({
+    queryKey: ["lead-profile", leadId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("leads")
+        .select("first_name, last_name")
+        .eq("id", leadId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!leadId,
   });
 
   const { data: kycData, isLoading } = useQuery({
@@ -77,6 +101,10 @@ export const LeadKYCSection = ({ leadId }: LeadKYCSectionProps) => {
         ppe_position: kycData.ppe_position,
         ppe_country: kycData.ppe_country,
         ppe_relationship: kycData.ppe_relationship,
+        ppe_screening_status: kycData.ppe_screening_status,
+        ppe_screening_date: kycData.ppe_screening_date,
+        ppe_screening_source: kycData.ppe_screening_source,
+        ppe_screening_reference: kycData.ppe_screening_reference,
         aml_verified: kycData.aml_verified || false,
         aml_verified_at: kycData.aml_verified_at,
         aml_risk_level: kycData.aml_risk_level as LeadKYCData["aml_risk_level"],
@@ -90,23 +118,29 @@ export const LeadKYCSection = ({ leadId }: LeadKYCSectionProps) => {
   }, [kycData, leadId]);
 
   const saveMutation = useMutation({
-    mutationFn: async (data: Omit<LeadKYCData, "id">) => {
+    mutationFn: async (data: Omit<LeadKYCData, "id" | "is_ppe" | "ppe_position" | "ppe_country" | "ppe_relationship" | "ppe_screening_status" | "ppe_screening_date" | "ppe_screening_source" | "ppe_screening_reference">) => {
+      const payload = {
+        lead_id: data.lead_id,
+        aml_verified: data.aml_verified,
+        aml_risk_level: data.aml_risk_level,
+        aml_notes: data.aml_notes,
+        identity_document_type: data.identity_document_type,
+        identity_document_number: data.identity_document_number,
+        identity_expiry_date: data.identity_expiry_date,
+        identity_verified: data.identity_verified,
+        aml_verified_at: data.aml_verified && !kycData?.aml_verified ? new Date().toISOString() : data.aml_verified_at,
+      };
+
       if (kycData?.id) {
         const { error } = await supabase
           .from("lead_kyc_compliance")
-          .update({
-            ...data,
-            aml_verified_at: data.aml_verified && !kycData.aml_verified ? new Date().toISOString() : data.aml_verified_at,
-          })
+          .update(payload)
           .eq("id", kycData.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from("lead_kyc_compliance")
-          .insert({
-            ...data,
-            aml_verified_at: data.aml_verified ? new Date().toISOString() : null,
-          });
+          .insert(payload);
         if (error) throw error;
       }
     },
@@ -119,16 +153,70 @@ export const LeadKYCSection = ({ leadId }: LeadKYCSectionProps) => {
     },
   });
 
+  const handlePPEScreening = async () => {
+    if (!leadProfile?.first_name || !leadProfile?.last_name) {
+      toast({ 
+        title: "Informations manquantes", 
+        description: "Le nom du prospect est requis pour le screening",
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    setIsScreening(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("screen-ppe", {
+        body: {
+          clientId: leadId,
+          entityType: "lead",
+          firstName: leadProfile.first_name,
+          lastName: leadProfile.last_name,
+        },
+      });
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ["lead-kyc", leadId] });
+      
+      toast({ 
+        title: "Screening terminé",
+        description: data.result.isPPE 
+          ? "⚠️ PPE détecté - Vérification requise" 
+          : "✓ Aucune PPE détectée"
+      });
+    } catch (error) {
+      console.error("Screening error:", error);
+      toast({ 
+        title: "Erreur de screening", 
+        description: "Impossible de contacter le service de vérification",
+        variant: "destructive" 
+      });
+    } finally {
+      setIsScreening(false);
+    }
+  };
+
   const updateField = <K extends keyof typeof formData>(field: K, value: typeof formData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const getComplianceStatus = () => {
     const issues = [];
-    if (formData.is_ppe && !formData.ppe_position) issues.push("Position PPE manquante");
     if (!formData.identity_document_type) issues.push("Pièce d'identité manquante");
     if (!formData.aml_verified) issues.push("Vérification AML non effectuée");
+    if (formData.ppe_screening_status !== "completed") issues.push("Screening PPE non effectué");
     return issues;
+  };
+
+  const getRelationshipLabel = (rel: string | null) => {
+    switch (rel) {
+      case "lui_meme": return "Lui-même";
+      case "conjoint": return "Conjoint(e)";
+      case "parent": return "Parent";
+      case "enfant": return "Enfant";
+      case "associe": return "Associé proche";
+      default: return rel || "";
+    }
   };
 
   const complianceIssues = getComplianceStatus();
@@ -170,54 +258,106 @@ export const LeadKYCSection = ({ leadId }: LeadKYCSectionProps) => {
       )}
 
       <Accordion type="multiple" defaultValue={["ppe", "identity"]} className="space-y-2">
-        {/* PPE Section */}
+        {/* PPE Section - Automatic Screening */}
         <AccordionItem value="ppe" className="border rounded-lg px-4">
           <AccordionTrigger className="hover:no-underline py-3">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-500" />
-              <span className="text-sm font-medium">PPE - Personne Politiquement Exposée</span>
+              <Search className="h-4 w-4 text-amber-500" />
+              <span className="text-sm font-medium">Screening PPE</span>
               {formData.is_ppe && (
-                <Badge variant="destructive" className="ml-2 text-xs">PPE</Badge>
+                <Badge variant="destructive" className="ml-2 text-xs">PPE Détecté</Badge>
+              )}
+              {formData.ppe_screening_status === "completed" && !formData.is_ppe && (
+                <Badge variant="secondary" className="ml-2 text-xs bg-emerald-100 text-emerald-700">Vérifié</Badge>
               )}
             </div>
           </AccordionTrigger>
           <AccordionContent className="space-y-4 pb-4">
+            {/* Screening Button */}
             <div className="flex items-center justify-between">
-              <Label htmlFor="is_ppe" className="text-sm">Cette personne est-elle une PPE ?</Label>
-              <Switch
-                id="is_ppe"
-                checked={formData.is_ppe}
-                onCheckedChange={(checked) => updateField("is_ppe", checked)}
-              />
+              <div className="text-sm text-muted-foreground">
+                {formData.ppe_screening_status === "completed" 
+                  ? "Dernier screening effectué" 
+                  : "Lancer une vérification automatique"}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handlePPEScreening}
+                disabled={isScreening}
+              >
+                {isScreening ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                    Vérification...
+                  </>
+                ) : formData.ppe_screening_status === "completed" ? (
+                  <>
+                    <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                    Relancer
+                  </>
+                ) : (
+                  <>
+                    <Search className="h-3.5 w-3.5 mr-1.5" />
+                    Lancer le screening
+                  </>
+                )}
+              </Button>
             </div>
 
-            {formData.is_ppe && (
-              <>
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Fonction/Poste</Label>
-                  <Input
-                    placeholder="Ex: Ministre, Député, Directeur..."
-                    value={formData.ppe_position || ""}
-                    onChange={(e) => updateField("ppe_position", e.target.value || null)}
-                  />
+            {/* Screening Result */}
+            {formData.ppe_screening_status === "completed" && (
+              <div className="rounded-lg border p-3 bg-muted/30">
+                {formData.is_ppe ? (
+                  <div className="space-y-2">
+                    <Badge className="bg-amber-100 text-amber-700 gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      PPE Détecté
+                    </Badge>
+                    
+                    <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
+                      {formData.ppe_position && (
+                        <div>
+                          <span className="text-xs text-muted-foreground">Position:</span>
+                          <p className="font-medium">{formData.ppe_position}</p>
+                        </div>
+                      )}
+                      {formData.ppe_country && (
+                        <div>
+                          <span className="text-xs text-muted-foreground">Pays:</span>
+                          <p className="font-medium">{formData.ppe_country}</p>
+                        </div>
+                      )}
+                      {formData.ppe_relationship && (
+                        <div className="col-span-2">
+                          <span className="text-xs text-muted-foreground">Relation:</span>
+                          <p className="font-medium">{getRelationshipLabel(formData.ppe_relationship)}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-sm text-emerald-600">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>Aucune PPE détectée</span>
+                  </div>
+                )}
+                
+                {/* Screening metadata */}
+                <div className="mt-3 pt-2 border-t border-dashed text-xs text-muted-foreground">
+                  <p>
+                    📄 Screening: {formData.ppe_screening_date && format(new Date(formData.ppe_screening_date), "dd/MM/yyyy à HH:mm", { locale: fr })}
+                  </p>
+                  <p>Source: {formData.ppe_screening_source} • Réf: {formData.ppe_screening_reference}</p>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Pays d'exercice</Label>
-                  <Input
-                    placeholder="Ex: Côte d'Ivoire"
-                    value={formData.ppe_country || ""}
-                    onChange={(e) => updateField("ppe_country", e.target.value || null)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Lien de parenté (si proche d'une PPE)</Label>
-                  <Input
-                    placeholder="Ex: Conjoint, Enfant, Parent..."
-                    value={formData.ppe_relationship || ""}
-                    onChange={(e) => updateField("ppe_relationship", e.target.value || null)}
-                  />
-                </div>
-              </>
+              </div>
+            )}
+
+            {!formData.ppe_screening_status && !isScreening && (
+              <p className="text-sm text-muted-foreground italic">
+                Aucun screening PPE effectué. Cliquez sur "Lancer le screening" pour vérifier.
+              </p>
             )}
           </AccordionContent>
         </AccordionItem>

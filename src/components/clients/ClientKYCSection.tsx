@@ -6,12 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Shield, AlertTriangle, CheckCircle, FileCheck, Search, Loader2, RefreshCw } from "lucide-react";
+import { Save, Shield, AlertTriangle, CheckCircle, FileCheck, Search, Loader2, RefreshCw, ScanLine } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -24,9 +23,6 @@ interface KYCFormData {
   identity_document_type: string;
   identity_document_number: string;
   identity_expiry_date: string;
-  aml_verified: boolean;
-  aml_risk_level: string;
-  aml_notes: string;
 }
 
 interface KYCData {
@@ -54,6 +50,8 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isScreening, setIsScreening] = useState(false);
+  const [isOCRProcessing, setIsOCRProcessing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch client profile to get name for screening
   const { data: clientProfile } = useQuery({
@@ -88,9 +86,6 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
       identity_document_type: "",
       identity_document_number: "",
       identity_expiry_date: "",
-      aml_verified: false,
-      aml_risk_level: "",
-      aml_notes: "",
     },
   });
 
@@ -101,9 +96,6 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
         identity_document_type: kycData.identity_document_type || "",
         identity_document_number: kycData.identity_document_number || "",
         identity_expiry_date: kycData.identity_expiry_date || "",
-        aml_verified: kycData.aml_verified || false,
-        aml_risk_level: kycData.aml_risk_level || "",
-        aml_notes: kycData.aml_notes || "",
       });
     }
   }, [kycData, reset]);
@@ -114,7 +106,6 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
         client_id: clientId,
         ...formData,
         identity_expiry_date: formData.identity_expiry_date || null,
-        aml_verified_at: formData.aml_verified ? new Date().toISOString() : null,
       };
 
       if (kycData) {
@@ -139,7 +130,7 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
     },
   });
 
-  const handlePPEScreening = async () => {
+  const handleLCBFTScreening = async () => {
     if (!clientProfile?.first_name || !clientProfile?.last_name) {
       toast({ 
         title: "Informations manquantes", 
@@ -164,11 +155,14 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
 
       queryClient.invalidateQueries({ queryKey: ["client-kyc", clientId] });
       
+      const result = data.result;
+      const riskLabel = result.amlRiskLevel === 'high' ? 'Élevé' : result.amlRiskLevel === 'medium' ? 'Moyen' : 'Faible';
+      
       toast({ 
-        title: "Screening terminé",
-        description: data.result.isPPE 
-          ? "⚠️ PPE détecté - Vérification requise" 
-          : "✓ Aucune PPE détectée"
+        title: "Screening LCB-FT terminé",
+        description: result.isPPE 
+          ? `⚠️ PPE détecté • Risque AML: ${riskLabel}` 
+          : `✓ Pas de PPE • Risque AML: ${riskLabel}`
       });
     } catch (error) {
       console.error("Screening error:", error);
@@ -182,20 +176,80 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
     }
   };
 
+  const handleOCRUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsOCRProcessing(true);
+    try {
+      // Convert file to base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data, error } = await supabase.functions.invoke("ocr-identity", {
+        body: { imageBase64: base64 },
+      });
+
+      if (error) throw error;
+
+      if (data.extracted) {
+        const extracted = data.extracted;
+        
+        // Map document type
+        const docTypeMap: Record<string, string> = {
+          "CNI": "cni",
+          "Passeport": "passport",
+          "Permis de conduire": "permit",
+          "Carte consulaire": "carte_consulaire",
+        };
+        
+        setValue("identity_document_type", docTypeMap[extracted.documentType] || "cni");
+        setValue("identity_document_number", extracted.documentNumber || "");
+        setValue("identity_expiry_date", extracted.expiryDate || "");
+        setValue("identity_verified", true);
+
+        toast({ 
+          title: "Document analysé",
+          description: `${extracted.firstName} ${extracted.lastName} - ${extracted.documentType}`
+        });
+      } else {
+        toast({ 
+          title: "Extraction incomplète",
+          description: "Certaines informations n'ont pas pu être extraites",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("OCR error:", error);
+      toast({ 
+        title: "Erreur OCR", 
+        description: "Impossible d'analyser le document",
+        variant: "destructive" 
+      });
+    } finally {
+      setIsOCRProcessing(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const onSubmit = (data: KYCFormData) => {
     saveMutation.mutate(data);
   };
 
   const identityVerified = watch("identity_verified");
-  const amlVerified = watch("aml_verified");
-  const amlRiskLevel = watch("aml_risk_level");
 
-  // PPE data from screening (read-only)
+  // PPE/AML data from screening (read-only)
   const isPPE = kycData?.is_ppe || false;
   const screeningStatus = kycData?.ppe_screening_status || "pending";
   const screeningDate = kycData?.ppe_screening_date;
   const screeningSource = kycData?.ppe_screening_source;
   const screeningReference = kycData?.ppe_screening_reference;
+  const amlRiskLevel = kycData?.aml_risk_level;
+  const amlNotes = kycData?.aml_notes;
 
   if (isLoading) {
     return <div className="text-center py-4 text-sm text-muted-foreground">Chargement...</div>;
@@ -203,27 +257,35 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
 
   const getKYCStatus = () => {
     if (!identityVerified) return { label: "Incomplet", color: "bg-amber-100 text-amber-700", icon: AlertTriangle };
-    if (isPPE && !amlVerified) return { label: "Attention PPE", color: "bg-red-100 text-red-700", icon: AlertTriangle };
-    if (amlRiskLevel === "high") return { label: "Risque élevé", color: "bg-red-100 text-red-700", icon: AlertTriangle };
+    if (screeningStatus !== "completed") return { label: "Screening requis", color: "bg-amber-100 text-amber-700", icon: AlertTriangle };
+    if (isPPE || amlRiskLevel === "high") return { label: "Risque élevé", color: "bg-red-100 text-red-700", icon: AlertTriangle };
+    if (amlRiskLevel === "medium") return { label: "Risque moyen", color: "bg-amber-100 text-amber-700", icon: AlertTriangle };
     return { label: "Conforme", color: "bg-emerald-100 text-emerald-700", icon: CheckCircle };
+  };
+
+  const getRiskBadge = (level: string | null) => {
+    switch (level) {
+      case "high": return <Badge className="bg-red-100 text-red-700">Risque Élevé</Badge>;
+      case "medium": return <Badge className="bg-amber-100 text-amber-700">Risque Moyen</Badge>;
+      case "low": return <Badge className="bg-emerald-100 text-emerald-700">Risque Faible</Badge>;
+      default: return null;
+    }
   };
 
   const status = getKYCStatus();
   const StatusIcon = status.icon;
 
-  const getRelationshipLabel = (rel: string | null) => {
-    switch (rel) {
-      case "lui_meme": return "Lui-même";
-      case "conjoint": return "Conjoint(e)";
-      case "parent": return "Parent";
-      case "enfant": return "Enfant";
-      case "associe": return "Associé proche";
-      default: return rel || "";
-    }
-  };
-
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {/* Hidden file input for OCR */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleOCRUpload}
+      />
+
       {/* KYC Status Summary */}
       <Card className="border-2">
         <CardContent className="p-4">
@@ -249,7 +311,7 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
         </CardContent>
       </Card>
 
-      {/* Identity Verification */}
+      {/* Identity Verification with OCR */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
@@ -258,6 +320,27 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          {/* OCR Button */}
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isOCRProcessing}
+          >
+            {isOCRProcessing ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Analyse en cours...
+              </>
+            ) : (
+              <>
+                <ScanLine className="h-4 w-4 mr-2" />
+                Scanner une pièce d'identité (OCR)
+              </>
+            )}
+          </Button>
+
           <div className="flex items-center justify-between">
             <Label className="text-sm">Identité vérifiée</Label>
             <Switch
@@ -296,69 +379,69 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
         </CardContent>
       </Card>
 
-      {/* Conformité LCB-FT (PPE screening + AML) */}
+      {/* Unified LCB-FT Screening (PPE + AML) */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
             <Shield className="h-4 w-4" />
-            Conformité LCB-FT
+            Screening LCB-FT
+            {screeningStatus === "completed" && (
+              <div className="ml-auto flex gap-1">
+                {isPPE && <Badge variant="destructive" className="text-xs">PPE</Badge>}
+                {getRiskBadge(amlRiskLevel)}
+              </div>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* PPE Screening Section */}
-          <div className="rounded-lg border p-3 bg-muted/30">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Search className="h-4 w-4 text-muted-foreground" />
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Screening PPE
-                </span>
-              </div>
-              
-              {/* Screening button */}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handlePPEScreening}
-                disabled={isScreening}
-                className="h-7 text-xs"
-              >
-                {isScreening ? (
-                  <>
-                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                    Vérification...
-                  </>
-                ) : screeningStatus === "completed" ? (
-                  <>
-                    <RefreshCw className="h-3 w-3 mr-1" />
-                    Relancer
-                  </>
-                ) : (
-                  <>
-                    <Search className="h-3 w-3 mr-1" />
-                    Lancer le screening
-                  </>
-                )}
-              </Button>
+          {/* Screening Button */}
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              {screeningStatus === "completed" 
+                ? "Dernier screening effectué" 
+                : "Vérification PPE + Anti-blanchiment"}
             </div>
-            
-            {/* Screening status display */}
-            {screeningStatus === "pending" && !isScreening && (
-              <div className="text-sm text-muted-foreground italic">
-                Aucun screening effectué
-              </div>
-            )}
+            <Button
+              type="button"
+              variant={screeningStatus === "completed" ? "outline" : "default"}
+              size="sm"
+              onClick={handleLCBFTScreening}
+              disabled={isScreening}
+            >
+              {isScreening ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  Vérification...
+                </>
+              ) : screeningStatus === "completed" ? (
+                <>
+                  <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                  Relancer
+                </>
+              ) : (
+                <>
+                  <Search className="h-3.5 w-3.5 mr-1.5" />
+                  Lancer le screening
+                </>
+              )}
+            </Button>
+          </div>
 
-            {screeningStatus === "completed" && (
-              <div className="space-y-2">
+          {/* Screening Result */}
+          {screeningStatus === "completed" && (
+            <div className="space-y-3">
+              {/* PPE Result */}
+              <div className="rounded-lg border p-3 bg-muted/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground uppercase">PPE</span>
+                </div>
                 {isPPE ? (
-                  <>
+                  <div className="space-y-2">
                     <Badge className="bg-amber-100 text-amber-700 gap-1">
                       <AlertTriangle className="h-3 w-3" />
                       PPE Détecté
                     </Badge>
-                    
                     <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
                       {kycData?.ppe_position && (
                         <div>
@@ -372,69 +455,45 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
                           <p className="font-medium">{kycData.ppe_country}</p>
                         </div>
                       )}
-                      {kycData?.ppe_relationship && (
-                        <div className="col-span-2">
-                          <span className="text-xs text-muted-foreground">Relation:</span>
-                          <p className="font-medium">{getRelationshipLabel(kycData.ppe_relationship)}</p>
-                        </div>
-                      )}
                     </div>
-                  </>
+                  </div>
                 ) : (
                   <div className="flex items-center gap-2 text-sm text-emerald-600">
                     <CheckCircle className="h-4 w-4" />
                     <span>Aucune PPE détectée</span>
                   </div>
                 )}
-                
-                {/* Screening metadata */}
-                <div className="mt-3 pt-2 border-t border-dashed text-xs text-muted-foreground">
-                  <p>
-                    📄 Screening effectué le {screeningDate && format(new Date(screeningDate), "dd/MM/yyyy à HH:mm", { locale: fr })}
-                  </p>
-                  <p>Source: {screeningSource} • Réf: {screeningReference}</p>
-                </div>
               </div>
-            )}
-          </div>
 
-          {/* AML Verification - Editable */}
-          <div className="space-y-3 pt-2 border-t">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm">Vérification LCB-FT effectuée</Label>
-              <Switch
-                checked={amlVerified}
-                onCheckedChange={(v) => setValue("aml_verified", v)}
-              />
+              {/* AML Result */}
+              <div className="rounded-lg border p-3 bg-muted/30">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-xs font-medium text-muted-foreground uppercase">Anti-Blanchiment</span>
+                  </div>
+                  {getRiskBadge(amlRiskLevel)}
+                </div>
+                {amlNotes && (
+                  <p className="text-sm text-muted-foreground">{amlNotes}</p>
+                )}
+              </div>
+              
+              {/* Screening metadata */}
+              <div className="text-xs text-muted-foreground border-t pt-2">
+                <p>
+                  📄 Screening: {screeningDate && format(new Date(screeningDate), "dd/MM/yyyy à HH:mm", { locale: fr })}
+                </p>
+                <p>Source: {screeningSource} • Réf: {screeningReference}</p>
+              </div>
             </div>
+          )}
 
-            <div>
-              <Label className="text-xs">Niveau de risque</Label>
-              <Select 
-                value={amlRiskLevel} 
-                onValueChange={(v) => setValue("aml_risk_level", v)}
-              >
-                <SelectTrigger className="h-8">
-                  <SelectValue placeholder="Évaluer le risque" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Faible</SelectItem>
-                  <SelectItem value="medium">Moyen</SelectItem>
-                  <SelectItem value="high">Élevé</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label className="text-xs">Notes / Observations</Label>
-              <Textarea 
-                className="text-sm resize-none" 
-                rows={3}
-                placeholder="Observations sur la vérification..."
-                {...register("aml_notes")} 
-              />
-            </div>
-          </div>
+          {screeningStatus !== "completed" && !isScreening && (
+            <p className="text-sm text-muted-foreground italic">
+              Cliquez sur "Lancer le screening" pour effectuer la vérification PPE et Anti-blanchiment.
+            </p>
+          )}
         </CardContent>
       </Card>
 

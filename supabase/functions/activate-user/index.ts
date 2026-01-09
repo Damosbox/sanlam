@@ -49,30 +49,39 @@ serve(async (req) => {
     
     const { email } = await req.json();
     
-    if (!email) {
-      throw new Error("Email requis");
+    // Find user by email
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (userError) {
+      throw new Error("Impossible de récupérer les utilisateurs");
     }
     
-    // Generate password recovery link
-    const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-      type: "recovery",
-      email: email,
-      options: {
-        redirectTo: `${req.headers.get("origin")}/auth`,
-      },
-    });
+    const targetUser = userData.users.find(u => u.email === email);
+    
+    if (!targetUser) {
+      throw new Error("Utilisateur non trouvé");
+    }
+    
+    // Directly update user to confirm email (for testing)
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(
+      targetUser.id,
+      { 
+        email_confirm: true,
+        user_metadata: { ...targetUser.user_metadata, activated_at: new Date().toISOString() }
+      }
+    );
     
     if (error) {
-      console.error("Error generating link:", error);
-      throw new Error("Impossible de générer le lien d'activation");
+      console.error("Error activating user:", error);
+      throw new Error("Impossible d'activer le compte");
     }
     
-    console.log("Recovery link generated for:", email);
+    console.log("User activated:", email);
     
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Email d'activation envoyé à ${email}` 
+        message: `Compte activé pour ${email}` 
       }),
       { 
         headers: { ...corsHeaders, "Content-Type": "application/json" },

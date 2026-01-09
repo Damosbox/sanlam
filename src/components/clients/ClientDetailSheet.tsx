@@ -160,8 +160,8 @@ export const ClientDetailSheet = ({
       if (error) throw error;
       
       toast({
-        title: "Email envoyé",
-        description: `Un email d'activation a été envoyé à ${client.email}`,
+        title: "Compte activé",
+        description: `Le compte de ${client.email} a été activé avec succès`,
       });
     } catch (error: any) {
       toast({

@@ -181,6 +181,33 @@ export const BrokerSubscriptions = () => {
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8" 
+                        onClick={() => handleCall(sub.profiles?.phone)}
+                        disabled={!sub.profiles?.phone}
+                      >
+                        <Phone className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8" 
+                        onClick={() => handleWhatsApp(sub.profiles?.phone)}
+                        disabled={!sub.profiles?.phone}
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8" 
+                        onClick={() => handleEmail(sub.profiles?.email)}
+                        disabled={!sub.profiles?.email}
+                      >
+                        <Mail className="h-4 w-4" />
+                      </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -189,38 +216,12 @@ export const BrokerSubscriptions = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleOpenSheet(sub)}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Voir détails
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleOpenSheet(sub)}>
                             <Download className="mr-2 h-4 w-4" />
                             Télécharger documents
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleOpenSheet(sub)}>
                             <Send className="mr-2 h-4 w-4" />
                             Renvoyer documents
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            onClick={() => handleCall(sub.profiles?.phone)}
-                            disabled={!sub.profiles?.phone}
-                          >
-                            <Phone className="mr-2 h-4 w-4" />
-                            Appeler client
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleWhatsApp(sub.profiles?.phone)}
-                            disabled={!sub.profiles?.phone}
-                          >
-                            <MessageCircle className="mr-2 h-4 w-4" />
-                            WhatsApp
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleEmail(sub.profiles?.email)}
-                            disabled={!sub.profiles?.email}
-                          >
-                            <Mail className="mr-2 h-4 w-4" />
-                            Envoyer email
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

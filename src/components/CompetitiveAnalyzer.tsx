@@ -260,9 +260,9 @@ export const CompetitiveAnalyzer = () => {
               Catégorie du produit concurrent
             </Label>
             <Select 
-              value={selectedCategory} 
+              value={selectedCategory || "auto-detect"} 
               onValueChange={(val) => {
-                setSelectedCategory(val as ProductCategory | "");
+                setSelectedCategory(val === "auto-detect" ? "" : val as ProductCategory);
                 setSelectedProductIds([]);
               }}
               disabled={isAnalyzing}
@@ -271,7 +271,7 @@ export const CompetitiveAnalyzer = () => {
                 <SelectValue placeholder="Sélectionner la catégorie du produit concurrent" />
               </SelectTrigger>
               <SelectContent className="bg-background z-50">
-                <SelectItem value="">Auto-détection</SelectItem>
+                <SelectItem value="auto-detect">Auto-détection</SelectItem>
                 {PRODUCT_CATEGORIES.map((cat) => (
                   <SelectItem key={cat.id} value={cat.id}>
                     <div className="flex flex-col">

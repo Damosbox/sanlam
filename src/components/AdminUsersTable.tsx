@@ -199,8 +199,8 @@ export const AdminUsersTable = () => {
       if (error) throw error;
 
       toast({
-        title: "Email envoyé",
-        description: `Un email d'activation a été envoyé à ${email}`,
+        title: "Compte activé",
+        description: `Le compte de ${email} a été activé avec succès`,
       });
     } catch (error: any) {
       console.error("Error activating user:", error);

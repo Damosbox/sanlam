@@ -295,7 +295,7 @@ export default function Auth() {
                       "font-semibold text-sm",
                       selectedSpace === "broker" ? "text-primary" : "text-foreground"
                     )}>
-                      Espace Courtier
+                      Espace Partenaire
                     </p>
                     <p className="text-xs text-muted-foreground">Professionnels</p>
                   </div>
@@ -350,7 +350,7 @@ export default function Auth() {
               }
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {selectedSpace === "broker" ? "Espace Courtier" : "Espace Client"}
+              {selectedSpace === "broker" ? "Espace Partenaire" : "Espace Client"}
             </p>
           </div>
 

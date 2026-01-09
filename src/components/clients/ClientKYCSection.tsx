@@ -212,108 +212,107 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
         </CardContent>
       </Card>
 
-      {/* PPE Status */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4" />
-            Personne Politiquement Exposée (PPE)
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm">Est une PPE ou proche de PPE</Label>
-            <Switch
-              checked={isPPE}
-              onCheckedChange={(v) => setValue("is_ppe", v)}
-            />
-          </div>
-
-          {isPPE && (
-            <>
-              <div>
-                <Label className="text-xs">Position/Fonction</Label>
-                <Input 
-                  className="h-8 text-sm" 
-                  placeholder="Ex: Ministre, Député, etc."
-                  {...register("ppe_position")} 
-                />
-              </div>
-
-              <div>
-                <Label className="text-xs">Pays</Label>
-                <Input 
-                  className="h-8 text-sm" 
-                  placeholder="Pays de la fonction"
-                  {...register("ppe_country")} 
-                />
-              </div>
-
-              <div>
-                <Label className="text-xs">Relation (si proche)</Label>
-                <Select 
-                  value={watch("ppe_relationship")} 
-                  onValueChange={(v) => setValue("ppe_relationship", v)}
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue placeholder="Sélectionner" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="lui_meme">Lui-même</SelectItem>
-                    <SelectItem value="conjoint">Conjoint(e)</SelectItem>
-                    <SelectItem value="parent">Parent</SelectItem>
-                    <SelectItem value="enfant">Enfant</SelectItem>
-                    <SelectItem value="associe">Associé proche</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* AML Verification */}
+      {/* Conformité LCB-FT (PPE + AML fusionnés) */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
             <Shield className="h-4 w-4" />
-            Lutte Anti-Blanchiment (LCB-FT)
+            Conformité LCB-FT
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm">Vérification LCB-FT effectuée</Label>
-            <Switch
-              checked={amlVerified}
-              onCheckedChange={(v) => setValue("aml_verified", v)}
-            />
+        <CardContent className="space-y-4">
+          {/* PPE Status - Read-only, détecté par OCR */}
+          <div className="rounded-lg border p-3 bg-muted/30">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Statut PPE (détection automatique)
+              </span>
+            </div>
+            
+            {isPPE ? (
+              <div className="space-y-2">
+                <Badge className="bg-amber-100 text-amber-700 gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  PPE Détecté
+                </Badge>
+                
+                <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
+                  {watch("ppe_position") && (
+                    <div>
+                      <span className="text-xs text-muted-foreground">Position:</span>
+                      <p className="font-medium">{watch("ppe_position")}</p>
+                    </div>
+                  )}
+                  {watch("ppe_country") && (
+                    <div>
+                      <span className="text-xs text-muted-foreground">Pays:</span>
+                      <p className="font-medium">{watch("ppe_country")}</p>
+                    </div>
+                  )}
+                  {watch("ppe_relationship") && (
+                    <div className="col-span-2">
+                      <span className="text-xs text-muted-foreground">Relation:</span>
+                      <p className="font-medium">
+                        {watch("ppe_relationship") === "lui_meme" ? "Lui-même" :
+                         watch("ppe_relationship") === "conjoint" ? "Conjoint(e)" :
+                         watch("ppe_relationship") === "parent" ? "Parent" :
+                         watch("ppe_relationship") === "enfant" ? "Enfant" :
+                         watch("ppe_relationship") === "associe" ? "Associé proche" :
+                         watch("ppe_relationship")}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                
+                <p className="text-xs text-muted-foreground italic mt-2">
+                  📄 Détecté via scan de document
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-sm text-emerald-600">
+                <CheckCircle className="h-4 w-4" />
+                <span>Aucune PPE détectée</span>
+              </div>
+            )}
           </div>
 
-          <div>
-            <Label className="text-xs">Niveau de risque</Label>
-            <Select 
-              value={amlRiskLevel} 
-              onValueChange={(v) => setValue("aml_risk_level", v)}
-            >
-              <SelectTrigger className="h-8">
-                <SelectValue placeholder="Évaluer le risque" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">Faible</SelectItem>
-                <SelectItem value="medium">Moyen</SelectItem>
-                <SelectItem value="high">Élevé</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* AML Verification - Editable */}
+          <div className="space-y-3 pt-2 border-t">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm">Vérification LCB-FT effectuée</Label>
+              <Switch
+                checked={amlVerified}
+                onCheckedChange={(v) => setValue("aml_verified", v)}
+              />
+            </div>
 
-          <div>
-            <Label className="text-xs">Notes / Observations</Label>
-            <Textarea 
-              className="text-sm resize-none" 
-              rows={3}
-              placeholder="Observations sur la vérification..."
-              {...register("aml_notes")} 
-            />
+            <div>
+              <Label className="text-xs">Niveau de risque</Label>
+              <Select 
+                value={amlRiskLevel} 
+                onValueChange={(v) => setValue("aml_risk_level", v)}
+              >
+                <SelectTrigger className="h-8">
+                  <SelectValue placeholder="Évaluer le risque" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Faible</SelectItem>
+                  <SelectItem value="medium">Moyen</SelectItem>
+                  <SelectItem value="high">Élevé</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-xs">Notes / Observations</Label>
+              <Textarea 
+                className="text-sm resize-none" 
+                rows={3}
+                placeholder="Observations sur la vérification..."
+                {...register("aml_notes")} 
+              />
+            </div>
           </div>
         </CardContent>
       </Card>

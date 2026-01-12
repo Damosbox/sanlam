@@ -117,50 +117,52 @@ export function RenewalStatusDropdown({
     : "Cliquer pour modifier le statut de renouvellement";
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DropdownMenuTrigger asChild>
-            <Badge 
-              className={cn(
-                "cursor-pointer transition-all duration-200 gap-1 select-none",
-                "hover:shadow-md hover:scale-105 hover:ring-2 hover:ring-offset-1 hover:ring-primary/20",
-                "active:scale-100",
-                open && "shadow-md ring-2 ring-offset-1 ring-primary/30",
-                currentConfig.className
-              )}
-              variant="outline"
-            >
-              <Icon className="h-3 w-3" />
-              {currentConfig.label}
-              <ChevronDown 
+    <Tooltip delayDuration={300}>
+      <TooltipTrigger asChild>
+        <div>
+          <DropdownMenu open={open} onOpenChange={setOpen}>
+            <DropdownMenuTrigger asChild>
+              <Badge 
                 className={cn(
-                  "h-3 w-3 opacity-60 transition-transform duration-200",
-                  open && "rotate-180"
-                )} 
-              />
-            </Badge>
-          </DropdownMenuTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="text-xs">
-          <p>{tooltipText}</p>
-        </TooltipContent>
-      </Tooltip>
-      <DropdownMenuContent align="start" className="z-50">
-        {Object.entries(config).map(([key, { label, icon: ItemIcon, className }]) => (
-          <DropdownMenuItem
-            key={key}
-            onClick={() => handleSelect(key)}
-            className={cn(
-              "cursor-pointer gap-2",
-              currentValue === key && "bg-accent"
-            )}
-          >
-            <ItemIcon className="h-4 w-4" />
-            {label}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+                  "cursor-pointer transition-all duration-200 gap-1 select-none",
+                  "hover:shadow-md hover:scale-105 hover:ring-2 hover:ring-offset-1 hover:ring-primary/20",
+                  "active:scale-100",
+                  open && "shadow-md ring-2 ring-offset-1 ring-primary/30",
+                  currentConfig.className
+                )}
+                variant="outline"
+              >
+                <Icon className="h-3 w-3" />
+                {currentConfig.label}
+                <ChevronDown 
+                  className={cn(
+                    "h-3 w-3 opacity-60 transition-transform duration-200",
+                    open && "rotate-180"
+                  )} 
+                />
+              </Badge>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="z-50 bg-popover">
+              {Object.entries(config).map(([key, { label, icon: ItemIcon, className }]) => (
+                <DropdownMenuItem
+                  key={key}
+                  onClick={() => handleSelect(key)}
+                  className={cn(
+                    "cursor-pointer gap-2",
+                    currentValue === key && "bg-accent"
+                  )}
+                >
+                  <ItemIcon className="h-4 w-4" />
+                  {label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="text-xs">
+        <p>{tooltipText}</p>
+      </TooltipContent>
+    </Tooltip>
   );
 }

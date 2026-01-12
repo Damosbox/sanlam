@@ -5,6 +5,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Wallet, TrendingUp, FileText, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatFCFA } from "@/utils/formatCurrency";
+import { RenewalRateCards } from "./RenewalRateCards";
+import { ProductSpecificKPIs } from "./ProductSpecificKPIs";
+import type { ProductType } from "./ProductSelector";
 
 interface KPIStats {
   commissionsMTD: number;
@@ -14,7 +17,11 @@ interface KPIStats {
   topSalesByPolicy: { name: string; count: number }[];
 }
 
-export const DashboardKPIs = () => {
+interface DashboardKPIsProps {
+  selectedProduct?: ProductType;
+}
+
+export const DashboardKPIs = ({ selectedProduct = "all" }: DashboardKPIsProps) => {
   const [stats, setStats] = useState<KPIStats>({
     commissionsMTD: 0,
     totalGWP: 0,
@@ -26,7 +33,7 @@ export const DashboardKPIs = () => {
 
   useEffect(() => {
     fetchStats();
-  }, []);
+  }, [selectedProduct]);
 
   const fetchStats = async () => {
     try {
@@ -36,16 +43,37 @@ export const DashboardKPIs = () => {
       // Fetch subscriptions with product info
       const { data: subscriptions } = await supabase
         .from("subscriptions")
-        .select("monthly_premium, product_id, products(name)")
+        .select("monthly_premium, product_id, products(name, category)")
         .eq("assigned_broker_id", user.id);
 
-      const totalGWP = subscriptions?.reduce((sum, sub) => sum + (sub.monthly_premium || 0) * 12, 0) || 0;
-      const totalPolicies = subscriptions?.length || 0;
+      // Filter by product type if not "all"
+      let filteredSubs = subscriptions || [];
+      if (selectedProduct !== "all") {
+        const categoryMap: Record<string, string[]> = {
+          auto: ["auto", "automobile"],
+          mrh: ["mrh", "habitation", "multirisque"],
+          sante: ["sante", "santé", "health"],
+          vie: ["vie", "epargne", "épargne", "savings"],
+          obseques: ["obseques", "obsèques", "funeral"],
+        };
+        
+        const categories = categoryMap[selectedProduct] || [];
+        filteredSubs = (subscriptions || []).filter(sub => {
+          const productCategory = ((sub.products as any)?.category || "").toLowerCase();
+          const productName = ((sub.products as any)?.name || "").toLowerCase();
+          return categories.some(cat => 
+            productCategory.includes(cat) || productName.includes(cat)
+          );
+        });
+      }
+
+      const totalGWP = filteredSubs.reduce((sum, sub) => sum + (sub.monthly_premium || 0) * 12, 0);
+      const totalPolicies = filteredSubs.length;
       const commissionsMTD = Math.round(totalGWP * 0.15 / 12);
 
       // Calculate top sales by product
       const productStats: Record<string, { gwp: number; count: number }> = {};
-      subscriptions?.forEach(sub => {
+      filteredSubs.forEach(sub => {
         const productName = (sub.products as any)?.name || "Autre";
         if (!productStats[productName]) {
           productStats[productName] = { gwp: 0, count: 0 };
@@ -103,20 +131,20 @@ export const DashboardKPIs = () => {
   if (isLoading) {
     return (
       <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          {[1, 2].map((i) => (
+            <Card key={i} className="border-border/60">
+              <CardContent className="p-4">
+                <Skeleton className="h-24 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
           {[1, 2, 3].map((i) => (
             <Card key={i} className="border-border/60">
               <CardContent className="p-3 sm:p-4">
                 <Skeleton className="h-16 w-full" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <div className="grid grid-cols-2 gap-2 sm:gap-3">
-          {[1, 2].map((i) => (
-            <Card key={i} className="border-border/60">
-              <CardContent className="p-3 sm:p-4">
-                <Skeleton className="h-24 w-full" />
               </CardContent>
             </Card>
           ))}
@@ -127,6 +155,9 @@ export const DashboardKPIs = () => {
 
   return (
     <div className="space-y-4">
+      {/* Renewal Rate Cards - Motor Dashboard Style */}
+      <RenewalRateCards selectedProduct={selectedProduct} />
+
       {/* Main KPIs */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {kpis.map((kpi, index) => (
@@ -169,6 +200,9 @@ export const DashboardKPIs = () => {
           </Card>
         ))}
       </div>
+
+      {/* Product-Specific KPIs */}
+      <ProductSpecificKPIs selectedProduct={selectedProduct} />
 
       {/* Top 3 Sales */}
       <div className="grid grid-cols-2 gap-2 sm:gap-3">

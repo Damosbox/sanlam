@@ -147,7 +147,7 @@ export function BrokerSidebar() {
           </>}
       </SidebarMenuButton>
     </SidebarMenuItem>;
-  return <Sidebar collapsible="icon" className="border-r border-border/50">
+  return <Sidebar collapsible="icon" className="border-r border-border/50 z-50">
       <SidebarHeader className="p-3 sm:p-4 border-b border-border/50 bg-primary-foreground">
         <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
           <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">

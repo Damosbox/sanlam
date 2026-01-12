@@ -26,7 +26,8 @@ import {
   ShoppingCart,
   Download,
   UserCheck,
-  Loader2
+  Loader2,
+  Star
 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +38,7 @@ import { ClientDocumentsSection } from "./ClientDocumentsSection";
 import { ClientAdditionalDataSection } from "./ClientAdditionalDataSection";
 import { ClientKYCSection } from "./ClientKYCSection";
 import { ClientNotesSection } from "./ClientNotesSection";
+import { ClientValueScore } from "./ClientValueScore";
 import { PolicyDocumentsDownload } from "@/components/policies/PolicyDocumentsDownload";
 
 interface Client {
@@ -278,10 +280,14 @@ export const ClientDetailSheet = ({
         </SheetHeader>
 
         <Tabs defaultValue="info" className="flex-1 flex flex-col overflow-hidden min-h-0">
-          <TabsList className="mx-6 mt-2 grid w-auto grid-cols-4 shrink-0">
+          <TabsList className="mx-6 mt-2 grid w-auto grid-cols-5 shrink-0">
             <TabsTrigger value="info" className="gap-1.5 text-xs">
               <User className="h-3.5 w-3.5" />
               Infos
+            </TabsTrigger>
+            <TabsTrigger value="value" className="gap-1.5 text-xs">
+              <Star className="h-3.5 w-3.5" />
+              Valeur
             </TabsTrigger>
             <TabsTrigger value="policies" className="gap-1.5 text-xs">
               <Shield className="h-3.5 w-3.5" />
@@ -365,6 +371,11 @@ export const ClientDetailSheet = ({
                   <ClientNotesSection clientId={client.id} />
                 </>
               )}
+            </TabsContent>
+
+            {/* Value Tab - Client Value Score */}
+            <TabsContent value="value" className="mt-0 p-6">
+              <ClientValueScore clientId={client.id} />
             </TabsContent>
 
             {/* Policies Tab */}

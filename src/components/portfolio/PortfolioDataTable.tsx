@@ -9,9 +9,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Phone, MessageCircle, Mail, MoreHorizontal, Eye, UserCheck, Clock, Inbox, ShoppingCart } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Phone, MessageCircle, Mail, MoreHorizontal, Eye, UserCheck, Clock, Inbox, ShoppingCart, Star } from "lucide-react";
 import { LeadStatusBadge } from "@/components/leads/LeadStatusBadge";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export interface PortfolioItem {
   id: string;
@@ -29,6 +36,8 @@ export interface PortfolioItem {
   claimsCount?: number;
   subscriptionsCount?: number;
   quotationsCount?: number;
+  valueScore?: number; // Score global /100
+  valueClass?: number; // Classe 1-5 étoiles
 }
 
 interface PortfolioDataTableProps {
@@ -36,6 +45,22 @@ interface PortfolioDataTableProps {
   density?: "compact" | "standard";
   onSelectItem: (item: PortfolioItem) => void;
 }
+
+// Simulate value score calculation based on activity
+const calculateMockScore = (item: PortfolioItem): { score: number; classe: number } => {
+  if (item.type === "prospect") {
+    // Prospects get predictive score based on interest
+    const baseScore = 40 + Math.random() * 30;
+    return { score: Math.round(baseScore), classe: Math.ceil(baseScore / 20) };
+  }
+  
+  // Clients get score based on subscriptions and claims
+  const subsScore = Math.min((item.subscriptionsCount || 0) * 15, 40);
+  const claimsPenalty = Math.min((item.claimsCount || 0) * 5, 20);
+  const baseScore = 50 + subsScore - claimsPenalty + Math.random() * 20;
+  const score = Math.min(100, Math.max(10, Math.round(baseScore)));
+  return { score, classe: Math.ceil(score / 20) };
+};
 
 export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }: PortfolioDataTableProps) => {
   const navigate = useNavigate();
@@ -102,22 +127,29 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }
   }
 
   return (
-    <div className="rounded-lg border bg-card">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/50 hover:bg-muted/50">
-            <TableHead className="w-[220px]">Nom</TableHead>
-            <TableHead>Contact</TableHead>
-            <TableHead className="hidden md:table-cell">Type</TableHead>
-            <TableHead className="hidden lg:table-cell text-center">Cotations</TableHead>
-            <TableHead className="hidden lg:table-cell text-center">Contrats</TableHead>
-            <TableHead className="hidden lg:table-cell text-center">Sinistres</TableHead>
-            <TableHead>Statut</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {items.map((item) => (
+    <TooltipProvider>
+      <div className="rounded-lg border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead className="w-[200px]">Nom</TableHead>
+              <TableHead className="hidden sm:table-cell w-[80px] text-center">Score</TableHead>
+              <TableHead>Contact</TableHead>
+              <TableHead className="hidden md:table-cell">Type</TableHead>
+              <TableHead className="hidden lg:table-cell text-center">Cotations</TableHead>
+              <TableHead className="hidden lg:table-cell text-center">Contrats</TableHead>
+              <TableHead className="hidden lg:table-cell text-center">Sinistres</TableHead>
+              <TableHead>Statut</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+          {items.map((item) => {
+            const mockScore = calculateMockScore(item);
+            const itemScore = item.valueScore ?? mockScore.score;
+            const itemClass = item.valueClass ?? mockScore.classe;
+            
+            return (
             <TableRow 
               key={item.id} 
               className="hover:bg-muted/30 transition-colors duration-200"
@@ -145,6 +177,37 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }
                   </div>
                 </div>
               </TableCell>
+              {/* Score Column */}
+              <TableCell className={`hidden sm:table-cell ${rowPadding} text-center`}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="inline-flex flex-col items-center gap-0.5 cursor-help">
+                      <div className="flex">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={cn(
+                              "h-3 w-3",
+                              i < itemClass 
+                                ? "text-amber-500 fill-amber-500" 
+                                : "text-muted-foreground/20"
+                            )}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-[10px] font-medium text-muted-foreground">
+                        {itemScore}/100
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="text-xs">
+                    <p className="font-medium">Score Valeur Client</p>
+                    <p className="text-muted-foreground">
+                      {item.type === "prospect" ? "Score prédictif" : "Score basé sur l'activité"}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TableCell>
               <TableCell className={`${rowPadding} ${textSize}`}>
                 <div className="space-y-0.5">
                   <p>{item.phone || "—"}</p>
@@ -162,6 +225,45 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }
                     <UserCheck className="h-3 w-3" />
                     Client
                   </Badge>
+                )}
+              </TableCell>
+              <TableCell className={`hidden lg:table-cell ${rowPadding} text-center`}>
+                <Badge variant="outline" className="text-xs">
+                  {item.quotationsCount || 0}
+                </Badge>
+              </TableCell>
+              <TableCell className={`hidden lg:table-cell ${rowPadding} text-center`}>
+                {item.type === "client" ? (
+                  <button
+                    className="text-primary hover:underline font-medium"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/b2b/policies?clientId=${item.id}`);
+                    }}
+                  >
+                    <Badge variant="default" className="text-xs cursor-pointer hover:bg-primary/80">
+                      {item.subscriptionsCount || 0}
+                    </Badge>
+                  </button>
+                ) : (
+                  <span className="text-muted-foreground text-xs">—</span>
+                )}
+              </TableCell>
+              <TableCell className={`hidden lg:table-cell ${rowPadding} text-center`}>
+                {item.type === "client" ? (
+                  <button
+                    className="text-primary hover:underline font-medium"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/b2b/claims?clientId=${item.id}`);
+                    }}
+                  >
+                    <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80">
+                      {item.claimsCount || 0}
+                    </Badge>
+                  </button>
+                ) : (
+                  <span className="text-muted-foreground text-xs">—</span>
                 )}
               </TableCell>
               <TableCell className={`hidden lg:table-cell ${rowPadding} text-center`}>
@@ -274,9 +376,11 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }
                 </div>
               </TableCell>
             </TableRow>
-          ))}
+          );
+          })}
         </TableBody>
       </Table>
     </div>
+  </TooltipProvider>
   );
 };

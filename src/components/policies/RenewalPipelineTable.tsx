@@ -31,6 +31,7 @@ interface RenewalPipelineTableProps {
   selectedProduct: ProductType;
   contactFilter: "all" | "contacted" | "not_contacted";
   renewalFilter: "all" | "renewed" | "pending" | "lost";
+  searchQuery?: string;
   onViewClient?: (clientId: string) => void;
 }
 
@@ -55,6 +56,7 @@ export const RenewalPipelineTable = ({
   selectedProduct, 
   contactFilter,
   renewalFilter,
+  searchQuery = "",
   onViewClient 
 }: RenewalPipelineTableProps) => {
   const [churnDialogOpen, setChurnDialogOpen] = useState(false);
@@ -141,6 +143,19 @@ export const RenewalPipelineTable = ({
     const contactStatus = r.contact_status || "not_contacted";
     const renewalStatus = r.renewal_status || "pending";
     
+    // Search filter
+    if (searchQuery) {
+      const search = searchQuery.toLowerCase();
+      const matchesSearch = 
+        r.client_name.toLowerCase().includes(search) ||
+        r.policy_number.toLowerCase().includes(search) ||
+        r.object_identifier.toLowerCase().includes(search) ||
+        r.product_name.toLowerCase().includes(search) ||
+        r.client_email?.toLowerCase().includes(search) ||
+        r.client_phone?.includes(search);
+      if (!matchesSearch) return false;
+    }
+    
     if (contactFilter === "contacted" && contactStatus === "not_contacted") return false;
     if (contactFilter === "not_contacted" && contactStatus !== "not_contacted") return false;
     if (renewalFilter !== "all" && renewalStatus !== renewalFilter) return false;
@@ -195,7 +210,12 @@ export const RenewalPipelineTable = ({
     return (
       <div className="text-center py-12 text-muted-foreground">
         <Calendar className="h-12 w-12 mx-auto mb-3 opacity-30" />
-        <p>Aucun renouvellement à traiter</p>
+        <p>
+          {searchQuery || contactFilter !== "all" || renewalFilter !== "all"
+            ? "Aucun renouvellement trouvé pour ces filtres"
+            : "Aucun renouvellement à traiter"
+          }
+        </p>
       </div>
     );
   }

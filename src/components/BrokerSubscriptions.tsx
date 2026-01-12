@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
@@ -22,6 +22,8 @@ import { fr } from "date-fns/locale";
 import { Eye, MoreHorizontal, Download, Send, Phone, MessageCircle, Mail, RefreshCw, Pencil, XCircle, FileEdit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PolicyDetailSheet } from "./policies/PolicyDetailSheet";
+import { UnifiedFiltersBar, StatusFilterType } from "./policies/UnifiedFiltersBar";
+import { ProductType } from "./broker/dashboard/ProductSelector";
 
 interface Subscription {
   id: string;
@@ -38,8 +40,34 @@ interface Subscription {
   } | null;
   products: {
     name: string;
+    category?: string;
   } | null;
 }
+
+const STATUS_OPTIONS = [
+  { value: "all", label: "Tous les statuts" },
+  { value: "active", label: "Actif" },
+  { value: "cancelled", label: "Annulé" },
+  { value: "expired", label: "Expiré" },
+];
+
+const getProductTypeFromCategory = (category?: string): ProductType => {
+  if (!category) return "all";
+  const categoryMap: Record<string, ProductType> = {
+    "auto": "auto",
+    "automobile": "auto",
+    "mrh": "mrh",
+    "habitation": "mrh",
+    "sante": "sante",
+    "santé": "sante",
+    "vie": "vie",
+    "epargne": "vie",
+    "épargne": "vie",
+    "obseques": "obseques",
+    "obsèques": "obseques",
+  };
+  return categoryMap[category.toLowerCase()] || "all";
+};
 
 export const BrokerSubscriptions = () => {
   const { toast } = useToast();
@@ -47,6 +75,11 @@ export const BrokerSubscriptions = () => {
   const [loading, setLoading] = useState(true);
   const [selectedPolicy, setSelectedPolicy] = useState<Subscription | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  
+  // Filters state
+  const [searchValue, setSearchValue] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState<ProductType>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilterType>("all");
 
   useEffect(() => {
     fetchSubscriptions();
@@ -77,7 +110,8 @@ export const BrokerSubscriptions = () => {
             phone
           ),
           products (
-            name
+            name,
+            category
           )
         `)
         .eq("assigned_broker_id", user.id)
@@ -94,6 +128,47 @@ export const BrokerSubscriptions = () => {
       setLoading(false);
     }
   };
+
+  // Filtered subscriptions
+  const filteredSubscriptions = useMemo(() => {
+    return subscriptions.filter((sub) => {
+      // Search filter
+      if (searchValue) {
+        const search = searchValue.toLowerCase();
+        const matchesSearch = 
+          sub.profiles?.display_name?.toLowerCase().includes(search) ||
+          sub.profiles?.email?.toLowerCase().includes(search) ||
+          sub.policy_number.toLowerCase().includes(search) ||
+          sub.products?.name?.toLowerCase().includes(search);
+        if (!matchesSearch) return false;
+      }
+      
+      // Product filter
+      if (selectedProduct !== "all") {
+        const productType = getProductTypeFromCategory(sub.products?.category);
+        if (productType !== selectedProduct) return false;
+      }
+      
+      // Status filter
+      if (statusFilter !== "all" && sub.status !== statusFilter) {
+        return false;
+      }
+      
+      return true;
+    });
+  }, [subscriptions, searchValue, selectedProduct, statusFilter]);
+
+  // Product counts for filter badges
+  const productCounts = useMemo(() => {
+    const counts: Partial<Record<ProductType, number>> = { all: subscriptions.length };
+    subscriptions.forEach((sub) => {
+      const type = getProductTypeFromCategory(sub.products?.category);
+      if (type !== "all") {
+        counts[type] = (counts[type] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [subscriptions]);
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { variant: "default" | "secondary" | "destructive"; label: string }> = {
@@ -151,7 +226,26 @@ export const BrokerSubscriptions = () => {
   }
 
   return (
-    <>
+    <div className="space-y-4">
+      {/* Filters Bar */}
+      <UnifiedFiltersBar
+        searchValue={searchValue}
+        onSearchChange={setSearchValue}
+        searchPlaceholder="Rechercher par client, email, n° police..."
+        selectedProduct={selectedProduct}
+        onProductChange={setSelectedProduct}
+        productCounts={productCounts}
+        statusFilter={statusFilter}
+        onStatusFilterChange={(val) => setStatusFilter(val as StatusFilterType)}
+        statusOptions={STATUS_OPTIONS}
+        statusLabel="Statut"
+        totalCount={subscriptions.length}
+        filteredCount={filteredSubscriptions.length}
+        showProductFilter={true}
+        showStatusFilter={true}
+      />
+
+      {/* Table */}
       <div className="rounded-md border overflow-x-auto">
         <Table className="min-w-[700px]">
           <TableHeader>
@@ -166,14 +260,14 @@ export const BrokerSubscriptions = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {subscriptions.length === 0 ? (
+            {filteredSubscriptions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                   Aucune souscription assignée
                 </TableCell>
               </TableRow>
             ) : (
-              subscriptions.map((sub) => (
+              filteredSubscriptions.map((sub) => (
                 <TableRow key={sub.id}>
                   <TableCell>
                     <div>
@@ -273,14 +367,14 @@ export const BrokerSubscriptions = () => {
               ))
             )}
           </TableBody>
-        </Table>
-      </div>
+          </Table>
+        </div>
 
-      <PolicyDetailSheet
-        policy={selectedPolicy}
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-      />
-    </>
-  );
+        <PolicyDetailSheet
+          policy={selectedPolicy}
+          open={sheetOpen}
+          onOpenChange={setSheetOpen}
+        />
+      </div>
+    );
 };

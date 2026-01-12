@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -13,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { FileText, User, Phone, Mail } from "lucide-react";
+import { UnifiedFiltersBar, LeadStatusFilterType } from "./policies/UnifiedFiltersBar";
+import { ProductType } from "./broker/dashboard/ProductSelector";
 
 interface Quotation {
   id: string;
@@ -30,7 +33,32 @@ interface Quotation {
   } | null;
 }
 
+const LEAD_STATUS_OPTIONS = [
+  { value: "all", label: "Tous les statuts" },
+  { value: "nouveau", label: "Nouveau" },
+  { value: "en_cours", label: "En cours" },
+  { value: "relance", label: "Relance" },
+  { value: "converti", label: "Converti" },
+  { value: "perdu", label: "Perdu" },
+];
+
+const getProductTypeFromInterest = (interest?: string | null): ProductType => {
+  if (!interest) return "all";
+  const interestLower = interest.toLowerCase();
+  if (interestLower.includes("auto")) return "auto";
+  if (interestLower.includes("mrh") || interestLower.includes("habitation")) return "mrh";
+  if (interestLower.includes("santé") || interestLower.includes("sante")) return "sante";
+  if (interestLower.includes("vie") || interestLower.includes("épargne") || interestLower.includes("epargne")) return "vie";
+  if (interestLower.includes("obsèques") || interestLower.includes("obseques")) return "obseques";
+  return "all";
+};
+
 export const BrokerQuotations = () => {
+  // Filters state
+  const [searchValue, setSearchValue] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState<ProductType>("all");
+  const [statusFilter, setStatusFilter] = useState<LeadStatusFilterType>("all");
+
   const { data: quotations = [], isLoading } = useQuery({
     queryKey: ["broker-quotations"],
     queryFn: async () => {
@@ -70,6 +98,48 @@ export const BrokerQuotations = () => {
     }
   });
 
+  // Filtered quotations
+  const filteredQuotations = useMemo(() => {
+    return quotations.filter((quote) => {
+      // Search filter
+      if (searchValue) {
+        const search = searchValue.toLowerCase();
+        const fullName = quote.lead ? `${quote.lead.first_name} ${quote.lead.last_name}`.toLowerCase() : "";
+        const matchesSearch = 
+          fullName.includes(search) ||
+          quote.lead?.email?.toLowerCase().includes(search) ||
+          quote.lead?.phone?.includes(search) ||
+          quote.content.toLowerCase().includes(search);
+        if (!matchesSearch) return false;
+      }
+      
+      // Product filter
+      if (selectedProduct !== "all") {
+        const productType = getProductTypeFromInterest(quote.lead?.product_interest);
+        if (productType !== selectedProduct) return false;
+      }
+      
+      // Status filter
+      if (statusFilter !== "all" && quote.lead?.status !== statusFilter) {
+        return false;
+      }
+      
+      return true;
+    });
+  }, [quotations, searchValue, selectedProduct, statusFilter]);
+
+  // Product counts
+  const productCounts = useMemo(() => {
+    const counts: Partial<Record<ProductType, number>> = { all: quotations.length };
+    quotations.forEach((quote) => {
+      const type = getProductTypeFromInterest(quote.lead?.product_interest);
+      if (type !== "all") {
+        counts[type] = (counts[type] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [quotations]);
+
   const parseQuoteContent = (content: string) => {
     // Extract product name from content like "[DEVIS] Product Name - Details"
     const match = content.match(/\[DEVIS\]\s*(.+?)(?:\s*-|$)/);
@@ -87,28 +157,51 @@ export const BrokerQuotations = () => {
   }
 
   return (
-    <div className="rounded-md border overflow-x-auto">
-      <Table className="min-w-[600px]">
-        <TableHeader>
-          <TableRow>
-            <TableHead className="min-w-[140px]">Prospect</TableHead>
-            <TableHead className="min-w-[120px]">Produit</TableHead>
-            <TableHead className="min-w-[100px] hidden sm:table-cell">Prime estimée</TableHead>
-            <TableHead className="min-w-[100px]">Date</TableHead>
-            <TableHead className="min-w-[100px]">Statut lead</TableHead>
-            <TableHead className="min-w-[80px] text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {quotations.length === 0 ? (
+    <div className="space-y-4">
+      {/* Filters Bar */}
+      <UnifiedFiltersBar
+        searchValue={searchValue}
+        onSearchChange={setSearchValue}
+        searchPlaceholder="Rechercher par prospect, email, téléphone..."
+        selectedProduct={selectedProduct}
+        onProductChange={setSelectedProduct}
+        productCounts={productCounts}
+        statusFilter={statusFilter}
+        onStatusFilterChange={(val) => setStatusFilter(val as LeadStatusFilterType)}
+        statusOptions={LEAD_STATUS_OPTIONS}
+        statusLabel="Statut lead"
+        totalCount={quotations.length}
+        filteredCount={filteredQuotations.length}
+        showProductFilter={true}
+        showStatusFilter={true}
+      />
+
+      {/* Table */}
+      <div className="rounded-md border overflow-x-auto">
+        <Table className="min-w-[600px]">
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                Aucune cotation enregistrée
-              </TableCell>
+              <TableHead className="min-w-[140px]">Prospect</TableHead>
+              <TableHead className="min-w-[120px]">Produit</TableHead>
+              <TableHead className="min-w-[100px] hidden sm:table-cell">Prime estimée</TableHead>
+              <TableHead className="min-w-[100px]">Date</TableHead>
+              <TableHead className="min-w-[100px]">Statut lead</TableHead>
+              <TableHead className="min-w-[80px] text-right">Actions</TableHead>
             </TableRow>
-          ) : (
-            quotations.map((quote) => (
+          </TableHeader>
+          <TableBody>
+            {filteredQuotations.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                  <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  {searchValue || selectedProduct !== "all" || statusFilter !== "all" 
+                    ? "Aucune cotation trouvée pour ces filtres"
+                    : "Aucune cotation enregistrée"
+                  }
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredQuotations.map((quote) => (
               <TableRow key={quote.id}>
                 <TableCell>
                   <div>
@@ -179,8 +272,9 @@ export const BrokerQuotations = () => {
               </TableRow>
             ))
           )}
-        </TableBody>
-      </Table>
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };

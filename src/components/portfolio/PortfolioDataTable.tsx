@@ -128,7 +128,7 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }
 
   return (
     <TooltipProvider>
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-lg border bg-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
@@ -144,243 +144,219 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }
             </TableRow>
           </TableHeader>
           <TableBody>
-          {items.map((item) => {
-            const mockScore = calculateMockScore(item);
-            const itemScore = item.valueScore ?? mockScore.score;
-            const itemClass = item.valueClass ?? mockScore.classe;
-            
-            return (
-            <TableRow 
-              key={item.id} 
-              className="hover:bg-muted/30 transition-colors duration-200"
-            >
-              <TableCell className={rowPadding}>
-                <div className="flex items-center gap-3">
-                  <Avatar className={avatarSize}>
-                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
-                      {getInitials(item)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <button
-                      className={`font-medium ${textSize} text-left hover:text-primary hover:underline transition-colors`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelectItem(item);
-                      }}
-                    >
-                      {getName(item)}
-                    </button>
-                    {item.product_interest && (
-                      <p className="text-xs text-muted-foreground">{item.product_interest}</p>
-                    )}
-                  </div>
-                </div>
-              </TableCell>
-              {/* Score Column */}
-              <TableCell className={`hidden sm:table-cell ${rowPadding} text-center`}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="inline-flex flex-col items-center gap-0.5 cursor-help">
-                      <div className="flex">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={cn(
-                              "h-3 w-3",
-                              i < itemClass 
-                                ? "text-amber-500 fill-amber-500" 
-                                : "text-muted-foreground/20"
-                            )}
-                          />
-                        ))}
+            {items.map((item) => {
+              const mockScore = calculateMockScore(item);
+              const itemScore = item.valueScore ?? mockScore.score;
+              const itemClass = item.valueClass ?? mockScore.classe;
+              
+              return (
+                <TableRow 
+                  key={item.id} 
+                  className="hover:bg-muted/30 transition-colors duration-200"
+                >
+                  <TableCell className={rowPadding}>
+                    <div className="flex items-center gap-3">
+                      <Avatar className={avatarSize}>
+                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                          {getInitials(item)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <button
+                          className={`font-medium ${textSize} text-left hover:text-primary hover:underline transition-colors`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectItem(item);
+                          }}
+                        >
+                          {getName(item)}
+                        </button>
+                        {item.product_interest && (
+                          <p className="text-xs text-muted-foreground">{item.product_interest}</p>
+                        )}
                       </div>
-                      <span className="text-[10px] font-medium text-muted-foreground">
-                        {itemScore}/100
-                      </span>
                     </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="text-xs">
-                    <p className="font-medium">Score Valeur Client</p>
-                    <p className="text-muted-foreground">
-                      {item.type === "prospect" ? "Score prédictif" : "Score basé sur l'activité"}
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TableCell>
-              <TableCell className={`${rowPadding} ${textSize}`}>
-                <div className="space-y-0.5">
-                  <p>{item.phone || "—"}</p>
-                  <p className="text-xs text-muted-foreground truncate max-w-[150px]">{item.email || ""}</p>
-                </div>
-              </TableCell>
-              <TableCell className={`hidden md:table-cell ${rowPadding}`}>
-                {item.type === "prospect" ? (
-                  <Badge variant="outline" className="text-xs gap-1 bg-blue-50 text-blue-700 border-blue-200">
-                    <Inbox className="h-3 w-3" />
-                    Prospect
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="text-xs gap-1 bg-emerald-50 text-emerald-700 border-emerald-200">
-                    <UserCheck className="h-3 w-3" />
-                    Client
-                  </Badge>
-                )}
-              </TableCell>
-              <TableCell className={`hidden lg:table-cell ${rowPadding} text-center`}>
-                <Badge variant="outline" className="text-xs">
-                  {item.quotationsCount || 0}
-                </Badge>
-              </TableCell>
-              <TableCell className={`hidden lg:table-cell ${rowPadding} text-center`}>
-                {item.type === "client" ? (
-                  <button
-                    className="text-primary hover:underline font-medium"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/b2b/policies?clientId=${item.id}`);
-                    }}
-                  >
-                    <Badge variant="default" className="text-xs cursor-pointer hover:bg-primary/80">
-                      {item.subscriptionsCount || 0}
+                  </TableCell>
+                  
+                  {/* Score Column */}
+                  <TableCell className={`hidden sm:table-cell ${rowPadding} text-center`}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="inline-flex flex-col items-center gap-0.5 cursor-help">
+                          <div className="flex">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={cn(
+                                  "h-3 w-3",
+                                  i < itemClass 
+                                    ? "text-amber-500 fill-amber-500" 
+                                    : "text-muted-foreground/20"
+                                )}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-[10px] font-medium text-muted-foreground">
+                            {itemScore}/100
+                          </span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="text-xs">
+                        <p className="font-medium">Score Valeur Client</p>
+                        <p className="text-muted-foreground">
+                          {item.type === "prospect" ? "Score prédictif" : "Score basé sur l'activité"}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TableCell>
+                  
+                  {/* Contact Column */}
+                  <TableCell className={`${rowPadding} ${textSize}`}>
+                    <div className="space-y-0.5">
+                      <p>{item.phone || "—"}</p>
+                      <p className="text-xs text-muted-foreground truncate max-w-[150px]">{item.email || ""}</p>
+                    </div>
+                  </TableCell>
+                  
+                  {/* Type Column */}
+                  <TableCell className={`hidden md:table-cell ${rowPadding}`}>
+                    {item.type === "prospect" ? (
+                      <Badge variant="outline" className="text-xs gap-1 bg-blue-50 text-blue-700 border-blue-200">
+                        <Inbox className="h-3 w-3" />
+                        Prospect
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs gap-1 bg-emerald-50 text-emerald-700 border-emerald-200">
+                        <UserCheck className="h-3 w-3" />
+                        Client
+                      </Badge>
+                    )}
+                  </TableCell>
+                  
+                  {/* Quotations Column */}
+                  <TableCell className={`hidden lg:table-cell ${rowPadding} text-center`}>
+                    <Badge variant="outline" className="text-xs">
+                      {item.quotationsCount || 0}
                     </Badge>
-                  </button>
-                ) : (
-                  <span className="text-muted-foreground text-xs">—</span>
-                )}
-              </TableCell>
-              <TableCell className={`hidden lg:table-cell ${rowPadding} text-center`}>
-                {item.type === "client" ? (
-                  <button
-                    className="text-primary hover:underline font-medium"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/b2b/claims?clientId=${item.id}`);
-                    }}
-                  >
-                    <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80">
-                      {item.claimsCount || 0}
-                    </Badge>
-                  </button>
-                ) : (
-                  <span className="text-muted-foreground text-xs">—</span>
-                )}
-              </TableCell>
-              <TableCell className={`hidden lg:table-cell ${rowPadding} text-center`}>
-                <Badge variant="outline" className="text-xs">
-                  {item.quotationsCount || 0}
-                </Badge>
-              </TableCell>
-              <TableCell className={`hidden lg:table-cell ${rowPadding} text-center`}>
-                {item.type === "client" ? (
-                  <button
-                    className="text-primary hover:underline font-medium"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/b2b/policies?clientId=${item.id}`);
-                    }}
-                  >
-                    <Badge variant="default" className="text-xs cursor-pointer hover:bg-primary/80">
-                      {item.subscriptionsCount || 0}
-                    </Badge>
-                  </button>
-                ) : (
-                  <span className="text-muted-foreground text-xs">—</span>
-                )}
-              </TableCell>
-              <TableCell className={`hidden lg:table-cell ${rowPadding} text-center`}>
-                {item.type === "client" ? (
-                  <button
-                    className="text-primary hover:underline font-medium"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/b2b/claims?clientId=${item.id}`);
-                    }}
-                  >
-                    <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80">
-                      {item.claimsCount || 0}
-                    </Badge>
-                  </button>
-                ) : (
-                  <span className="text-muted-foreground text-xs">—</span>
-                )}
-              </TableCell>
-              <TableCell className={rowPadding}>
-                {item.type === "prospect" && item.status ? (
-                  <LeadStatusBadge status={item.status as any} />
-                ) : item.client_status === "active" ? (
-                  <Badge className="bg-emerald-100 text-emerald-700 text-xs gap-1">
-                    <UserCheck className="h-3 w-3" />
-                    Actif
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 text-xs gap-1">
-                    <Clock className="h-3 w-3" />
-                    En attente
-                  </Badge>
-                )}
-              </TableCell>
-              <TableCell className={`${rowPadding} text-right`}>
-                <div className="flex items-center justify-end gap-1">
-                  {item.type === "prospect" && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/b2b/sales?contactId=${item.id}&type=prospect`);
-                      }}
-                      title="Vente guidée"
-                    >
-                      <ShoppingCart className="h-4 w-4" />
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={(e) => handleCall(e, item.phone)}
-                    disabled={!item.phone}
-                    title="Appeler"
-                  >
-                    <Phone className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                    onClick={(e) => handleWhatsApp(e, item)}
-                    disabled={!item.whatsapp && !item.phone}
-                    title="WhatsApp"
-                  >
-                    <MessageCircle className="h-4 w-4" />
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                        <MoreHorizontal className="h-4 w-4" />
+                  </TableCell>
+                  
+                  {/* Contracts Column */}
+                  <TableCell className={`hidden lg:table-cell ${rowPadding} text-center`}>
+                    {item.type === "client" ? (
+                      <button
+                        className="text-primary hover:underline font-medium"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/b2b/policies?clientId=${item.id}`);
+                        }}
+                      >
+                        <Badge variant="default" className="text-xs cursor-pointer hover:bg-primary/80">
+                          {item.subscriptionsCount || 0}
+                        </Badge>
+                      </button>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
+                  </TableCell>
+                  
+                  {/* Claims Column */}
+                  <TableCell className={`hidden lg:table-cell ${rowPadding} text-center`}>
+                    {item.type === "client" ? (
+                      <button
+                        className="text-primary hover:underline font-medium"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/b2b/claims?clientId=${item.id}`);
+                        }}
+                      >
+                        <Badge variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80">
+                          {item.claimsCount || 0}
+                        </Badge>
+                      </button>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
+                  </TableCell>
+                  
+                  {/* Status Column */}
+                  <TableCell className={rowPadding}>
+                    {item.type === "prospect" && item.status ? (
+                      <LeadStatusBadge status={item.status as any} />
+                    ) : item.client_status === "active" ? (
+                      <Badge className="bg-emerald-100 text-emerald-700 text-xs gap-1">
+                        <UserCheck className="h-3 w-3" />
+                        Actif
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 text-xs gap-1">
+                        <Clock className="h-3 w-3" />
+                        En attente
+                      </Badge>
+                    )}
+                  </TableCell>
+                  
+                  {/* Actions Column */}
+                  <TableCell className={`${rowPadding} text-right`}>
+                    <div className="flex items-center justify-end gap-1">
+                      {item.type === "prospect" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/b2b/sales?contactId=${item.id}&type=prospect`);
+                          }}
+                          title="Vente guidée"
+                        >
+                          <ShoppingCart className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => handleCall(e, item.phone)}
+                        disabled={!item.phone}
+                        title="Appeler"
+                      >
+                        <Phone className="h-4 w-4" />
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={(e) => handleEmail(e as any, item.email)}>
-                        <Mail className="h-4 w-4 mr-2" />
-                        Envoyer un email
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onSelectItem(item)}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        Voir les détails
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </TableCell>
-            </TableRow>
-          );
-          })}
-        </TableBody>
-      </Table>
-    </div>
-  </TooltipProvider>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                        onClick={(e) => handleWhatsApp(e, item)}
+                        disabled={!item.whatsapp && !item.phone}
+                        title="WhatsApp"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={(e) => handleEmail(e as any, item.email)}>
+                            <Mail className="h-4 w-4 mr-2" />
+                            Envoyer un email
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onSelectItem(item)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            Voir les détails
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    </TooltipProvider>
   );
 };

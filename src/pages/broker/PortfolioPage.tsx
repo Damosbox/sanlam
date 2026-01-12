@@ -5,7 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { UserPlus, LayoutList, Rows3, Search, Download, Users, Inbox, UserCheck } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { UserPlus, LayoutList, Rows3, Search, Download, Users, Inbox, UserCheck, RotateCcw, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PortfolioDataTable, PortfolioItem } from "@/components/portfolio/PortfolioDataTable";
 import { LeadDetailSheet } from "@/components/leads/LeadDetailSheet";
@@ -172,7 +179,7 @@ export default function PortfolioPage() {
     return [...prospectItems, ...clientItems];
   }, [leads, clients]);
 
-  // Filter items
+  // Filter items - improved search to include email and phone
   const filteredItems = useMemo(() => {
     let result = portfolioItems;
     if (activeTab === "prospects") {
@@ -182,7 +189,14 @@ export default function PortfolioPage() {
     }
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      result = result.filter(item => item.display_name?.toLowerCase().includes(query) || item.first_name?.toLowerCase().includes(query) || item.last_name?.toLowerCase().includes(query));
+      result = result.filter(item => 
+        item.display_name?.toLowerCase().includes(query) || 
+        item.first_name?.toLowerCase().includes(query) || 
+        item.last_name?.toLowerCase().includes(query) ||
+        item.email?.toLowerCase().includes(query) ||
+        item.phone?.includes(query) ||
+        item.product_interest?.toLowerCase().includes(query)
+      );
     }
     return result;
   }, [portfolioItems, activeTab, searchQuery]);
@@ -267,13 +281,41 @@ export default function PortfolioPage() {
       });
     }
   };
+  // Check if filters are active
+  const hasActiveFilters = searchQuery !== "" || activeTab !== "all";
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setActiveTab("all");
+  };
+
   const isLoading = leadsLoading || clientsLoading;
+  
   if (isLoading) {
-    return <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>;
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-7 w-40" />
+        </div>
+        <div className="flex flex-col gap-3">
+          <Skeleton className="h-9 w-full max-w-md" />
+          <div className="flex gap-2">
+            <Skeleton className="h-9 w-32" />
+            <Skeleton className="h-9 w-32" />
+            <Skeleton className="h-9 w-32" />
+          </div>
+        </div>
+        <div className="space-y-2">
+          {[1, 2, 3, 4, 5].map(i => (
+            <Skeleton key={i} className="h-14 w-full" />
+          ))}
+        </div>
+      </div>
+    );
   }
-  return <div className="space-y-4">
+
+  return (
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Mon Portefeuille</h1>
       </div>
@@ -283,17 +325,33 @@ export default function PortfolioPage() {
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Rechercher par nom..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9 h-9" />
+            <Input 
+              placeholder="Rechercher par nom, email, téléphone..." 
+              value={searchQuery} 
+              onChange={e => setSearchQuery(e.target.value)} 
+              className="pl-9 h-9" 
+            />
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={exportToCSV} className="gap-2">
-              <Download className="h-4 w-4" />
-              <span className="hidden sm:inline">CSV</span>
-            </Button>
-            <Button variant="outline" size="sm" onClick={exportToExcel} className="gap-2">
-              <Download className="h-4 w-4" />
-              <span className="hidden sm:inline">Excel</span>
-            </Button>
+            {/* Export Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Download className="h-4 w-4" />
+                  <span className="hidden sm:inline">Exporter</span>
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={exportToCSV}>
+                  Exporter en CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={exportToExcel}>
+                  Exporter en Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
             <Button onClick={() => setCreateDialogOpen(true)} className="gap-2 h-8 sm:h-9 px-2 sm:px-3">
               <UserPlus className="h-4 w-4" />
               <span className="hidden sm:inline">Nouveau</span>
@@ -328,6 +386,31 @@ export default function PortfolioPage() {
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
+
+        {/* Results Counter + Reset */}
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">
+            {filteredItems.length === counts.all ? (
+              <span>{counts.all} élément{counts.all > 1 ? "s" : ""}</span>
+            ) : (
+              <span>
+                <span className="font-medium text-foreground">{filteredItems.length}</span> sur {counts.all} élément{counts.all > 1 ? "s" : ""}
+              </span>
+            )}
+          </span>
+          
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleResetFilters}
+              className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+            >
+              <RotateCcw className="h-3 w-3" />
+              Réinitialiser
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Table */}
@@ -344,5 +427,6 @@ export default function PortfolioPage() {
 
       {/* Edit Lead Dialog */}
       <CreateLeadDialog open={editDialogOpen} onOpenChange={setEditDialogOpen} lead={editDialogLead} mode="edit" />
-    </div>;
+    </div>
+  );
 }

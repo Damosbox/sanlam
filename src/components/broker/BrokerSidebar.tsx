@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
-import { Inbox, Zap, FileText, Shield, Users, BarChart3, MessageSquare, Sparkles, LayoutDashboard, Newspaper, Briefcase } from "lucide-react";
+import { Inbox, Zap, FileText, Shield, Users, BarChart3, MessageSquare, Sparkles, LayoutDashboard, Newspaper, Briefcase, PieChart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 interface BadgeCounts {
@@ -97,6 +97,10 @@ export function BrokerSidebar() {
     title: "Polices",
     url: "/b2b/policies",
     icon: Shield
+  }, {
+    title: "Statistiques",
+    url: "/b2b/stats",
+    icon: PieChart
   }];
   const toolsItems = [{
     title: "Analyse Concurrentielle",

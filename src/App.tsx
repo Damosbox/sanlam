@@ -37,6 +37,7 @@ import PortfolioPage from "./pages/broker/PortfolioPage";
 import GuidedSalesPage from "./pages/broker/GuidedSalesPage";
 import ClaimsPage from "./pages/broker/ClaimsPage";
 import PoliciesPage from "./pages/broker/PoliciesPage";
+import RenewalStatsPage from "./pages/broker/RenewalStatsPage";
 import AnalysisPage from "./pages/broker/AnalysisPage";
 import MessagesPage from "./pages/broker/MessagesPage";
 
@@ -112,6 +113,7 @@ const App = () => (
             <Route path="sales" element={<GuidedSalesPage />} />
             <Route path="claims" element={<ClaimsPage />} />
             <Route path="policies" element={<PoliciesPage />} />
+            <Route path="stats" element={<RenewalStatsPage />} />
             <Route path="analysis" element={<AnalysisPage />} />
             <Route path="messages" element={<MessagesPage />} />
           </Route>

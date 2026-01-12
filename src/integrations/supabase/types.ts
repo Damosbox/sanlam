@@ -490,6 +490,74 @@ export type Database = {
         }
         Relationships: []
       }
+      client_scores: {
+        Row: {
+          calculated_at: string | null
+          classe: number | null
+          client_id: string
+          created_at: string | null
+          id: string
+          product_type: string | null
+          score_anciennete: number | null
+          score_charge: number | null
+          score_couverture: number | null
+          score_duree: number | null
+          score_garantie: number | null
+          score_global: number | null
+          score_objet: number | null
+          score_prime: number | null
+          score_responsabilite: number | null
+          score_sinistre: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          calculated_at?: string | null
+          classe?: number | null
+          client_id: string
+          created_at?: string | null
+          id?: string
+          product_type?: string | null
+          score_anciennete?: number | null
+          score_charge?: number | null
+          score_couverture?: number | null
+          score_duree?: number | null
+          score_garantie?: number | null
+          score_global?: number | null
+          score_objet?: number | null
+          score_prime?: number | null
+          score_responsabilite?: number | null
+          score_sinistre?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          calculated_at?: string | null
+          classe?: number | null
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          product_type?: string | null
+          score_anciennete?: number | null
+          score_charge?: number | null
+          score_couverture?: number | null
+          score_duree?: number | null
+          score_garantie?: number | null
+          score_global?: number | null
+          score_objet?: number | null
+          score_prime?: number | null
+          score_responsabilite?: number | null
+          score_sinistre?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_scores_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competitive_analyses: {
         Row: {
           analysis_timestamp: string | null
@@ -1490,13 +1558,19 @@ export type Database = {
       subscriptions: {
         Row: {
           assigned_broker_id: string | null
+          churn_reason: string | null
+          client_decision: string | null
+          contact_status: string | null
           created_at: string
           end_date: string
           id: string
+          last_contacted_at: string | null
           monthly_premium: number
+          object_identifier: string | null
           payment_method: string | null
           policy_number: string
           product_id: string
+          renewal_status: string | null
           selected_coverages: Json | null
           start_date: string
           status: string
@@ -1505,13 +1579,19 @@ export type Database = {
         }
         Insert: {
           assigned_broker_id?: string | null
+          churn_reason?: string | null
+          client_decision?: string | null
+          contact_status?: string | null
           created_at?: string
           end_date: string
           id?: string
+          last_contacted_at?: string | null
           monthly_premium: number
+          object_identifier?: string | null
           payment_method?: string | null
           policy_number: string
           product_id: string
+          renewal_status?: string | null
           selected_coverages?: Json | null
           start_date?: string
           status?: string
@@ -1520,13 +1600,19 @@ export type Database = {
         }
         Update: {
           assigned_broker_id?: string | null
+          churn_reason?: string | null
+          client_decision?: string | null
+          contact_status?: string | null
           created_at?: string
           end_date?: string
           id?: string
+          last_contacted_at?: string | null
           monthly_premium?: number
+          object_identifier?: string | null
           payment_method?: string | null
           policy_number?: string
           product_id?: string
+          renewal_status?: string | null
           selected_coverages?: Json | null
           start_date?: string
           status?: string

@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Loader2, Shield, Users, Briefcase, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type AuthView = "welcome" | "login" | "signup";
+type AuthView = "selection" | "login" | "signup";
 type SpaceType = "client" | "broker" | null;
 
 export default function Auth() {
@@ -19,8 +19,9 @@ export default function Auth() {
   const isBrokerAccess = searchParams.get("broker") === "true";
   
   const [loading, setLoading] = useState(false);
-  const [view, setView] = useState<AuthView>("welcome");
+  const [view, setView] = useState<AuthView>(isBrokerAccess ? "login" : "selection");
   const [selectedSpace, setSelectedSpace] = useState<SpaceType>(isBrokerAccess ? "broker" : null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [phoneAuth, setPhoneAuth] = useState(false);
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
@@ -67,17 +68,23 @@ export default function Auth() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  const handleSpaceSelect = (space: SpaceType) => {
+    setIsTransitioning(true);
+    setSelectedSpace(space);
+    
+    setTimeout(() => {
+      setView("login");
+      setIsTransitioning(false);
+    }, 150);
+  };
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const isBrokerSignup = selectedSpace === "broker";
-      
       if (view === "signup") {
-        const redirectUrl = isBrokerSignup 
-          ? `${window.location.origin}/b2b/dashboard`
-          : `${window.location.origin}/b2c`;
+        const redirectUrl = `${window.location.origin}/b2c`;
         
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -91,19 +98,6 @@ export default function Auth() {
         });
         if (error) throw error;
         
-        if (isBrokerSignup && data.user) {
-          const { error: roleError } = await supabase
-            .from('user_roles')
-            .insert({
-              user_id: data.user.id,
-              role: 'broker'
-            });
-          
-          if (roleError) {
-            console.error('Erreur lors de l\'ajout du rôle broker:', roleError);
-          }
-        }
-        
         toast.success("Compte créé ! Vérifiez votre email pour confirmer.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -114,7 +108,20 @@ export default function Auth() {
         toast.success("Connexion réussie !");
       }
     } catch (error: any) {
-      toast.error(error.message || "Une erreur est survenue");
+      // Traduction des erreurs Supabase courantes
+      let message = "Une erreur est survenue";
+      if (error.message?.includes("Invalid login credentials")) {
+        message = "Email ou mot de passe incorrect";
+      } else if (error.message?.includes("Email not confirmed")) {
+        message = "Veuillez confirmer votre email avant de vous connecter";
+      } else if (error.message?.includes("User already registered")) {
+        message = "Un compte existe déjà avec cet email";
+      } else if (error.message?.includes("Password should be at least")) {
+        message = "Le mot de passe doit contenir au moins 6 caractères";
+      } else if (error.message) {
+        message = error.message;
+      }
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -169,18 +176,22 @@ export default function Auth() {
     }
   };
 
-  const handleFacebookAuth = async () => {
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast.error("Veuillez entrer votre email");
+      return;
+    }
+    
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'facebook',
-        options: {
-          redirectTo: `${window.location.origin}/auth`,
-        }
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth`,
       });
       if (error) throw error;
+      toast.success("Un email de réinitialisation a été envoyé");
     } catch (error: any) {
       toast.error(error.message || "Une erreur est survenue");
+    } finally {
       setLoading(false);
     }
   };
@@ -191,19 +202,29 @@ export default function Auth() {
       setOtpSent(false);
       setPhone("");
       setOtp("");
-    } else if (view !== "welcome") {
-      setView("welcome");
-      setEmail("");
-      setPassword("");
+    } else if (view === "signup") {
+      setView("login");
       setDisplayName("");
+    } else if (view === "login") {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setView("selection");
+        setSelectedSpace(null);
+        setEmail("");
+        setPassword("");
+        setIsTransitioning(false);
+      }, 150);
     }
   };
 
-  // Welcome View
-  if (view === "welcome" && !phoneAuth) {
+  // Selection View - First screen
+  if (view === "selection") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-background to-sky-50/30 p-4">
-        <Card className="w-full max-w-md border-border/50 shadow-xl">
+        <Card className={cn(
+          "w-full max-w-md border-border/50 shadow-xl transition-all duration-300",
+          isTransitioning ? "opacity-0 scale-95" : "opacity-100 scale-100 animate-fade-in"
+        )}>
           <CardContent className="pt-8 pb-6 px-8">
             {/* Shield Icon */}
             <div className="flex justify-center mb-6">
@@ -218,89 +239,43 @@ export default function Auth() {
                 Bienvenue chez Sanlam-Allianz
               </h1>
               <p className="text-muted-foreground">
-                Connectez-vous pour accéder à vos services d'assurance
-              </p>
-            </div>
-
-            {/* Main Actions */}
-            <div className="space-y-3 mb-6">
-              <Button 
-                className="w-full h-12 text-base font-semibold"
-                onClick={() => setView("login")}
-              >
-                Se connecter
-              </Button>
-              
-              <div className="relative">
-                <Separator />
-                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-3 text-xs text-muted-foreground uppercase">
-                  ou
-                </span>
-              </div>
-
-              <Button 
-                variant="outline" 
-                className="w-full h-12 text-base font-medium"
-                onClick={() => setView("signup")}
-              >
-                Créer un compte
-              </Button>
-            </div>
-
-            {/* Space Selector */}
-            <div className="mb-6">
-              <p className="text-center text-sm font-medium text-primary mb-4">
                 Choisissez votre espace
               </p>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => setSelectedSpace("client")}
-                  className={cn(
-                    "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all duration-200",
-                    selectedSpace === "client"
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50 hover:bg-muted/50"
-                  )}
-                >
-                  <Users className={cn(
-                    "h-6 w-6",
-                    selectedSpace === "client" ? "text-primary" : "text-muted-foreground"
-                  )} />
-                  <div className="text-center">
-                    <p className={cn(
-                      "font-semibold text-sm",
-                      selectedSpace === "client" ? "text-primary" : "text-foreground"
-                    )}>
-                      Espace Client
-                    </p>
-                    <p className="text-xs text-muted-foreground">Particuliers</p>
-                  </div>
-                </button>
+            </div>
 
-                <button
-                  onClick={() => setSelectedSpace("broker")}
-                  className={cn(
-                    "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all duration-200",
-                    selectedSpace === "broker"
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50 hover:bg-muted/50"
-                  )}
-                >
-                  <Briefcase className={cn(
-                    "h-6 w-6",
-                    selectedSpace === "broker" ? "text-primary" : "text-muted-foreground"
-                  )} />
-                  <div className="text-center">
-                    <p className={cn(
-                      "font-semibold text-sm",
-                      selectedSpace === "broker" ? "text-primary" : "text-foreground"
-                    )}>
-                      Espace Partenaire
-                    </p>
-                    <p className="text-xs text-muted-foreground">Professionnels</p>
-                  </div>
-                </button>
-              </div>
+            {/* Space Selection Cards */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <button
+                onClick={() => handleSpaceSelect("client")}
+                className="group flex flex-col items-center gap-3 p-6 rounded-xl border-2 
+                           border-border hover:border-primary hover:bg-primary/5 
+                           transition-all duration-300 hover:scale-[1.02]"
+              >
+                <div className="h-14 w-14 rounded-full bg-blue-100 flex items-center justify-center 
+                                group-hover:bg-primary/20 transition-colors">
+                  <Users className="h-7 w-7 text-blue-600 group-hover:text-primary" />
+                </div>
+                <div className="text-center">
+                  <p className="font-semibold text-lg">Particulier</p>
+                  <p className="text-xs text-muted-foreground">Gérez vos contrats</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => handleSpaceSelect("broker")}
+                className="group flex flex-col items-center gap-3 p-6 rounded-xl border-2 
+                           border-border hover:border-primary hover:bg-primary/5 
+                           transition-all duration-300 hover:scale-[1.02]"
+              >
+                <div className="h-14 w-14 rounded-full bg-orange-100 flex items-center justify-center 
+                                group-hover:bg-primary/20 transition-colors">
+                  <Briefcase className="h-7 w-7 text-orange-600 group-hover:text-primary" />
+                </div>
+                <div className="text-center">
+                  <p className="font-semibold text-lg">Partenaire</p>
+                  <p className="text-xs text-muted-foreground">Espace professionnel</p>
+                </div>
+              </button>
             </div>
 
             {/* Terms */}
@@ -319,7 +294,10 @@ export default function Auth() {
   // Login/Signup Forms
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-background to-sky-50/30 p-4">
-      <Card className="w-full max-w-md border-border/50 shadow-xl">
+      <Card className={cn(
+        "w-full max-w-md border-border/50 shadow-xl transition-all duration-300",
+        isTransitioning ? "opacity-0 scale-95" : "opacity-100 scale-100 animate-fade-in"
+      )}>
         <CardContent className="pt-6 pb-6 px-8">
           {/* Back Button */}
           <button
@@ -327,31 +305,36 @@ export default function Auth() {
             className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            Retour
+            {view === "signup" ? "Retour à la connexion" : "Changer d'espace"}
           </button>
+
+          {/* Space Badge */}
+          <div className="flex justify-center mb-4">
+            <div className={cn(
+              "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium",
+              selectedSpace === "broker" 
+                ? "bg-orange-100 text-orange-700" 
+                : "bg-blue-100 text-blue-700"
+            )}>
+              {selectedSpace === "broker" ? (
+                <Briefcase className="h-4 w-4" />
+              ) : (
+                <Users className="h-4 w-4" />
+              )}
+              {selectedSpace === "broker" ? "Espace Partenaire" : "Espace Particulier"}
+            </div>
+          </div>
 
           {/* Header */}
           <div className="text-center mb-6">
-            <div className="flex justify-center mb-4">
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                {selectedSpace === "broker" ? (
-                  <Briefcase className="h-6 w-6 text-primary" />
-                ) : (
-                  <Users className="h-6 w-6 text-primary" />
-                )}
-              </div>
-            </div>
             <h1 className="text-xl font-bold text-foreground">
               {phoneAuth 
                 ? "Connexion par téléphone"
                 : view === "signup" 
                   ? "Créer un compte" 
-                  : "Se connecter"
+                  : "Connexion"
               }
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {selectedSpace === "broker" ? "Espace Partenaire" : "Espace Client"}
-            </p>
           </div>
 
           {!phoneAuth ? (
@@ -382,7 +365,18 @@ export default function Auth() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Mot de passe</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Mot de passe</Label>
+                    {view === "login" && (
+                      <button
+                        type="button"
+                        onClick={handleForgotPassword}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        Mot de passe oublié ?
+                      </button>
+                    )}
+                  </div>
                   <Input
                     id="password"
                     type="password"
@@ -424,18 +418,6 @@ export default function Auth() {
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={handleFacebookAuth}
-                  disabled={loading}
-                >
-                  <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                  </svg>
-                  Continuer avec Facebook
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="w-full"
                   onClick={() => setPhoneAuth(true)}
                   disabled={loading}
                 >
@@ -446,15 +428,42 @@ export default function Auth() {
                 </Button>
               </div>
 
-              <div className="text-center text-sm mt-4">
-                <button
-                  type="button"
-                  onClick={() => setView(view === "signup" ? "login" : "signup")}
-                  className="text-primary hover:underline"
-                >
-                  {view === "signup" ? "Déjà un compte ? Se connecter" : "Pas de compte ? S'inscrire"}
-                </button>
-              </div>
+              {/* Signup link - ONLY for client space */}
+              {selectedSpace === "client" && view === "login" && (
+                <div className="text-center text-sm mt-4">
+                  <span className="text-muted-foreground">Vous n'avez pas de compte ? </span>
+                  <button
+                    type="button"
+                    onClick={() => setView("signup")}
+                    className="text-primary font-medium hover:underline"
+                  >
+                    Inscrivez-vous
+                  </button>
+                </div>
+              )}
+
+              {/* Message for partners - no signup */}
+              {selectedSpace === "broker" && view === "login" && (
+                <div className="text-center text-sm mt-4 p-3 bg-muted/50 rounded-lg">
+                  <p className="text-muted-foreground">
+                    L'inscription partenaire se fait via votre responsable commercial.
+                  </p>
+                </div>
+              )}
+
+              {/* Back to login from signup */}
+              {view === "signup" && (
+                <div className="text-center text-sm mt-4">
+                  <span className="text-muted-foreground">Déjà un compte ? </span>
+                  <button
+                    type="button"
+                    onClick={() => setView("login")}
+                    className="text-primary font-medium hover:underline"
+                  >
+                    Connectez-vous
+                  </button>
+                </div>
+              )}
             </>
           ) : (
             <>
@@ -477,7 +486,8 @@ export default function Auth() {
                   <Input
                     id="phone"
                     type="tel"
-                    placeholder="+33612345678"
+                    inputMode="tel"
+                    placeholder="+237 6XX XXX XXX"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     disabled={otpSent}
@@ -490,6 +500,7 @@ export default function Auth() {
                     <Input
                       id="otp"
                       type="text"
+                      inputMode="numeric"
                       placeholder="123456"
                       value={otp}
                       onChange={(e) => setOtp(e.target.value)}

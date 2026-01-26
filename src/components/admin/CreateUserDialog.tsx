@@ -27,7 +27,7 @@ interface CreateUserDialogProps {
   onUserCreated: () => void;
 }
 
-type PartnerType = "agent_mandataire" | "courtier" | "agent_independant";
+type PartnerType = "agent_mandataire" | "courtier" | "agent_general" | "agent_sanlam" | "banquier";
 
 export const CreateUserDialog = ({ onUserCreated }: CreateUserDialogProps) => {
   const [open, setOpen] = useState(false);
@@ -294,21 +294,33 @@ export const CreateUserDialog = ({ onUserCreated }: CreateUserDialogProps) => {
                   className="space-y-2"
                 >
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="agent_mandataire" id="agent_mandataire" />
-                    <Label htmlFor="agent_mandataire" className="font-normal cursor-pointer">
-                      Agent Mandataire
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
                     <RadioGroupItem value="courtier" id="courtier" />
                     <Label htmlFor="courtier" className="font-normal cursor-pointer">
                       Courtier
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="agent_independant" id="agent_independant" />
-                    <Label htmlFor="agent_independant" className="font-normal cursor-pointer">
-                      Agent Indépendant
+                    <RadioGroupItem value="agent_general" id="agent_general" />
+                    <Label htmlFor="agent_general" className="font-normal cursor-pointer">
+                      Agent Général
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="agent_mandataire" id="agent_mandataire" />
+                    <Label htmlFor="agent_mandataire" className="font-normal cursor-pointer">
+                      Agent Mandataire
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="agent_sanlam" id="agent_sanlam" />
+                    <Label htmlFor="agent_sanlam" className="font-normal cursor-pointer">
+                      Agent Sanlam Allianz
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="banquier" id="banquier" />
+                    <Label htmlFor="banquier" className="font-normal cursor-pointer">
+                      Banquier
                     </Label>
                   </div>
                 </RadioGroup>

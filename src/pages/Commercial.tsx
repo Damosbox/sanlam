@@ -88,7 +88,7 @@ const Commercial = () => {
 
               {/* CTA Buttons */}
               <div className="flex flex-wrap gap-4">
-                <Link to="/auth?broker=true">
+                <Link to="/auth/partner">
                   <Button size="lg" className="bg-white text-primary hover:bg-white/90">
                     Accéder à mon espace
                     <ArrowRight className="w-5 h-5 ml-2" />
@@ -258,7 +258,7 @@ const Commercial = () => {
             Rejoignez le réseau Sanlam Allianz et accédez à tous les outils pour réussir dans l'assurance.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Link to="/auth?broker=true">
+            <Link to="/auth/partner">
               <Button size="lg" className="bg-white text-primary hover:bg-white/90">
                 Commencer maintenant
                 <ArrowRight className="w-5 h-5 ml-2" />

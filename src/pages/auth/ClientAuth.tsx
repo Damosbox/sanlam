@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,21 +7,16 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Loader2, Shield, Users, Briefcase, ArrowLeft } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Loader2, Users } from "lucide-react";
+import sanlamLogo from "@/assets/logo_sanlam.svg";
 
-type AuthView = "selection" | "login" | "signup";
-type SpaceType = "client" | "broker" | null;
+type AuthView = "login" | "signup";
 
-export default function Auth() {
+export default function ClientAuth() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const isBrokerAccess = searchParams.get("broker") === "true";
   
   const [loading, setLoading] = useState(false);
-  const [view, setView] = useState<AuthView>(isBrokerAccess ? "login" : "selection");
-  const [selectedSpace, setSelectedSpace] = useState<SpaceType>(isBrokerAccess ? "broker" : null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [view, setView] = useState<AuthView>("login");
   const [phoneAuth, setPhoneAuth] = useState(false);
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
@@ -30,29 +25,11 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
 
-  const redirectBasedOnRole = async (userId: string) => {
-    const { data: roleData } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .order("role", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    
-    const role = roleData?.role ?? "customer";
-    
-    if (role === "broker" || role === "admin") {
-      navigate("/b2b/dashboard");
-    } else {
-      navigate("/b2c");
-    }
-  };
-
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        await redirectBasedOnRole(session.user.id);
+        navigate("/b2c");
       }
     };
     checkUser();
@@ -60,23 +37,13 @@ export default function Auth() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         setTimeout(() => {
-          redirectBasedOnRole(session.user.id);
+          navigate("/b2c");
         }, 0);
       }
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
-
-  const handleSpaceSelect = (space: SpaceType) => {
-    setIsTransitioning(true);
-    setSelectedSpace(space);
-    
-    setTimeout(() => {
-      setView("login");
-      setIsTransitioning(false);
-    }, 150);
-  };
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,7 +75,6 @@ export default function Auth() {
         toast.success("Connexion réussie !");
       }
     } catch (error: any) {
-      // Traduction des erreurs Supabase courantes
       let message = "Une erreur est survenue";
       if (error.message?.includes("Invalid login credentials")) {
         message = "Email ou mot de passe incorrect";
@@ -166,7 +132,7 @@ export default function Auth() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth`,
+          redirectTo: `${window.location.origin}/auth/client`,
         }
       });
       if (error) throw error;
@@ -185,7 +151,7 @@ export default function Auth() {
     setLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth`,
+        redirectTo: `${window.location.origin}/auth/client`,
       });
       if (error) throw error;
       toast.success("Un email de réinitialisation a été envoyé");
@@ -205,123 +171,23 @@ export default function Auth() {
     } else if (view === "signup") {
       setView("login");
       setDisplayName("");
-    } else if (view === "login") {
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setView("selection");
-        setSelectedSpace(null);
-        setEmail("");
-        setPassword("");
-        setIsTransitioning(false);
-      }, 150);
     }
   };
 
-  // Selection View - First screen
-  if (view === "selection") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-background to-sky-50/30 p-4">
-        <Card className={cn(
-          "w-full max-w-md border-border/50 shadow-xl transition-all duration-300",
-          isTransitioning ? "opacity-0 scale-95" : "opacity-100 scale-100 animate-fade-in"
-        )}>
-          <CardContent className="pt-8 pb-6 px-8">
-            {/* Shield Icon */}
-            <div className="flex justify-center mb-6">
-              <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <Shield className="h-8 w-8 text-primary" />
-              </div>
-            </div>
-
-            {/* Title */}
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold text-foreground mb-2">
-                Bienvenue chez Sanlam-Allianz
-              </h1>
-              <p className="text-muted-foreground">
-                Choisissez votre espace
-              </p>
-            </div>
-
-            {/* Space Selection Cards */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <button
-                onClick={() => handleSpaceSelect("client")}
-                className="group flex flex-col items-center gap-3 p-6 rounded-xl border-2 
-                           border-border hover:border-primary hover:bg-primary/5 
-                           transition-all duration-300 hover:scale-[1.02]"
-              >
-                <div className="h-14 w-14 rounded-full bg-blue-100 flex items-center justify-center 
-                                group-hover:bg-primary/20 transition-colors">
-                  <Users className="h-7 w-7 text-blue-600 group-hover:text-primary" />
-                </div>
-                <div className="text-center">
-                  <p className="font-semibold text-lg">Particulier</p>
-                  <p className="text-xs text-muted-foreground">Gérez vos contrats</p>
-                </div>
-              </button>
-
-              <button
-                onClick={() => handleSpaceSelect("broker")}
-                className="group flex flex-col items-center gap-3 p-6 rounded-xl border-2 
-                           border-border hover:border-primary hover:bg-primary/5 
-                           transition-all duration-300 hover:scale-[1.02]"
-              >
-                <div className="h-14 w-14 rounded-full bg-orange-100 flex items-center justify-center 
-                                group-hover:bg-primary/20 transition-colors">
-                  <Briefcase className="h-7 w-7 text-orange-600 group-hover:text-primary" />
-                </div>
-                <div className="text-center">
-                  <p className="font-semibold text-lg">Partenaire</p>
-                  <p className="text-xs text-muted-foreground">Espace professionnel</p>
-                </div>
-              </button>
-            </div>
-
-            {/* Terms */}
-            <p className="text-center text-xs text-muted-foreground">
-              En vous connectant, vous acceptez nos{" "}
-              <a href="#" className="text-primary hover:underline">conditions d'utilisation</a>
-              {" "}et notre{" "}
-              <a href="#" className="text-primary hover:underline">politique de confidentialité</a>
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Login/Signup Forms
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-background to-sky-50/30 p-4">
-      <Card className={cn(
-        "w-full max-w-md border-border/50 shadow-xl transition-all duration-300",
-        isTransitioning ? "opacity-0 scale-95" : "opacity-100 scale-100 animate-fade-in"
-      )}>
+      <Card className="w-full max-w-md border-border/50 shadow-xl animate-fade-in">
         <CardContent className="pt-6 pb-6 px-8">
-          {/* Back Button */}
-          <button
-            onClick={goBack}
-            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            {view === "signup" ? "Retour à la connexion" : "Changer d'espace"}
-          </button>
+          {/* Logo */}
+          <div className="flex justify-center mb-6">
+            <img src={sanlamLogo} alt="Sanlam Allianz" className="h-12 w-auto" />
+          </div>
 
           {/* Space Badge */}
           <div className="flex justify-center mb-4">
-            <div className={cn(
-              "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium",
-              selectedSpace === "broker" 
-                ? "bg-orange-100 text-orange-700" 
-                : "bg-blue-100 text-blue-700"
-            )}>
-              {selectedSpace === "broker" ? (
-                <Briefcase className="h-4 w-4" />
-              ) : (
-                <Users className="h-4 w-4" />
-              )}
-              {selectedSpace === "broker" ? "Espace Partenaire" : "Espace Particulier"}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
+              <Users className="h-4 w-4" />
+              Espace Particulier
             </div>
           </div>
 
@@ -428,8 +294,7 @@ export default function Auth() {
                 </Button>
               </div>
 
-              {/* Signup link - ONLY for client space */}
-              {selectedSpace === "client" && view === "login" && (
+              {view === "login" && (
                 <div className="text-center text-sm mt-4">
                   <span className="text-muted-foreground">Vous n'avez pas de compte ? </span>
                   <button
@@ -442,16 +307,6 @@ export default function Auth() {
                 </div>
               )}
 
-              {/* Message for partners - no signup */}
-              {selectedSpace === "broker" && view === "login" && (
-                <div className="text-center text-sm mt-4 p-3 bg-muted/50 rounded-lg">
-                  <p className="text-muted-foreground">
-                    L'inscription partenaire se fait via votre responsable commercial.
-                  </p>
-                </div>
-              )}
-
-              {/* Back to login from signup */}
               {view === "signup" && (
                 <div className="text-center text-sm mt-4">
                   <span className="text-muted-foreground">Déjà un compte ? </span>
@@ -468,56 +323,73 @@ export default function Auth() {
           ) : (
             <>
               <form onSubmit={handlePhoneAuth} className="space-y-4">
-                {view === "signup" && !otpSent && (
-                  <div className="space-y-2">
-                    <Label htmlFor="displayName">Nom complet</Label>
-                    <Input
-                      id="displayName"
-                      type="text"
-                      placeholder="Jean Dupont"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      required
-                    />
-                  </div>
-                )}
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Numéro de téléphone</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    inputMode="tel"
-                    placeholder="+237 6XX XXX XXX"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    disabled={otpSent}
-                    required
-                  />
-                </div>
-                {otpSent && (
+                {!otpSent ? (
+                  <>
+                    {view === "signup" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="displayName">Nom complet</Label>
+                        <Input
+                          id="displayName"
+                          type="text"
+                          placeholder="Jean Dupont"
+                          value={displayName}
+                          onChange={(e) => setDisplayName(e.target.value)}
+                          required
+                        />
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Numéro de téléphone</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        placeholder="+225 07 XX XX XX XX"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </>
+                ) : (
                   <div className="space-y-2">
                     <Label htmlFor="otp">Code de vérification</Label>
                     <Input
                       id="otp"
                       type="text"
-                      inputMode="numeric"
                       placeholder="123456"
                       value={otp}
                       onChange={(e) => setOtp(e.target.value)}
                       required
+                      maxLength={6}
+                      className="text-center text-2xl tracking-widest"
                     />
+                    <p className="text-xs text-muted-foreground text-center">
+                      Un code a été envoyé au {phone}
+                    </p>
                   </div>
                 )}
                 <Button type="submit" className="w-full h-11" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {otpSent ? "Vérifier le code" : "Envoyer le code"}
+                  {otpSent ? "Vérifier le code" : "Recevoir un code"}
                 </Button>
               </form>
+              
+              <Button
+                variant="ghost"
+                className="w-full mt-2"
+                onClick={goBack}
+              >
+                Retour
+              </Button>
             </>
           )}
 
+          {/* Terms */}
           <p className="text-center text-xs text-muted-foreground mt-6">
-            En vous connectant, vous acceptez nos conditions d'utilisation
+            En vous connectant, vous acceptez nos{" "}
+            <a href="#" className="text-primary hover:underline">conditions d'utilisation</a>
+            {" "}et notre{" "}
+            <a href="#" className="text-primary hover:underline">politique de confidentialité</a>
           </p>
         </CardContent>
       </Card>

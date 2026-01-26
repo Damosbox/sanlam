@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "@/components/ui/input-otp";
 import { toast } from "sonner";
 import { Loader2, Briefcase } from "lucide-react";
 import sanlamLogo from "@/assets/logo_sanlam.svg";
@@ -283,18 +284,30 @@ export default function PartnerAuth() {
                     />
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    <Label htmlFor="otp">Code de vérification</Label>
-                    <Input
-                      id="otp"
-                      type="text"
-                      placeholder="123456"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value)}
-                      required
-                      maxLength={6}
-                      className="text-center text-2xl tracking-widest"
-                    />
+                  <div className="space-y-4">
+                    <Label>Code de vérification</Label>
+                    <div className="flex justify-center">
+                      <InputOTP
+                        maxLength={6}
+                        value={otp}
+                        onChange={setOtp}
+                      >
+                        <InputOTPGroup>
+                          <InputOTPSlot index={0} />
+                          <InputOTPSlot index={1} />
+                        </InputOTPGroup>
+                        <InputOTPSeparator />
+                        <InputOTPGroup>
+                          <InputOTPSlot index={2} />
+                          <InputOTPSlot index={3} />
+                        </InputOTPGroup>
+                        <InputOTPSeparator />
+                        <InputOTPGroup>
+                          <InputOTPSlot index={4} />
+                          <InputOTPSlot index={5} />
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
                     <p className="text-xs text-muted-foreground text-center">
                       Un code a été envoyé au {phone}
                     </p>

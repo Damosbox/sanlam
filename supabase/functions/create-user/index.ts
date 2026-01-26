@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-type PartnerType = 'agent_mandataire' | 'courtier' | 'agent_independant';
+type PartnerType = 'agent_mandataire' | 'courtier' | 'agent_general' | 'agent_sanlam' | 'banquier';
 
 interface CreateUserRequest {
   email: string;
@@ -100,10 +100,10 @@ serve(async (req) => {
 
     // Validate partner type if role is broker (partenaire)
     if (role === 'broker') {
-      const validPartnerTypes = ['agent_mandataire', 'courtier', 'agent_independant'];
+      const validPartnerTypes = ['agent_mandataire', 'courtier', 'agent_general', 'agent_sanlam', 'banquier'];
       if (!partnerType || !validPartnerTypes.includes(partnerType)) {
         return new Response(
-          JSON.stringify({ error: 'Type de partenaire obligatoire pour les partenaires' }),
+          JSON.stringify({ error: 'Type de partenaire invalide' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }

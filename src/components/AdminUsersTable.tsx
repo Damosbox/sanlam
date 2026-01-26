@@ -22,7 +22,7 @@ import { Shield, User, Briefcase, Phone, Mail, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
 
-type PartnerType = "agent_mandataire" | "courtier" | "agent_independant";
+type PartnerType = "agent_mandataire" | "courtier" | "agent_general" | "agent_sanlam" | "banquier" | "agent_independant";
 
 interface UserWithRole {
   id: string;
@@ -227,12 +227,16 @@ export const AdminUsersTable = () => {
 
   const getPartnerTypeLabel = (partnerType: PartnerType | null): string => {
     switch (partnerType) {
-      case "agent_mandataire":
-        return "Agent Mandataire";
       case "courtier":
         return "Courtier";
-      case "agent_independant":
-        return "Agent Indépendant";
+      case "agent_general":
+        return "Agent Général";
+      case "agent_mandataire":
+        return "Agent Mandataire";
+      case "agent_sanlam":
+        return "Agent Sanlam Allianz";
+      case "banquier":
+        return "Banquier";
       default:
         return "";
     }
@@ -344,9 +348,11 @@ export const AdminUsersTable = () => {
                         <SelectValue placeholder="Sélectionner..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="agent_mandataire">Agent Mandataire</SelectItem>
                         <SelectItem value="courtier">Courtier</SelectItem>
-                        <SelectItem value="agent_independant">Agent Indépendant</SelectItem>
+                        <SelectItem value="agent_general">Agent Général</SelectItem>
+                        <SelectItem value="agent_mandataire">Agent Mandataire</SelectItem>
+                        <SelectItem value="agent_sanlam">Agent Sanlam Allianz</SelectItem>
+                        <SelectItem value="banquier">Banquier</SelectItem>
                       </SelectContent>
                     </Select>
                   ) : (

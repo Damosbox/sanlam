@@ -2041,7 +2041,13 @@ export type Database = {
         | "renewal"
         | "app_download"
         | "survey"
-      partner_type: "agent_mandataire" | "courtier" | "agent_independant"
+      partner_type:
+        | "agent_mandataire"
+        | "courtier"
+        | "agent_independant"
+        | "agent_general"
+        | "agent_sanlam"
+        | "banquier"
       recurrence_period: "daily" | "weekly" | "monthly" | "yearly" | "once"
       referral_status: "pending" | "completed" | "rewarded"
       reward_type:
@@ -2219,7 +2225,14 @@ export const Constants = {
         "app_download",
         "survey",
       ],
-      partner_type: ["agent_mandataire", "courtier", "agent_independant"],
+      partner_type: [
+        "agent_mandataire",
+        "courtier",
+        "agent_independant",
+        "agent_general",
+        "agent_sanlam",
+        "banquier",
+      ],
       recurrence_period: ["daily", "weekly", "monthly", "yearly", "once"],
       referral_status: ["pending", "completed", "rewarded"],
       reward_type: [

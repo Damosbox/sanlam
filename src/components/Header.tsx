@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Phone, User, Shield, PiggyBank, TrendingUp, Car, Heart, GraduationCap, Home as HomeIcon, Target, Zap, BarChart3, FileCheck, Headphones, BookOpen, Users } from "lucide-react";
+import { LayoutDashboard, Phone, User, Target, Zap, BarChart3, FileCheck, Headphones, BookOpen, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
@@ -14,7 +14,6 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
-import { cn } from "@/lib/utils";
 
 // Routes where we hide the public navigation (inside platforms)
 const platformRoutes = ["/b2b", "/b2c", "/admin", "/claim"];
@@ -26,11 +25,8 @@ export const Header = () => {
   // Check if we're inside a platform
   const isInsidePlatform = platformRoutes.some(route => location.pathname.startsWith(route));
   
-  // Check if we're on public pages (home, commercial)
-  const isPublicPage = location.pathname === "/" || location.pathname === "/commercial" || location.pathname.startsWith("/simulateur") || location.pathname.startsWith("/assurance") || location.pathname.startsWith("/sinistres") || location.pathname.startsWith("/commercial/");
-  
-  // Check which segment we're on
-  const isCommercialPage = location.pathname === "/commercial" || location.pathname.startsWith("/commercial/");
+  // Check if we're on public pages
+  const isPublicPage = location.pathname === "/" || location.pathname.startsWith("/simulateur") || location.pathname.startsWith("/assurance") || location.pathname.startsWith("/sinistres") || location.pathname.startsWith("/commercial/");
 
   useEffect(() => {
     supabase.auth.getSession().then(({
@@ -49,20 +45,6 @@ export const Header = () => {
     });
     return () => subscription.unsubscribe();
   }, []);
-
-  // Particuliers navigation
-  const insuranceProducts = [
-    { name: "Assurance Auto", description: "Roulez en toute confiance", href: "/assurance/auto", icon: Car },
-    { name: "Assurance Habitation", description: "Protégez votre foyer", href: "/assurance/habitation", icon: HomeIcon },
-    { name: "Assurance Santé", description: "Prenez soin de votre santé", href: "/assurance/sante", icon: Heart },
-    { name: "Assurance Vie", description: "Protégez vos proches", href: "/assurance/vie", icon: Shield },
-  ];
-
-  const savingsProducts = [
-    { name: "Épargne Plus", description: "Faites fructifier votre argent", href: "/simulateur-epargne", icon: PiggyBank },
-    { name: "Educ'Plus", description: "Préparez l'avenir de vos enfants", href: "/simulateur-education", icon: GraduationCap },
-    { name: "Plan Retraite", description: "Anticipez votre retraite", href: "/simulateur-epargne", icon: TrendingUp },
-  ];
 
   // Commercial navigation
   const commercialTools = [
@@ -102,35 +84,10 @@ export const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full">
-      {/* Top Bar - Segment Selector (only on public pages) */}
+      {/* Top Bar - Simplified (only on public pages) */}
       {isPublicPage && (
         <div className="bg-secondary text-secondary-foreground">
-          <div className="container flex h-10 items-center justify-between">
-            <div className="flex items-center">
-              <Link
-                to="/"
-                className={cn(
-                  "px-4 py-2 text-sm font-medium transition-all border-b-2",
-                  location.pathname === "/" || location.pathname.startsWith("/simulateur")
-                    ? "border-white text-white"
-                    : "border-transparent text-white/70 hover:text-white"
-                )}
-              >
-                Particuliers
-              </Link>
-              <Link
-                to="/commercial"
-                className={cn(
-                  "px-4 py-2 text-sm font-medium transition-all border-b-2",
-                  location.pathname === "/commercial"
-                    ? "border-white text-white"
-                    : "border-transparent text-white/70 hover:text-white"
-                )}
-              >
-                Partenaires
-              </Link>
-            </div>
-            
+          <div className="container flex h-10 items-center justify-end">
             <div className="flex items-center gap-4">
               <a href="tel:+2252720259700" className="flex items-center gap-2 text-sm text-white/80 hover:text-white">
                 <Phone className="w-4 h-4" />
@@ -148,7 +105,7 @@ export const Header = () => {
                   <LogoutButton />
                 </div>
               ) : (
-                <Link to="/auth">
+                <Link to="/auth/partner">
                   <Button variant="ghost" size="sm" className="text-white hover:bg-white/10">
                     <User className="w-4 h-4 mr-2" />
                     Se connecter
@@ -168,10 +125,8 @@ export const Header = () => {
               <img src={sanlamLogo} alt="Sanlam Allianz" className="h-8 w-auto sm:h-10" />
             </Link>
 
-            {/* Navigation menus hidden for cleaner header */}
-
-            {/* Commercial navigation */}
-            {isCommercialPage && (
+            {/* Commercial navigation - always visible on public pages */}
+            {isPublicPage && (
               <NavigationMenu className="hidden md:flex">
                 <NavigationMenuList>
                   <NavigationMenuItem>
@@ -244,18 +199,9 @@ export const Header = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Show different CTAs based on context */}
-            {isPublicPage && !isCommercialPage && (
-              <Link to="/b2c">
-                <Button className="hidden sm:flex">
-                  Obtenir un devis
-                </Button>
-              </Link>
-            )}
-            
-            {/* Commercial CTA */}
-            {isCommercialPage && (
-              <Link to="/auth?broker=true">
+            {/* CTA for partner access */}
+            {isPublicPage && (
+              <Link to="/auth/partner">
                 <Button className="hidden sm:flex">
                   Accéder à mon espace
                 </Button>
@@ -264,7 +210,7 @@ export const Header = () => {
             
             {/* Show login on non-public pages if not inside platform */}
             {!isPublicPage && !isInsidePlatform && !user && (
-              <Link to="/auth">
+              <Link to="/auth/partner">
                 <Button variant="ghost" size="sm">
                   <User className="w-4 h-4 mr-2" />
                   Se connecter

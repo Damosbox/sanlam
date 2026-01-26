@@ -3,11 +3,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Home from "./pages/Home";
 import Commercial from "./pages/Commercial";
 import B2C from "./pages/B2C";
 import ClaimNew from "./pages/ClaimNew";
-import Auth from "./pages/Auth";
+import ClientAuth from "./pages/auth/ClientAuth";
+import PartnerAuth from "./pages/auth/PartnerAuth";
 import NotFound from "./pages/NotFound";
 import SavingsSimulator from "./pages/SavingsSimulator";
 import EducationSimulator from "./pages/EducationSimulator";
@@ -65,10 +65,12 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/commercial" element={<Commercial />} />
-          <Route path="/courtiers" element={<Navigate to="/commercial" replace />} />
-          <Route path="/auth" element={<Auth />} />
+          <Route path="/" element={<Commercial />} />
+          <Route path="/commercial" element={<Navigate to="/" replace />} />
+          <Route path="/courtiers" element={<Navigate to="/" replace />} />
+          <Route path="/auth" element={<Navigate to="/auth/partner" replace />} />
+          <Route path="/auth/client" element={<ClientAuth />} />
+          <Route path="/auth/partner" element={<PartnerAuth />} />
           <Route path="/simulateur-epargne" element={<SavingsSimulator />} />
           <Route path="/simulateur-education" element={<EducationSimulator />} />
           <Route path="/survey/:token" element={<SurveyResponse />} />

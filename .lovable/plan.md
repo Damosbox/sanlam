@@ -1,249 +1,219 @@
 
 
-## Plan : Scinder la gestion des utilisateurs en 3 groupes distincts
+## Plan : Module de Gestion des Produits d'Assurance
 
 ### Objectif
-Remplacer l'entrée unique "Utilisateurs" dans la sidebar admin par trois entrées distinctes :
-- **Clients** (utilisateurs avec rôle `customer`)
-- **Partenaires** (utilisateurs avec rôle `broker`)  
-- **Administrateurs** (utilisateurs avec rôle `admin`)
-
-Chaque section affichera uniquement les utilisateurs du type concerné avec des colonnes adaptées.
+Créer un module complet de gestion des produits d'assurance permettant aux administrateurs de configurer, visualiser et commercialiser l'ensemble du catalogue produits.
 
 ---
 
 ### Architecture proposée
 
 ```text
-Sidebar Admin (avant)              Sidebar Admin (après)
-─────────────────────              ──────────────────────
-Utilisateurs & Sécurité            Utilisateurs
-├── Utilisateurs (tous)            ├── Clients
-├── Permissions                    ├── Partenaires
-└── Audit                          └── Administrateurs
-                                   
-                                   Sécurité
-                                   ├── Permissions
-                                   └── Audit
+Admin Sidebar (Configuration)
+├── Produits (NOUVEAU)     ← Module principal à créer
+├── Formulaires            ← Existant (sera lié aux produits)
+├── Monitoring IA
+└── Concurrence
 ```
 
 ---
 
-### Fichiers à créer
+### 1. Vue Liste des Produits
 
-#### 1. `src/pages/admin/UsersClientsPage.tsx`
-Page dédiée aux utilisateurs clients avec tableau filtré.
+**Route** : `/admin/products`
 
-#### 2. `src/pages/admin/UsersPartnersPage.tsx`
-Page dédiée aux utilisateurs partenaires avec colonnes spécifiques (type partenaire, OTP).
+**Colonnes du tableau** :
+- Image (miniature)
+- Nom du produit
+- Catégorie (badge Vie/Non-Vie)
+- Type (sous-catégorie)
+- Renouvelable (Oui/Non)
+- Sinistres (Oui/Non)
+- Statut (Actif/Inactif)
+- Actions (Éditer, Dupliquer, Supprimer)
 
-#### 3. `src/pages/admin/UsersAdminsPage.tsx`
-Page dédiée aux utilisateurs administrateurs.
+**Filtres disponibles** :
+- Par catégorie (Vie / Non-Vie)
+- Par type
+- Par statut
 
 ---
 
-### Fichiers à modifier
+### 2. Création/Édition de Produit
 
-#### 1. `src/components/AdminUsersTable.tsx`
+**Structure en onglets** :
 
-Ajouter une prop `roleFilter` pour filtrer par rôle :
+#### Onglet 1 : Informations Générales
+- Nom du produit (texte)
+- Catégorie : Vie / Non-Vie (select)
+- Type :
+  - Vie : Vie, Obsèques, Épargne, Retraite
+  - Non-Vie : Auto, Habitation, Santé, Voyage
+- Renouvelable : Oui / Non (switch)
+- Sinistres : Oui / Non (switch)
+- Description (textarea)
+- Image du produit (upload, affichée en haut à droite)
 
-```typescript
-interface AdminUsersTableProps {
-  roleFilter?: "admin" | "broker" | "customer";
+#### Onglet 2 : Informations de Souscription
+- **Section "Informations du produit"** : Champs pour la cotation/tarification
+- **Section "Informations du client"** : Champs pour valider la souscription
+- Drag & Drop pour réorganiser les champs
+- Possibilité de lier un formulaire existant (`form_templates`)
+
+#### Onglet 3 : Règles de Calcul
+- Liste des règles de calcul existantes
+- Ajout/sélection de règles
+- Éditeur de formules (base premium, coefficients, taxes)
+
+#### Onglet 4 : Bénéficiaires (Vie uniquement)
+- Configuration des champs bénéficiaires
+- Nombre max de bénéficiaires
+- Répartition obligatoire (100%)
+
+#### Onglet 5 : Moyens de Paiement
+- CB (switch actif/inactif)
+- Mobile Money (Wave, Orange Money, MTN MoMo)
+- Virement bancaire
+- Paiement en agence
+
+#### Onglet 6 : Documents
+- Liste des templates de documents
+- Ajout de documents avec champs dynamiques :
+  - Variables disponibles : `{{nom}}`, `{{date}}`, `{{signature}}`, `{{montant}}`
+- Types : Conditions générales, Attestation, Fiche produit
+
+#### Onglet 7 : Ventes
+- **Produits optionnels** : Sélection multi-produits (add-ons)
+  - Ex: Assistance dépannage 24/7 pour Auto
+- **Produits alternatifs** : Sélection multi-produits (substituts)
+  - Ex: Proposer Auto Essentiel si Auto Premium trop cher
+
+#### Onglet 8 : FAQs
+- Liste des questions/réponses
+- Drag & Drop pour réordonner
+- Ajout/édition/suppression de FAQ
+
+---
+
+### 3. Schéma Base de Données
+
+**Modification de la table `products`** :
+
+```sql
+ALTER TABLE products 
+ADD COLUMN IF NOT EXISTS product_type text,
+ADD COLUMN IF NOT EXISTS is_renewable boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS has_claims boolean DEFAULT true,
+ADD COLUMN IF NOT EXISTS image_url text,
+ADD COLUMN IF NOT EXISTS calculation_rules jsonb DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS beneficiaries_config jsonb,
+ADD COLUMN IF NOT EXISTS payment_methods jsonb DEFAULT '{"cb": true, "wave": true, "orange_money": true, "mtn_momo": true}',
+ADD COLUMN IF NOT EXISTS optional_products uuid[],
+ADD COLUMN IF NOT EXISTS alternative_products uuid[],
+ADD COLUMN IF NOT EXISTS document_templates jsonb DEFAULT '[]',
+ADD COLUMN IF NOT EXISTS faqs jsonb DEFAULT '[]',
+ADD COLUMN IF NOT EXISTS subscription_form_id uuid REFERENCES form_templates(id);
+```
+
+**Ajout de tables de configuration** :
+
+```sql
+-- Catégories produit (configurables dans paramètres)
+CREATE TABLE product_categories (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,  -- "vie" ou "non_vie"
+  label text NOT NULL, -- "Vie" ou "Non-Vie"
+  created_at timestamptz DEFAULT now()
+);
+
+-- Types produit (sous-catégories)
+CREATE TABLE product_types (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  category_id uuid REFERENCES product_categories(id),
+  name text NOT NULL,  -- "auto", "habitation", etc.
+  label text NOT NULL, -- "Automobile", "Habitation", etc.
+  created_at timestamptz DEFAULT now()
+);
+
+-- Templates de documents (pour réutilisation)
+CREATE TABLE document_templates (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  type text NOT NULL, -- "conditions_generales", "attestation", "fiche_produit"
+  content text, -- Template avec variables {{...}}
+  dynamic_fields jsonb DEFAULT '[]',
+  created_by uuid REFERENCES profiles(id),
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+```
+
+---
+
+### 4. Fichiers à Créer
+
+| Fichier | Description |
+|---------|-------------|
+| `src/pages/admin/ProductsPage.tsx` | Page liste des produits |
+| `src/pages/admin/ProductEditPage.tsx` | Page création/édition |
+| `src/components/admin/products/ProductsList.tsx` | Tableau des produits |
+| `src/components/admin/products/ProductForm.tsx` | Formulaire principal avec onglets |
+| `src/components/admin/products/tabs/GeneralInfoTab.tsx` | Onglet infos générales |
+| `src/components/admin/products/tabs/SubscriptionFieldsTab.tsx` | Onglet champs souscription |
+| `src/components/admin/products/tabs/CalculationRulesTab.tsx` | Onglet règles de calcul |
+| `src/components/admin/products/tabs/BeneficiariesTab.tsx` | Onglet bénéficiaires (Vie) |
+| `src/components/admin/products/tabs/PaymentMethodsTab.tsx` | Onglet moyens de paiement |
+| `src/components/admin/products/tabs/DocumentsTab.tsx` | Onglet documents |
+| `src/components/admin/products/tabs/SalesTab.tsx` | Onglet ventes croisées |
+| `src/components/admin/products/tabs/FaqsTab.tsx` | Onglet FAQs |
+
+---
+
+### 5. Modifications à Effectuer
+
+**`src/components/admin/AdminSidebar.tsx`** :
+- Ajouter "Produits" dans le groupe Configuration avec icône `Package`
+
+**`src/App.tsx`** :
+- Ajouter routes `/admin/products` et `/admin/products/:id`
+
+---
+
+### 6. Relation Produits ↔ Formulaires
+
+Le module "Formulaires" existant reste intact. Un produit pourra être lié à un formulaire via `subscription_form_id`, permettant :
+- De réutiliser les formulaires drag & drop existants
+- D'assigner un parcours de souscription personnalisé par produit
+- De garder la flexibilité de créer des formulaires indépendamment
+
+---
+
+### Section Technique
+
+**Structure JSON des règles de calcul** :
+```json
+{
+  "base_formula": "base_premium * coefficient",
+  "variables": [
+    { "name": "age_factor", "type": "range", "values": {...} },
+    { "name": "bns_factor", "type": "select", "values": {...} }
+  ],
+  "taxes": { "rate": 0.145, "name": "TVA" },
+  "fees": { "accessories": 5000, "fga": 0.02 }
 }
-
-export const AdminUsersTable = ({ roleFilter }: AdminUsersTableProps) => {
-  // Filtrer les utilisateurs après récupération des rôles
-  const filteredUsers = roleFilter 
-    ? usersWithRoles.filter(u => u.user_roles[0]?.role === roleFilter)
-    : usersWithRoles;
-}
 ```
 
-Adapter l'affichage des colonnes selon le rôle :
-- **Clients** : Masquer "Type partenaire" et "OTP Téléphone"
-- **Partenaires** : Afficher toutes les colonnes actuelles
-- **Admins** : Masquer "Type partenaire", garder OTP
-
----
-
-#### 2. `src/components/admin/AdminSidebar.tsx`
-
-Réorganiser les groupes de menu :
-
-```typescript
-// Nouveau groupe "Utilisateurs" avec 3 sous-entrées
-const usersItems = [
-  { title: "Clients", url: "/admin/users/clients", icon: User },
-  { title: "Partenaires", url: "/admin/users/partners", icon: Briefcase },
-  { title: "Administrateurs", url: "/admin/users/admins", icon: Shield },
-];
-
-// Groupe "Sécurité" séparé
-const securityItems = [
-  { title: "Permissions", url: "/admin/permissions", icon: KeyRound },
-  { title: "Audit", url: "/admin/audit", icon: ScrollText },
-];
+**Structure JSON des FAQs** :
+```json
+[
+  { "id": "faq_1", "question": "...", "answer": "...", "order": 1 },
+  { "id": "faq_2", "question": "...", "answer": "...", "order": 2 }
+]
 ```
 
-Mettre à jour les badges pour afficher les nouveaux utilisateurs par type.
-
----
-
-#### 3. `src/App.tsx`
-
-Ajouter les nouvelles routes :
-
-```typescript
-import AdminUsersClientsPage from "./pages/admin/UsersClientsPage";
-import AdminUsersPartnersPage from "./pages/admin/UsersPartnersPage";
-import AdminUsersAdminsPage from "./pages/admin/UsersAdminsPage";
-
-// Dans les routes admin
-<Route path="users" element={<Navigate to="users/clients" replace />} />
-<Route path="users/clients" element={<AdminUsersClientsPage />} />
-<Route path="users/partners" element={<AdminUsersPartnersPage />} />
-<Route path="users/admins" element={<AdminUsersAdminsPage />} />
-```
-
----
-
-### Détail des nouvelles pages
-
-#### `UsersClientsPage.tsx`
-```typescript
-export default function UsersClientsPage() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Utilisateurs Clients</h1>
-        <p className="text-muted-foreground">
-          Gérez les comptes des clients particuliers.
-        </p>
-      </div>
-      <AdminUsersTable roleFilter="customer" />
-    </div>
-  );
-}
-```
-
-#### `UsersPartnersPage.tsx`
-```typescript
-export default function UsersPartnersPage() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Utilisateurs Partenaires</h1>
-        <p className="text-muted-foreground">
-          Gérez les comptes des courtiers et agents.
-        </p>
-      </div>
-      <AdminUsersTable roleFilter="broker" />
-    </div>
-  );
-}
-```
-
-#### `UsersAdminsPage.tsx`
-```typescript
-export default function UsersAdminsPage() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Utilisateurs Administrateurs</h1>
-        <p className="text-muted-foreground">
-          Gérez les comptes des administrateurs de la plateforme.
-        </p>
-      </div>
-      <AdminUsersTable roleFilter="admin" />
-    </div>
-  );
-}
-```
-
----
-
-### Badges dynamiques par type
-
-Dans `AdminSidebar.tsx`, ajouter des compteurs séparés :
-
-```typescript
-interface BadgeCounts {
-  pendingClaims: number;
-  newClients: number;
-  newPartners: number;
-  newAdmins: number;
-}
-
-const fetchBadgeCounts = async () => {
-  // Récupérer les profils créés dans les 7 derniers jours
-  const { data: newProfiles } = await supabase
-    .from("profiles")
-    .select("id")
-    .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
-
-  // Pour chaque profil, récupérer le rôle et compter
-  const roleCounts = { customer: 0, broker: 0, admin: 0 };
-  for (const profile of newProfiles || []) {
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", profile.id)
-      .limit(1);
-    const role = roles?.[0]?.role || "customer";
-    roleCounts[role]++;
-  }
-
-  setBadges({
-    pendingClaims: ...,
-    newClients: roleCounts.customer,
-    newPartners: roleCounts.broker,
-    newAdmins: roleCounts.admin,
-  });
-};
-```
-
----
-
-### Colonnes adaptées par type d'utilisateur
-
-| Colonne | Clients | Partenaires | Admins |
-|---------|---------|-------------|--------|
-| Prénom | Oui | Oui | Oui |
-| Nom | Oui | Oui | Oui |
-| Email | Oui | Oui | Oui |
-| Rôle actuel | Non (implicite) | Non (implicite) | Non (implicite) |
-| OTP Téléphone | Non | Oui | Oui |
-| Type partenaire | Non | Oui | Non |
-| Date création | Oui | Oui | Oui |
-| Actions | Activer | - | - |
-| Modifier rôle | Oui | Oui | Oui |
-
----
-
-### Résumé des modifications
-
-| Fichier | Action |
-|---------|--------|
-| `src/pages/admin/UsersClientsPage.tsx` | Créer |
-| `src/pages/admin/UsersPartnersPage.tsx` | Créer |
-| `src/pages/admin/UsersAdminsPage.tsx` | Créer |
-| `src/components/AdminUsersTable.tsx` | Ajouter prop `roleFilter` + colonnes conditionnelles |
-| `src/components/admin/AdminSidebar.tsx` | Réorganiser groupes + badges par type |
-| `src/App.tsx` | Ajouter 3 nouvelles routes |
-| `src/pages/admin/UsersPage.tsx` | Supprimer (optionnel, redirigé vers clients) |
-
----
-
-### Section technique
-
-**Routes finales :**
-- `/admin/users` → Redirige vers `/admin/users/clients`
-- `/admin/users/clients` → Page clients
-- `/admin/users/partners` → Page partenaires
-- `/admin/users/admins` → Page administrateurs
-
-**Optimisation future possible :**
-Créer une vue SQL ou utiliser une jointure côté base de données pour récupérer les utilisateurs avec leurs rôles en une seule requête, plutôt que N+1 requêtes.
+**RLS Policies** :
+- Admins : CRUD complet sur tous les produits
+- Brokers : SELECT sur produits actifs uniquement
+- Customers : SELECT sur produits actifs uniquement
 

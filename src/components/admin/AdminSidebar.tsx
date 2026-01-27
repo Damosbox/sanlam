@@ -13,6 +13,8 @@ import {
   Shield,
   Database,
   Settings,
+  Briefcase,
+  UserCheck,
 } from "lucide-react";
 import {
   Sidebar,
@@ -33,7 +35,9 @@ import LogoutButton from "@/components/LogoutButton";
 
 interface BadgeCounts {
   pendingClaims: number;
-  newUsers: number;
+  newClients: number;
+  newPartners: number;
+  newAdmins: number;
 }
 
 export function AdminSidebar() {
@@ -41,7 +45,12 @@ export function AdminSidebar() {
   const navigate = useNavigate();
   const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
-  const [badges, setBadges] = useState<BadgeCounts>({ pendingClaims: 0, newUsers: 0 });
+  const [badges, setBadges] = useState<BadgeCounts>({ 
+    pendingClaims: 0, 
+    newClients: 0, 
+    newPartners: 0, 
+    newAdmins: 0 
+  });
 
   useEffect(() => {
     fetchBadgeCounts();
@@ -62,14 +71,36 @@ export function AdminSidebar() {
       .select("*", { count: "exact", head: true })
       .in("status", ["Submitted", "Draft"]);
 
-    const { count: newUsers } = await supabase
+    // Fetch new profiles from the last 7 days
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: newProfiles } = await supabase
       .from("profiles")
-      .select("*", { count: "exact", head: true })
-      .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+      .select("id")
+      .gte("created_at", sevenDaysAgo);
+
+    // Count by role
+    const roleCounts = { customer: 0, broker: 0, admin: 0 };
+    
+    if (newProfiles && newProfiles.length > 0) {
+      for (const profile of newProfiles) {
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", profile.id)
+          .limit(1);
+        
+        const role = (roles?.[0]?.role as keyof typeof roleCounts) || "customer";
+        if (role in roleCounts) {
+          roleCounts[role]++;
+        }
+      }
+    }
 
     setBadges({
       pendingClaims: pendingClaims || 0,
-      newUsers: newUsers || 0,
+      newClients: roleCounts.customer,
+      newPartners: roleCounts.broker,
+      newAdmins: roleCounts.admin,
     });
   };
 
@@ -85,7 +116,12 @@ export function AdminSidebar() {
   ];
 
   const usersItems = [
-    { title: "Utilisateurs", url: "/admin/users", icon: Users, badge: badges.newUsers },
+    { title: "Clients", url: "/admin/users/clients", icon: Users, badge: badges.newClients },
+    { title: "Partenaires", url: "/admin/users/partners", icon: Briefcase, badge: badges.newPartners },
+    { title: "Administrateurs", url: "/admin/users/admins", icon: UserCheck, badge: badges.newAdmins },
+  ];
+
+  const securityItems = [
     { title: "Permissions", url: "/admin/permissions", icon: KeyRound },
     { title: "Audit", url: "/admin/audit", icon: ScrollText },
   ];
@@ -112,7 +148,7 @@ export function AdminSidebar() {
     }
   };
 
-  const isActive = (url: string) => location.pathname === url;
+  const isActive = (url: string) => location.pathname === url || location.pathname.startsWith(url + "/");
 
   const renderMenuItem = (item: { title: string; url: string; icon: React.ElementType; badge?: number }) => (
     <SidebarMenuItem key={item.url}>
@@ -165,12 +201,22 @@ export function AdminSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Utilisateurs & Sécurité */}
+        {/* Utilisateurs */}
         <SidebarGroup>
-          <SidebarGroupLabel>{!collapsed && "Utilisateurs & Sécurité"}</SidebarGroupLabel>
+          <SidebarGroupLabel>{!collapsed && "Utilisateurs"}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {usersItems.map(renderMenuItem)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Sécurité */}
+        <SidebarGroup>
+          <SidebarGroupLabel>{!collapsed && "Sécurité"}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {securityItems.map(renderMenuItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

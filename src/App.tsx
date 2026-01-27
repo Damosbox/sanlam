@@ -54,6 +54,8 @@ import AdminAuditPage from "./pages/admin/AuditPage";
 import AdminLoyaltyPage from "./pages/admin/LoyaltyPage";
 import AdminSurveysPage from "./pages/admin/SurveysPage";
 import AdminFormsPage from "./pages/admin/FormsPage";
+import AdminProductsPage from "./pages/admin/ProductsPage";
+import AdminProductEditPage from "./pages/admin/ProductEditPage";
 import AdminAIMonitoringPage from "./pages/admin/AIMonitoringPage";
 import AdminCompetitivePage from "./pages/admin/CompetitivePage";
 import AdminTestDataPage from "./pages/admin/TestDataPage";
@@ -141,6 +143,8 @@ const App = () => (
             <Route path="loyalty" element={<AdminLoyaltyPage />} />
             <Route path="surveys" element={<AdminSurveysPage />} />
             <Route path="forms" element={<AdminFormsPage />} />
+            <Route path="products" element={<AdminProductsPage />} />
+            <Route path="products/:id" element={<AdminProductEditPage />} />
             <Route path="ai" element={<AdminAIMonitoringPage />} />
             <Route path="competitive" element={<AdminCompetitivePage />} />
             <Route path="data" element={<AdminTestDataPage />} />

@@ -40,7 +40,11 @@ interface UserWithRole {
   } | null;
 }
 
-export const AdminUsersTable = () => {
+interface AdminUsersTableProps {
+  roleFilter?: "admin" | "broker" | "customer";
+}
+
+export const AdminUsersTable = ({ roleFilter }: AdminUsersTableProps) => {
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [activatingUser, setActivatingUser] = useState<string | null>(null);
@@ -93,6 +97,14 @@ export const AdminUsersTable = () => {
       setLoading(false);
     }
   };
+
+  // Filter users based on roleFilter prop
+  const filteredUsers = roleFilter
+    ? users.filter((user) => {
+        const userRole = user.user_roles[0]?.role || "customer";
+        return userRole === roleFilter;
+      })
+    : users;
 
   const updateUserRole = async (userId: string, newRole: string) => {
     try {
@@ -276,6 +288,12 @@ export const AdminUsersTable = () => {
     );
   };
 
+  // Determine which columns to show based on roleFilter
+  const showOTPColumn = roleFilter !== "customer";
+  const showPartnerTypeColumn = roleFilter === "broker";
+  const showRoleColumn = !roleFilter; // Only show when viewing all users
+  const showActivateAction = roleFilter === "customer" || !roleFilter;
+
   if (loading) {
     return <div className="text-center py-8">Chargement...</div>;
   }
@@ -292,112 +310,128 @@ export const AdminUsersTable = () => {
               <TableHead>Prénom</TableHead>
               <TableHead>Nom</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Rôle actuel</TableHead>
-              <TableHead>
-                <div className="flex items-center gap-1">
-                  <Phone className="w-4 h-4" />
-                  OTP Téléphone
-                </div>
-              </TableHead>
-              <TableHead>Type partenaire</TableHead>
+              {showRoleColumn && <TableHead>Rôle actuel</TableHead>}
+              {showOTPColumn && (
+                <TableHead>
+                  <div className="flex items-center gap-1">
+                    <Phone className="w-4 h-4" />
+                    OTP Téléphone
+                  </div>
+                </TableHead>
+              )}
+              {showPartnerTypeColumn && <TableHead>Type partenaire</TableHead>}
               <TableHead>Date création</TableHead>
-              <TableHead>Actions</TableHead>
+              {showActivateAction && <TableHead>Actions</TableHead>}
               <TableHead className="text-right">Modifier rôle</TableHead>
             </TableRow>
           </TableHeader>
-        <TableBody>
-          {users.map((user) => {
-            const currentRole = user.user_roles[0]?.role || "customer";
-            const isBrokerOrAdmin = currentRole === "broker" || currentRole === "admin";
-            const otpEnabled = user.broker_settings?.otp_verification_enabled || false;
-            
-            return (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">
-                  {user.first_name || "-"}
-                </TableCell>
-                <TableCell className="font-medium">
-                  {user.last_name || "-"}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {user.email || "N/A"}
-                </TableCell>
-                <TableCell>{getRoleBadge(currentRole, user.partner_type)}</TableCell>
-                <TableCell>
-                  {isBrokerOrAdmin ? (
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={otpEnabled}
-                        onCheckedChange={() => toggleOTPVerification(user.id, otpEnabled)}
-                      />
-                      <span className="text-xs text-muted-foreground">
-                        {otpEnabled ? "Activé" : "Désactivé"}
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">-</span>
+          <TableBody>
+            {filteredUsers.map((user) => {
+              const currentRole = user.user_roles[0]?.role || "customer";
+              const isBrokerOrAdmin = currentRole === "broker" || currentRole === "admin";
+              const otpEnabled = user.broker_settings?.otp_verification_enabled || false;
+              
+              return (
+                <TableRow key={user.id}>
+                  <TableCell className="font-medium">
+                    {user.first_name || "-"}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {user.last_name || "-"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {user.email || "N/A"}
+                  </TableCell>
+                  {showRoleColumn && (
+                    <TableCell>{getRoleBadge(currentRole, user.partner_type)}</TableCell>
                   )}
-                </TableCell>
-                <TableCell>
-                  {currentRole === "broker" ? (
+                  {showOTPColumn && (
+                    <TableCell>
+                      {isBrokerOrAdmin ? (
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={otpEnabled}
+                            onCheckedChange={() => toggleOTPVerification(user.id, otpEnabled)}
+                          />
+                          <span className="text-xs text-muted-foreground">
+                            {otpEnabled ? "Activé" : "Désactivé"}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                  )}
+                  {showPartnerTypeColumn && (
+                    <TableCell>
+                      <Select
+                        value={user.partner_type || ""}
+                        onValueChange={(value) => updatePartnerType(user.id, value as PartnerType)}
+                      >
+                        <SelectTrigger className="w-[160px]">
+                          <SelectValue placeholder="Sélectionner..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="courtier">Courtier</SelectItem>
+                          <SelectItem value="agent_general">Agent Général</SelectItem>
+                          <SelectItem value="agent_mandataire">Agent Mandataire</SelectItem>
+                          <SelectItem value="agent_sanlam">Agent Sanlam Allianz</SelectItem>
+                          <SelectItem value="banquier">Banquier</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                  )}
+                  <TableCell>
+                    {new Date(user.created_at).toLocaleDateString()}
+                  </TableCell>
+                  {showActivateAction && (
+                    <TableCell>
+                      {currentRole === "customer" && user.email && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleActivateUser(user.id, user.email!)}
+                          disabled={activatingUser === user.id}
+                        >
+                          {activatingUser === user.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Mail className="w-4 h-4 mr-1" />
+                          )}
+                          Activer
+                        </Button>
+                      )}
+                    </TableCell>
+                  )}
+                  <TableCell className="text-right">
                     <Select
-                      value={user.partner_type || ""}
-                      onValueChange={(value) => updatePartnerType(user.id, value as PartnerType)}
+                      value={currentRole}
+                      onValueChange={(value) => updateUserRole(user.id, value)}
                     >
-                      <SelectTrigger className="w-[160px]">
-                        <SelectValue placeholder="Sélectionner..." />
+                      <SelectTrigger className="w-[140px] ml-auto">
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="courtier">Courtier</SelectItem>
-                        <SelectItem value="agent_general">Agent Général</SelectItem>
-                        <SelectItem value="agent_mandataire">Agent Mandataire</SelectItem>
-                        <SelectItem value="agent_sanlam">Agent Sanlam Allianz</SelectItem>
-                        <SelectItem value="banquier">Banquier</SelectItem>
+                        <SelectItem value="customer">Client</SelectItem>
+                        <SelectItem value="broker">Partenaire</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
                       </SelectContent>
                     </Select>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">-</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {new Date(user.created_at).toLocaleDateString()}
-                </TableCell>
-                <TableCell>
-                  {currentRole === "customer" && user.email && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleActivateUser(user.id, user.email!)}
-                      disabled={activatingUser === user.id}
-                    >
-                      {activatingUser === user.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Mail className="w-4 h-4 mr-1" />
-                      )}
-                      Activer
-                    </Button>
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Select
-                    value={currentRole}
-                    onValueChange={(value) => updateUserRole(user.id, value)}
-                  >
-                    <SelectTrigger className="w-[140px] ml-auto">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="customer">Client</SelectItem>
-                      <SelectItem value="broker">Partenaire</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+            {filteredUsers.length === 0 && (
+              <TableRow>
+                <TableCell 
+                  colSpan={showRoleColumn ? 9 : showPartnerTypeColumn ? 7 : 6} 
+                  className="text-center py-8 text-muted-foreground"
+                >
+                  Aucun utilisateur trouvé
                 </TableCell>
               </TableRow>
-            );
-          })}
-        </TableBody>
+            )}
+          </TableBody>
         </Table>
       </div>
     </div>

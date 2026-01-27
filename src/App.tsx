@@ -46,7 +46,9 @@ import { AdminLayout } from "./layouts/AdminLayout";
 import AdminDashboardPage from "./pages/admin/DashboardPage";
 import AdminClaimsPage from "./pages/admin/ClaimsPage";
 import AdminSubscriptionsPage from "./pages/admin/SubscriptionsPage";
-import AdminUsersPage from "./pages/admin/UsersPage";
+import AdminUsersClientsPage from "./pages/admin/UsersClientsPage";
+import AdminUsersPartnersPage from "./pages/admin/UsersPartnersPage";
+import AdminUsersAdminsPage from "./pages/admin/UsersAdminsPage";
 import AdminPermissionsPage from "./pages/admin/PermissionsPage";
 import AdminAuditPage from "./pages/admin/AuditPage";
 import AdminLoyaltyPage from "./pages/admin/LoyaltyPage";
@@ -130,7 +132,10 @@ const App = () => (
             <Route path="dashboard" element={<AdminDashboardPage />} />
             <Route path="claims" element={<AdminClaimsPage />} />
             <Route path="subscriptions" element={<AdminSubscriptionsPage />} />
-            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="users" element={<Navigate to="users/clients" replace />} />
+            <Route path="users/clients" element={<AdminUsersClientsPage />} />
+            <Route path="users/partners" element={<AdminUsersPartnersPage />} />
+            <Route path="users/admins" element={<AdminUsersAdminsPage />} />
             <Route path="permissions" element={<AdminPermissionsPage />} />
             <Route path="audit" element={<AdminAuditPage />} />
             <Route path="loyalty" element={<AdminLoyaltyPage />} />

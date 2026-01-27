@@ -668,6 +668,50 @@ export type Database = {
           },
         ]
       }
+      document_templates: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          created_by: string | null
+          dynamic_fields: Json | null
+          id: string
+          is_active: boolean | null
+          name: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          dynamic_fields?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          dynamic_fields?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       form_deployments: {
         Row: {
           channel: Database["public"]["Enums"]["deployment_channel"]
@@ -1353,44 +1397,147 @@ export type Database = {
           },
         ]
       }
+      product_categories: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          id: string
+          label: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          label: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          label?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      product_types: {
+        Row: {
+          category_id: string | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          label: string
+          name: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          label: string
+          name: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          label?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_types_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
+          alternative_products: string[] | null
           base_premium: number
+          beneficiaries_config: Json | null
+          calculation_rules: Json | null
           category: string
           coverages: Json
           created_at: string | null
           description: string | null
+          document_templates: Json | null
+          faqs: Json | null
+          has_claims: boolean | null
           id: string
+          image_url: string | null
           is_active: boolean | null
+          is_renewable: boolean | null
           name: string
+          optional_products: string[] | null
+          payment_methods: Json | null
+          product_type: string | null
+          subscription_form_id: string | null
           terms: string | null
           updated_at: string | null
         }
         Insert: {
+          alternative_products?: string[] | null
           base_premium: number
+          beneficiaries_config?: Json | null
+          calculation_rules?: Json | null
           category: string
           coverages: Json
           created_at?: string | null
           description?: string | null
+          document_templates?: Json | null
+          faqs?: Json | null
+          has_claims?: boolean | null
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
+          is_renewable?: boolean | null
           name: string
+          optional_products?: string[] | null
+          payment_methods?: Json | null
+          product_type?: string | null
+          subscription_form_id?: string | null
           terms?: string | null
           updated_at?: string | null
         }
         Update: {
+          alternative_products?: string[] | null
           base_premium?: number
+          beneficiaries_config?: Json | null
+          calculation_rules?: Json | null
           category?: string
           coverages?: Json
           created_at?: string | null
           description?: string | null
+          document_templates?: Json | null
+          faqs?: Json | null
+          has_claims?: boolean | null
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
+          is_renewable?: boolean | null
           name?: string
+          optional_products?: string[] | null
+          payment_methods?: Json | null
+          product_type?: string | null
+          subscription_form_id?: string | null
           terms?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_subscription_form_id_fkey"
+            columns: ["subscription_form_id"]
+            isOneToOne: false
+            referencedRelation: "form_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

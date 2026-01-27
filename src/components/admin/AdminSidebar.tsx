@@ -15,6 +15,7 @@ import {
   Settings,
   Briefcase,
   UserCheck,
+  Package,
 } from "lucide-react";
 import {
   Sidebar,
@@ -132,6 +133,7 @@ export function AdminSidebar() {
   ];
 
   const configItems = [
+    { title: "Produits", url: "/admin/products", icon: Package },
     { title: "Formulaires", url: "/admin/forms", icon: Settings },
     { title: "Monitoring IA", url: "/admin/ai", icon: Brain },
     { title: "Concurrence", url: "/admin/competitive", icon: Shield },

@@ -1,187 +1,249 @@
 
-## Plan : Intégration des typologies d'intermédiaires
+
+## Plan : Scinder la gestion des utilisateurs en 3 groupes distincts
 
 ### Objectif
-Mettre à jour le système pour supporter les 5 typologies d'intermédiaires demandées et les rendre configurables depuis l'interface admin.
+Remplacer l'entrée unique "Utilisateurs" dans la sidebar admin par trois entrées distinctes :
+- **Clients** (utilisateurs avec rôle `customer`)
+- **Partenaires** (utilisateurs avec rôle `broker`)  
+- **Administrateurs** (utilisateurs avec rôle `admin`)
+
+Chaque section affichera uniquement les utilisateurs du type concerné avec des colonnes adaptées.
 
 ---
 
-### Typologies à intégrer
+### Architecture proposée
 
-| Valeur technique | Label affiché |
-|------------------|---------------|
-| `courtier` | Courtier |
-| `agent_general` | Agent Général |
-| `agent_mandataire` | Agent Mandataire |
-| `agent_sanlam` | Agent Sanlam Allianz |
-| `banquier` | Banquier |
-
----
-
-### Modifications à effectuer
-
-#### 1. Migration base de données
-
-Ajouter les nouvelles valeurs à l'ENUM `partner_type` et renommer `agent_independant` en `agent_general` :
-
-```sql
--- Ajouter les nouvelles valeurs à l'enum
-ALTER TYPE public.partner_type ADD VALUE IF NOT EXISTS 'agent_general';
-ALTER TYPE public.partner_type ADD VALUE IF NOT EXISTS 'agent_sanlam';
-ALTER TYPE public.partner_type ADD VALUE IF NOT EXISTS 'banquier';
-
--- Mettre à jour les profils existants avec agent_independant -> agent_general
-UPDATE public.profiles 
-SET partner_type = 'agent_general' 
-WHERE partner_type = 'agent_independant';
+```text
+Sidebar Admin (avant)              Sidebar Admin (après)
+─────────────────────              ──────────────────────
+Utilisateurs & Sécurité            Utilisateurs
+├── Utilisateurs (tous)            ├── Clients
+├── Permissions                    ├── Partenaires
+└── Audit                          └── Administrateurs
+                                   
+                                   Sécurité
+                                   ├── Permissions
+                                   └── Audit
 ```
 
 ---
 
-#### 2. Fichier `src/components/AdminUsersTable.tsx`
+### Fichiers à créer
 
-**Ligne 25 - Mettre à jour le type TypeScript :**
+#### 1. `src/pages/admin/UsersClientsPage.tsx`
+Page dédiée aux utilisateurs clients avec tableau filtré.
+
+#### 2. `src/pages/admin/UsersPartnersPage.tsx`
+Page dédiée aux utilisateurs partenaires avec colonnes spécifiques (type partenaire, OTP).
+
+#### 3. `src/pages/admin/UsersAdminsPage.tsx`
+Page dédiée aux utilisateurs administrateurs.
+
+---
+
+### Fichiers à modifier
+
+#### 1. `src/components/AdminUsersTable.tsx`
+
+Ajouter une prop `roleFilter` pour filtrer par rôle :
 
 ```typescript
-type PartnerType = "agent_mandataire" | "courtier" | "agent_general" | "agent_sanlam" | "banquier";
+interface AdminUsersTableProps {
+  roleFilter?: "admin" | "broker" | "customer";
+}
+
+export const AdminUsersTable = ({ roleFilter }: AdminUsersTableProps) => {
+  // Filtrer les utilisateurs après récupération des rôles
+  const filteredUsers = roleFilter 
+    ? usersWithRoles.filter(u => u.user_roles[0]?.role === roleFilter)
+    : usersWithRoles;
+}
 ```
 
-**Lignes 228-239 - Mettre à jour `getPartnerTypeLabel` :**
+Adapter l'affichage des colonnes selon le rôle :
+- **Clients** : Masquer "Type partenaire" et "OTP Téléphone"
+- **Partenaires** : Afficher toutes les colonnes actuelles
+- **Admins** : Masquer "Type partenaire", garder OTP
+
+---
+
+#### 2. `src/components/admin/AdminSidebar.tsx`
+
+Réorganiser les groupes de menu :
 
 ```typescript
-const getPartnerTypeLabel = (partnerType: PartnerType | null): string => {
-  switch (partnerType) {
-    case "courtier":
-      return "Courtier";
-    case "agent_general":
-      return "Agent Général";
-    case "agent_mandataire":
-      return "Agent Mandataire";
-    case "agent_sanlam":
-      return "Agent Sanlam Allianz";
-    case "banquier":
-      return "Banquier";
-    default:
-      return "";
-  }
-};
+// Nouveau groupe "Utilisateurs" avec 3 sous-entrées
+const usersItems = [
+  { title: "Clients", url: "/admin/users/clients", icon: User },
+  { title: "Partenaires", url: "/admin/users/partners", icon: Briefcase },
+  { title: "Administrateurs", url: "/admin/users/admins", icon: Shield },
+];
+
+// Groupe "Sécurité" séparé
+const securityItems = [
+  { title: "Permissions", url: "/admin/permissions", icon: KeyRound },
+  { title: "Audit", url: "/admin/audit", icon: ScrollText },
+];
 ```
 
-**Lignes 338-351 - Mettre à jour le Select du type partenaire :**
+Mettre à jour les badges pour afficher les nouveaux utilisateurs par type.
 
-```tsx
-<Select
-  value={user.partner_type || ""}
-  onValueChange={(value) => updatePartnerType(user.id, value as PartnerType)}
->
-  <SelectTrigger className="w-[180px]">
-    <SelectValue placeholder="Sélectionner..." />
-  </SelectTrigger>
-  <SelectContent>
-    <SelectItem value="courtier">Courtier</SelectItem>
-    <SelectItem value="agent_general">Agent Général</SelectItem>
-    <SelectItem value="agent_mandataire">Agent Mandataire</SelectItem>
-    <SelectItem value="agent_sanlam">Agent Sanlam Allianz</SelectItem>
-    <SelectItem value="banquier">Banquier</SelectItem>
-  </SelectContent>
-</Select>
+---
+
+#### 3. `src/App.tsx`
+
+Ajouter les nouvelles routes :
+
+```typescript
+import AdminUsersClientsPage from "./pages/admin/UsersClientsPage";
+import AdminUsersPartnersPage from "./pages/admin/UsersPartnersPage";
+import AdminUsersAdminsPage from "./pages/admin/UsersAdminsPage";
+
+// Dans les routes admin
+<Route path="users" element={<Navigate to="users/clients" replace />} />
+<Route path="users/clients" element={<AdminUsersClientsPage />} />
+<Route path="users/partners" element={<AdminUsersPartnersPage />} />
+<Route path="users/admins" element={<AdminUsersAdminsPage />} />
 ```
 
 ---
 
-#### 3. Fichier `src/components/admin/CreateUserDialog.tsx`
+### Détail des nouvelles pages
 
-**Ligne 30 - Mettre à jour le type :**
-
+#### `UsersClientsPage.tsx`
 ```typescript
-type PartnerType = "agent_mandataire" | "courtier" | "agent_general" | "agent_sanlam" | "banquier";
+export default function UsersClientsPage() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Utilisateurs Clients</h1>
+        <p className="text-muted-foreground">
+          Gérez les comptes des clients particuliers.
+        </p>
+      </div>
+      <AdminUsersTable roleFilter="customer" />
+    </div>
+  );
+}
 ```
 
-**Lignes 291-305 - Mettre à jour le RadioGroup :**
-
-```tsx
-<RadioGroup
-  value={formData.partnerType || ""}
-  onValueChange={(value: PartnerType) => 
-    setFormData({ ...formData, partnerType: value })
-  }
-  className="space-y-2"
->
-  <div className="flex items-center space-x-2">
-    <RadioGroupItem value="courtier" id="courtier" />
-    <Label htmlFor="courtier" className="font-normal cursor-pointer">
-      Courtier
-    </Label>
-  </div>
-  <div className="flex items-center space-x-2">
-    <RadioGroupItem value="agent_general" id="agent_general" />
-    <Label htmlFor="agent_general" className="font-normal cursor-pointer">
-      Agent Général
-    </Label>
-  </div>
-  <div className="flex items-center space-x-2">
-    <RadioGroupItem value="agent_mandataire" id="agent_mandataire" />
-    <Label htmlFor="agent_mandataire" className="font-normal cursor-pointer">
-      Agent Mandataire
-    </Label>
-  </div>
-  <div className="flex items-center space-x-2">
-    <RadioGroupItem value="agent_sanlam" id="agent_sanlam" />
-    <Label htmlFor="agent_sanlam" className="font-normal cursor-pointer">
-      Agent Sanlam Allianz
-    </Label>
-  </div>
-  <div className="flex items-center space-x-2">
-    <RadioGroupItem value="banquier" id="banquier" />
-    <Label htmlFor="banquier" className="font-normal cursor-pointer">
-      Banquier
-    </Label>
-  </div>
-</RadioGroup>
+#### `UsersPartnersPage.tsx`
+```typescript
+export default function UsersPartnersPage() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Utilisateurs Partenaires</h1>
+        <p className="text-muted-foreground">
+          Gérez les comptes des courtiers et agents.
+        </p>
+      </div>
+      <AdminUsersTable roleFilter="broker" />
+    </div>
+  );
+}
 ```
 
----
-
-#### 4. Edge Function `supabase/functions/create-user/index.ts`
-
-**Ligne 9 - Mettre à jour le type :**
-
+#### `UsersAdminsPage.tsx`
 ```typescript
-type PartnerType = 'agent_mandataire' | 'courtier' | 'agent_general' | 'agent_sanlam' | 'banquier';
-```
-
-**Lignes 101-109 - Mettre à jour la validation :**
-
-```typescript
-const validPartnerTypes = ['agent_mandataire', 'courtier', 'agent_general', 'agent_sanlam', 'banquier'];
-if (role === 'broker' && (!partnerType || !validPartnerTypes.includes(partnerType))) {
-  return new Response(
-    JSON.stringify({ error: 'Type de partenaire invalide' }),
-    { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+export default function UsersAdminsPage() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Utilisateurs Administrateurs</h1>
+        <p className="text-muted-foreground">
+          Gérez les comptes des administrateurs de la plateforme.
+        </p>
+      </div>
+      <AdminUsersTable roleFilter="admin" />
+    </div>
   );
 }
 ```
 
 ---
 
-### Résumé des fichiers modifiés
+### Badges dynamiques par type
+
+Dans `AdminSidebar.tsx`, ajouter des compteurs séparés :
+
+```typescript
+interface BadgeCounts {
+  pendingClaims: number;
+  newClients: number;
+  newPartners: number;
+  newAdmins: number;
+}
+
+const fetchBadgeCounts = async () => {
+  // Récupérer les profils créés dans les 7 derniers jours
+  const { data: newProfiles } = await supabase
+    .from("profiles")
+    .select("id")
+    .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+
+  // Pour chaque profil, récupérer le rôle et compter
+  const roleCounts = { customer: 0, broker: 0, admin: 0 };
+  for (const profile of newProfiles || []) {
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", profile.id)
+      .limit(1);
+    const role = roles?.[0]?.role || "customer";
+    roleCounts[role]++;
+  }
+
+  setBadges({
+    pendingClaims: ...,
+    newClients: roleCounts.customer,
+    newPartners: roleCounts.broker,
+    newAdmins: roleCounts.admin,
+  });
+};
+```
+
+---
+
+### Colonnes adaptées par type d'utilisateur
+
+| Colonne | Clients | Partenaires | Admins |
+|---------|---------|-------------|--------|
+| Prénom | Oui | Oui | Oui |
+| Nom | Oui | Oui | Oui |
+| Email | Oui | Oui | Oui |
+| Rôle actuel | Non (implicite) | Non (implicite) | Non (implicite) |
+| OTP Téléphone | Non | Oui | Oui |
+| Type partenaire | Non | Oui | Non |
+| Date création | Oui | Oui | Oui |
+| Actions | Activer | - | - |
+| Modifier rôle | Oui | Oui | Oui |
+
+---
+
+### Résumé des modifications
 
 | Fichier | Action |
 |---------|--------|
-| Migration SQL | Ajouter 3 valeurs à l'enum |
-| `src/components/AdminUsersTable.tsx` | Mettre à jour types et labels |
-| `src/components/admin/CreateUserDialog.tsx` | Mettre à jour types et radio buttons |
-| `supabase/functions/create-user/index.ts` | Mettre à jour validation |
+| `src/pages/admin/UsersClientsPage.tsx` | Créer |
+| `src/pages/admin/UsersPartnersPage.tsx` | Créer |
+| `src/pages/admin/UsersAdminsPage.tsx` | Créer |
+| `src/components/AdminUsersTable.tsx` | Ajouter prop `roleFilter` + colonnes conditionnelles |
+| `src/components/admin/AdminSidebar.tsx` | Réorganiser groupes + badges par type |
+| `src/App.tsx` | Ajouter 3 nouvelles routes |
+| `src/pages/admin/UsersPage.tsx` | Supprimer (optionnel, redirigé vers clients) |
 
 ---
 
 ### Section technique
 
-**Types de partenaires finaux :**
-- `courtier` → Courtier
-- `agent_general` → Agent Général (produits exclusifs Sanlam)
-- `agent_mandataire` → Agent Mandataire (sous convention)
-- `agent_sanlam` → Agent Sanlam Allianz (interne)
-- `banquier` → Banquier (partenaire bancaire)
+**Routes finales :**
+- `/admin/users` → Redirige vers `/admin/users/clients`
+- `/admin/users/clients` → Page clients
+- `/admin/users/partners` → Page partenaires
+- `/admin/users/admins` → Page administrateurs
 
-**Note :** Les types sont gérés en dur dans le code pour l'instant. Une évolution future pourrait stocker ces types dans une table `partner_types` pour une configuration 100% dynamique depuis l'admin.
+**Optimisation future possible :**
+Créer une vue SQL ou utiliser une jointure côté base de données pour récupérer les utilisateurs avec leurs rôles en une seule requête, plutôt que N+1 requêtes.
+

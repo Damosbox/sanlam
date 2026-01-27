@@ -1,219 +1,203 @@
 
 
-## Plan : Module de Gestion des Produits d'Assurance
+## Audit UX : Cohabitation Intelligente Produits & Formulaires
 
-### Objectif
-Créer un module complet de gestion des produits d'assurance permettant aux administrateurs de configurer, visualiser et commercialiser l'ensemble du catalogue produits.
+### Diagnostic de l'Existant
+
+Après analyse approfondie des deux modules, voici les observations clés :
 
 ---
 
-### Architecture proposée
+### Forces Actuelles
+
+| Module | Points Positifs |
+|--------|----------------|
+| **Produits** | Interface complète à 8 onglets, bonne séparation des préoccupations |
+| **Formulaires** | Drag & drop fonctionnel, déploiement B2C/B2B distinct |
+| **Liaison** | `subscription_form_id` permet de relier un formulaire à un produit |
+
+---
+
+### Problèmes UX Critiques Identifiés
+
+#### 1. Double Source de Vérité (Violation du principe DRY)
+- **Constat** : La catégorie (`vie`/`non-vie`) et le type (`Auto`, `Habitation`) sont définis à 2 endroits :
+  - Dans `ProductForm` (onglet Général)
+  - Dans `AdminFormBuilder` (config formulaire)
+- **Impact** : Risque de désynchronisation, confusion utilisateur
+
+#### 2. Navigation Fragmentée (Violation de la Loi de Fitts)
+- **Constat** : Dans `SubscriptionFieldsTab`, le bouton "Gérer les formulaires" ouvre un nouvel onglet
+- **Impact** : Perte de contexte, charge cognitive élevée, workflow interrompu
+
+#### 3. Absence de Prévisualisation Contextuelle
+- **Constat** : L'admin ne peut pas voir à quoi ressemble le formulaire lié depuis la page produit
+- **Impact** : Décisions aveugles, allers-retours fréquents
+
+#### 4. Règles de Calcul Déconnectées
+- **Constat** : Les formules de calcul (CalculationRulesTab) ne sont pas liées aux champs du formulaire
+- **Impact** : Impossible de mapper automatiquement `age_factor` au champ "Date de naissance"
+
+#### 5. Formulaires Orphelins
+- **Constat** : On peut créer des formulaires sans produit associé
+- **Impact** : Prolifération de templates inutilisés, maintenance difficile
+
+---
+
+### Recommandations UX Stratégiques
+
+#### Recommandation 1 : Hiérarchie Produit → Formulaire
+
+Établir le **Produit comme entité maître** et le **Formulaire comme composant enfant**.
+
+**Implémentation :**
+```text
+Produit (parent)
+├── Informations générales
+├── Formulaire de souscription (enfant intégré)
+│   ├── Prévisualisation inline
+│   ├── Actions : Éditer, Créer, Dupliquer
+│   └── Mini-builder embarqué OU modal plein écran
+├── Règles de calcul (avec mapping champs)
+└── ...autres onglets
+```
+
+**Bénéfice** : Un seul point d'entrée, cohérence garantie
+
+---
+
+#### Recommandation 2 : Prévisualisation Inline du Formulaire
+
+Dans l'onglet "Souscription" du produit, afficher :
+- Un aperçu live du formulaire lié (miniature interactive)
+- Les étapes avec leurs champs listés
+- Un bouton "Éditer ce formulaire" ouvrant un modal/drawer plein écran
+
+**Bénéfice** : Décisions éclairées sans quitter le contexte
+
+---
+
+#### Recommandation 3 : Création de Formulaire Contextuelle
+
+Remplacer le lien externe par :
+- **Option A** : "Créer un formulaire pour ce produit" → Pré-remplit catégorie/type
+- **Option B** : "Dupliquer depuis un template existant" → Copie et personnalise
+- **Option C** : "Sélectionner un formulaire existant" → Dropdown actuel amélioré
+
+**Bénéfice** : Workflow fluide, moins d'erreurs
+
+---
+
+#### Recommandation 4 : Mapping Champs ↔ Variables de Calcul
+
+Dans l'onglet "Règles de calcul", permettre :
+1. Lister les champs du formulaire lié
+2. Mapper chaque champ à une variable de formule (`date_naissance` → `age_factor`)
+3. Validation automatique : alerte si variable non mappée
+
+**Bénéfice** : Cohérence entre collecte de données et tarification
+
+---
+
+#### Recommandation 5 : Indicateurs de Complétude
+
+Ajouter des badges visuels sur chaque onglet du produit :
+- ✅ Vert : Complet
+- ⚠️ Orange : Partiellement configuré
+- ❌ Rouge : Manquant/Erreur
+
+**Exemple** :
+```text
+[Général ✅] [Souscription ⚠️] [Calcul ❌] [Paiements ✅]
+```
+
+**Bénéfice** : Visibilité immédiate de l'état de configuration
+
+---
+
+### Plan d'Implémentation
+
+#### Phase 1 : Amélioration de l'Onglet Souscription (Priorité Haute)
+
+| Tâche | Fichier | Description |
+|-------|---------|-------------|
+| Prévisualisation formulaire | `SubscriptionFieldsTab.tsx` | Afficher aperçu inline du formulaire lié |
+| Création contextuelle | `SubscriptionFieldsTab.tsx` | Boutons "Créer pour ce produit" / "Dupliquer" |
+| Modal d'édition | Nouveau composant | Drawer plein écran pour éditer sans quitter |
+
+#### Phase 2 : Héritage Catégorie/Type (Priorité Moyenne)
+
+| Tâche | Fichier | Description |
+|-------|---------|-------------|
+| Auto-sync catégorie | `AdminFormBuilder.tsx` | Hériter catégorie/type du produit parent |
+| Formulaires liés | `FormTemplatesList.tsx` | Afficher colonne "Produit associé" |
+
+#### Phase 3 : Mapping Variables (Priorité Basse)
+
+| Tâche | Fichier | Description |
+|-------|---------|-------------|
+| Mapper champs → variables | `CalculationRulesTab.tsx` | Interface de mapping visuel |
+| Validation formules | `CalculationRulesTab.tsx` | Alertes si variables non mappées |
+
+---
+
+### Wireframe de l'Onglet Souscription Amélioré
 
 ```text
-Admin Sidebar (Configuration)
-├── Produits (NOUVEAU)     ← Module principal à créer
-├── Formulaires            ← Existant (sera lié aux produits)
-├── Monitoring IA
-└── Concurrence
+┌─────────────────────────────────────────────────────────────────┐
+│  Formulaire de souscription                                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ [Dropdown] Formulaire Auto Premium ▼                      │   │
+│  │                                                            │   │
+│  │ ○ Créer un nouveau formulaire pour ce produit             │   │
+│  │ ○ Dupliquer depuis un template existant                   │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │                 APERÇU DU FORMULAIRE                      │   │
+│  │  ┌────────────────────────────────────────────────────┐   │   │
+│  │  │ Étape 1: Informations véhicule                     │   │   │
+│  │  │ • Marque/Modèle (texte)                            │   │   │
+│  │  │ • Date mise en circulation (date)                  │   │   │
+│  │  │ • Valeur vénale (nombre)                           │   │   │
+│  │  ├────────────────────────────────────────────────────┤   │   │
+│  │  │ Étape 2: Informations conducteur                   │   │   │
+│  │  │ • Date de naissance (date)                         │   │   │
+│  │  │ • Permis de conduire (fichier)                     │   │   │
+│  │  └────────────────────────────────────────────────────┘   │   │
+│  │                                                            │   │
+│  │  [✏️ Modifier le formulaire]  [👁️ Prévisualiser]           │   │
+│  └──────────────────────────────────────────────────────────┘   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
-
----
-
-### 1. Vue Liste des Produits
-
-**Route** : `/admin/products`
-
-**Colonnes du tableau** :
-- Image (miniature)
-- Nom du produit
-- Catégorie (badge Vie/Non-Vie)
-- Type (sous-catégorie)
-- Renouvelable (Oui/Non)
-- Sinistres (Oui/Non)
-- Statut (Actif/Inactif)
-- Actions (Éditer, Dupliquer, Supprimer)
-
-**Filtres disponibles** :
-- Par catégorie (Vie / Non-Vie)
-- Par type
-- Par statut
-
----
-
-### 2. Création/Édition de Produit
-
-**Structure en onglets** :
-
-#### Onglet 1 : Informations Générales
-- Nom du produit (texte)
-- Catégorie : Vie / Non-Vie (select)
-- Type :
-  - Vie : Vie, Obsèques, Épargne, Retraite
-  - Non-Vie : Auto, Habitation, Santé, Voyage
-- Renouvelable : Oui / Non (switch)
-- Sinistres : Oui / Non (switch)
-- Description (textarea)
-- Image du produit (upload, affichée en haut à droite)
-
-#### Onglet 2 : Informations de Souscription
-- **Section "Informations du produit"** : Champs pour la cotation/tarification
-- **Section "Informations du client"** : Champs pour valider la souscription
-- Drag & Drop pour réorganiser les champs
-- Possibilité de lier un formulaire existant (`form_templates`)
-
-#### Onglet 3 : Règles de Calcul
-- Liste des règles de calcul existantes
-- Ajout/sélection de règles
-- Éditeur de formules (base premium, coefficients, taxes)
-
-#### Onglet 4 : Bénéficiaires (Vie uniquement)
-- Configuration des champs bénéficiaires
-- Nombre max de bénéficiaires
-- Répartition obligatoire (100%)
-
-#### Onglet 5 : Moyens de Paiement
-- CB (switch actif/inactif)
-- Mobile Money (Wave, Orange Money, MTN MoMo)
-- Virement bancaire
-- Paiement en agence
-
-#### Onglet 6 : Documents
-- Liste des templates de documents
-- Ajout de documents avec champs dynamiques :
-  - Variables disponibles : `{{nom}}`, `{{date}}`, `{{signature}}`, `{{montant}}`
-- Types : Conditions générales, Attestation, Fiche produit
-
-#### Onglet 7 : Ventes
-- **Produits optionnels** : Sélection multi-produits (add-ons)
-  - Ex: Assistance dépannage 24/7 pour Auto
-- **Produits alternatifs** : Sélection multi-produits (substituts)
-  - Ex: Proposer Auto Essentiel si Auto Premium trop cher
-
-#### Onglet 8 : FAQs
-- Liste des questions/réponses
-- Drag & Drop pour réordonner
-- Ajout/édition/suppression de FAQ
-
----
-
-### 3. Schéma Base de Données
-
-**Modification de la table `products`** :
-
-```sql
-ALTER TABLE products 
-ADD COLUMN IF NOT EXISTS product_type text,
-ADD COLUMN IF NOT EXISTS is_renewable boolean DEFAULT false,
-ADD COLUMN IF NOT EXISTS has_claims boolean DEFAULT true,
-ADD COLUMN IF NOT EXISTS image_url text,
-ADD COLUMN IF NOT EXISTS calculation_rules jsonb DEFAULT '{}',
-ADD COLUMN IF NOT EXISTS beneficiaries_config jsonb,
-ADD COLUMN IF NOT EXISTS payment_methods jsonb DEFAULT '{"cb": true, "wave": true, "orange_money": true, "mtn_momo": true}',
-ADD COLUMN IF NOT EXISTS optional_products uuid[],
-ADD COLUMN IF NOT EXISTS alternative_products uuid[],
-ADD COLUMN IF NOT EXISTS document_templates jsonb DEFAULT '[]',
-ADD COLUMN IF NOT EXISTS faqs jsonb DEFAULT '[]',
-ADD COLUMN IF NOT EXISTS subscription_form_id uuid REFERENCES form_templates(id);
-```
-
-**Ajout de tables de configuration** :
-
-```sql
--- Catégories produit (configurables dans paramètres)
-CREATE TABLE product_categories (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,  -- "vie" ou "non_vie"
-  label text NOT NULL, -- "Vie" ou "Non-Vie"
-  created_at timestamptz DEFAULT now()
-);
-
--- Types produit (sous-catégories)
-CREATE TABLE product_types (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  category_id uuid REFERENCES product_categories(id),
-  name text NOT NULL,  -- "auto", "habitation", etc.
-  label text NOT NULL, -- "Automobile", "Habitation", etc.
-  created_at timestamptz DEFAULT now()
-);
-
--- Templates de documents (pour réutilisation)
-CREATE TABLE document_templates (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  type text NOT NULL, -- "conditions_generales", "attestation", "fiche_produit"
-  content text, -- Template avec variables {{...}}
-  dynamic_fields jsonb DEFAULT '[]',
-  created_by uuid REFERENCES profiles(id),
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
-```
-
----
-
-### 4. Fichiers à Créer
-
-| Fichier | Description |
-|---------|-------------|
-| `src/pages/admin/ProductsPage.tsx` | Page liste des produits |
-| `src/pages/admin/ProductEditPage.tsx` | Page création/édition |
-| `src/components/admin/products/ProductsList.tsx` | Tableau des produits |
-| `src/components/admin/products/ProductForm.tsx` | Formulaire principal avec onglets |
-| `src/components/admin/products/tabs/GeneralInfoTab.tsx` | Onglet infos générales |
-| `src/components/admin/products/tabs/SubscriptionFieldsTab.tsx` | Onglet champs souscription |
-| `src/components/admin/products/tabs/CalculationRulesTab.tsx` | Onglet règles de calcul |
-| `src/components/admin/products/tabs/BeneficiariesTab.tsx` | Onglet bénéficiaires (Vie) |
-| `src/components/admin/products/tabs/PaymentMethodsTab.tsx` | Onglet moyens de paiement |
-| `src/components/admin/products/tabs/DocumentsTab.tsx` | Onglet documents |
-| `src/components/admin/products/tabs/SalesTab.tsx` | Onglet ventes croisées |
-| `src/components/admin/products/tabs/FaqsTab.tsx` | Onglet FAQs |
-
----
-
-### 5. Modifications à Effectuer
-
-**`src/components/admin/AdminSidebar.tsx`** :
-- Ajouter "Produits" dans le groupe Configuration avec icône `Package`
-
-**`src/App.tsx`** :
-- Ajouter routes `/admin/products` et `/admin/products/:id`
-
----
-
-### 6. Relation Produits ↔ Formulaires
-
-Le module "Formulaires" existant reste intact. Un produit pourra être lié à un formulaire via `subscription_form_id`, permettant :
-- De réutiliser les formulaires drag & drop existants
-- D'assigner un parcours de souscription personnalisé par produit
-- De garder la flexibilité de créer des formulaires indépendamment
 
 ---
 
 ### Section Technique
 
-**Structure JSON des règles de calcul** :
-```json
-{
-  "base_formula": "base_premium * coefficient",
-  "variables": [
-    { "name": "age_factor", "type": "range", "values": {...} },
-    { "name": "bns_factor", "type": "select", "values": {...} }
-  ],
-  "taxes": { "rate": 0.145, "name": "TVA" },
-  "fees": { "accessories": 5000, "fga": 0.02 }
+**Composants à créer/modifier :**
+
+1. `FormPreviewCard.tsx` - Aperçu compact du formulaire
+2. `FormEditorDrawer.tsx` - Modal plein écran pour édition
+3. `FieldVariableMapper.tsx` - Interface de mapping champs/variables
+4. `ProductCompletionBadge.tsx` - Indicateur de complétude par onglet
+
+**Queries à optimiser :**
+- Charger le formulaire lié avec le produit (`products` JOIN `form_templates`)
+- Récupérer les champs du formulaire pour le mapping
+
+**Structure de données étendue :**
+```typescript
+interface ProductFormData {
+  // ...existant
+  subscription_form_id: string | null;
+  field_variable_mappings: {
+    field_id: string;      // ID du champ formulaire
+    variable_name: string; // Nom de la variable de calcul
+  }[];
 }
 ```
-
-**Structure JSON des FAQs** :
-```json
-[
-  { "id": "faq_1", "question": "...", "answer": "...", "order": 1 },
-  { "id": "faq_2", "question": "...", "answer": "...", "order": 2 }
-]
-```
-
-**RLS Policies** :
-- Admins : CRUD complet sur tous les produits
-- Brokers : SELECT sur produits actifs uniquement
-- Customers : SELECT sur produits actifs uniquement
 

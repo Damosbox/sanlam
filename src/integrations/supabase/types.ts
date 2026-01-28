@@ -102,6 +102,57 @@ export type Database = {
           },
         ]
       }
+      broker_news: {
+        Row: {
+          content: string
+          created_at: string | null
+          created_by: string | null
+          end_date: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          link_label: string | null
+          link_url: string | null
+          priority: number | null
+          start_date: string | null
+          target_roles: string[] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          end_date?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          link_label?: string | null
+          link_url?: string | null
+          priority?: number | null
+          start_date?: string | null
+          target_roles?: string[] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          end_date?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          link_label?: string | null
+          link_url?: string | null
+          priority?: number | null
+          start_date?: string | null
+          target_roles?: string[] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       broker_settings: {
         Row: {
           broker_id: string

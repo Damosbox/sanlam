@@ -14,6 +14,7 @@ import {
   Database,
   Settings,
   Briefcase,
+  Newspaper,
   UserCheck,
   Package,
 } from "lucide-react";
@@ -135,6 +136,7 @@ export function AdminSidebar() {
   const configItems = [
     { title: "Produits", url: "/admin/products", icon: Package },
     { title: "Formulaires", url: "/admin/forms", icon: Settings },
+    { title: "Actualités Broker", url: "/admin/broker-news", icon: Newspaper },
     { title: "Monitoring IA", url: "/admin/ai", icon: Brain },
     { title: "Concurrence", url: "/admin/competitive", icon: Shield },
   ];

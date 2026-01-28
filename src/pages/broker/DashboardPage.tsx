@@ -2,10 +2,10 @@ import { useState } from "react";
 import { DashboardHeader } from "@/components/broker/dashboard/DashboardHeader";
 import { DashboardKPIs } from "@/components/broker/dashboard/DashboardKPIs";
 import { TasksReminders } from "@/components/broker/dashboard/TasksReminders";
-import { LeadsPipeline } from "@/components/broker/dashboard/LeadsPipeline";
-import { ActivityFeed } from "@/components/broker/dashboard/ActivityFeed";
 import { AIRecommendations } from "@/components/broker/dashboard/AIRecommendations";
 import { QuickActions } from "@/components/broker/dashboard/QuickActions";
+import { ContactIndicatorsCard } from "@/components/broker/dashboard/ContactIndicatorsCard";
+import { NewsBanner } from "@/components/broker/dashboard/NewsBanner";
 import type { ProductType } from "@/components/broker/dashboard/ProductSelector";
 
 const DashboardPage = () => {
@@ -25,17 +25,17 @@ const DashboardPage = () => {
       {/* 2. KPIs Prioritaires - Taux renouvellement + Stats */}
       <DashboardKPIs selectedProduct={selectedProduct} />
       
-      {/* 3. Actions du jour (priorité absolue) */}
-      <TasksReminders />
+      {/* 3. Indicateurs de Contact */}
+      <ContactIndicatorsCard selectedProduct={selectedProduct} />
       
-      {/* 4. Pipeline + Recommandations IA */}
+      {/* 4. Actions du jour + Recommandations IA (Grid 2x2) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="space-y-4">
-          <LeadsPipeline />
-          <ActivityFeed />
-        </div>
+        <TasksReminders />
         <AIRecommendations />
       </div>
+      
+      {/* 5. Bannière Actualité */}
+      <NewsBanner />
     </div>
   );
 };

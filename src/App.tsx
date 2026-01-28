@@ -38,7 +38,11 @@ import GuidedSalesPage from "./pages/broker/GuidedSalesPage";
 import ClaimsPage from "./pages/broker/ClaimsPage";
 import PoliciesPage from "./pages/broker/PoliciesPage";
 import RenewalStatsPage from "./pages/broker/RenewalStatsPage";
+import RenewalsPage from "./pages/broker/RenewalsPage";
 import AnalysisPage from "./pages/broker/AnalysisPage";
+import NewsPage from "./pages/broker/NewsPage";
+import ReportsPage from "./pages/broker/ReportsPage";
+import CampaignsPage from "./pages/broker/CampaignsPage";
 import MessagesPage from "./pages/broker/MessagesPage";
 
 // Admin pages
@@ -59,6 +63,7 @@ import AdminProductEditPage from "./pages/admin/ProductEditPage";
 import AdminAIMonitoringPage from "./pages/admin/AIMonitoringPage";
 import AdminCompetitivePage from "./pages/admin/CompetitivePage";
 import AdminTestDataPage from "./pages/admin/TestDataPage";
+import AdminBrokerNewsPage from "./pages/admin/BrokerNewsPage";
 
 const queryClient = new QueryClient();
 
@@ -119,9 +124,13 @@ const App = () => (
             <Route path="sales" element={<GuidedSalesPage />} />
             <Route path="claims" element={<ClaimsPage />} />
             <Route path="policies" element={<PoliciesPage />} />
+            <Route path="renewals" element={<RenewalsPage />} />
             <Route path="stats" element={<RenewalStatsPage />} />
+            <Route path="reports" element={<ReportsPage />} />
             <Route path="analysis" element={<AnalysisPage />} />
             <Route path="messages" element={<MessagesPage />} />
+            <Route path="news" element={<NewsPage />} />
+            <Route path="campaigns" element={<CampaignsPage />} />
           </Route>
 
           {/* Admin Routes with Sidebar Layout */}
@@ -148,6 +157,7 @@ const App = () => (
             <Route path="ai" element={<AdminAIMonitoringPage />} />
             <Route path="competitive" element={<AdminCompetitivePage />} />
             <Route path="data" element={<AdminTestDataPage />} />
+            <Route path="broker-news" element={<AdminBrokerNewsPage />} />
           </Route>
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

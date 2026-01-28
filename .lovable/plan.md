@@ -1,203 +1,361 @@
 
+# Plan de Refonte Dashboard & Sidebar Broker
 
-## Audit UX : Cohabitation Intelligente Produits & Formulaires
+## Vue d'Ensemble
 
-### Diagnostic de l'Existant
-
-Après analyse approfondie des deux modules, voici les observations clés :
-
----
-
-### Forces Actuelles
-
-| Module | Points Positifs |
-|--------|----------------|
-| **Produits** | Interface complète à 8 onglets, bonne séparation des préoccupations |
-| **Formulaires** | Drag & drop fonctionnel, déploiement B2C/B2B distinct |
-| **Liaison** | `subscription_form_id` permet de relier un formulaire à un produit |
+Ce plan restructure entièrement la navigation et le dashboard broker selon la maquette fournie, avec une nouvelle organisation en 6 groupes de navigation et un dashboard centré sur les indicateurs de contact et l'actualité dynamique.
 
 ---
 
-### Problèmes UX Critiques Identifiés
+## Phase 1 : Restructuration de la Sidebar
 
-#### 1. Double Source de Vérité (Violation du principe DRY)
-- **Constat** : La catégorie (`vie`/`non-vie`) et le type (`Auto`, `Habitation`) sont définis à 2 endroits :
-  - Dans `ProductForm` (onglet Général)
-  - Dans `AdminFormBuilder` (config formulaire)
-- **Impact** : Risque de désynchronisation, confusion utilisateur
+### Structure de Navigation Cible
 
-#### 2. Navigation Fragmentée (Violation de la Loi de Fitts)
-- **Constat** : Dans `SubscriptionFieldsTab`, le bouton "Gérer les formulaires" ouvre un nouvel onglet
-- **Impact** : Perte de contexte, charge cognitive élevée, workflow interrompu
-
-#### 3. Absence de Prévisualisation Contextuelle
-- **Constat** : L'admin ne peut pas voir à quoi ressemble le formulaire lié depuis la page produit
-- **Impact** : Décisions aveugles, allers-retours fréquents
-
-#### 4. Règles de Calcul Déconnectées
-- **Constat** : Les formules de calcul (CalculationRulesTab) ne sont pas liées aux champs du formulaire
-- **Impact** : Impossible de mapper automatiquement `age_factor` au champ "Date de naissance"
-
-#### 5. Formulaires Orphelins
-- **Constat** : On peut créer des formulaires sans produit associé
-- **Impact** : Prolifération de templates inutilisés, maintenance difficile
-
----
-
-### Recommandations UX Stratégiques
-
-#### Recommandation 1 : Hiérarchie Produit → Formulaire
-
-Établir le **Produit comme entité maître** et le **Formulaire comme composant enfant**.
-
-**Implémentation :**
 ```text
-Produit (parent)
-├── Informations générales
-├── Formulaire de souscription (enfant intégré)
-│   ├── Prévisualisation inline
-│   ├── Actions : Éditer, Créer, Dupliquer
-│   └── Mini-builder embarqué OU modal plein écran
-├── Règles de calcul (avec mapping champs)
-└── ...autres onglets
+SIDEBAR BROKER
+├── ACCUEIL
+│   └── Tableau de bord (/b2b/dashboard)
+│
+├── MON PORTEFEUILLE
+│   ├── Clients (/b2b/portfolio?tab=clients)
+│   └── Prospects (/b2b/portfolio?tab=prospects)
+│
+├── VENTE
+│   └── Nouvelle Vente (/b2b/sales)
+│
+├── GESTION
+│   ├── Sinistres (/b2b/claims)
+│   ├── Polices (/b2b/policies)
+│   └── Renouvellement (/b2b/renewals)  ← NOUVELLE PAGE
+│
+├── PERFORMANCES
+│   ├── Statistiques (/b2b/stats)
+│   └── Rapports (/b2b/reports)  ← Placeholder
+│
+└── COMMUNICATIONS
+    ├── Messages (/b2b/messages)
+    ├── Actualités (/b2b/news)  ← NOUVELLE PAGE
+    └── Campagnes (/b2b/campaigns)  ← Placeholder
 ```
 
-**Bénéfice** : Un seul point d'entrée, cohérence garantie
+### Fichiers à Modifier/Créer
 
----
+| Action | Fichier | Description |
+|--------|---------|-------------|
+| Modifier | `src/components/broker/BrokerSidebar.tsx` | Refonte complète avec 6 groupes |
+| Créer | `src/pages/broker/RenewalsPage.tsx` | Page dédiée renouvellement |
+| Créer | `src/pages/broker/NewsPage.tsx` | Page actualités dynamiques |
+| Créer | `src/pages/broker/ReportsPage.tsx` | Placeholder rapports |
+| Créer | `src/pages/broker/CampaignsPage.tsx` | Placeholder campagnes |
+| Modifier | `src/App.tsx` | Nouvelles routes |
 
-#### Recommandation 2 : Prévisualisation Inline du Formulaire
+### Détail Technique - BrokerSidebar.tsx
 
-Dans l'onglet "Souscription" du produit, afficher :
-- Un aperçu live du formulaire lié (miniature interactive)
-- Les étapes avec leurs champs listés
-- Un bouton "Éditer ce formulaire" ouvrant un modal/drawer plein écran
-
-**Bénéfice** : Décisions éclairées sans quitter le contexte
-
----
-
-#### Recommandation 3 : Création de Formulaire Contextuelle
-
-Remplacer le lien externe par :
-- **Option A** : "Créer un formulaire pour ce produit" → Pré-remplit catégorie/type
-- **Option B** : "Dupliquer depuis un template existant" → Copie et personnalise
-- **Option C** : "Sélectionner un formulaire existant" → Dropdown actuel amélioré
-
-**Bénéfice** : Workflow fluide, moins d'erreurs
-
----
-
-#### Recommandation 4 : Mapping Champs ↔ Variables de Calcul
-
-Dans l'onglet "Règles de calcul", permettre :
-1. Lister les champs du formulaire lié
-2. Mapper chaque champ à une variable de formule (`date_naissance` → `age_factor`)
-3. Validation automatique : alerte si variable non mappée
-
-**Bénéfice** : Cohérence entre collecte de données et tarification
-
----
-
-#### Recommandation 5 : Indicateurs de Complétude
-
-Ajouter des badges visuels sur chaque onglet du produit :
-- ✅ Vert : Complet
-- ⚠️ Orange : Partiellement configuré
-- ❌ Rouge : Manquant/Erreur
-
-**Exemple** :
-```text
-[Général ✅] [Souscription ⚠️] [Calcul ❌] [Paiements ✅]
+```typescript
+// Nouvelle structure des items de navigation
+const navigationGroups = [
+  {
+    label: "Accueil",
+    items: [
+      { title: "Tableau de bord", url: "/b2b/dashboard", icon: LayoutDashboard }
+    ]
+  },
+  {
+    label: "Mon Portefeuille",
+    items: [
+      { title: "Clients", url: "/b2b/portfolio?tab=clients", icon: Users },
+      { title: "Prospects", url: "/b2b/portfolio?tab=prospects", icon: UserPlus }
+    ]
+  },
+  {
+    label: "Vente",
+    items: [
+      { title: "Nouvelle Vente", url: "/b2b/sales", icon: Zap }
+    ]
+  },
+  {
+    label: "Gestion",
+    items: [
+      { title: "Sinistres", url: "/b2b/claims", icon: FileText, badge: pendingClaims },
+      { title: "Polices", url: "/b2b/policies", icon: Shield },
+      { title: "Renouvellement", url: "/b2b/renewals", icon: RefreshCw, badge: renewalsCount }
+    ]
+  },
+  {
+    label: "Performances",
+    items: [
+      { title: "Statistiques", url: "/b2b/stats", icon: PieChart },
+      { title: "Rapports", url: "/b2b/reports", icon: FileBarChart }
+    ]
+  },
+  {
+    label: "Communications",
+    items: [
+      { title: "Messages", url: "/b2b/messages", icon: MessageSquare },
+      { title: "Actualités", url: "/b2b/news", icon: Newspaper },
+      { title: "Campagnes", url: "/b2b/campaigns", icon: Megaphone, disabled: true }
+    ]
+  }
+];
 ```
 
-**Bénéfice** : Visibilité immédiate de l'état de configuration
-
 ---
 
-### Plan d'Implémentation
+## Phase 2 : Refonte du Dashboard
 
-#### Phase 1 : Amélioration de l'Onglet Souscription (Priorité Haute)
+### Layout Cible (selon maquette)
 
-| Tâche | Fichier | Description |
-|-------|---------|-------------|
-| Prévisualisation formulaire | `SubscriptionFieldsTab.tsx` | Afficher aperçu inline du formulaire lié |
-| Création contextuelle | `SubscriptionFieldsTab.tsx` | Boutons "Créer pour ce produit" / "Dupliquer" |
-| Modal d'édition | Nouveau composant | Drawer plein écran pour éditer sans quitter |
-
-#### Phase 2 : Héritage Catégorie/Type (Priorité Moyenne)
-
-| Tâche | Fichier | Description |
-|-------|---------|-------------|
-| Auto-sync catégorie | `AdminFormBuilder.tsx` | Hériter catégorie/type du produit parent |
-| Formulaires liés | `FormTemplatesList.tsx` | Afficher colonne "Produit associé" |
-
-#### Phase 3 : Mapping Variables (Priorité Basse)
-
-| Tâche | Fichier | Description |
-|-------|---------|-------------|
-| Mapper champs → variables | `CalculationRulesTab.tsx` | Interface de mapping visuel |
-| Validation formules | `CalculationRulesTab.tsx` | Alertes si variables non mappées |
-
----
-
-### Wireframe de l'Onglet Souscription Amélioré
+Le layout doit etre en system de grids 2X2
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│  Formulaire de souscription                                     │
+│  HEADER : Bonjour [Nom] + Product Selector + Quick Actions      │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │ [Dropdown] Formulaire Auto Premium ▼                      │   │
-│  │                                                            │   │
-│  │ ○ Créer un nouveau formulaire pour ce produit             │   │
-│  │ ○ Dupliquer depuis un template existant                   │   │
-│  └──────────────────────────────────────────────────────────┘   │
+│  ┌──────────┬──────────┬──────────┬──────────┐                  │
+│  │ Leads    │ Conv.    │ Commiss. │ Mes      │  ← 4 KPIs        │
+│  │ 24h      │ Rate     │ MTD      │ Tâches   │    horizontaux   │
+│  └──────────┴──────────┴──────────┴──────────┘                  │
 │                                                                  │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │                 APERÇU DU FORMULAIRE                      │   │
-│  │  ┌────────────────────────────────────────────────────┐   │   │
-│  │  │ Étape 1: Informations véhicule                     │   │   │
-│  │  │ • Marque/Modèle (texte)                            │   │   │
-│  │  │ • Date mise en circulation (date)                  │   │   │
-│  │  │ • Valeur vénale (nombre)                           │   │   │
-│  │  ├────────────────────────────────────────────────────┤   │   │
-│  │  │ Étape 2: Informations conducteur                   │   │   │
-│  │  │ • Date de naissance (date)                         │   │   │
-│  │  │ • Permis de conduire (fichier)                     │   │   │
-│  │  └────────────────────────────────────────────────────┘   │   │
-│  │                                                            │   │
-│  │  [✏️ Modifier le formulaire]  [👁️ Prévisualiser]           │   │
-│  └──────────────────────────────────────────────────────────┘   │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │ TAUX DE RENOUVELLEMENT (Donuts + Stats)                    │ │
+│  └────────────────────────────────────────────────────────────┘ │
 │                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │ INDICATEURS DE CONTACT                                      │ │
+│  │ ┌───────────────────────────┬────────────────────────────┐ │ │
+│  │ │ Tableau synthétique       │ Graphique Pie/Donut        │ │ │
+│  │ │ • À appeler: 156          │                            │ │ │
+│  │ │ • Contactés: 128 (82%)    │      [PIE CHART]           │ │ │
+│  │ │ • Atteints: 105 (82%)     │                            │ │ │
+│  │ │ • Pb tél: 23 (18%)        │                            │ │ │
+│  │ └───────────────────────────┴────────────────────────────┘ │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│                                                                  │
+│  ┌──────────────────────────────┬─────────────────────────────┐ │
+│  │ ACTIONS DU JOUR              │ RECOMMANDATIONS IA          │ │
+│  │ • Relancer X                 │ • Upsell opportunité        │ │
+│  │ • Sinistre Y                 │ • Client à risque           │ │
+│  └──────────────────────────────┴─────────────────────────────┘ │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │ 📢 BANNIÈRE ACTUALITÉ (dynamique admin)                    │ │
+│  │ "Nouvelle offre Assurance Auto Eco disponible..."          │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Fichiers à Modifier/Créer
+
+| Action | Fichier | Description |
+|--------|---------|-------------|
+| Modifier | `src/pages/broker/DashboardPage.tsx` | Nouveau layout complet |
+| Modifier | `src/components/broker/dashboard/DashboardKPIs.tsx` | 4 KPIs horizontaux + "Mes Tâches" |
+| Créer | `src/components/broker/dashboard/ContactIndicatorsCard.tsx` | Tableau + graphique inline |
+| Créer | `src/components/broker/dashboard/NewsBanner.tsx` | Bannière actualité dynamique |
+| Conserver | `src/components/broker/dashboard/RenewalRateCards.tsx` | Déjà fonctionnel |
+| Conserver | `src/components/broker/dashboard/TasksReminders.tsx` | Déjà fonctionnel |
+| Conserver | `src/components/broker/dashboard/AIRecommendations.tsx` | Déjà fonctionnel |
+
+### Nouveau KPI "Mes Tâches"
+
+Ajout d'un 4ème KPI qui affiche le nombre de tâches en attente avec un lien direct vers la section actions.
+
+```typescript
+// Dans DashboardKPIs.tsx
+const kpis = [
+  { label: "Nouveaux leads", value: "12", icon: Users, trend: "+3 vs hier" },
+  { label: "Taux conversion", value: "24%", icon: TrendingUp, trend: "+2 pts" },
+  { label: "Commissions", value: "850K", icon: Wallet, trend: "Mois en cours" },
+  { label: "Mes Tâches", value: "5", icon: CheckSquare, trend: "À traiter", highlight: true }
+];
+```
+
+---
+
+## Phase 3 : Table Base de Données pour Actualités
+
+### Création de la Table `broker_news`
+
+```sql
+CREATE TABLE public.broker_news (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  image_url TEXT,
+  link_url TEXT,
+  link_label TEXT,
+  priority INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  start_date TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  end_date TIMESTAMP WITH TIME ZONE,
+  target_roles TEXT[] DEFAULT '{"broker"}',
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- RLS Policies
+ALTER TABLE public.broker_news ENABLE ROW LEVEL SECURITY;
+
+-- Admins can manage all news
+CREATE POLICY "Admins can manage all broker news"
+  ON public.broker_news FOR ALL
+  USING (has_role(auth.uid(), 'admin'));
+
+-- Brokers can view active news
+CREATE POLICY "Brokers can view active news"
+  ON public.broker_news FOR SELECT
+  USING (
+    is_active = true 
+    AND (start_date IS NULL OR start_date <= now())
+    AND (end_date IS NULL OR end_date >= now())
+  );
+```
+
+### Composant NewsBanner.tsx
+
+```typescript
+// Récupère les actualités actives triées par priorité
+const { data: news } = useQuery({
+  queryKey: ['broker-news'],
+  queryFn: async () => {
+    const { data } = await supabase
+      .from('broker_news')
+      .select('*')
+      .eq('is_active', true)
+      .order('priority', { ascending: false })
+      .limit(3);
+    return data;
+  }
+});
+
+// Affichage en carousel ou liste
+return (
+  <Card className="bg-gradient-to-r from-primary/10 to-primary/5">
+    <CardContent className="flex items-center gap-4">
+      <Newspaper className="h-8 w-8 text-primary" />
+      <div className="flex-1">
+        <h4 className="font-semibold">{news[0]?.title}</h4>
+        <p className="text-sm text-muted-foreground">{news[0]?.content}</p>
+      </div>
+      {news[0]?.link_url && (
+        <Button variant="outline" size="sm">
+          {news[0]?.link_label || "En savoir plus"}
+        </Button>
+      )}
+    </CardContent>
+  </Card>
+);
+```
+
+---
+
+## Phase 4 : Page Renouvellement Dédiée
+
+### Structure de RenewalsPage.tsx
+
+Déplacement de la logique actuelle de `RenewalStatsPage.tsx` vers une page dédiée avec :
+
+1. **Vue d'ensemble** : KPIs de renouvellement
+2. **Pipeline** : Tableau interactif avec statuts contact/renouvellement
+3. **Actions rapides** : Boutons pour contacter les clients
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│  RENOUVELLEMENT                              [Product Selector] │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌──────────┬──────────┬──────────┬──────────┐                  │
+│  │ 76%      │ 82%      │ 24       │ 8%       │                  │
+│  │ Taux     │ Clients  │ À        │ Churn    │                  │
+│  │ Renouv.  │ Atteints │ Contacter│ Rate     │                  │
+│  └──────────┴──────────┴──────────┴──────────┘                  │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │ FILTRES: [Statut contact ▼] [Décision ▼] [Recherche...]   │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │ PIPELINE DES RENOUVELLEMENTS                               │ │
+│  │ Client | Produit | Échéance | Contact | Décision | Actions │ │
+│  │ ─────────────────────────────────────────────────────────  │ │
+│  │ Dupont | Auto    | 15/02    | Atteint | Renouvelé | [📞]   │ │
+│  │ Martin | MRH     | 20/02    | Non     | En attente| [📞💬] │ │
+│  └────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### Section Technique
+## Phase 5 : Interface Admin pour Actualités
 
-**Composants à créer/modifier :**
+### Ajout dans l'Admin Panel
 
-1. `FormPreviewCard.tsx` - Aperçu compact du formulaire
-2. `FormEditorDrawer.tsx` - Modal plein écran pour édition
-3. `FieldVariableMapper.tsx` - Interface de mapping champs/variables
-4. `ProductCompletionBadge.tsx` - Indicateur de complétude par onglet
+Créer une section dans l'admin pour gérer les actualités broker :
 
-**Queries à optimiser :**
-- Charger le formulaire lié avec le produit (`products` JOIN `form_templates`)
-- Récupérer les champs du formulaire pour le mapping
+| Action | Fichier | Description |
+|--------|---------|-------------|
+| Créer | `src/pages/admin/BrokerNewsPage.tsx` | CRUD des actualités |
+| Modifier | `src/components/admin/AdminSidebar.tsx` | Ajouter entrée "Actualités Broker" |
+| Modifier | `src/App.tsx` | Route `/admin/broker-news` |
 
-**Structure de données étendue :**
+---
+
+## Résumé des Livrables
+
+### Fichiers à Créer (7)
+
+1. `src/pages/broker/RenewalsPage.tsx` - Page dédiée renouvellement
+2. `src/pages/broker/NewsPage.tsx` - Page actualités broker
+3. `src/pages/broker/ReportsPage.tsx` - Placeholder rapports
+4. `src/pages/broker/CampaignsPage.tsx` - Placeholder campagnes
+5. `src/components/broker/dashboard/ContactIndicatorsCard.tsx` - Widget indicateurs
+6. `src/components/broker/dashboard/NewsBanner.tsx` - Bannière actualité
+7. `src/pages/admin/BrokerNewsPage.tsx` - Admin CRUD actualités
+
+### Fichiers à Modifier (5)
+
+1. `src/components/broker/BrokerSidebar.tsx` - Nouvelle structure navigation
+2. `src/pages/broker/DashboardPage.tsx` - Nouveau layout dashboard
+3. `src/components/broker/dashboard/DashboardKPIs.tsx` - Ajout KPI "Mes Tâches"
+4. `src/components/admin/AdminSidebar.tsx` - Entrée gestion actualités
+5. `src/App.tsx` - Nouvelles routes
+
+### Migration Base de Données (1)
+
+- Création table `broker_news` avec RLS policies
+
+---
+
+## Ordre d'Implémentation Recommandé
+
+1. **Migration DB** : Créer table `broker_news`
+2. **Sidebar** : Restructurer la navigation
+3. **Routes** : Ajouter les nouvelles pages
+4. **Dashboard** : Refondre le layout avec tous les composants
+5. **Renouvellement** : Page dédiée
+6. **Actualités** : Admin + affichage broker
+7. **Placeholders** : Rapports et Campagnes
+
+---
+
+## Icônes Utilisées
+
 ```typescript
-interface ProductFormData {
-  // ...existant
-  subscription_form_id: string | null;
-  field_variable_mappings: {
-    field_id: string;      // ID du champ formulaire
-    variable_name: string; // Nom de la variable de calcul
-  }[];
-}
+import {
+  LayoutDashboard,  // Dashboard
+  Users,            // Clients
+  UserPlus,         // Prospects
+  Zap,              // Vente
+  FileText,         // Sinistres
+  Shield,           // Polices
+  RefreshCw,        // Renouvellement
+  PieChart,         // Statistiques
+  FileBarChart,     // Rapports
+  MessageSquare,    // Messages
+  Newspaper,        // Actualités
+  Megaphone,        // Campagnes
+  CheckSquare,      // Mes Tâches
+} from "lucide-react";
 ```
-

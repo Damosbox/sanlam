@@ -4,16 +4,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Car, Home, HeartPulse, Shield, CalendarIcon, Search, Check, Plane } from "lucide-react";
+import { Car, Home, HeartPulse, Shield, CalendarIcon, Plane } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { GuidedSalesState, ProductType } from "../types";
-import { VEHICLES, PRIORITY_BRANDS, formatYearRange, getAvailableYears, Vehicle } from "@/data/vehicles";
+import { GuidedSalesState, ProductType, QuoteType, GenderType, EmploymentType, EnergyType, ContractPeriodicity } from "../types";
 
 interface NeedsAnalysisStepProps {
   state: GuidedSalesState;
@@ -31,6 +29,33 @@ const productTypeConfig: Record<ProductType, { icon: typeof Car; label: string }
   assistance_voyage: { icon: Plane, label: "Assistance Voyage" },
 };
 
+// Employment type options
+const employmentTypeOptions: { value: EmploymentType; label: string }[] = [
+  { value: "fonctionnaire", label: "Fonctionnaire" },
+  { value: "salarie", label: "Salarié" },
+  { value: "exploitant_agricole", label: "Exploitant agricole" },
+  { value: "artisan", label: "Artisan" },
+  { value: "religieux", label: "Religieux" },
+  { value: "retraite", label: "Retraité" },
+  { value: "sans_profession", label: "Sans profession" },
+  { value: "agent_commercial", label: "Agent commercial" },
+  { value: "autres", label: "Autres catégories socioprofessionnelles" },
+];
+
+// Fiscal power options (1-8)
+const fiscalPowerOptions = [1, 2, 3, 4, 5, 6, 7, 8];
+
+// Vehicle seats options (3-8)
+const vehicleSeatsOptions = [3, 4, 5, 6, 7, 8];
+
+// Contract duration options
+const contractDurationOptions: { value: ContractPeriodicity; label: string }[] = [
+  { value: "1_month", label: "1 mois" },
+  { value: "3_months", label: "3 mois" },
+  { value: "6_months", label: "6 mois" },
+  { value: "1_year", label: "12 mois" },
+];
+
 export const NeedsAnalysisStep = ({
   state,
   onUpdate,
@@ -41,252 +66,228 @@ export const NeedsAnalysisStep = ({
   const ProductIcon = productTypeConfig[productType]?.icon || Car;
   const productLabel = productTypeConfig[productType]?.label || "Assurance";
 
-  const [vehicleSearchOpen, setVehicleSearchOpen] = useState(false);
-  const [vehicleSearchTerm, setVehicleSearchTerm] = useState("");
-
-  // Valeur affichée dans le champ
-  const vehicleDisplayValue = useMemo(() => {
-    if (needsAnalysis.vehicleBrand && needsAnalysis.vehicleModel) {
-      const yearSuffix = needsAnalysis.vehicleYear ? ` (${needsAnalysis.vehicleYear})` : "";
-      return `${needsAnalysis.vehicleBrand} ${needsAnalysis.vehicleModel}${yearSuffix}`;
-    }
-    if (needsAnalysis.vehicleBrand) {
-      return needsAnalysis.vehicleBrand;
-    }
-    return "";
-  }, [needsAnalysis.vehicleBrand, needsAnalysis.vehicleModel, needsAnalysis.vehicleYear]);
-
-  // Véhicule sélectionné pour afficher les années disponibles
-  const selectedVehicle = useMemo(() => {
-    if (needsAnalysis.vehicleBrand && needsAnalysis.vehicleModel) {
-      return VEHICLES.find(
-        v => v.brand === needsAnalysis.vehicleBrand && v.model === needsAnalysis.vehicleModel
-      );
-    }
-    return null;
-  }, [needsAnalysis.vehicleBrand, needsAnalysis.vehicleModel]);
-
-  // Années disponibles pour le véhicule sélectionné
-  const availableYears = useMemo(() => {
-    if (selectedVehicle) {
-      return getAvailableYears(selectedVehicle.startYear, selectedVehicle.endYear);
-    }
-    return [];
-  }, [selectedVehicle]);
-
-  // Filtrer les suggestions avec groupement par marque
-  const filteredVehicles = useMemo(() => {
-    const search = vehicleSearchTerm.toLowerCase().trim();
-    
-    let results: Vehicle[];
-    if (!search) {
-      // Sans recherche, afficher les marques prioritaires
-      results = VEHICLES.filter(v => PRIORITY_BRANDS.includes(v.brand)).slice(0, 20);
-    } else {
-      results = VEHICLES.filter(v => 
-        v.brand.toLowerCase().includes(search) || 
-        v.model.toLowerCase().includes(search) || 
-        `${v.brand} ${v.model}`.toLowerCase().includes(search)
-      ).slice(0, 20);
-    }
-
-    // Trier par marques prioritaires puis alphabétique
-    return results.sort((a, b) => {
-      const aPriority = PRIORITY_BRANDS.indexOf(a.brand);
-      const bPriority = PRIORITY_BRANDS.indexOf(b.brand);
-      if (aPriority !== -1 && bPriority !== -1) {
-        if (aPriority !== bPriority) return aPriority - bPriority;
-      } else if (aPriority !== -1) return -1;
-      else if (bPriority !== -1) return 1;
-      
-      if (a.brand !== b.brand) return a.brand.localeCompare(b.brand);
-      return a.model.localeCompare(b.model);
-    });
-  }, [vehicleSearchTerm]);
-
-  const handleSelectVehicle = useCallback((vehicle: Vehicle) => {
-    onUpdate({
-      vehicleBrand: vehicle.brand,
-      vehicleModel: vehicle.model,
-      vehicleYear: undefined
-    });
-    setVehicleSearchOpen(false);
-    setVehicleSearchTerm("");
-  }, [onUpdate]);
-
-  // Render product-specific fields - Ordre Excel exact
+  // Render Auto fields - SanlamAllianz exact structure (17 fields)
   const renderAutoFields = () => (
     <div className="space-y-6">
-      {/* 1. Marque et modèle avec autocomplétion */}
+      {/* 1. Type de devis - Radio */}
       <div className="space-y-2">
         <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-          1. Véhicule (Marque & Modèle)
+          1. Type de devis <span className="text-destructive">*</span>
         </Label>
-        <Popover open={vehicleSearchOpen} onOpenChange={setVehicleSearchOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" role="combobox" aria-expanded={vehicleSearchOpen} className="w-full justify-start text-left font-normal">
-              <Search className="mr-2 h-4 w-4 text-muted-foreground shrink-0" />
-              {vehicleDisplayValue || <span className="text-muted-foreground">Rechercher un véhicule...</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-            <Command shouldFilter={false}>
-              <CommandInput placeholder="ex: Toyota Corolla, Peugeot 3008..." value={vehicleSearchTerm} onValueChange={setVehicleSearchTerm} />
-              <CommandList>
-                <CommandEmpty>
-                  <div className="p-2 text-center">
-                    <p className="text-sm text-muted-foreground mb-2">Véhicule non trouvé</p>
-                    {vehicleSearchTerm && (
-                      <Button variant="outline" size="sm" onClick={() => {
-                        const parts = vehicleSearchTerm.trim().split(/\s+/);
-                        const brand = parts[0] || vehicleSearchTerm;
-                        const model = parts.slice(1).join(" ") || "";
-                        onUpdate({
-                          vehicleBrand: brand,
-                          vehicleModel: model
-                        });
-                        setVehicleSearchOpen(false);
-                        setVehicleSearchTerm("");
-                      }}>
-                        Utiliser "{vehicleSearchTerm}"
-                      </Button>
-                    )}
-                  </div>
-                </CommandEmpty>
-                <CommandGroup heading="Véhicules populaires">
-                  {filteredVehicles.map(vehicle => (
-                    <CommandItem key={`${vehicle.brand}-${vehicle.model}`} onSelect={() => handleSelectVehicle(vehicle)} className="cursor-pointer">
-                      <Car className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">{vehicle.brand}</span>
-                      <span className="ml-1 text-muted-foreground">{vehicle.model}</span>
-                      {needsAnalysis.vehicleBrand === vehicle.brand && needsAnalysis.vehicleModel === vehicle.model && <Check className="ml-auto h-4 w-4 text-primary" />}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      {/* 2. Usage */}
-      <div className="grid grid-cols-1 gap-4 sm:gap-6">
-        <div className="space-y-2">
-          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            2. Usage
-          </Label>
-          <RadioGroup value={needsAnalysis.vehicleUsage || "prive"} onValueChange={v => onUpdate({
-            vehicleUsage: v as any
-          })} className="flex">
-            <div className="flex-1">
-              <RadioGroupItem value="prive" id="prive" className="peer sr-only" />
-              <Label htmlFor="prive" className="flex items-center justify-center rounded-l-md border border-r-0 py-3 px-4 cursor-pointer peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-primary-foreground peer-data-[state=checked]:border-primary hover:bg-muted transition-colors">
-                Privé / Trajet
-              </Label>
-            </div>
-            <div className="flex-1">
-              <RadioGroupItem value="professionnel" id="professionnel" className="peer sr-only" />
-              <Label htmlFor="professionnel" className="flex items-center justify-center rounded-r-md border py-3 px-4 cursor-pointer peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-primary-foreground peer-data-[state=checked]:border-primary hover:bg-muted transition-colors">
-                Professionnel
-              </Label>
-            </div>
-          </RadioGroup>
-        </div>
-      </div>
-
-      {/* 3. Puissance fiscale + 4. Énergie */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-        <div className="space-y-2">
-          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            3. Puissance fiscale
-          </Label>
-          <div className="relative">
-            <Input type="number" placeholder="ex: 7" value={needsAnalysis.vehicleFiscalPower || ""} onChange={e => onUpdate({
-              vehicleFiscalPower: Number(e.target.value)
-            })} className="pr-10" />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-              CV
-            </span>
+        <RadioGroup 
+          value={needsAnalysis.quoteType || "auto"} 
+          onValueChange={(v) => onUpdate({ quoteType: v as QuoteType })}
+          className="flex"
+        >
+          <div className="flex-1">
+            <RadioGroupItem value="auto" id="quote_auto" className="peer sr-only" />
+            <Label 
+              htmlFor="quote_auto" 
+              className="flex items-center justify-center rounded-l-md border border-r-0 py-3 px-4 cursor-pointer peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-primary-foreground peer-data-[state=checked]:border-primary hover:bg-muted transition-colors"
+            >
+              Devis Auto
+            </Label>
           </div>
-        </div>
+          <div className="flex-1">
+            <RadioGroupItem value="2_3_roues" id="quote_2_3_roues" className="peer sr-only" />
+            <Label 
+              htmlFor="quote_2_3_roues" 
+              className="flex items-center justify-center rounded-r-md border py-3 px-4 cursor-pointer peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-primary-foreground peer-data-[state=checked]:border-primary hover:bg-muted transition-colors"
+            >
+              Devis 2 & 3 Roues
+            </Label>
+          </div>
+        </RadioGroup>
+      </div>
 
+      {/* 2-4. VTC / Entreprise / Déjà client - Row of 3 dropdowns */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            4. Énergie
+            2. Le véhicule est-il un VTC ? <span className="text-destructive">*</span>
           </Label>
-          <Select value={needsAnalysis.vehicleEnergy || "essence"} onValueChange={v => onUpdate({
-            vehicleEnergy: v as any
-          })}>
+          <Select 
+            value={needsAnalysis.isVTC === undefined ? "" : needsAnalysis.isVTC ? "oui" : "non"} 
+            onValueChange={(v) => onUpdate({ isVTC: v === "oui" })}
+          >
             <SelectTrigger>
-              <SelectValue placeholder="Type d'énergie" />
+              <SelectValue placeholder="Sélectionner..." />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="essence">Essence</SelectItem>
-              <SelectItem value="diesel">Diesel</SelectItem>
-              <SelectItem value="electrique">Électrique</SelectItem>
-              <SelectItem value="hybride">Hybride</SelectItem>
+              <SelectItem value="oui">Oui</SelectItem>
+              <SelectItem value="non">Non</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            3. Appartient à entreprise ? <span className="text-destructive">*</span>
+          </Label>
+          <Select 
+            value={needsAnalysis.belongsToCompany === undefined ? "" : needsAnalysis.belongsToCompany ? "oui" : "non"} 
+            onValueChange={(v) => onUpdate({ belongsToCompany: v === "oui" })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Sélectionner..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="oui">Oui</SelectItem>
+              <SelectItem value="non">Non</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            4. Déjà client SanlamAllianz ? <span className="text-destructive">*</span>
+          </Label>
+          <Select 
+            value={needsAnalysis.isExistingClient === undefined ? "" : needsAnalysis.isExistingClient ? "oui" : "non"} 
+            onValueChange={(v) => onUpdate({ isExistingClient: v === "oui" })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Sélectionner..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="oui">Oui</SelectItem>
+              <SelectItem value="non">Non</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      {/* 5. Valeur Neuve + 6. Valeur Vénale */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+      {/* 5-6. Accident 36 mois / Sexe */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            5. Valeur neuve
+            5. Accident 36 derniers mois ? <span className="text-destructive">*</span>
           </Label>
-          <div className="relative">
-            <Input type="number" placeholder="Valeur à l'achat neuf" value={needsAnalysis.vehicleNewValue || ""} onChange={e => onUpdate({
-              vehicleNewValue: Number(e.target.value)
-            })} className="pr-14" />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-              FCFA
-            </span>
-          </div>
+          <Select 
+            value={needsAnalysis.hasAccident36Months === undefined ? "" : needsAnalysis.hasAccident36Months ? "oui" : "non"} 
+            onValueChange={(v) => onUpdate({ hasAccident36Months: v === "oui" })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Sélectionner..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="oui">Oui</SelectItem>
+              <SelectItem value="non">Non</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            6. Valeur vénale
+            6. Sexe <span className="text-destructive">*</span>
           </Label>
-          <div className="relative">
-            <Input type="number" placeholder="Valeur actuelle du véhicule" value={needsAnalysis.vehicleVenalValue || ""} onChange={e => onUpdate({
-              vehicleVenalValue: Number(e.target.value)
-            })} className="pr-14" />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-              FCFA
-            </span>
-          </div>
+          <Select 
+            value={needsAnalysis.gender || ""} 
+            onValueChange={(v) => onUpdate({ gender: v as GenderType })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Sélectionner..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="feminin">Féminin</SelectItem>
+              <SelectItem value="masculin">Masculin</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      {/* 7. Date mise en circulation + 8. Nombre de places */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+      {/* 7. Type d'emploi - Full width */}
+      <div className="space-y-2">
+        <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+          7. Type d'emploi <span className="text-destructive">*</span>
+        </Label>
+        <Select 
+          value={needsAnalysis.employmentType || ""} 
+          onValueChange={(v) => onUpdate({ employmentType: v as EmploymentType })}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Sélectionner..." />
+          </SelectTrigger>
+          <SelectContent>
+            {employmentTypeOptions.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* 8-9. Énergie / Puissance fiscale */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            7. Date de mise en circulation
+            8. Énergie <span className="text-destructive">*</span>
+          </Label>
+          <Select 
+            value={needsAnalysis.vehicleEnergy || ""} 
+            onValueChange={(v) => onUpdate({ vehicleEnergy: v as EnergyType })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Sélectionner..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="essence">Essence</SelectItem>
+              <SelectItem value="gasoil">Gasoil</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            9. Puissance fiscale (en CV) <span className="text-destructive">*</span>
+          </Label>
+          <Select 
+            value={needsAnalysis.vehicleFiscalPower?.toString() || ""} 
+            onValueChange={(v) => onUpdate({ vehicleFiscalPower: Number(v) })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Sélectionner..." />
+            </SelectTrigger>
+            <SelectContent>
+              {fiscalPowerOptions.map((cv) => (
+                <SelectItem key={cv} value={cv.toString()}>{cv} CV</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* 10-11. Date circulation / Places */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            10. Date de première mise en circulation <span className="text-destructive">*</span>
           </Label>
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !needsAnalysis.vehicleFirstCirculationDate && "text-muted-foreground")}>
+              <Button 
+                variant="outline" 
+                className={cn(
+                  "w-full justify-start text-left font-normal", 
+                  !needsAnalysis.vehicleFirstCirculationDate && "text-muted-foreground"
+                )}
+              >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {needsAnalysis.vehicleFirstCirculationDate ? format(new Date(needsAnalysis.vehicleFirstCirculationDate), "PPP", {
-                  locale: fr
-                }) : <span>Sélectionner une date</span>}
+                {needsAnalysis.vehicleFirstCirculationDate 
+                  ? format(new Date(needsAnalysis.vehicleFirstCirculationDate), "dd/MM/yyyy", { locale: fr }) 
+                  : <span>DD/MM/YYYY</span>
+                }
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar 
                 mode="single" 
                 selected={needsAnalysis.vehicleFirstCirculationDate ? new Date(needsAnalysis.vehicleFirstCirculationDate) : undefined} 
-                onSelect={date => onUpdate({
-                  vehicleFirstCirculationDate: date?.toISOString()
-                })} 
-                disabled={date => date > new Date()} 
+                onSelect={(date) => onUpdate({ vehicleFirstCirculationDate: date?.toISOString() })} 
+                disabled={(date) => date > new Date()} 
                 initialFocus 
                 fromYear={1990}
                 toYear={new Date().getFullYear()}
+                className="pointer-events-auto"
               />
             </PopoverContent>
           </Popover>
@@ -294,58 +295,154 @@ export const NeedsAnalysisStep = ({
 
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            8. Nombre de places
+            11. Nombre de places <span className="text-destructive">*</span>
           </Label>
-          <Input type="number" placeholder="ex: 5" value={needsAnalysis.vehicleSeats || ""} onChange={e => onUpdate({
-            vehicleSeats: Number(e.target.value)
-          })} />
+          <Select 
+            value={needsAnalysis.vehicleSeats?.toString() || ""} 
+            onValueChange={(v) => onUpdate({ vehicleSeats: Number(v) })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Sélectionner..." />
+            </SelectTrigger>
+            <SelectContent>
+              {vehicleSeatsOptions.map((seats) => (
+                <SelectItem key={seats} value={seats.toString()}>{seats}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      {/* 9. BNS + 10. Catégorie socio-professionnelle */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+      {/* 12-13. Date effet / Durée */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            9. BNS (Bonus)
+            12. Date d'effet <span className="text-destructive">*</span>
           </Label>
-          <Select value={needsAnalysis.bonusMalus || "bonus_0"} onValueChange={v => onUpdate({
-            bonusMalus: v
-          })}>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="outline" 
+                className={cn(
+                  "w-full justify-start text-left font-normal", 
+                  !needsAnalysis.effectiveDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {needsAnalysis.effectiveDate 
+                  ? format(new Date(needsAnalysis.effectiveDate), "dd/MM/yyyy", { locale: fr }) 
+                  : <span>DD/MM/YYYY</span>
+                }
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar 
+                mode="single" 
+                selected={needsAnalysis.effectiveDate ? new Date(needsAnalysis.effectiveDate) : undefined} 
+                onSelect={(date) => onUpdate({ effectiveDate: date?.toISOString() })} 
+                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))} 
+                initialFocus 
+                fromYear={new Date().getFullYear()}
+                toYear={new Date().getFullYear() + 1}
+                className="pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            13. Durée du contrat <span className="text-destructive">*</span>
+          </Label>
+          <Select 
+            value={needsAnalysis.contractPeriodicity || ""} 
+            onValueChange={(v) => onUpdate({ contractPeriodicity: v as ContractPeriodicity })}
+          >
             <SelectTrigger>
-              <SelectValue placeholder="Sélectionner le BNS" />
+              <SelectValue placeholder="Sélectionner..." />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="bonus_0">0% (Neutre)</SelectItem>
-              <SelectItem value="bonus_10">Bonus 10%</SelectItem>
-              <SelectItem value="bonus_19">Bonus 19%</SelectItem>
-              <SelectItem value="bonus_25">Bonus 25%</SelectItem>
-              <SelectItem value="bonus_30">Bonus 30%</SelectItem>
-              <SelectItem value="bonus_35">Bonus 35%</SelectItem>
+              {contractDurationOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* 14-15. Valeurs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            14. Valeur à neuf <span className="text-destructive">*</span>
+          </Label>
+          <div className="relative">
+            <Input 
+              type="number" 
+              placeholder="Valeur numérique" 
+              value={needsAnalysis.vehicleNewValue || ""} 
+              onChange={(e) => onUpdate({ vehicleNewValue: Number(e.target.value) })} 
+              className="pr-14" 
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+              FCFA
+            </span>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            15. Valeur vénale <span className="text-destructive">*</span>
+          </Label>
+          <div className="relative">
+            <Input 
+              type="number" 
+              placeholder="Valeur numérique" 
+              value={needsAnalysis.vehicleVenalValue || ""} 
+              onChange={(e) => onUpdate({ vehicleVenalValue: Number(e.target.value) })} 
+              className="pr-14" 
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+              FCFA
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 16-17. Toit panoramique / GPS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            16. Toit panoramique ? <span className="text-destructive">*</span>
+          </Label>
+          <Select 
+            value={needsAnalysis.hasPanoramicRoof === undefined ? "" : needsAnalysis.hasPanoramicRoof ? "oui" : "non"} 
+            onValueChange={(v) => onUpdate({ hasPanoramicRoof: v === "oui" })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Sélectionner..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="oui">Oui</SelectItem>
+              <SelectItem value="non">Non</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            10. Catégorie socio-professionnelle
+            17. Protection GPS ? <span className="text-destructive">*</span>
           </Label>
-          <Select value={needsAnalysis.socioProfessionalCategory || ""} onValueChange={v => onUpdate({
-            socioProfessionalCategory: v
-          })}>
+          <Select 
+            value={needsAnalysis.hasGPSProtection === undefined ? "" : needsAnalysis.hasGPSProtection ? "oui" : "non"} 
+            onValueChange={(v) => onUpdate({ hasGPSProtection: v === "oui" })}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Sélectionner..." />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="salarie_public">Salarié public</SelectItem>
-              <SelectItem value="salarie_prive">Salarié privé</SelectItem>
-              <SelectItem value="commercant">Commerçant</SelectItem>
-              <SelectItem value="profession_liberale">Profession libérale</SelectItem>
-              <SelectItem value="artisan">Artisan</SelectItem>
-              <SelectItem value="agriculteur">Agriculteur</SelectItem>
-              <SelectItem value="retraite">Retraité</SelectItem>
-              <SelectItem value="etudiant">Étudiant</SelectItem>
-              <SelectItem value="sans_emploi">Sans emploi</SelectItem>
-              <SelectItem value="autre">Autre</SelectItem>
+              <SelectItem value="oui">Oui</SelectItem>
+              <SelectItem value="non">Non</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -404,16 +501,19 @@ export const NeedsAnalysisStep = ({
 
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            Valeur du contenu
+            Région
           </Label>
-          <div className="relative">
-            <Input type="number" value={needsAnalysis.contentValue || ""} onChange={e => onUpdate({
-              contentValue: Number(e.target.value)
-            })} className="pr-8" />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-              FCFA
-            </span>
-          </div>
+          <Select value={needsAnalysis.region || "abidjan"} onValueChange={v => onUpdate({
+            region: v
+          })}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="abidjan">Abidjan</SelectItem>
+              <SelectItem value="autres">Autres régions</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
     </div>
@@ -426,25 +526,25 @@ export const NeedsAnalysisStep = ({
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
             Nombre de bénéficiaires
           </Label>
-          <Input type="number" value={needsAnalysis.beneficiaryCount || 1} onChange={e => onUpdate({
+          <Input type="number" value={needsAnalysis.beneficiaryCount || ""} onChange={e => onUpdate({
             beneficiaryCount: Number(e.target.value)
           })} />
         </div>
 
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            Région de résidence
+            Niveau de couverture souhaité
           </Label>
-          <Select value={needsAnalysis.region || "abidjan"} onValueChange={v => onUpdate({
-            region: v
+          <Select value={needsAnalysis.coverageLevel || "standard"} onValueChange={v => onUpdate({
+            coverageLevel: v as any
           })}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="abidjan">Abidjan</SelectItem>
-              <SelectItem value="interieur">Intérieur du pays</SelectItem>
-              <SelectItem value="etranger">Étranger</SelectItem>
+              <SelectItem value="essentiel">Essentiel</SelectItem>
+              <SelectItem value="standard">Standard</SelectItem>
+              <SelectItem value="premium">Premium</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -452,30 +552,19 @@ export const NeedsAnalysisStep = ({
 
       <div className="space-y-2">
         <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-          Niveau de couverture souhaité
+          Région de résidence
         </Label>
-        <RadioGroup value={needsAnalysis.coverageLevel || "standard"} onValueChange={v => onUpdate({
-          coverageLevel: v as any
-        })} className="flex">
-          <div className="flex-1">
-            <RadioGroupItem value="essentiel" id="essentiel" className="peer sr-only" />
-            <Label htmlFor="essentiel" className="flex items-center justify-center rounded-l-md border border-r-0 py-3 px-4 cursor-pointer peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-primary-foreground peer-data-[state=checked]:border-primary hover:bg-muted transition-colors">
-              Essentiel
-            </Label>
-          </div>
-          <div className="flex-1">
-            <RadioGroupItem value="standard" id="standard-sante" className="peer sr-only" />
-            <Label htmlFor="standard-sante" className="flex items-center justify-center border-y py-3 px-4 cursor-pointer peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-primary-foreground peer-data-[state=checked]:border-primary hover:bg-muted transition-colors">
-              Standard
-            </Label>
-          </div>
-          <div className="flex-1">
-            <RadioGroupItem value="premium" id="premium-sante" className="peer sr-only" />
-            <Label htmlFor="premium-sante" className="flex items-center justify-center rounded-r-md border border-l-0 py-3 px-4 cursor-pointer peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-primary-foreground peer-data-[state=checked]:border-primary hover:bg-muted transition-colors">
-              Premium
-            </Label>
-          </div>
-        </RadioGroup>
+        <Select value={needsAnalysis.region || "abidjan"} onValueChange={v => onUpdate({
+          region: v
+        })}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="abidjan">Abidjan</SelectItem>
+            <SelectItem value="autres">Autres régions</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
@@ -485,29 +574,25 @@ export const NeedsAnalysisStep = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            Capital souhaité
+            Capital souhaité (FCFA)
           </Label>
-          <div className="relative">
-            <Input type="number" value={needsAnalysis.capitalAmount || ""} onChange={e => onUpdate({
-              capitalAmount: Number(e.target.value)
-            })} className="pr-8" />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-              FCFA
-            </span>
-          </div>
+          <Input type="number" value={needsAnalysis.capitalAmount || ""} onChange={e => onUpdate({
+            capitalAmount: Number(e.target.value)
+          })} />
         </div>
 
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            Durée
+            Durée (années)
           </Label>
-          <Select value={String(needsAnalysis.duration || 15)} onValueChange={v => onUpdate({
+          <Select value={needsAnalysis.duration?.toString() || "10"} onValueChange={v => onUpdate({
             duration: Number(v)
           })}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="5">5 ans</SelectItem>
               <SelectItem value="10">10 ans</SelectItem>
               <SelectItem value="15">15 ans</SelectItem>
               <SelectItem value="20">20 ans</SelectItem>
@@ -519,24 +604,21 @@ export const NeedsAnalysisStep = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            Fumeur ?
+            Situation familiale
           </Label>
-          <RadioGroup value={needsAnalysis.isSmoker ? "oui" : "non"} onValueChange={v => onUpdate({
-            isSmoker: v === "oui"
-          })} className="flex">
-            <div className="flex-1">
-              <RadioGroupItem value="non" id="non-fumeur" className="peer sr-only" />
-              <Label htmlFor="non-fumeur" className="flex items-center justify-center rounded-l-md border border-r-0 py-3 px-4 cursor-pointer peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-primary-foreground peer-data-[state=checked]:border-primary hover:bg-muted transition-colors">
-                Non
-              </Label>
-            </div>
-            <div className="flex-1">
-              <RadioGroupItem value="oui" id="oui-fumeur" className="peer sr-only" />
-              <Label htmlFor="oui-fumeur" className="flex items-center justify-center rounded-r-md border py-3 px-4 cursor-pointer peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-primary-foreground peer-data-[state=checked]:border-primary hover:bg-muted transition-colors">
-                Oui
-              </Label>
-            </div>
-          </RadioGroup>
+          <Select value={needsAnalysis.familyStatus || "celibataire"} onValueChange={v => onUpdate({
+            familyStatus: v
+          })}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="celibataire">Célibataire</SelectItem>
+              <SelectItem value="marie">Marié(e)</SelectItem>
+              <SelectItem value="divorce">Divorcé(e)</SelectItem>
+              <SelectItem value="veuf">Veuf/Veuve</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-2">
@@ -550,9 +632,9 @@ export const NeedsAnalysisStep = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="protection">Protection</SelectItem>
-              <SelectItem value="epargne">Épargne</SelectItem>
-              <SelectItem value="mixte">Mixte</SelectItem>
+              <SelectItem value="protection">Protection familiale</SelectItem>
+              <SelectItem value="epargne">Constitution d'épargne</SelectItem>
+              <SelectItem value="mixte">Protection + Épargne</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -562,88 +644,69 @@ export const NeedsAnalysisStep = ({
 
   const renderMRHFields = () => (
     <div className="space-y-6">
-      {/* Row 1: Valeur bâtiment / Loyer */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            Valeur du bâtiment / Loyer annuel
+            Valeur du bâtiment (FCFA)
           </Label>
-          <div className="relative">
-            <Input type="number" placeholder="Valeur ou loyer annuel" value={needsAnalysis.buildingValue || needsAnalysis.rentValue || ""} onChange={e => onUpdate({
-              buildingValue: Number(e.target.value)
-            })} className="pr-14" />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-              FCFA
-            </span>
-          </div>
+          <Input type="number" value={needsAnalysis.buildingValue || ""} onChange={e => onUpdate({
+            buildingValue: Number(e.target.value)
+          })} />
         </div>
 
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            Valeur du contenu
+            Valeur du contenu (FCFA)
           </Label>
-          <div className="relative">
-            <Input type="number" placeholder="Valeur des biens mobiliers" value={needsAnalysis.contentValue || ""} onChange={e => onUpdate({
-              contentValue: Number(e.target.value)
-            })} className="pr-14" />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-              FCFA
-            </span>
-          </div>
+          <Input type="number" value={needsAnalysis.contentValue || ""} onChange={e => onUpdate({
+            contentValue: Number(e.target.value)
+          })} />
         </div>
       </div>
 
-      {/* Row 2: Équipement informatique + Nombre de pièces */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            Tous risques informatique (Optionnel)
+            Loyer annuel (FCFA)
           </Label>
-          <div className="relative">
-            <Input type="number" placeholder="Valeur équipements IT" value={needsAnalysis.itEquipmentValue || ""} onChange={e => onUpdate({
-              itEquipmentValue: Number(e.target.value)
-            })} className="pr-14" />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-              FCFA
-            </span>
-          </div>
+          <Input type="number" value={needsAnalysis.rentValue || ""} onChange={e => onUpdate({
+            rentValue: Number(e.target.value)
+          })} />
         </div>
 
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
             Nombre de pièces
           </Label>
-          <Input type="number" placeholder="ex: 4" value={needsAnalysis.numberOfRooms || ""} onChange={e => onUpdate({
+          <Input type="number" value={needsAnalysis.numberOfRooms || ""} onChange={e => onUpdate({
             numberOfRooms: Number(e.target.value)
           })} />
         </div>
       </div>
 
-      {/* Row 3: Adresse géographique */}
       <div className="space-y-2">
         <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-          Adresse géographique
+          Adresse du bien
         </Label>
-        <Input placeholder="Adresse complète du bien" value={needsAnalysis.propertyAddress || ""} onChange={e => onUpdate({
+        <Input value={needsAnalysis.propertyAddress || ""} onChange={e => onUpdate({
           propertyAddress: e.target.value
-        })} />
+        })} placeholder="Adresse complète" />
       </div>
     </div>
   );
 
   const renderAssistanceVoyageFields = () => (
     <div className="space-y-6">
-      {/* Row 1: Destination + Date de naissance */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            Destination - Zone
+            Zone de voyage
           </Label>
           <Select value={needsAnalysis.travelZone || "afrique"} onValueChange={v => onUpdate({
             travelZone: v as any
           })}>
             <SelectTrigger>
-              <SelectValue placeholder="Sélectionner la zone" />
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="afrique">Afrique</SelectItem>
@@ -657,27 +720,14 @@ export const NeedsAnalysisStep = ({
 
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            Date de naissance
+            Durée du séjour (jours)
           </Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !needsAnalysis.travelerBirthDate && "text-muted-foreground")}>
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {needsAnalysis.travelerBirthDate ? format(new Date(needsAnalysis.travelerBirthDate), "PPP", {
-                  locale: fr
-                }) : <span>Sélectionner une date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={needsAnalysis.travelerBirthDate ? new Date(needsAnalysis.travelerBirthDate) : undefined} onSelect={date => onUpdate({
-                travelerBirthDate: date?.toISOString()
-              })} disabled={date => date > new Date()} initialFocus className={cn("p-3 pointer-events-auto")} />
-            </PopoverContent>
-          </Popover>
+          <Input type="number" value={needsAnalysis.numberOfDays || ""} onChange={e => onUpdate({
+            numberOfDays: Number(e.target.value)
+          })} />
         </div>
       </div>
 
-      {/* Row 2: Date de départ + Nombre de jours */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
@@ -687,31 +737,25 @@ export const NeedsAnalysisStep = ({
             <PopoverTrigger asChild>
               <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !needsAnalysis.departureDate && "text-muted-foreground")}>
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {needsAnalysis.departureDate ? format(new Date(needsAnalysis.departureDate), "PPP", {
-                  locale: fr
-                }) : <span>Sélectionner une date</span>}
+                {needsAnalysis.departureDate 
+                  ? format(new Date(needsAnalysis.departureDate), "dd/MM/yyyy", { locale: fr }) 
+                  : <span>Sélectionner...</span>
+                }
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={needsAnalysis.departureDate ? new Date(needsAnalysis.departureDate) : undefined} onSelect={date => onUpdate({
-                departureDate: date?.toISOString()
-              })} disabled={date => date < new Date()} initialFocus className={cn("p-3 pointer-events-auto")} />
+              <Calendar 
+                mode="single" 
+                selected={needsAnalysis.departureDate ? new Date(needsAnalysis.departureDate) : undefined} 
+                onSelect={(date) => onUpdate({ departureDate: date?.toISOString() })} 
+                disabled={(date) => date < new Date()} 
+                initialFocus 
+                className="pointer-events-auto"
+              />
             </PopoverContent>
           </Popover>
         </div>
 
-        <div className="space-y-2">
-          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            Nombre de jours
-          </Label>
-          <Input type="number" placeholder="ex: 14" value={needsAnalysis.numberOfDays || ""} onChange={e => onUpdate({
-            numberOfDays: Number(e.target.value)
-          })} />
-        </div>
-      </div>
-
-      {/* Row 3: Date de retour + Numéro de passeport */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <div className="space-y-2">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
             Date de retour
@@ -720,32 +764,29 @@ export const NeedsAnalysisStep = ({
             <PopoverTrigger asChild>
               <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !needsAnalysis.returnDate && "text-muted-foreground")}>
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {needsAnalysis.returnDate ? format(new Date(needsAnalysis.returnDate), "PPP", {
-                  locale: fr
-                }) : <span>Sélectionner une date</span>}
+                {needsAnalysis.returnDate 
+                  ? format(new Date(needsAnalysis.returnDate), "dd/MM/yyyy", { locale: fr }) 
+                  : <span>Sélectionner...</span>
+                }
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={needsAnalysis.returnDate ? new Date(needsAnalysis.returnDate) : undefined} onSelect={date => onUpdate({
-                returnDate: date?.toISOString()
-              })} disabled={date => date < new Date()} initialFocus className={cn("p-3 pointer-events-auto")} />
+              <Calendar 
+                mode="single" 
+                selected={needsAnalysis.returnDate ? new Date(needsAnalysis.returnDate) : undefined} 
+                onSelect={(date) => onUpdate({ returnDate: date?.toISOString() })} 
+                disabled={(date) => date < new Date()} 
+                initialFocus 
+                className="pointer-events-auto"
+              />
             </PopoverContent>
           </Popover>
-        </div>
-
-        <div className="space-y-2">
-          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-            N° Passeport
-          </Label>
-          <Input placeholder="Numéro de passeport" value={needsAnalysis.passportNumber || ""} onChange={e => onUpdate({
-            passportNumber: e.target.value
-          })} />
         </div>
       </div>
     </div>
   );
 
-  const renderProductFields = () => {
+  const renderProductSpecificFields = () => {
     switch (productType) {
       case "auto":
         return renderAutoFields();
@@ -766,28 +807,21 @@ export const NeedsAnalysisStep = ({
 
   return (
     <div className="space-y-6">
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <ProductIcon className="h-5 w-5 text-primary" />
-          <h1 className="text-2xl font-bold text-foreground">{productLabel}</h1>
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+          <ProductIcon className="w-6 h-6 text-primary" />
         </div>
-        <p className="text-muted-foreground">
-          Définissez les informations du risque pour générer une cotation.
-        </p>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Étape 1/2 - Besoin</h1>
+          <p className="text-muted-foreground">{productLabel}</p>
+        </div>
       </div>
 
       <Card>
         <CardContent className="pt-6">
-          {renderProductFields()}
+          {renderProductSpecificFields()}
         </CardContent>
       </Card>
-
-      {/* Next Button */}
-      <div className="flex justify-end pt-4">
-        <Button onClick={onNext} size="lg">
-          Passer à la couverture
-        </Button>
-      </div>
     </div>
   );
 };

@@ -18,6 +18,14 @@ interface CoverageStepProps {
   onNext: () => void;
 }
 
+// Garanties incluses par défaut pour Auto (non modifiables)
+const AUTO_INCLUDED_GUARANTEES = [
+  { id: "rc", name: "Responsabilité Civile", included: true },
+  { id: "defense_recours", name: "Défense/Recours", included: true },
+  { id: "recours_tiers_incendie", name: "Recours des Tiers Incendie", included: true },
+  { id: "individuel_conducteur", name: "Individuel Conducteur", included: true },
+];
+
 // Configuration des plans par type de produit
 const productPlansConfig: Record<SelectedProductType, {
   plans: { tier: PlanTier; name: string; price: number; coverages: { name: string; included: boolean }[] }[];
@@ -28,55 +36,49 @@ const productPlansConfig: Record<SelectedProductType, {
     plans: [
       {
         tier: "basic",
-        name: "Tiers",
+        name: "MINI",
         price: 236000,
         coverages: [
           { name: "Responsabilité Civile", included: true },
-          { name: "Défense Pénale", included: true },
+          { name: "Défense/Recours", included: true },
+          { name: "Recours des Tiers Incendie", included: true },
+          { name: "Individuel Conducteur", included: true },
           { name: "Vol & Incendie", included: false },
           { name: "Dommages Tous Accidents", included: false },
-          { name: "Véhicule de Remplacement", included: false },
         ],
       },
       {
         tier: "standard",
-        name: "Tiers+",
+        name: "BASIC",
         price: 295000,
         coverages: [
           { name: "Responsabilité Civile", included: true },
-          { name: "Défense Pénale", included: true },
+          { name: "Défense/Recours", included: true },
+          { name: "Recours des Tiers Incendie", included: true },
+          { name: "Individuel Conducteur", included: true },
           { name: "Vol & Incendie", included: true },
           { name: "Dommages Tous Accidents", included: false },
-          { name: "Véhicule de Remplacement", included: false },
         ],
       },
       {
         tier: "premium",
-        name: "Tous Risques",
+        name: "MEDIUM+",
         price: 413000,
         coverages: [
           { name: "Responsabilité Civile", included: true },
-          { name: "Défense Pénale", included: true },
+          { name: "Défense/Recours", included: true },
+          { name: "Recours des Tiers Incendie", included: true },
+          { name: "Individuel Conducteur", included: true },
           { name: "Vol & Incendie", included: true },
           { name: "Dommages Tous Accidents", included: true },
-          { name: "Véhicule de Remplacement", included: true },
         ],
       },
     ],
+    // Assistance limitée à Avantage uniquement
     assistanceOptions: [
-      { id: "avantage", name: "Avantage", description: "Assistance de base", price: 0 },
-      { id: "confort", name: "Confort", description: "Assistance étendue + dépannage", price: 43510 },
-      { id: "relax", name: "Relax", description: "Assistance premium + véhicule relais", price: 62975 },
-      { id: "liberte", name: "Liberté", description: "Assistance tout inclus 0km", price: 91600 },
+      { id: "avantage", name: "Avantage", description: "Assistance de base incluse", price: 0 },
     ],
-    additionalOptions: [
-      { id: "bris_glace", name: "Bris de Glace Sans Franchise", description: "Pare-brise, vitres latérales et optiques", price: 29500 },
-      { id: "defense_recours", name: "Défense et Recours", description: "Protection juridique en cas de litige", price: 8459 },
-      { id: "individuel_conducteur", name: "Individuel Conducteur", description: "Capital décès/infirmité + frais médicaux", price: 2800 },
-      { id: "recours_anticipe", name: "Recours Anticipé", description: "Avance sur indemnisation en cas de sinistre", price: 12000 },
-      { id: "protection_gps", name: "Protection GPS/GSM", description: "Couverture des équipements électroniques", price: 15000 },
-      { id: "vol_accessoires", name: "Vol Accessoires", description: "Vol d'accessoires sans effraction du véhicule", price: 25000 },
-    ],
+    additionalOptions: [],
   },
   molo_molo: {
     plans: [

@@ -8,7 +8,19 @@ export type ContractPeriodicity = "1_month" | "3_months" | "6_months" | "1_year"
 export type SignatureType = "presential" | "electronic";
 export type PaymentChannel = "email" | "sms" | "whatsapp";
 export type ViePeriodicite = "mensuelle" | "trimestrielle" | "semestrielle" | "annuelle";
-export type EnergyType = "essence" | "diesel" | "electrique" | "hybride";
+export type EnergyType = "essence" | "gasoil";
+export type QuoteType = "auto" | "2_3_roues";
+export type GenderType = "feminin" | "masculin";
+export type EmploymentType = 
+  | "fonctionnaire" 
+  | "salarie" 
+  | "exploitant_agricole" 
+  | "artisan" 
+  | "religieux" 
+  | "retraite" 
+  | "sans_profession" 
+  | "agent_commercial" 
+  | "autres";
 export type TravelZone = "afrique" | "europe" | "amerique" | "asie" | "monde";
 
 // Données spécifiques Pack Obsèques
@@ -83,21 +95,32 @@ export interface NeedsAnalysisData {
   country: string;
   specificRisks: string;
   contactPreference: "whatsapp" | "sms" | "email";
-  // Auto VP specific
+  // Auto VP specific - SanlamAllianz exact fields
+  quoteType?: QuoteType;                    // 1. Type de devis
+  isVTC?: boolean;                          // 2. VTC
+  belongsToCompany?: boolean;               // 3. Appartient à entreprise
+  isExistingClient?: boolean;               // 4. Déjà client SanlamAllianz
+  hasAccident36Months?: boolean;            // 5. Accident 36 derniers mois
+  gender?: GenderType;                      // 6. Sexe
+  employmentType?: EmploymentType;          // 7. Type d'emploi
+  vehicleEnergy?: EnergyType;               // 8. Énergie
+  vehicleFiscalPower?: number;              // 9. Puissance fiscale (1-8)
+  vehicleFirstCirculationDate?: string;     // 10. Date 1ère circulation
+  vehicleSeats?: number;                    // 11. Nombre de places (3-8)
+  effectiveDate?: string;                   // 12. Date d'effet
+  contractPeriodicity?: ContractPeriodicity; // 13. Durée du contrat
+  vehicleNewValue?: number;                 // 14. Valeur à neuf
+  vehicleVenalValue?: number;               // 15. Valeur vénale
+  hasPanoramicRoof?: boolean;               // 16. Toit panoramique
+  hasGPSProtection?: boolean;               // 17. Protection GPS
+  // Legacy Auto fields (kept for compatibility)
   vehicleType?: string;
   vehicleBrand?: string;
   vehicleModel?: string;
   vehicleYear?: number;
   vehicleUsage?: UsageType;
-  vehicleFirstCirculationDate?: string;
-  vehicleVenalValue?: number;
-  vehicleNewValue?: number;
   bonusMalus?: string;
-  vehicleFiscalPower?: number;
-  vehicleSeats?: number;
-  vehicleEnergy?: EnergyType;
   socioProfessionalCategory?: string;
-  contractPeriodicity?: ContractPeriodicity;
   hasClaimHistory?: boolean;
   // MRH specific
   buildingValue?: number;

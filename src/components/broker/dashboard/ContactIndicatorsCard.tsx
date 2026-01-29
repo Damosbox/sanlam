@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Phone, PhoneOff, PhoneCall, AlertCircle } from "lucide-react";
+import { Phone, PhoneOff, PhoneCall, AlertCircle, RefreshCcw, Users, TrendingDown } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import type { ProductType } from "./ProductSelector";
+import { cn } from "@/lib/utils";
 
 interface ContactStats {
   toCall: number;
@@ -24,6 +25,8 @@ export function ContactIndicatorsCard({ selectedProduct = "all" }: ContactIndica
     reached: 0,
     phoneIssue: 0,
   });
+  const [renewalRate, setRenewalRate] = useState(0);
+  const [churnRate, setChurnRate] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -38,7 +41,7 @@ export function ContactIndicatorsCard({ selectedProduct = "all" }: ContactIndica
       // Fetch subscriptions with renewal data
       let query = supabase
         .from("subscriptions")
-        .select("contact_status, products(category)")
+        .select("contact_status, renewal_status, products(category)")
         .eq("assigned_broker_id", user.id)
         .eq("status", "active");
 
@@ -67,7 +70,19 @@ export function ContactIndicatorsCard({ selectedProduct = "all" }: ContactIndica
       const reached = filtered.filter((s) => s.contact_status === "reached").length;
       const phoneIssue = filtered.filter((s) => s.contact_status === "phone_issue").length;
 
+      // Calculate renewal and churn rates
+      const totalWithDecision = filtered.filter((s) => 
+        s.renewal_status === "renewed" || s.renewal_status === "lost"
+      ).length;
+      const renewed = filtered.filter((s) => s.renewal_status === "renewed").length;
+      const lost = filtered.filter((s) => s.renewal_status === "lost").length;
+
+      const renewalRateCalc = totalWithDecision > 0 ? Math.round((renewed / totalWithDecision) * 100) : 0;
+      const churnRateCalc = totalWithDecision > 0 ? Math.round((lost / totalWithDecision) * 100) : 0;
+
       setStats({ toCall, contacted, reached, phoneIssue });
+      setRenewalRate(renewalRateCalc);
+      setChurnRate(churnRateCalc);
     } catch (error) {
       console.error("Error fetching contact stats:", error);
     } finally {
@@ -77,7 +92,6 @@ export function ContactIndicatorsCard({ selectedProduct = "all" }: ContactIndica
 
   const total = stats.toCall + stats.contacted + stats.reached + stats.phoneIssue;
   const reachedPercent = total > 0 ? Math.round((stats.reached / total) * 100) : 0;
-  const phoneIssuePercent = total > 0 ? Math.round((stats.phoneIssue / (stats.contacted + stats.reached + stats.phoneIssue || 1)) * 100) : 0;
 
   const chartData = [
     { name: "À appeler", value: stats.toCall, color: "hsl(var(--muted-foreground))" },
@@ -93,7 +107,7 @@ export function ContactIndicatorsCard({ selectedProduct = "all" }: ContactIndica
           <Skeleton className="h-5 w-40" />
         </CardHeader>
         <CardContent>
-          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-40 w-full" />
         </CardContent>
       </Card>
     );
@@ -108,27 +122,33 @@ export function ContactIndicatorsCard({ selectedProduct = "all" }: ContactIndica
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 gap-4">
-          {/* Stats Table */}
-          <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Column 1: Stats Table */}
+          <div className="space-y-2">
             <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-2">
                 <PhoneOff className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">À appeler</span>
+                <span className="text-xs sm:text-sm">À appeler</span>
               </div>
-              <span className="font-semibold text-foreground">{stats.toCall}</span>
+              <div className="text-right">
+                <span className="font-semibold text-foreground">{stats.toCall}</span>
+                <span className="text-xs text-muted-foreground ml-1">({total > 0 ? Math.round((stats.toCall / total) * 100) : 0}%)</span>
+              </div>
             </div>
             <div className="flex items-center justify-between p-2 bg-primary/5 rounded-lg">
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-primary" />
-                <span className="text-sm">Contactés</span>
+                <span className="text-xs sm:text-sm">Contactés</span>
               </div>
-              <span className="font-semibold text-foreground">{stats.contacted}</span>
+              <div className="text-right">
+                <span className="font-semibold text-foreground">{stats.contacted}</span>
+                <span className="text-xs text-muted-foreground ml-1">({total > 0 ? Math.round((stats.contacted / total) * 100) : 0}%)</span>
+              </div>
             </div>
             <div className="flex items-center justify-between p-2 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg">
               <div className="flex items-center gap-2">
                 <PhoneCall className="h-4 w-4 text-emerald-600" />
-                <span className="text-sm">Atteints</span>
+                <span className="text-xs sm:text-sm">Atteints</span>
               </div>
               <div className="text-right">
                 <span className="font-semibold text-foreground">{stats.reached}</span>
@@ -138,17 +158,17 @@ export function ContactIndicatorsCard({ selectedProduct = "all" }: ContactIndica
             <div className="flex items-center justify-between p-2 bg-red-50 dark:bg-red-950/20 rounded-lg">
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 text-red-500" />
-                <span className="text-sm">Pb téléphone</span>
+                <span className="text-xs sm:text-sm">Pb téléphone</span>
               </div>
               <div className="text-right">
                 <span className="font-semibold text-foreground">{stats.phoneIssue}</span>
-                <span className="text-xs text-red-500 ml-1">({phoneIssuePercent}%)</span>
+                <span className="text-xs text-red-500 ml-1">({total > 0 ? Math.round((stats.phoneIssue / total) * 100) : 0}%)</span>
               </div>
             </div>
           </div>
 
-          {/* Pie Chart */}
-          <div className="h-[160px]">
+          {/* Column 2: Pie Chart */}
+          <div className="h-[160px] flex items-center justify-center">
             {total > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -180,6 +200,30 @@ export function ContactIndicatorsCard({ selectedProduct = "all" }: ContactIndica
                 Aucune donnée
               </div>
             )}
+          </div>
+
+          {/* Column 3: Summary Cards */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-center">
+              <RefreshCcw className="h-4 w-4 text-primary mx-auto mb-1" />
+              <p className="text-lg sm:text-xl font-bold text-primary">{renewalRate}%</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Taux renouvellement</p>
+            </div>
+            <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 text-center">
+              <Users className="h-4 w-4 text-emerald-600 mx-auto mb-1" />
+              <p className="text-lg sm:text-xl font-bold text-emerald-600">{reachedPercent}%</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Clients atteints</p>
+            </div>
+            <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 text-center">
+              <PhoneOff className="h-4 w-4 text-amber-600 mx-auto mb-1" />
+              <p className="text-lg sm:text-xl font-bold text-amber-600">{stats.toCall}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">A contacter</p>
+            </div>
+            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-center">
+              <TrendingDown className="h-4 w-4 text-red-500 mx-auto mb-1" />
+              <p className="text-lg sm:text-xl font-bold text-red-500">{churnRate}%</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Taux churn</p>
+            </div>
           </div>
         </div>
       </CardContent>

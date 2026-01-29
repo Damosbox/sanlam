@@ -1,361 +1,279 @@
 
-# Plan de Refonte Dashboard & Sidebar Broker
+# Extraction et Restructuration du Dashboard en Grid
 
-## Vue d'Ensemble
+## Analyse de la Maquette - Positions Extraites
 
-Ce plan restructure entièrement la navigation et le dashboard broker selon la maquette fournie, avec une nouvelle organisation en 6 groupes de navigation et un dashboard centré sur les indicateurs de contact et l'actualité dynamique.
-
----
-
-## Phase 1 : Restructuration de la Sidebar
-
-### Structure de Navigation Cible
+En analysant l'image, voici la structure exacte du layout avec toutes les positions identifiées :
 
 ```text
-SIDEBAR BROKER
-├── ACCUEIL
-│   └── Tableau de bord (/b2b/dashboard)
-│
-├── MON PORTEFEUILLE
-│   ├── Clients (/b2b/portfolio?tab=clients)
-│   └── Prospects (/b2b/portfolio?tab=prospects)
-│
-├── VENTE
-│   └── Nouvelle Vente (/b2b/sales)
-│
-├── GESTION
-│   ├── Sinistres (/b2b/claims)
-│   ├── Polices (/b2b/policies)
-│   └── Renouvellement (/b2b/renewals)  ← NOUVELLE PAGE
-│
-├── PERFORMANCES
-│   ├── Statistiques (/b2b/stats)
-│   └── Rapports (/b2b/reports)  ← Placeholder
-│
-└── COMMUNICATIONS
-    ├── Messages (/b2b/messages)
-    ├── Actualités (/b2b/news)  ← NOUVELLE PAGE
-    └── Campagnes (/b2b/campaigns)  ← Placeholder
-```
+DASHBOARD GRID LAYOUT (12 colonnes)
+================================================================================
 
-### Fichiers à Modifier/Créer
+ROW 0: HEADER (span 12)
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ [Avatar] Bienvenue [Nom]     [Product Pills: Tous|Auto|MRH|...]   [Devis ▼]   │
+│          Temps de connexion: 5h                                                │
+└────────────────────────────────────────────────────────────────────────────────┘
 
-| Action | Fichier | Description |
-|--------|---------|-------------|
-| Modifier | `src/components/broker/BrokerSidebar.tsx` | Refonte complète avec 6 groupes |
-| Créer | `src/pages/broker/RenewalsPage.tsx` | Page dédiée renouvellement |
-| Créer | `src/pages/broker/NewsPage.tsx` | Page actualités dynamiques |
-| Créer | `src/pages/broker/ReportsPage.tsx` | Placeholder rapports |
-| Créer | `src/pages/broker/CampaignsPage.tsx` | Placeholder campagnes |
-| Modifier | `src/App.tsx` | Nouvelles routes |
+ROW 1: KPI CARDS (4 cards, span 3 each)
+┌──────────────────┬──────────────────┬──────────────────┬──────────────────────┐
+│  Mes Tâches      │  Mes commissions │  Mes Primes      │  Mes polices         │
+│       7          │  1 283 592 FCFA  │  112 254 889 FCFA│    453 Contrats      │
+│     [↗]          │       [↗]        │       [↗]        │         [↗]          │
+└──────────────────┴──────────────────┴──────────────────┴──────────────────────┘
+      span 3             span 3             span 3              span 3
 
-### Détail Technique - BrokerSidebar.tsx
+ROW 2: MAIN CONTENT (2x2 grid)
+┌────────────────────────────────────────────┬────────────────────────────────────┐
+│  TAUX DE RENOUVELLEMENT                    │  PIPELINE LEADS           12 Total │
+│  ┌───────────────┬───────────────┐         │  [Progress Bar ████████████]       │
+│  │   Effectif    │    A faire    │         │  [●4] [●0] [0] [8] [●0]            │
+│  │    [Donut]    │    [Donut]    │         ├────────────────────────────────────┤
+│  │   Atteint     │   Non atteint │         │  ANALYSE IA                 [4]    │
+│  └───────────────┴───────────────┘         │  ┌──────────────────────────────┐  │
+│  INDICATEURS DE CONTACT     Résumé         │  │ 🌟 Nouveaux Prospects        │  │
+│  ┌─────────────────┬────────────────────┐  │  │    4 nouveaux prospects...   │  │
+│  │ Indicateur    N  %    │  76%  82%    │  │  ├──────────────────────────────┤  │
+│  │ Personnes     156 100%│  Taux  Clients│  │  │ ⚠ Prospects en attente      │  │
+│  │ à appeler             │  renouv atteint│  │  │   2 prospects inactifs...   │  │
+│  │ Contactés     128  82%│               │  │  ├──────────────────────────────┤  │
+│  │ Atteints      105  82%│  24    8%     │  │  │ 🔄 Cross-sell               │  │
+│  │ Pb téléphone   23  18%│  A contacter  │  │  │   3 clients ont 1 produit   │  │
+│  └─────────────────┴────────────────────┘  │  └──────────────────────────────┘  │
+│          span 7 (ou 8)                     │          span 5 (ou 4)             │
+└────────────────────────────────────────────┴────────────────────────────────────┘
 
-```typescript
-// Nouvelle structure des items de navigation
-const navigationGroups = [
-  {
-    label: "Accueil",
-    items: [
-      { title: "Tableau de bord", url: "/b2b/dashboard", icon: LayoutDashboard }
-    ]
-  },
-  {
-    label: "Mon Portefeuille",
-    items: [
-      { title: "Clients", url: "/b2b/portfolio?tab=clients", icon: Users },
-      { title: "Prospects", url: "/b2b/portfolio?tab=prospects", icon: UserPlus }
-    ]
-  },
-  {
-    label: "Vente",
-    items: [
-      { title: "Nouvelle Vente", url: "/b2b/sales", icon: Zap }
-    ]
-  },
-  {
-    label: "Gestion",
-    items: [
-      { title: "Sinistres", url: "/b2b/claims", icon: FileText, badge: pendingClaims },
-      { title: "Polices", url: "/b2b/policies", icon: Shield },
-      { title: "Renouvellement", url: "/b2b/renewals", icon: RefreshCw, badge: renewalsCount }
-    ]
-  },
-  {
-    label: "Performances",
-    items: [
-      { title: "Statistiques", url: "/b2b/stats", icon: PieChart },
-      { title: "Rapports", url: "/b2b/reports", icon: FileBarChart }
-    ]
-  },
-  {
-    label: "Communications",
-    items: [
-      { title: "Messages", url: "/b2b/messages", icon: MessageSquare },
-      { title: "Actualités", url: "/b2b/news", icon: Newspaper },
-      { title: "Campagnes", url: "/b2b/campaigns", icon: Megaphone, disabled: true }
-    ]
-  }
-];
+ROW 3: NEWS BANNER (span 12)
+┌────────────────────────────────────────────────────────────────────────────────┐
+│     📢 Bannière de publicité actualisée                                        │
+└────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Phase 2 : Refonte du Dashboard
+## Structure Grid CSS/Tailwind Proposée
 
-### Layout Cible (selon maquette)
-
-Le layout doit etre en system de grids 2X2
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│  HEADER : Bonjour [Nom] + Product Selector + Quick Actions      │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌──────────┬──────────┬──────────┬──────────┐                  │
-│  │ Leads    │ Conv.    │ Commiss. │ Mes      │  ← 4 KPIs        │
-│  │ 24h      │ Rate     │ MTD      │ Tâches   │    horizontaux   │
-│  └──────────┴──────────┴──────────┴──────────┘                  │
-│                                                                  │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │ TAUX DE RENOUVELLEMENT (Donuts + Stats)                    │ │
-│  └────────────────────────────────────────────────────────────┘ │
-│                                                                  │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │ INDICATEURS DE CONTACT                                      │ │
-│  │ ┌───────────────────────────┬────────────────────────────┐ │ │
-│  │ │ Tableau synthétique       │ Graphique Pie/Donut        │ │ │
-│  │ │ • À appeler: 156          │                            │ │ │
-│  │ │ • Contactés: 128 (82%)    │      [PIE CHART]           │ │ │
-│  │ │ • Atteints: 105 (82%)     │                            │ │ │
-│  │ │ • Pb tél: 23 (18%)        │                            │ │ │
-│  │ └───────────────────────────┴────────────────────────────┘ │ │
-│  └────────────────────────────────────────────────────────────┘ │
-│                                                                  │
-│  ┌──────────────────────────────┬─────────────────────────────┐ │
-│  │ ACTIONS DU JOUR              │ RECOMMANDATIONS IA          │ │
-│  │ • Relancer X                 │ • Upsell opportunité        │ │
-│  │ • Sinistre Y                 │ • Client à risque           │ │
-│  └──────────────────────────────┴─────────────────────────────┘ │
-│                                                                  │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │ 📢 BANNIÈRE ACTUALITÉ (dynamique admin)                    │ │
-│  │ "Nouvelle offre Assurance Auto Eco disponible..."          │ │
-│  └────────────────────────────────────────────────────────────┘ │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Fichiers à Modifier/Créer
-
-| Action | Fichier | Description |
-|--------|---------|-------------|
-| Modifier | `src/pages/broker/DashboardPage.tsx` | Nouveau layout complet |
-| Modifier | `src/components/broker/dashboard/DashboardKPIs.tsx` | 4 KPIs horizontaux + "Mes Tâches" |
-| Créer | `src/components/broker/dashboard/ContactIndicatorsCard.tsx` | Tableau + graphique inline |
-| Créer | `src/components/broker/dashboard/NewsBanner.tsx` | Bannière actualité dynamique |
-| Conserver | `src/components/broker/dashboard/RenewalRateCards.tsx` | Déjà fonctionnel |
-| Conserver | `src/components/broker/dashboard/TasksReminders.tsx` | Déjà fonctionnel |
-| Conserver | `src/components/broker/dashboard/AIRecommendations.tsx` | Déjà fonctionnel |
-
-### Nouveau KPI "Mes Tâches"
-
-Ajout d'un 4ème KPI qui affiche le nombre de tâches en attente avec un lien direct vers la section actions.
+### Grid Principal (12 colonnes)
 
 ```typescript
-// Dans DashboardKPIs.tsx
-const kpis = [
-  { label: "Nouveaux leads", value: "12", icon: Users, trend: "+3 vs hier" },
-  { label: "Taux conversion", value: "24%", icon: TrendingUp, trend: "+2 pts" },
-  { label: "Commissions", value: "850K", icon: Wallet, trend: "Mois en cours" },
-  { label: "Mes Tâches", value: "5", icon: CheckSquare, trend: "À traiter", highlight: true }
-];
+// DashboardPage.tsx - Nouvelle structure Grid
+<div className="grid grid-cols-12 gap-4">
+  
+  {/* ROW 0: Header - Full Width */}
+  <div className="col-span-12">
+    <DashboardHeader />
+  </div>
+  
+  {/* ROW 1: KPI Cards - 4 cards x 3 cols each */}
+  <div className="col-span-12 grid grid-cols-4 gap-3">
+    <KPICard label="Mes Tâches" value="7" />
+    <KPICard label="Mes commissions" value="1 283 592 FCFA" />
+    <KPICard label="Mes Primes" value="112 254 889 FCFA" />
+    <KPICard label="Mes polices" value="453 Contrats" />
+  </div>
+  
+  {/* ROW 2: Main Content - Split 7/5 */}
+  <div className="col-span-7 space-y-4">
+    <RenewalRateSection />      {/* Donuts + Stats */}
+    <ContactIndicatorsCard />   {/* Table + Summary */}
+  </div>
+  
+  <div className="col-span-5 space-y-4">
+    <LeadsPipeline />           {/* Pipeline + Progress */}
+    <AIRecommendations />       {/* AI Cards */}
+  </div>
+  
+  {/* ROW 3: News Banner - Full Width */}
+  <div className="col-span-12">
+    <NewsBanner />
+  </div>
+  
+</div>
 ```
 
 ---
 
-## Phase 3 : Table Base de Données pour Actualités
+## Mapping Composants vs Positions
 
-### Création de la Table `broker_news`
+| Position | Col Span | Composant | Fichier |
+|----------|----------|-----------|---------|
+| Header | 12 | `DashboardHeader` | Existant |
+| KPI 1 | 3 | `KPICard` (Mes Tâches) | A ajouter |
+| KPI 2 | 3 | `KPICard` (Commissions) | Existant |
+| KPI 3 | 3 | `KPICard` (Primes) | Existant |
+| KPI 4 | 3 | `KPICard` (Polices) | Existant |
+| Taux Renouvellement | 7 (partie haute) | `RenewalRateCards` | Existant - A modifier |
+| Indicateurs Contact | 7 (partie basse) | `ContactIndicatorsCard` | Existant - A modifier |
+| Pipeline Leads | 5 (partie haute) | `LeadsPipeline` | Existant |
+| Analyse IA | 5 (partie basse) | `AIRecommendations` | Existant |
+| News Banner | 12 | `NewsBanner` | Existant |
 
-```sql
-CREATE TABLE public.broker_news (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title TEXT NOT NULL,
-  content TEXT NOT NULL,
-  image_url TEXT,
-  link_url TEXT,
-  link_label TEXT,
-  priority INTEGER DEFAULT 0,
-  is_active BOOLEAN DEFAULT true,
-  start_date TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  end_date TIMESTAMP WITH TIME ZONE,
-  target_roles TEXT[] DEFAULT '{"broker"}',
-  created_by UUID REFERENCES auth.users(id),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
+---
 
--- RLS Policies
-ALTER TABLE public.broker_news ENABLE ROW LEVEL SECURITY;
+## Modifications Requises
 
--- Admins can manage all news
-CREATE POLICY "Admins can manage all broker news"
-  ON public.broker_news FOR ALL
-  USING (has_role(auth.uid(), 'admin'));
-
--- Brokers can view active news
-CREATE POLICY "Brokers can view active news"
-  ON public.broker_news FOR SELECT
-  USING (
-    is_active = true 
-    AND (start_date IS NULL OR start_date <= now())
-    AND (end_date IS NULL OR end_date >= now())
-  );
-```
-
-### Composant NewsBanner.tsx
+### 1. DashboardPage.tsx - Refonte Grid
 
 ```typescript
-// Récupère les actualités actives triées par priorité
-const { data: news } = useQuery({
-  queryKey: ['broker-news'],
-  queryFn: async () => {
-    const { data } = await supabase
-      .from('broker_news')
-      .select('*')
-      .eq('is_active', true)
-      .order('priority', { ascending: false })
-      .limit(3);
-    return data;
-  }
-});
-
-// Affichage en carousel ou liste
-return (
-  <Card className="bg-gradient-to-r from-primary/10 to-primary/5">
-    <CardContent className="flex items-center gap-4">
-      <Newspaper className="h-8 w-8 text-primary" />
-      <div className="flex-1">
-        <h4 className="font-semibold">{news[0]?.title}</h4>
-        <p className="text-sm text-muted-foreground">{news[0]?.content}</p>
+const DashboardPage = () => {
+  return (
+    <div className="space-y-4 max-w-6xl animate-fade-in">
+      {/* Header + Quick Actions */}
+      <div className="flex justify-between items-start">
+        <DashboardHeader />
+        <QuickActions />
       </div>
-      {news[0]?.link_url && (
-        <Button variant="outline" size="sm">
-          {news[0]?.link_label || "En savoir plus"}
-        </Button>
-      )}
+      
+      {/* KPIs Row - 4 colonnes égales */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <KPICard icon={CheckSquare} label="Mes Tâches" value={tasksCount} link="/b2b/tasks" />
+        <KPICard icon={Wallet} label="Mes commissions" value={formatFCFA(commissions)} />
+        <KPICard icon={TrendingUp} label="Mes Primes" value={formatFCFA(premiums)} />
+        <KPICard icon={FileText} label="Mes polices" value={`${policies} Contrats`} />
+      </div>
+      
+      {/* Main Content Grid - 7/5 split */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        {/* Left Column: 7 cols */}
+        <div className="lg:col-span-7 space-y-4">
+          <RenewalRateSection />
+          <ContactIndicatorsCard />
+        </div>
+        
+        {/* Right Column: 5 cols */}
+        <div className="lg:col-span-5 space-y-4">
+          <LeadsPipeline />
+          <AIRecommendations />
+        </div>
+      </div>
+      
+      {/* News Banner - Full Width */}
+      <NewsBanner />
+    </div>
+  );
+};
+```
+
+### 2. Nouveau Composant KPICard Unifié
+
+```typescript
+// src/components/broker/dashboard/KPICard.tsx
+interface KPICardProps {
+  icon: LucideIcon;
+  label: string;
+  value: string | number;
+  link?: string;
+  highlight?: boolean;
+}
+
+export const KPICard = ({ icon: Icon, label, value, link, highlight }: KPICardProps) => (
+  <Card className={cn(
+    "border-border/60 hover:shadow-soft transition-all",
+    highlight && "bg-primary/5 border-primary/30"
+  )}>
+    <CardContent className="p-4 flex justify-between items-start">
+      <div>
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="text-xl font-bold mt-1">{value}</p>
+      </div>
+      <div className="flex flex-col items-end gap-2">
+        {link && <ArrowUpRight className="h-4 w-4 text-muted-foreground" />}
+        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+          <Icon className="w-4 h-4 text-primary" />
+        </div>
+      </div>
     </CardContent>
   </Card>
 );
 ```
 
----
+### 3. Modification ContactIndicatorsCard
 
-## Phase 4 : Page Renouvellement Dédiée
+Le composant actuel affiche table + pie chart cote à cote. Selon la maquette, il faut ajouter une section "Résumé" avec les 4 métriques clés (76%, 82%, 24, 8%).
 
-### Structure de RenewalsPage.tsx
-
-Déplacement de la logique actuelle de `RenewalStatsPage.tsx` vers une page dédiée avec :
-
-1. **Vue d'ensemble** : KPIs de renouvellement
-2. **Pipeline** : Tableau interactif avec statuts contact/renouvellement
-3. **Actions rapides** : Boutons pour contacter les clients
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│  RENOUVELLEMENT                              [Product Selector] │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌──────────┬──────────┬──────────┬──────────┐                  │
-│  │ 76%      │ 82%      │ 24       │ 8%       │                  │
-│  │ Taux     │ Clients  │ À        │ Churn    │                  │
-│  │ Renouv.  │ Atteints │ Contacter│ Rate     │                  │
-│  └──────────┴──────────┴──────────┴──────────┘                  │
-│                                                                  │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │ FILTRES: [Statut contact ▼] [Décision ▼] [Recherche...]   │ │
-│  └────────────────────────────────────────────────────────────┘ │
-│                                                                  │
-│  ┌────────────────────────────────────────────────────────────┐ │
-│  │ PIPELINE DES RENOUVELLEMENTS                               │ │
-│  │ Client | Produit | Échéance | Contact | Décision | Actions │ │
-│  │ ─────────────────────────────────────────────────────────  │ │
-│  │ Dupont | Auto    | 15/02    | Atteint | Renouvelé | [📞]   │ │
-│  │ Martin | MRH     | 20/02    | Non     | En attente| [📞💬] │ │
-│  └────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
+```typescript
+// Structure mise à jour
+<div className="grid grid-cols-3 gap-4">
+  {/* Colonne 1: Table indicateurs */}
+  <div className="col-span-1">
+    <Table>...</Table>
+  </div>
+  
+  {/* Colonne 2: Donut Chart */}
+  <div className="col-span-1">
+    <PieChart>...</PieChart>
+  </div>
+  
+  {/* Colonne 3: Résumé Cards */}
+  <div className="col-span-1 grid grid-cols-2 gap-2">
+    <SummaryCard value="76%" label="Taux renouvellement" color="primary" />
+    <SummaryCard value="82%" label="Clients atteints" color="success" />
+    <SummaryCard value="24" label="A contacter" color="warning" />
+    <SummaryCard value="8%" label="Taux churn" color="destructive" />
+  </div>
+</div>
 ```
 
 ---
 
-## Phase 5 : Interface Admin pour Actualités
-
-### Ajout dans l'Admin Panel
-
-Créer une section dans l'admin pour gérer les actualités broker :
-
-| Action | Fichier | Description |
-|--------|---------|-------------|
-| Créer | `src/pages/admin/BrokerNewsPage.tsx` | CRUD des actualités |
-| Modifier | `src/components/admin/AdminSidebar.tsx` | Ajouter entrée "Actualités Broker" |
-| Modifier | `src/App.tsx` | Route `/admin/broker-news` |
-
----
-
-## Résumé des Livrables
-
-### Fichiers à Créer (7)
-
-1. `src/pages/broker/RenewalsPage.tsx` - Page dédiée renouvellement
-2. `src/pages/broker/NewsPage.tsx` - Page actualités broker
-3. `src/pages/broker/ReportsPage.tsx` - Placeholder rapports
-4. `src/pages/broker/CampaignsPage.tsx` - Placeholder campagnes
-5. `src/components/broker/dashboard/ContactIndicatorsCard.tsx` - Widget indicateurs
-6. `src/components/broker/dashboard/NewsBanner.tsx` - Bannière actualité
-7. `src/pages/admin/BrokerNewsPage.tsx` - Admin CRUD actualités
-
-### Fichiers à Modifier (5)
-
-1. `src/components/broker/BrokerSidebar.tsx` - Nouvelle structure navigation
-2. `src/pages/broker/DashboardPage.tsx` - Nouveau layout dashboard
-3. `src/components/broker/dashboard/DashboardKPIs.tsx` - Ajout KPI "Mes Tâches"
-4. `src/components/admin/AdminSidebar.tsx` - Entrée gestion actualités
-5. `src/App.tsx` - Nouvelles routes
-
-### Migration Base de Données (1)
-
-- Création table `broker_news` avec RLS policies
-
----
-
-## Ordre d'Implémentation Recommandé
-
-1. **Migration DB** : Créer table `broker_news`
-2. **Sidebar** : Restructurer la navigation
-3. **Routes** : Ajouter les nouvelles pages
-4. **Dashboard** : Refondre le layout avec tous les composants
-5. **Renouvellement** : Page dédiée
-6. **Actualités** : Admin + affichage broker
-7. **Placeholders** : Rapports et Campagnes
-
----
-
-## Icônes Utilisées
+## Responsive Breakpoints
 
 ```typescript
-import {
-  LayoutDashboard,  // Dashboard
-  Users,            // Clients
-  UserPlus,         // Prospects
-  Zap,              // Vente
-  FileText,         // Sinistres
-  Shield,           // Polices
-  RefreshCw,        // Renouvellement
-  PieChart,         // Statistiques
-  FileBarChart,     // Rapports
-  MessageSquare,    // Messages
-  Newspaper,        // Actualités
-  Megaphone,        // Campagnes
-  CheckSquare,      // Mes Tâches
-} from "lucide-react";
+// Tailwind Grid Classes
+const gridClasses = {
+  // KPI Row
+  kpis: "grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3",
+  
+  // Main Content
+  mainGrid: "grid grid-cols-1 lg:grid-cols-12 gap-4",
+  leftColumn: "lg:col-span-7 space-y-4",
+  rightColumn: "lg:col-span-5 space-y-4",
+  
+  // Contact Indicators Internal
+  contactGrid: "grid grid-cols-1 md:grid-cols-3 gap-3",
+};
+
+// Breakpoints:
+// - Mobile (<640px): 1 column, stacked
+// - Tablet (640-1024px): 2 columns KPIs, stacked content
+// - Desktop (>1024px): 4 cols KPIs, 7/5 split content
+```
+
+---
+
+## Fichiers a Modifier
+
+| Fichier | Action | Description |
+|---------|--------|-------------|
+| `DashboardPage.tsx` | Modifier | Nouvelle structure grid 12 colonnes |
+| `DashboardKPIs.tsx` | Modifier | Extraire en composants KPICard individuels |
+| `ContactIndicatorsCard.tsx` | Modifier | Ajouter section "Résumé" avec 4 métriques |
+| `KPICard.tsx` | Creer | Nouveau composant card unifié |
+| `RenewalRateCards.tsx` | Conserver | Donuts existants OK |
+| `LeadsPipeline.tsx` | Conserver | Existant OK |
+| `AIRecommendations.tsx` | Conserver | Existant OK |
+| `NewsBanner.tsx` | Conserver | Existant OK |
+
+---
+
+## Schema Grid Final
+
+```text
+┌─────────────────────────────────────────────────────────────────────┐
+│                        col-span-12: Header                           │
+├──────────┬──────────┬──────────┬──────────────────────────────────────┤
+│ col-3    │ col-3    │ col-3    │          col-3                       │
+│ Tâches   │ Commiss. │ Primes   │          Polices                     │
+├──────────┴──────────┴──────────┴──────────┬───────────────────────────┤
+│              col-span-7                    │       col-span-5          │
+│  ┌─────────────────────────────────────┐  │  ┌─────────────────────┐  │
+│  │ RenewalRateCards (Donuts)           │  │  │ LeadsPipeline       │  │
+│  └─────────────────────────────────────┘  │  └─────────────────────┘  │
+│  ┌─────────────────────────────────────┐  │  ┌─────────────────────┐  │
+│  │ ContactIndicatorsCard               │  │  │ AIRecommendations   │  │
+│  │ (Table + Pie + Resume)              │  │  │                     │  │
+│  └─────────────────────────────────────┘  │  └─────────────────────┘  │
+├───────────────────────────────────────────┴───────────────────────────┤
+│                        col-span-12: NewsBanner                        │
+└───────────────────────────────────────────────────────────────────────┘
 ```

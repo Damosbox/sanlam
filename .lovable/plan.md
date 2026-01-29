@@ -1,279 +1,276 @@
 
-# Extraction et Restructuration du Dashboard en Grid
+# Plan d'Implémentation - Formulaire Auto Exact SanlamAllianz
 
-## Analyse de la Maquette - Positions Extraites
+## Analyse des Exigences
 
-En analysant l'image, voici la structure exacte du layout avec toutes les positions identifiées :
+Le tableau fourni définit **23 champs** répartis sur 2 étapes :
+- **Étape 1/2** : 17 champs de qualification véhicule/client
+- **Étape 2/2** : 6 champs de sélection formule et garanties
+
+## Comparaison avec l'Existant
+
+| Champ Requis | État Actuel | Action |
+|-------------|-------------|--------|
+| Type de devis (Auto/2&3 Roues) | Non existant | **CRÉER** |
+| VTC (Oui/Non) | Non existant | **CRÉER** |
+| Appartient à entreprise | Non existant | **CRÉER** |
+| Déjà client SanlamAllianz | Existe (`clientType`) | Adapter libellé |
+| Accident 36 derniers mois | Existe (`hasClaimHistory`) | Adapter libellé |
+| Sexe | Non existant | **CRÉER** |
+| Type d'emploi | Existe (`socioProfessionalCategory`) | Adapter options |
+| Énergie | Existe (`vehicleEnergy`) | Adapter (Essence/Gasoil) |
+| Puissance fiscale | Existe (`vehicleFiscalPower`) | Changer en Dropdown 1-8 |
+| Date première circulation | Existe (`vehicleFirstCirculationDate`) | OK |
+| Nombre de places | Existe (`vehicleSeats`) | Changer en Dropdown 3-8 |
+| Date d'effet | Non existant | **CRÉER** |
+| Durée du contrat | Existe (`contractPeriodicity`) | OK |
+| Valeur à neuf | Existe (`vehicleNewValue`) | OK |
+| Valeur vénale | Existe (`vehicleVenalValue`) | OK |
+| Toit panoramique | Non existant | **CRÉER** |
+| Protection GPS | Non existant | **CRÉER** |
+| Formule (MINI/BASIC/MEDIUM+) | Existe (`planTier`) | Adapter noms |
+| Garanties incluses (4) | Existe | Afficher comme checkbox désactivées |
+| Type d'assistance | Existe (`assistanceLevel`) | Limiter à "Avantage" |
+
+---
+
+## Phase 1 : Mise à jour des Types
+
+### Fichier : `src/components/guided-sales/types.ts`
+
+Nouveaux champs à ajouter dans `NeedsAnalysisData` :
+
+```typescript
+// Auto VP specific - Nouveaux champs SanlamAllianz
+quoteType?: "auto" | "2_3_roues";           // Type de devis
+isVTC?: boolean;                            // VTC
+belongsToCompany?: boolean;                 // Appartient à entreprise
+isExistingClient?: boolean;                 // Déjà client SanlamAllianz
+hasAccident36Months?: boolean;              // Accident 36 derniers mois
+gender?: "feminin" | "masculin";            // Sexe
+employmentType?: string;                    // Type d'emploi (enum)
+effectiveDate?: string;                     // Date d'effet
+hasPanoramicRoof?: boolean;                 // Toit panoramique
+hasGPSProtection?: boolean;                 // Protection GPS
+```
+
+Nouveau type enum pour emploi :
+```typescript
+export type EmploymentType = 
+  | "fonctionnaire" 
+  | "salarie" 
+  | "exploitant_agricole" 
+  | "artisan" 
+  | "religieux" 
+  | "retraite" 
+  | "sans_profession" 
+  | "agent_commercial" 
+  | "autres";
+```
+
+---
+
+## Phase 2 : Refonte NeedsAnalysisStep (Étape 1/2)
+
+### Structure des 17 champs en ordre exact
 
 ```text
-DASHBOARD GRID LAYOUT (12 colonnes)
-================================================================================
-
-ROW 0: HEADER (span 12)
-┌────────────────────────────────────────────────────────────────────────────────┐
-│ [Avatar] Bienvenue [Nom]     [Product Pills: Tous|Auto|MRH|...]   [Devis ▼]   │
-│          Temps de connexion: 5h                                                │
-└────────────────────────────────────────────────────────────────────────────────┘
-
-ROW 1: KPI CARDS (4 cards, span 3 each)
-┌──────────────────┬──────────────────┬──────────────────┬──────────────────────┐
-│  Mes Tâches      │  Mes commissions │  Mes Primes      │  Mes polices         │
-│       7          │  1 283 592 FCFA  │  112 254 889 FCFA│    453 Contrats      │
-│     [↗]          │       [↗]        │       [↗]        │         [↗]          │
-└──────────────────┴──────────────────┴──────────────────┴──────────────────────┘
-      span 3             span 3             span 3              span 3
-
-ROW 2: MAIN CONTENT (2x2 grid)
-┌────────────────────────────────────────────┬────────────────────────────────────┐
-│  TAUX DE RENOUVELLEMENT                    │  PIPELINE LEADS           12 Total │
-│  ┌───────────────┬───────────────┐         │  [Progress Bar ████████████]       │
-│  │   Effectif    │    A faire    │         │  [●4] [●0] [0] [8] [●0]            │
-│  │    [Donut]    │    [Donut]    │         ├────────────────────────────────────┤
-│  │   Atteint     │   Non atteint │         │  ANALYSE IA                 [4]    │
-│  └───────────────┴───────────────┘         │  ┌──────────────────────────────┐  │
-│  INDICATEURS DE CONTACT     Résumé         │  │ 🌟 Nouveaux Prospects        │  │
-│  ┌─────────────────┬────────────────────┐  │  │    4 nouveaux prospects...   │  │
-│  │ Indicateur    N  %    │  76%  82%    │  │  ├──────────────────────────────┤  │
-│  │ Personnes     156 100%│  Taux  Clients│  │  │ ⚠ Prospects en attente      │  │
-│  │ à appeler             │  renouv atteint│  │  │   2 prospects inactifs...   │  │
-│  │ Contactés     128  82%│               │  │  ├──────────────────────────────┤  │
-│  │ Atteints      105  82%│  24    8%     │  │  │ 🔄 Cross-sell               │  │
-│  │ Pb téléphone   23  18%│  A contacter  │  │  │   3 clients ont 1 produit   │  │
-│  └─────────────────┴────────────────────┘  │  └──────────────────────────────┘  │
-│          span 7 (ou 8)                     │          span 5 (ou 4)             │
-└────────────────────────────────────────────┴────────────────────────────────────┘
-
-ROW 3: NEWS BANNER (span 12)
-┌────────────────────────────────────────────────────────────────────────────────┐
-│     📢 Bannière de publicité actualisée                                        │
-└────────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────┐
+│  1. TYPE DE DEVIS                                              │
+│  ○ Devis Auto    ○ Devis 2 & 3 Roues                          │
+├────────────────────────────────────────────────────────────────┤
+│  2. VTC?           3. Entreprise?      4. Déjà client?        │
+│  [Oui ▼]           [Non ▼]             [Non ▼]                │
+├────────────────────────────────────────────────────────────────┤
+│  5. Accident 36 mois?                  6. Sexe                 │
+│  [Non ▼]                               [Féminin ▼]             │
+├────────────────────────────────────────────────────────────────┤
+│  7. Type d'emploi                                              │
+│  [Sélectionner... ▼]                                           │
+├────────────────────────────────────────────────────────────────┤
+│  8. Énergie              9. Puissance fiscale (CV)             │
+│  [Essence ▼]             [7 ▼]                                 │
+├────────────────────────────────────────────────────────────────┤
+│  10. Date 1ère circulation           11. Nombre de places      │
+│  [📅 DD/MM/YYYY]                      [5 ▼]                    │
+├────────────────────────────────────────────────────────────────┤
+│  12. Date d'effet                    13. Durée du contrat      │
+│  [📅 DD/MM/YYYY]                      [12 mois ▼]              │
+├────────────────────────────────────────────────────────────────┤
+│  14. Valeur à neuf                   15. Valeur vénale         │
+│  [_________ FCFA]                     [_________ FCFA]         │
+├────────────────────────────────────────────────────────────────┤
+│  16. Toit panoramique?               17. Protection GPS?       │
+│  [Non ▼]                              [Non ▼]                  │
+└────────────────────────────────────────────────────────────────┘
 ```
 
----
-
-## Structure Grid CSS/Tailwind Proposée
-
-### Grid Principal (12 colonnes)
+### Implémentation Technique
 
 ```typescript
-// DashboardPage.tsx - Nouvelle structure Grid
-<div className="grid grid-cols-12 gap-4">
-  
-  {/* ROW 0: Header - Full Width */}
-  <div className="col-span-12">
-    <DashboardHeader />
-  </div>
-  
-  {/* ROW 1: KPI Cards - 4 cards x 3 cols each */}
-  <div className="col-span-12 grid grid-cols-4 gap-3">
-    <KPICard label="Mes Tâches" value="7" />
-    <KPICard label="Mes commissions" value="1 283 592 FCFA" />
-    <KPICard label="Mes Primes" value="112 254 889 FCFA" />
-    <KPICard label="Mes polices" value="453 Contrats" />
-  </div>
-  
-  {/* ROW 2: Main Content - Split 7/5 */}
-  <div className="col-span-7 space-y-4">
-    <RenewalRateSection />      {/* Donuts + Stats */}
-    <ContactIndicatorsCard />   {/* Table + Summary */}
-  </div>
-  
-  <div className="col-span-5 space-y-4">
-    <LeadsPipeline />           {/* Pipeline + Progress */}
-    <AIRecommendations />       {/* AI Cards */}
-  </div>
-  
-  {/* ROW 3: News Banner - Full Width */}
-  <div className="col-span-12">
-    <NewsBanner />
-  </div>
-  
-</div>
-```
-
----
-
-## Mapping Composants vs Positions
-
-| Position | Col Span | Composant | Fichier |
-|----------|----------|-----------|---------|
-| Header | 12 | `DashboardHeader` | Existant |
-| KPI 1 | 3 | `KPICard` (Mes Tâches) | A ajouter |
-| KPI 2 | 3 | `KPICard` (Commissions) | Existant |
-| KPI 3 | 3 | `KPICard` (Primes) | Existant |
-| KPI 4 | 3 | `KPICard` (Polices) | Existant |
-| Taux Renouvellement | 7 (partie haute) | `RenewalRateCards` | Existant - A modifier |
-| Indicateurs Contact | 7 (partie basse) | `ContactIndicatorsCard` | Existant - A modifier |
-| Pipeline Leads | 5 (partie haute) | `LeadsPipeline` | Existant |
-| Analyse IA | 5 (partie basse) | `AIRecommendations` | Existant |
-| News Banner | 12 | `NewsBanner` | Existant |
-
----
-
-## Modifications Requises
-
-### 1. DashboardPage.tsx - Refonte Grid
-
-```typescript
-const DashboardPage = () => {
-  return (
-    <div className="space-y-4 max-w-6xl animate-fade-in">
-      {/* Header + Quick Actions */}
-      <div className="flex justify-between items-start">
-        <DashboardHeader />
-        <QuickActions />
-      </div>
-      
-      {/* KPIs Row - 4 colonnes égales */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPICard icon={CheckSquare} label="Mes Tâches" value={tasksCount} link="/b2b/tasks" />
-        <KPICard icon={Wallet} label="Mes commissions" value={formatFCFA(commissions)} />
-        <KPICard icon={TrendingUp} label="Mes Primes" value={formatFCFA(premiums)} />
-        <KPICard icon={FileText} label="Mes polices" value={`${policies} Contrats`} />
-      </div>
-      
-      {/* Main Content Grid - 7/5 split */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Left Column: 7 cols */}
-        <div className="lg:col-span-7 space-y-4">
-          <RenewalRateSection />
-          <ContactIndicatorsCard />
-        </div>
-        
-        {/* Right Column: 5 cols */}
-        <div className="lg:col-span-5 space-y-4">
-          <LeadsPipeline />
-          <AIRecommendations />
-        </div>
-      </div>
-      
-      {/* News Banner - Full Width */}
-      <NewsBanner />
+// Nouveau renderAutoFields dans NeedsAnalysisStep.tsx
+const renderAutoFields = () => (
+  <div className="space-y-6">
+    {/* 1. Type de devis - Radio */}
+    <div className="space-y-2">
+      <Label>1. Type de devis</Label>
+      <RadioGroup value={needsAnalysis.quoteType || "auto"}>
+        <RadioGroupItem value="auto">Devis Auto</RadioGroupItem>
+        <RadioGroupItem value="2_3_roues">Devis 2 & 3 Roues</RadioGroupItem>
+      </RadioGroup>
     </div>
+
+    {/* 2-4. VTC / Entreprise / Déjà client - Row of 3 dropdowns */}
+    <div className="grid grid-cols-3 gap-4">
+      <Select field="isVTC" options={["Oui", "Non"]} />
+      <Select field="belongsToCompany" options={["Oui", "Non"]} />
+      <Select field="isExistingClient" options={["Oui", "Non"]} />
+    </div>
+
+    {/* 5-6. Accident / Sexe */}
+    <div className="grid grid-cols-2 gap-4">
+      <Select field="hasAccident36Months" options={["Oui", "Non"]} />
+      <Select field="gender" options={["Féminin", "Masculin"]} />
+    </div>
+
+    {/* 7. Type d'emploi - Full width dropdown */}
+    <Select 
+      field="employmentType" 
+      options={[
+        "Fonctionnaire",
+        "Salarié", 
+        "Exploitant agricole",
+        "Artisan",
+        "Religieux",
+        "Retraité",
+        "Sans profession",
+        "Agent commercial",
+        "Autres catégories socioprofessionnelles"
+      ]} 
+    />
+
+    {/* 8-9. Énergie / Puissance fiscale */}
+    <div className="grid grid-cols-2 gap-4">
+      <Select field="vehicleEnergy" options={["Essence", "Gasoil"]} />
+      <Select field="vehicleFiscalPower" options={[1,2,3,4,5,6,7,8]} />
+    </div>
+
+    {/* 10-11. Date circulation / Places */}
+    <div className="grid grid-cols-2 gap-4">
+      <DatePicker field="vehicleFirstCirculationDate" maxDate={today} />
+      <Select field="vehicleSeats" options={[3,4,5,6,7,8]} />
+    </div>
+
+    {/* 12-13. Date effet / Durée */}
+    <div className="grid grid-cols-2 gap-4">
+      <DatePicker field="effectiveDate" minDate={today} />
+      <Select field="contractPeriodicity" options={["1 mois", "3 mois", "6 mois", "12 mois"]} />
+    </div>
+
+    {/* 14-15. Valeurs */}
+    <div className="grid grid-cols-2 gap-4">
+      <Input field="vehicleNewValue" type="number" suffix="FCFA" />
+      <Input field="vehicleVenalValue" type="number" suffix="FCFA" />
+    </div>
+
+    {/* 16-17. Toit panoramique / GPS */}
+    <div className="grid grid-cols-2 gap-4">
+      <Select field="hasPanoramicRoof" options={["Oui", "Non"]} />
+      <Select field="hasGPSProtection" options={["Oui", "Non"]} />
+    </div>
+  </div>
+);
+```
+
+---
+
+## Phase 3 : Refonte CoverageStep (Étape 2/2)
+
+### Structure des 6 champs
+
+```text
+┌────────────────────────────────────────────────────────────────┐
+│  1. FORMULE                                                    │
+│  ○ MINI    ○ BASIC    ○ MEDIUM+                               │
+├────────────────────────────────────────────────────────────────┤
+│  GARANTIES INCLUSES (non modifiables)                          │
+│  ☑ Responsabilité Civile (désactivé)                          │
+│  ☑ Défense/Recours (désactivé)                                │
+│  ☑ Recours des Tiers Incendie (désactivé)                     │
+│  ☑ Individuel Conducteur (désactivé)                          │
+├────────────────────────────────────────────────────────────────┤
+│  6. TYPE D'ASSISTANCE                                          │
+│  ○ Avantage                                                    │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### Modifications Requises
+
+1. **Renommer les plans** :
+   - `basic` → "MINI"
+   - `standard` → "BASIC" 
+   - `premium` → "MEDIUM+"
+
+2. **Garanties incluses** : Afficher comme checkboxes cochées mais désactivées
+
+3. **Assistance** : Limiter à "Avantage" uniquement (ou afficher uniquement cette option)
+
+---
+
+## Fichiers à Modifier
+
+| Fichier | Action | Description |
+|---------|--------|-------------|
+| `src/components/guided-sales/types.ts` | Modifier | Ajouter nouveaux champs |
+| `src/components/guided-sales/steps/NeedsAnalysisStep.tsx` | Refonte | 17 champs exactement ordonnés |
+| `src/components/guided-sales/steps/CoverageStep.tsx` | Modifier | Formules MINI/BASIC/MEDIUM+ |
+| `src/utils/autoPremiumCalculator.ts` | Modifier | Intégrer nouveaux facteurs |
+
+---
+
+## Considérations Techniques
+
+### Validation
+
+Tous les champs sont marqués "Obligatoire" → Ajouter validation avant passage à l'étape suivante :
+
+```typescript
+const isAutoStep1Valid = () => {
+  const { needsAnalysis } = state;
+  return (
+    needsAnalysis.quoteType &&
+    needsAnalysis.isVTC !== undefined &&
+    needsAnalysis.belongsToCompany !== undefined &&
+    needsAnalysis.employmentType &&
+    needsAnalysis.vehicleEnergy &&
+    needsAnalysis.vehicleFiscalPower &&
+    needsAnalysis.vehicleFirstCirculationDate &&
+    needsAnalysis.vehicleSeats &&
+    needsAnalysis.effectiveDate &&
+    needsAnalysis.contractPeriodicity &&
+    needsAnalysis.vehicleNewValue &&
+    needsAnalysis.vehicleVenalValue &&
+    needsAnalysis.hasPanoramicRoof !== undefined &&
+    needsAnalysis.hasGPSProtection !== undefined
   );
 };
 ```
 
-### 2. Nouveau Composant KPICard Unifié
+### Impact Tarification
 
-```typescript
-// src/components/broker/dashboard/KPICard.tsx
-interface KPICardProps {
-  icon: LucideIcon;
-  label: string;
-  value: string | number;
-  link?: string;
-  highlight?: boolean;
-}
-
-export const KPICard = ({ icon: Icon, label, value, link, highlight }: KPICardProps) => (
-  <Card className={cn(
-    "border-border/60 hover:shadow-soft transition-all",
-    highlight && "bg-primary/5 border-primary/30"
-  )}>
-    <CardContent className="p-4 flex justify-between items-start">
-      <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-xl font-bold mt-1">{value}</p>
-      </div>
-      <div className="flex flex-col items-end gap-2">
-        {link && <ArrowUpRight className="h-4 w-4 text-muted-foreground" />}
-        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Icon className="w-4 h-4 text-primary" />
-        </div>
-      </div>
-    </CardContent>
-  </Card>
-);
-```
-
-### 3. Modification ContactIndicatorsCard
-
-Le composant actuel affiche table + pie chart cote à cote. Selon la maquette, il faut ajouter une section "Résumé" avec les 4 métriques clés (76%, 82%, 24, 8%).
-
-```typescript
-// Structure mise à jour
-<div className="grid grid-cols-3 gap-4">
-  {/* Colonne 1: Table indicateurs */}
-  <div className="col-span-1">
-    <Table>...</Table>
-  </div>
-  
-  {/* Colonne 2: Donut Chart */}
-  <div className="col-span-1">
-    <PieChart>...</PieChart>
-  </div>
-  
-  {/* Colonne 3: Résumé Cards */}
-  <div className="col-span-1 grid grid-cols-2 gap-2">
-    <SummaryCard value="76%" label="Taux renouvellement" color="primary" />
-    <SummaryCard value="82%" label="Clients atteints" color="success" />
-    <SummaryCard value="24" label="A contacter" color="warning" />
-    <SummaryCard value="8%" label="Taux churn" color="destructive" />
-  </div>
-</div>
-```
+Les nouveaux champs impactent le calcul de prime :
+- **VTC** → Coefficient usage majoré
+- **Entreprise** → Règles fiscales spécifiques
+- **Accident 36 mois** → Malus
+- **Toit panoramique** → Option bris de glace
+- **Protection GPS** → Garantie supplémentaire incluse
 
 ---
 
-## Responsive Breakpoints
+## Ordre d'Implémentation
 
-```typescript
-// Tailwind Grid Classes
-const gridClasses = {
-  // KPI Row
-  kpis: "grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3",
-  
-  // Main Content
-  mainGrid: "grid grid-cols-1 lg:grid-cols-12 gap-4",
-  leftColumn: "lg:col-span-7 space-y-4",
-  rightColumn: "lg:col-span-5 space-y-4",
-  
-  // Contact Indicators Internal
-  contactGrid: "grid grid-cols-1 md:grid-cols-3 gap-3",
-};
-
-// Breakpoints:
-// - Mobile (<640px): 1 column, stacked
-// - Tablet (640-1024px): 2 columns KPIs, stacked content
-// - Desktop (>1024px): 4 cols KPIs, 7/5 split content
-```
-
----
-
-## Fichiers a Modifier
-
-| Fichier | Action | Description |
-|---------|--------|-------------|
-| `DashboardPage.tsx` | Modifier | Nouvelle structure grid 12 colonnes |
-| `DashboardKPIs.tsx` | Modifier | Extraire en composants KPICard individuels |
-| `ContactIndicatorsCard.tsx` | Modifier | Ajouter section "Résumé" avec 4 métriques |
-| `KPICard.tsx` | Creer | Nouveau composant card unifié |
-| `RenewalRateCards.tsx` | Conserver | Donuts existants OK |
-| `LeadsPipeline.tsx` | Conserver | Existant OK |
-| `AIRecommendations.tsx` | Conserver | Existant OK |
-| `NewsBanner.tsx` | Conserver | Existant OK |
-
----
-
-## Schema Grid Final
-
-```text
-┌─────────────────────────────────────────────────────────────────────┐
-│                        col-span-12: Header                           │
-├──────────┬──────────┬──────────┬──────────────────────────────────────┤
-│ col-3    │ col-3    │ col-3    │          col-3                       │
-│ Tâches   │ Commiss. │ Primes   │          Polices                     │
-├──────────┴──────────┴──────────┴──────────┬───────────────────────────┤
-│              col-span-7                    │       col-span-5          │
-│  ┌─────────────────────────────────────┐  │  ┌─────────────────────┐  │
-│  │ RenewalRateCards (Donuts)           │  │  │ LeadsPipeline       │  │
-│  └─────────────────────────────────────┘  │  └─────────────────────┘  │
-│  ┌─────────────────────────────────────┐  │  ┌─────────────────────┐  │
-│  │ ContactIndicatorsCard               │  │  │ AIRecommendations   │  │
-│  │ (Table + Pie + Resume)              │  │  │                     │  │
-│  └─────────────────────────────────────┘  │  └─────────────────────┘  │
-├───────────────────────────────────────────┴───────────────────────────┤
-│                        col-span-12: NewsBanner                        │
-└───────────────────────────────────────────────────────────────────────┘
-```
+1. Mise à jour `types.ts` avec nouveaux champs
+2. Refonte `NeedsAnalysisStep.tsx` pour Auto uniquement
+3. Adaptation `CoverageStep.tsx` (formules MINI/BASIC/MEDIUM+)
+4. Mise à jour `autoPremiumCalculator.ts`
+5. Tests et validation du flux complet

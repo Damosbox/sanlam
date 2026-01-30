@@ -17,10 +17,12 @@ const USAGE_COEFFICIENTS: Record<UsageType, number> = {
   livraison: 1.35,
 };
 
-// Coefficient par type d'énergie (adapté SanlamAllianz: essence/gasoil)
+// Coefficient par type d'énergie (adapté SanlamAllianz: essence/gasoil/hybride/electrique)
 const ENERGY_COEFFICIENTS: Record<EnergyType, number> = {
   essence: 1.0,
   gasoil: 1.05,
+  hybride: 0.95,
+  electrique: 0.90,
 };
 
 // Coefficient par nombre de places

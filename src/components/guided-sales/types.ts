@@ -8,7 +8,7 @@ export type ContractPeriodicity = "1_month" | "3_months" | "6_months" | "1_year"
 export type SignatureType = "presential" | "electronic";
 export type PaymentChannel = "email" | "sms" | "whatsapp";
 export type ViePeriodicite = "mensuelle" | "trimestrielle" | "semestrielle" | "annuelle";
-export type EnergyType = "essence" | "gasoil";
+export type EnergyType = "essence" | "gasoil" | "hybride" | "electrique";
 export type QuoteType = "auto" | "2_3_roues";
 export type GenderType = "feminin" | "masculin";
 export type EmploymentType = 
@@ -22,6 +22,10 @@ export type EmploymentType =
   | "agent_commercial" 
   | "autres";
 export type TravelZone = "afrique" | "europe" | "amerique" | "asie" | "monde";
+export type LicenseCategory = "A" | "B" | "C" | "D" | "E" | "AB" | "ABCD" | "ABCDE";
+export type CityType = "abidjan" | "bouake" | "yamoussoukro" | "korhogo" | "daloa" | "san_pedro" | "man" | "gagnoa";
+export type MobilePaymentMethod = "orange_money" | "mtn_momo" | "wave" | "moov";
+export type SalesPhase = "preparation" | "construction" | "souscription" | "finalisation";
 
 // Données spécifiques Pack Obsèques
 export interface PackObsequesData {
@@ -187,6 +191,34 @@ export interface UnderwritingData {
 
 export type IntermediaryStatus = "agent" | "courtier" | "inspecteur" | "directeur";
 
+// Phase 3 : Données de souscription (Subscription Data)
+export interface SubscriptionData {
+  // Identité conducteur
+  driverName: string;
+  isHabitualDriver: boolean;
+  // Permis de conduire
+  licenseNumber: string;
+  licenseCategory: LicenseCategory;
+  licenseIssueDate: string;
+  licenseIssuePlace: string;
+  // Véhicule détails
+  vehicleRegistrationNumber: string;
+  vehicleChassisNumber: string;
+  // Documents
+  vehicleRegistrationDocument?: string;
+  honorDeclaration?: string;
+  // Adresse et localisation
+  city: CityType;
+  agencyCode: string;
+}
+
+// Phase 4 : Données de paiement mobile
+export interface MobilePaymentData {
+  paymentMethod: MobilePaymentMethod;
+  paymentPhone: string;
+  paymentDate: string;
+}
+
 export interface BindingData {
   signatureType: SignatureType;
   signatureOtpSent: boolean;
@@ -201,6 +233,11 @@ export interface BindingData {
   // Cash payment fields
   cashPaymentReceiptNumber?: string;
   cashPaymentReceiptImage?: string;
+  // Legal checkboxes
+  acceptTerms: boolean;
+  acceptDataSharing: boolean;
+  // Signature canvas
+  signatureData?: string;
 }
 
 export interface IssuanceData {
@@ -210,12 +247,15 @@ export interface IssuanceData {
 
 export interface GuidedSalesState {
   currentStep: number;
+  currentPhase: SalesPhase;
   productSelection: ProductSelectionData;
   clientIdentification: ClientIdentificationData;
   needsAnalysis: NeedsAnalysisData;
   quickQuote: QuickQuoteData;
   coverage: CoverageData;
   underwriting: UnderwritingData;
+  subscription: SubscriptionData;
+  mobilePayment: MobilePaymentData;
   binding: BindingData;
   issuance: IssuanceData;
   // Données spécifiques produits Vie
@@ -234,10 +274,13 @@ export interface GuidedSalesState {
     fees: number;
     total: number;
   };
+  // Simulation calculated flag
+  simulationCalculated: boolean;
 }
 
 export const initialState: GuidedSalesState = {
   currentStep: 0,
+  currentPhase: "preparation",
   productSelection: {
     category: "non_vie",
     selectedProduct: "auto",
@@ -258,6 +301,8 @@ export const initialState: GuidedSalesState = {
     specificRisks: "",
     contactPreference: "whatsapp",
     contractPeriodicity: "1_year",
+    quoteType: "auto",
+    vehicleEnergy: "essence",
   },
   quickQuote: {
     franchise: 250,
@@ -274,6 +319,23 @@ export const initialState: GuidedSalesState = {
     agentJustification: "",
     manualReviewRequested: false,
   },
+  subscription: {
+    driverName: "",
+    isHabitualDriver: true,
+    licenseNumber: "",
+    licenseCategory: "B",
+    licenseIssueDate: "",
+    licenseIssuePlace: "",
+    vehicleRegistrationNumber: "",
+    vehicleChassisNumber: "",
+    city: "abidjan",
+    agencyCode: "",
+  },
+  mobilePayment: {
+    paymentMethod: "wave",
+    paymentPhone: "",
+    paymentDate: "",
+  },
   binding: {
     signatureType: "presential",
     signatureOtpSent: false,
@@ -285,11 +347,14 @@ export const initialState: GuidedSalesState = {
     paymentReceived: false,
     clientPhone: "",
     clientEmail: "",
+    acceptTerms: false,
+    acceptDataSharing: false,
   },
   issuance: {
     policyNumber: "",
     documentsGenerated: [],
   },
+  simulationCalculated: false,
   // Données Molo Molo par défaut
   moloMoloData: {
     montantCotisation: 10000,

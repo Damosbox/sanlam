@@ -299,6 +299,7 @@ export const GuidedSalesFlow = () => {
             state={state} 
             onUpdate={updateNeedsAnalysis} 
             onCalculate={handleCalculate}
+            onNext={nextStep}
             isCalculating={isCalculating}
           />
         );

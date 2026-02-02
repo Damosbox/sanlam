@@ -1,258 +1,248 @@
-# Refonte du Parcours Vente Guidée Auto - 4 Phases UX
 
-## ✅ STATUT : IMPLÉMENTÉ (2025-01-30)
 
-## Contexte et Analyse des Documents
+# Refonte du Parcours Auto - Sous-étapes de 4 Champs Maximum
 
-Basé sur les trois documents fournis :
+## Structure du Document SanlamAllianz
 
-1. **Feuille de calcul SanlamAllianz** : Définit les champs obligatoires pour simulation (17 champs) + souscription (6 étapes)
-2. **UX POUR ENVOI** : Maquettes visuelles avec le stepper 3 phases (Préparation → Construction → Finalisation)
-3. **Compte-rendu atelier** : Principes UX validés - réduction du nombre d'étapes affichées, possibilité de s'arrêter à la simulation
+### Simulation (17 champs) → Divisé en 5 sous-étapes de max 4 champs
 
-### Changements Clés Demandés
+| Sous-étape | Champs | Contenu |
+|------------|--------|---------|
+| 1.1 | 1-4 | Type devis, VTC, Entreprise, Déjà client |
+| 1.2 | 5-7 | Accident 36 mois, Sexe, Emploi |
+| 1.3 | 8-11 | Énergie, Puissance CV, Date 1ère circulation, Places |
+| 1.4 | 12-15 | Date effet, Durée contrat, Valeur neuf, Valeur vénale |
+| 1.5 | 16-17 | Toit panoramique, GPS + **CALCULER** |
 
-| Actuel (7 étapes) | Nouveau (4 phases) |
-|-------------------|-------------------|
-| Produit → Identification → Besoin → Couverture → Vérification → Signature → Émission | Phase 1 (Simulation) → Phase 2 (Construction) → Phase 3 (Souscription) → Phase 4 (Finalisation) |
+### Formule (Étape 2/2) → 1 étape
 
-**Point critique** : La sélection du client ne se fait plus à la simulation (Phase 1). Le client est identifié uniquement en Phase 3 lors du passage à la souscription.
+| Étape | Contenu |
+|-------|---------|
+| 2.1 | Formule (MINI/BASIC/MEDIUM+) + Garanties désactivées + Assistance |
+
+### Souscription (6 étapes document) → Intégration de l'identification client
+
+| Étape | N° Doc | Champs |
+|-------|--------|--------|
+| 3.1 | 1/6 | Code agent (readonly) |
+| 3.2 | 2/6 | Adresse géographique, Ville |
+| 3.3 | 3/6 | Marque, Modèle, Immatriculation, Châssis |
+| 3.4 | 3/6 suite | Certificat antériorité + Modal déclaration honneur |
+| 3.5 | 4/6 | Conducteur habituel, Catégorie permis, N° permis, Date obtention |
+| 3.6 | 4/6 suite | Lieu obtention + Upload carte grise |
+| 3.7 | 5/6 | Paiement mobile, Code agence, Date règlement, Téléphone |
+| 3.8 | 6/6 | Résumé, Signature, CGV, Émission |
 
 ---
 
-## Nouvelle Architecture : 4 Phases
+## Découpage Final des Étapes
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    PHASE 1 : PREPARATION (Simulation Rapide)            │
-│  Objectif: Obtenir un tarif rapidement                                  │
-├─────────────────────────────────────────────────────────────────────────┤
-│  Étape 1.1 : Le Véhicule                                                │
-│  - Type de devis (Auto/2-3 Roues)                                       │
-│  - Usage VTC (Oui/Non)                                                  │
-│  - Appartient à entreprise (Oui/Non)                                    │
-│  - Marque et Modèle (avec recherche)                                    │
-│  - Énergie (Essence/Gazoil/Hybride/Électrique)                         │
-│  - Puissance fiscale (CV)                                               │
-│  - Nombre de places                                                     │
-│  - Valeur à neuf + Valeur vénale                                        │
-├─────────────────────────────────────────────────────────────────────────┤
-│  Étape 1.2 : Le Profil Risque                                           │
-│  - Sexe + Type d'emploi                                                 │
-│  - Sinistres au cours des 24 derniers mois                              │
-│  - Équipé d'un GPS/Tracker ?                                            │
-│                                                                         │
-│  [Bouton "CALCULER" activé si tous champs obligatoires remplis]         │
-└─────────────────────────────────────────────────────────────────────────┘
+PHASE 1 : PRÉPARATION (Simulation) - 5 sous-étapes de max 4 champs
+┌────────────────────────────────────────────────────────────────┐
+│ Étape 1.1 : Type & Usage                          ●○○○○      │
+│ ┌────────────────────────────────────────────────────────────┐ │
+│ │ 1. Type de devis        ○ Auto  ○ 2 & 3 Roues             │ │
+│ │ 2. VTC ?                [Non ▼]                           │ │
+│ │ 3. Entreprise ?         [Non ▼]                           │ │
+│ │ 4. Déjà client ?        [Non ▼]                           │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│                                              [Suivant →]       │
+└────────────────────────────────────────────────────────────────┘
 
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    PHASE 2 : CONSTRUCTION (Offres et Personnalisation)  │
-│  Affichage dynamique des formules basées sur Phase 1                    │
-├─────────────────────────────────────────────────────────────────────────┤
-│  Étape 2.1 : Choix de la Formule                                        │
-│  - Sélection base : MINI / BASIC / TOUT RISQUE                          │
-│  - Garanties incluses (checkboxes par défaut désactivées) :             │
-│    ☑ Responsabilité Civile                                             │
-│    ☑ Défense                                                           │
-│    ☑ Recours                                                           │
-│    ☑ Individuelle Conducteur                                           │
-│  - Durée du contrat (1/3/6/12 mois)                                     │
-│  - Date d'effet                                                         │
-│                                                                         │
-│  Actions: [Sauvegarder devis] [SOUSCRIRE →]                             │
-└─────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────┐
+│ Étape 1.2 : Profil                               ○●○○○       │
+│ ┌────────────────────────────────────────────────────────────┐ │
+│ │ 5. Accident 36 mois ?   [Non ▼]                           │ │
+│ │ 6. Sexe                 [Féminin ▼]                       │ │
+│ │ 7. Type d'emploi        [Fonctionnaire ▼]                 │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│ [← Retour]                                   [Suivant →]       │
+└────────────────────────────────────────────────────────────────┘
 
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    PHASE 3 : SOUSCRIPTION (Données Morales et Physiques)│
-│  On transforme le devis en contrat ferme                                │
-├─────────────────────────────────────────────────────────────────────────┤
-│  Étape 3.1 : Informations Conducteur et Documents                       │
-│  - Identité : Nom de l'assuré, Conducteur habituel                      │
-│  - Permis : Numéro, Catégorie (A/B/C...), Date d'obtention              │
-│  - Véhicule : N° immatriculation, N° châssis                            │
-│  - Upload : Carte grise, Déclaration d'honneur                          │
-├─────────────────────────────────────────────────────────────────────────┤
-│  Étape 3.2 : Adresse et Localisation                                    │
-│  - Zone géographique : Ville (Abidjan, Bouaké...)                       │
-│  - Code Agence                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────┐
+│ Étape 1.3 : Véhicule (Technique)                 ○○●○○       │
+│ ┌────────────────────────────────────────────────────────────┐ │
+│ │ 8. Énergie              [Essence ▼]                       │ │
+│ │ 9. Puissance (CV)       [7 ▼]                             │ │
+│ │ 10. Date 1ère circ.     [📅 DD/MM/YYYY]                   │ │
+│ │ 11. Nombre places       [5 ▼]                             │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│ [← Retour]                                   [Suivant →]       │
+└────────────────────────────────────────────────────────────────┘
 
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    PHASE 4 : FINALISATION (Paiement et Émission)        │
-├─────────────────────────────────────────────────────────────────────────┤
-│  Étape 4.1 : Paiement Mobile                                            │
-│  - Mode : Orange Money / MTN / Wave / Moov                              │
-│  - N° téléphone de paiement                                             │
-│  - Date de règlement                                                    │
-├─────────────────────────────────────────────────────────────────────────┤
-│  Étape 4.2 : Signature et Émission                                      │
-│  - Résumé financier (Montant net + taxes + total)                       │
-│  - Checkboxes légales (CGV, partage informations)                       │
-│  - Signature digitale (Canvas)                                          │
-│  - Bouton "Émettre la police"                                           │
-└─────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────┐
+│ Étape 1.4 : Contrat & Valeurs                    ○○○●○       │
+│ ┌────────────────────────────────────────────────────────────┐ │
+│ │ 12. Date d'effet        [📅 DD/MM/YYYY]                   │ │
+│ │ 13. Durée               [12 mois ▼]                       │ │
+│ │ 14. Valeur à neuf       [_________ FCFA]                  │ │
+│ │ 15. Valeur vénale       [_________ FCFA]                  │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│ [← Retour]                                   [Suivant →]       │
+└────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────┐
+│ Étape 1.5 : Équipements                          ○○○○●       │
+│ ┌────────────────────────────────────────────────────────────┐ │
+│ │ 16. Toit panoramique ?  [Non ▼]                           │ │
+│ │ 17. Protection GPS ?    [Non ▼]                           │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│                                                                │
+│                    ┌─────────────────────┐                     │
+│                    │     CALCULER        │                     │
+│                    └─────────────────────┘                     │
+│ [← Retour]                                                     │
+└────────────────────────────────────────────────────────────────┘
+
+PHASE 2 : CONSTRUCTION (Formule) - 1 étape
+┌────────────────────────────────────────────────────────────────┐
+│ Choix de la Formule                                            │
+│ ┌────────────────────────────────────────────────────────────┐ │
+│ │ 1. Formule       ○ MINI  ○ BASIC  ○ MEDIUM+               │ │
+│ │                                                            │ │
+│ │ Garanties incluses :                                       │ │
+│ │ ☑ Responsabilité Civile (désactivé)                       │ │
+│ │ ☑ Défense/Recours (désactivé)                             │ │
+│ │ ☑ Recours des Tiers Incendie (désactivé)                  │ │
+│ │ ☑ Individuel Conducteur (désactivé)                       │ │
+│ │                                                            │ │
+│ │ 6. Assistance    ○ Avantage                               │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│ [Sauvegarder devis]                         [SOUSCRIRE →]      │
+└────────────────────────────────────────────────────────────────┘
+
+PHASE 3 : SOUSCRIPTION - 6 sous-étapes (max 4 champs chacune)
+┌────────────────────────────────────────────────────────────────┐
+│ Étape 3.1 : Agent                                ●○○○○○      │
+│ ┌────────────────────────────────────────────────────────────┐ │
+│ │ 1. Code de l'agent     [DP-9191] (readonly)               │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│                                              [Suivant →]       │
+└────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────┐
+│ Étape 3.2 : Localisation                         ○●○○○○      │
+│ ┌────────────────────────────────────────────────────────────┐ │
+│ │ 1. Adresse géographique [______________________]          │ │
+│ │ 2. Ville                [Abidjan ▼]                       │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│ [← Retour]                                   [Suivant →]       │
+└────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────┐
+│ Étape 3.3 : Véhicule                             ○○●○○○      │
+│ ┌────────────────────────────────────────────────────────────┐ │
+│ │ 1. Marque               [🔍 Toyota ▼] (autocomplete)      │ │
+│ │ 2. Modèle               [Corolla]                         │ │
+│ │ 3. N° immatriculation   [_______________]                 │ │
+│ │ 4. N° châssis           [_______________]                 │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│ [← Retour]                                   [Suivant →]       │
+└────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────┐
+│ Étape 3.4 : Conducteur                           ○○○●○○      │
+│ ┌────────────────────────────────────────────────────────────┐ │
+│ │ 1. Conducteur habituel ? ○ Oui  ○ Non                     │ │
+│ │ 2. Catégorie permis     [B ▼]                             │ │
+│ │ 3. Numéro de permis     [_______________]                 │ │
+│ │ 4. Date d'obtention     [📅 DD/MM/YYYY]                   │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│ [← Retour]                                   [Suivant →]       │
+└────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────┐
+│ Étape 3.5 : Documents                            ○○○○●○      │
+│ ┌────────────────────────────────────────────────────────────┐ │
+│ │ 1. Lieu d'obtention permis  [Abidjan ▼]                   │ │
+│ │ 2. Carte grise              [📎 Télécharger]              │ │
+│ │ 3. Certificat antériorité   [Déclaration honneur ▼]       │ │
+│ │                             → Ouvre modal si sélectionné  │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│ [← Retour]                                   [Suivant →]       │
+└────────────────────────────────────────────────────────────────┘
+
+PHASE 4 : FINALISATION - 2 sous-étapes
+┌────────────────────────────────────────────────────────────────┐
+│ Étape 4.1 : Paiement                             ●○          │
+│ ┌────────────────────────────────────────────────────────────┐ │
+│ │ 1. Mode paiement   ○ Orange ○ MTN ○ Wave ○ Moov          │ │
+│ │ 2. Code agence     [DP-9191] (readonly)                   │ │
+│ │ 3. Date règlement  [📅 30/01/2026]                        │ │
+│ │ 4. N° téléphone    [______________]                       │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│ [← Retour]                                   [Suivant →]       │
+└────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────┐
+│ Étape 4.2 : Signature & Émission                  ○●          │
+│ ┌────────────────────────────────────────────────────────────┐ │
+│ │ Résumé de paiement                                        │ │
+│ │ ├─ Nom du produit : Auto VP                               │ │
+│ │ ├─ Montant : 103 593 FCFA                                 │ │
+│ │ └─ Total : 103 593 FCFA                                   │ │
+│ │                                                            │ │
+│ │ Sections éditables :                                       │ │
+│ │ [Agent ✎] [Propriétaire ✎] [Véhicule ✎] [Conducteur ✎]   │ │
+│ │                                                            │ │
+│ │ ☐ J'ai fourni des informations exactes                    │ │
+│ │ ☐ J'accepte les Conditions Générales                      │ │
+│ │                                                            │ │
+│ │ Signature : [═══════════════════════════]                 │ │
+│ │             Canvas / Télécharger signature                │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│ [← Retour]               [ÉMETTRE LA POLICE]                   │
+└────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Composants UI Clés à Intégrer
-
-### 1. Nouveau Stepper 3 Phases (Réduction visuelle)
-
-```text
-  ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
-  │ PRÉPARATION  │─────►│ CONSTRUCTION │─────►│ FINALISATION │
-  │   (actif)    │      │              │      │              │
-  └──────────────┘      └──────────────┘      └──────────────┘
-```
-
-Le stepper visible montre uniquement **3 phases majeures** (pas les 7 étapes détaillées actuelles).
-
-### 2. Résumé Dynamique (Fil d'Ariane)
-
-Affiche les choix faits au fur et à mesure en haut de l'écran :
-```text
-Toyota | Privé | 7CV | Hybride | 10 000 000 | 7 000 000 | 01/01/2026
-```
-
-### 3. Boutons "Éditer" par Section
-
-À la Phase 4 (Signature), possibilité de modifier les sections précédentes :
-- Section Propriétaire [Éditer]
-- Section Véhicule [Éditer]  
-- Section Conducteur [Éditer]
-
----
-
-## Détail Technique
-
-### Fichiers à Modifier/Créer
+## Fichiers à Modifier/Créer
 
 | Fichier | Action | Description |
 |---------|--------|-------------|
-| `GuidedSalesFlow.tsx` | Refonte majeure | Nouvelle structure 4 phases, stepper réduit |
-| `types.ts` | Mise à jour | Nouveaux champs Phase 3 (immatriculation, châssis, permis, ville, code agence) |
-| `StepNavigation.tsx` | Refonte | Stepper 3 phases avec sous-étapes masquées |
-| `VehicleStep.tsx` | Créer | Nouveau composant Phase 1.1 (Véhicule) |
-| `RiskProfileStep.tsx` | Créer | Nouveau composant Phase 1.2 (Profil Risque) |
-| `FormulaSelectionStep.tsx` | Créer | Nouveau composant Phase 2.1 (Formule + Durée) |
-| `DriverInfoStep.tsx` | Créer | Nouveau composant Phase 3.1 (Conducteur + Documents) |
-| `AddressStep.tsx` | Créer | Nouveau composant Phase 3.2 (Adresse + Agence) |
-| `MobilePaymentStep.tsx` | Créer | Nouveau composant Phase 4.1 (Paiement mobile) |
-| `SignatureEmissionStep.tsx` | Créer | Nouveau composant Phase 4.2 (Signature + Émission) |
-| `DynamicSummaryBreadcrumb.tsx` | Créer | Fil d'Ariane dynamique |
+| `SimulationStep.tsx` | **CRÉER** | 5 sous-étapes de simulation (max 4 champs) |
+| `types.ts` | **MODIFIER** | Ajouter `simulationSubStep`, `subscriptionSubStep`, `geographicAddress` |
+| `SubscriptionFlow.tsx` | **CRÉER** | 6 sous-étapes de souscription |
+| `GuidedSalesFlow.tsx` | **MODIFIER** | Nouvelle structure avec SimulationStep et SubscriptionFlow |
+| `VehicleStep.tsx` | **SUPPRIMER** | Intégré dans SimulationStep |
+| `RiskProfileStep.tsx` | **SUPPRIMER** | Intégré dans SimulationStep |
+| `DriverInfoStep.tsx` | **SUPPRIMER** | Intégré dans SubscriptionFlow |
+| `AddressStep.tsx` | **SUPPRIMER** | Intégré dans SubscriptionFlow |
 
-### Nouveaux Champs Types (Phase 3)
+---
+
+## Nouveaux Champs à Ajouter dans `types.ts`
 
 ```typescript
-// Ajouts dans NeedsAnalysisData ou nouveau SubscriptionData
-driverName: string;
-habitualDriver: boolean;
-licenseNumber: string;
-licenseCategory: "A" | "B" | "ABCD" | "ABCDE" | "BCD" | "BCDE";
-licenseIssueDate: string;
-licenseIssuePlace: string;
-vehicleRegistrationNumber: string;
-vehicleChassisNumber: string;
-vehicleRegistrationDocument?: string; // upload
-honorDeclaration?: string; // upload
-city: "abidjan" | "bouake" | "yamoussoukro" | "korhogo" | "daloa" | "san_pedro";
-agencyCode: string; // readonly from agent profile
-```
+// Dans SubscriptionData
+geographicAddress: string;           // Adresse géographique (texte libre)
+priorCertificateType: "documents" | "declaration";  // Type certificat antériorité
+priorInsurer?: string;               // Compagnie assurance actuelle (modal)
+bonusPercentage?: number;            // % bonus (modal)
+declarationText?: string;            // Texte déclaration (modal)
 
-### Validation du Bouton "Calculer"
-
-```typescript
-const isPhase1Valid = () => {
-  const { needsAnalysis } = state;
-  return (
-    // Étape 1.1 - Véhicule
-    needsAnalysis.quoteType &&
-    needsAnalysis.isVTC !== undefined &&
-    needsAnalysis.belongsToCompany !== undefined &&
-    needsAnalysis.vehicleBrand &&
-    needsAnalysis.vehicleModel &&
-    needsAnalysis.vehicleEnergy &&
-    needsAnalysis.vehicleFiscalPower &&
-    needsAnalysis.vehicleSeats &&
-    needsAnalysis.vehicleNewValue &&
-    needsAnalysis.vehicleVenalValue &&
-    // Étape 1.2 - Profil Risque
-    needsAnalysis.gender &&
-    needsAnalysis.employmentType &&
-    needsAnalysis.hasAccident36Months !== undefined &&
-    needsAnalysis.hasGPSProtection !== undefined
-  );
-};
+// État de navigation
+simulationSubStep: 1 | 2 | 3 | 4 | 5;
+subscriptionSubStep: 1 | 2 | 3 | 4 | 5 | 6;
 ```
 
 ---
 
-## Flux de Navigation Révisé
+## Points Clés
 
-```text
-Page 0: ProductSelectionStep (inchangé - sélection Auto/MRH/Vie...)
-        ↓
-Phase 1: PRÉPARATION
-        ├─ Étape 1.1: VehicleStep (Marque, Modèle, Énergie, CV, Places, Valeurs)
-        └─ Étape 1.2: RiskProfileStep (Sexe, Emploi, Sinistres, GPS)
-                      → Bouton [CALCULER] → Affiche tarif
-        ↓
-Phase 2: CONSTRUCTION
-        └─ Étape 2.1: FormulaSelectionStep (MINI/BASIC/TOUT RISQUE + Durée + Date effet)
-                      → [Sauvegarder devis] ou [SOUSCRIRE →]
-        ↓
-Phase 3: SOUSCRIPTION  (uniquement si SOUSCRIRE cliqué)
-        ├─ Étape 3.1: DriverInfoStep (Identité conducteur + Permis + Véhicule détails + Uploads)
-        └─ Étape 3.2: AddressStep (Ville + Code Agence)
-        ↓
-Phase 4: FINALISATION
-        ├─ Étape 4.1: MobilePaymentStep (Orange Money/MTN/Wave/Moov)
-        └─ Étape 4.2: SignatureEmissionStep (Résumé + CGV + Signature canvas + [Émettre])
-                      → Confirmation + Documents PDF
-```
+1. **Identification client supprimée de la simulation** - Les données client (nom, email, téléphone) ne sont plus collectées en Phase 1-2
 
----
+2. **Champs max 4 par sous-étape** - Formulaires courts et rapides
 
-## Points d'Attention
+3. **Ordre exact du document respecté** - Numérotation 1-17 pour simulation, puis ordre souscription 1/6 à 6/6
 
-1. **Client non identifié en Phase 1-2** : Les phases de simulation ne collectent plus les données client (nom, téléphone, email). Ces données sont saisies uniquement en Phase 3.
+4. **Sous-navigation interne** - Chaque phase a son propre indicateur de sous-étape (●○○○○)
 
-2. **Sauvegarde de devis** : En fin de Phase 2, le devis peut être sauvegardé sans passer à la souscription (comme validé dans le compte-rendu atelier).
+5. **Énergie limitée** - Essence / Gasoil uniquement (comme dans le document)
 
-3. **Fil d'Ariane dynamique** : Affiche en temps réel les choix véhicule sous forme de badges horizontaux.
+6. **Code agent readonly** - Pré-rempli depuis le profil de l'agent
 
-4. **Sections éditables** : À la Phase 4, chaque section (Propriétaire, Véhicule, Conducteur) affiche un bouton "Éditer" pour revenir modifier.
+7. **Sections éditables** - À l'étape finale, boutons "Éditer" pour revenir sur Agent/Propriétaire/Véhicule/Conducteur
 
-5. **Types d'énergie élargis** : Ajouter "Hybride" et "Électrique" en plus de "Essence" et "Gasoil".
-
----
-
-## ✅ Étapes d'Implémentation Complétées
-
-1. ✅ Mise à jour des types avec nouveaux champs Phase 3
-2. ✅ Création du nouveau PhaseNavigation avec 4 phases visuelles
-3. ✅ Création du composant DynamicSummaryBreadcrumb
-4. ✅ Refonte de GuidedSalesFlow.tsx avec la nouvelle structure
-5. ✅ Création des nouveaux step components (VehicleStep, RiskProfileStep, FormulaSelectionStep, DriverInfoStep, AddressStep, MobilePaymentStep, SignatureEmissionStep)
-6. ✅ Mise à jour des calculateurs de prime avec nouveaux champs (Hybride, Électrique)
-
----
-
-## Fichiers Créés
-
-- `src/components/guided-sales/steps/VehicleStep.tsx`
-- `src/components/guided-sales/steps/RiskProfileStep.tsx`
-- `src/components/guided-sales/steps/FormulaSelectionStep.tsx`
-- `src/components/guided-sales/steps/DriverInfoStep.tsx`
-- `src/components/guided-sales/steps/AddressStep.tsx`
-- `src/components/guided-sales/steps/MobilePaymentStep.tsx`
-- `src/components/guided-sales/steps/SignatureEmissionStep.tsx`
-- `src/components/guided-sales/PhaseNavigation.tsx`
-- `src/components/guided-sales/DynamicSummaryBreadcrumb.tsx`
-
-## Fichiers Modifiés
-
-- `src/components/guided-sales/types.ts` - Nouveaux types Phase 3/4
-- `src/components/guided-sales/GuidedSalesFlow.tsx` - Refonte structure 4 phases
-- `src/utils/autoPremiumCalculator.ts` - Support énergies Hybride/Électrique

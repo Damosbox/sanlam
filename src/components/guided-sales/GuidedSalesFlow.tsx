@@ -11,6 +11,8 @@ import { MoloMoloNeedsStep } from "./steps/MoloMoloNeedsStep";
 import { PackObsequesNeedsStep } from "./steps/PackObsequesNeedsStep";
 import { PhaseNavigation } from "./PhaseNavigation";
 import { DynamicSummaryBreadcrumb } from "./DynamicSummaryBreadcrumb";
+import { SalesAssistant } from "./SalesAssistant";
+import { MobileCoverageStickyBar } from "./MobileCoverageStickyBar";
 import { 
   GuidedSalesState, 
   initialState, 
@@ -18,7 +20,8 @@ import {
   ProductCategory, 
   SelectedProductType, 
   MoloMoloData, 
-  PackObsequesData 
+  PackObsequesData,
+  PlanTier
 } from "./types";
 import { ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,6 +29,7 @@ import { calculateAutoPremium, convertToCalculatedPremium } from "@/utils/autoPr
 import { calculateMoloMoloPremium, convertMoloMoloToCalculatedPremium } from "@/utils/moloMoloPremiumCalculator";
 import { calculatePackObsequesPremium, convertPackObsequesToCalculatedPremium } from "@/utils/packObsequesPremiumCalculator";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Step mapping per phase
 const PHASE_STEPS: Record<SalesPhase, number[]> = {
@@ -52,6 +56,7 @@ export const GuidedSalesFlow = () => {
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
   const [isAnimating, setIsAnimating] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
+  const isMobile = useIsMobile();
 
   // Update phase based on current step
   useEffect(() => {
@@ -256,10 +261,23 @@ export const GuidedSalesFlow = () => {
     // Final emission handled in SignatureEmissionStep
   };
 
+  const handlePlanChange = useCallback((plan: PlanTier) => {
+    setState(prev => ({
+      ...prev,
+      coverage: {
+        ...prev.coverage,
+        planTier: plan
+      }
+    }));
+  }, []);
+
   const resetFlow = () => {
     setDirection("forward");
     setState(initialState);
   };
+
+  // Determine if SalesAssistant should be shown (after simulation is calculated)
+  const showSalesAssistant = state.simulationCalculated && state.currentStep >= 1;
 
   const renderStep = () => {
     const product = state.productSelection.selectedProduct;
@@ -324,11 +342,25 @@ export const GuidedSalesFlow = () => {
   // Determine if we should show the breadcrumb
   const showBreadcrumb = state.currentStep > 1 && state.productSelection.selectedProduct === "auto";
 
+  // Get the next button label based on current step
+  const getNextLabel = () => {
+    if (state.currentStep === 1 && state.simulationCalculated) return "Voir les offres";
+    if (state.currentStep === 2) return "Souscrire";
+    if (state.currentStep === 3) return "Paiement";
+    if (state.currentStep === 4) return "Signature";
+    return "Suivant";
+  };
+
+  // Handle next button from SalesAssistant
+  const handleSalesAssistantNext = () => {
+    nextStep();
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Phase Navigation - Desktop */}
       <div className="hidden lg:block border-b bg-background/95 backdrop-blur sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-6 py-3">
+        <div className="max-w-7xl mx-auto px-6 py-3">
           <PhaseNavigation 
             currentPhase={state.currentPhase}
             currentStep={state.currentStep}
@@ -359,34 +391,69 @@ export const GuidedSalesFlow = () => {
 
       {/* Dynamic Summary Breadcrumb */}
       {showBreadcrumb && (
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4">
           <DynamicSummaryBreadcrumb state={state} />
         </div>
       )}
 
-      {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-24 lg:pb-8">
-        <div
-          key={state.currentStep}
-          className={cn(
-            "transition-all duration-300 ease-out",
-            isAnimating && direction === "forward" && "animate-slide-in-right",
-            isAnimating && direction === "backward" && "animate-slide-in-left"
-          )}
-        >
-          {renderStep()}
-        </div>
+      {/* Main Content with Sales Assistant Sidebar */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24 lg:pb-8">
+        <div className={cn(
+          "flex gap-6",
+          showSalesAssistant && !isMobile ? "flex-row" : "flex-col"
+        )}>
+          {/* Main Step Content */}
+          <div className={cn(
+            "flex-1 min-w-0",
+            showSalesAssistant && !isMobile && "lg:max-w-[65%]"
+          )}>
+            <div
+              key={state.currentStep}
+              className={cn(
+                "transition-all duration-300 ease-out",
+                isAnimating && direction === "forward" && "animate-slide-in-right",
+                isAnimating && direction === "backward" && "animate-slide-in-left"
+              )}
+            >
+              {renderStep()}
+            </div>
 
-        {/* Navigation hint for Phase 1 → Phase 2 transition */}
-        {state.currentStep === 1 && state.simulationCalculated && state.productSelection.selectedProduct === "auto" && (
-          <div className="mt-6 flex justify-center">
-            <Button onClick={nextStep} size="lg" className="gap-2">
-              Voir les offres
-              <ChevronLeft className="h-4 w-4 rotate-180" />
-            </Button>
+            {/* Navigation hint for Phase 1 → Phase 2 transition (when no assistant) */}
+            {state.currentStep === 1 && state.simulationCalculated && state.productSelection.selectedProduct === "auto" && !showSalesAssistant && (
+              <div className="mt-6 flex justify-center">
+                <Button onClick={nextStep} size="lg" className="gap-2">
+                  Voir les offres
+                  <ChevronLeft className="h-4 w-4 rotate-180" />
+                </Button>
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Sales Assistant Sidebar - Desktop */}
+          {showSalesAssistant && !isMobile && (
+            <div className="hidden lg:block lg:w-[35%] shrink-0">
+              <SalesAssistant
+                state={state}
+                onNext={handleSalesAssistantNext}
+                nextLabel={getNextLabel()}
+                disabled={state.currentStep === 1 && !state.simulationCalculated}
+                onPlanChange={handlePlanChange}
+              />
+            </div>
+          )}
+        </div>
       </main>
+
+      {/* Mobile Sticky Bar with Sales Assistant */}
+      {showSalesAssistant && isMobile && (
+        <MobileCoverageStickyBar
+          state={state}
+          onNext={handleSalesAssistantNext}
+          nextLabel={getNextLabel()}
+          disabled={state.currentStep === 1 && !state.simulationCalculated}
+          onPlanChange={handlePlanChange}
+        />
+      )}
     </div>
   );
 };

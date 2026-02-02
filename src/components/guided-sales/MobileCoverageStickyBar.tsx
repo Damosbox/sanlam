@@ -10,11 +10,10 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface MobileCoverageStickyBarProps {
   state: GuidedSalesState;
-  totalPrice: number;
-  periodicityLabel: string;
   onNext: () => void;
-  plans: { tier: PlanTier; name: string; price: number; coverages: { name: string; included: boolean }[] }[];
-  onPlanSelect: (tier: PlanTier) => void;
+  nextLabel: string;
+  disabled?: boolean;
+  onPlanChange: (plan: PlanTier) => void;
 }
 
 type AIMode = "arguments" | "objections" | "competition";
@@ -28,10 +27,12 @@ const faqQuestions = [
 
 export const MobileCoverageStickyBar = ({
   state,
-  totalPrice,
-  periodicityLabel,
   onNext,
+  nextLabel,
+  disabled,
 }: MobileCoverageStickyBarProps) => {
+  const totalPrice = state.calculatedPremium.totalAPayer;
+  const monthlyEquivalent = Math.round(totalPrice / 12);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState<string | null>(null);
@@ -77,8 +78,9 @@ export const MobileCoverageStickyBar = ({
           <div className="flex-1 min-w-0">
             <p className="text-lg font-bold text-primary truncate">
               {formatFCFA(totalPrice)}
-              <span className="text-sm font-normal text-muted-foreground">{periodicityLabel}</span>
+              <span className="text-sm font-normal text-muted-foreground">/an</span>
             </p>
+            <p className="text-xs text-muted-foreground">soit {formatFCFA(monthlyEquivalent)}/mois</p>
           </div>
           
           <div className="flex items-center gap-2">
@@ -189,8 +191,9 @@ export const MobileCoverageStickyBar = ({
                         setSheetOpen(false);
                         onNext();
                       }}
+                      disabled={disabled}
                     >
-                      Continuer vers la vérification
+                      {nextLabel}
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   </div>
@@ -198,8 +201,8 @@ export const MobileCoverageStickyBar = ({
               </SheetContent>
             </Sheet>
 
-            <Button onClick={onNext} className="gap-1.5 h-9">
-              Continuer
+            <Button onClick={onNext} className="gap-1.5 h-9" disabled={disabled}>
+              {nextLabel}
               <ArrowRight className="h-4 w-4" />
             </Button>
           </div>

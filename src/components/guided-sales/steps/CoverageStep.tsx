@@ -574,11 +574,9 @@ export const CoverageStep = ({ state, onUpdate, onNeedsUpdate, onPremiumUpdate, 
       {/* Mobile Sticky Bar */}
       <MobileCoverageStickyBar
         state={state}
-        totalPrice={calculateTotal(selectedPlan.price, coverage.additionalOptions, coverage.assistanceLevel, selectedPeriodicity)}
-        periodicityLabel={getPeriodicityLabel(selectedPeriodicity)}
         onNext={onNext}
-        plans={plans}
-        onPlanSelect={handlePlanSelect}
+        nextLabel="Passer à la vérification"
+        onPlanChange={handlePlanSelect}
       />
     </div>
   );

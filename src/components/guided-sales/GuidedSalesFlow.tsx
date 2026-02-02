@@ -2,11 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ProductSelectionStep } from "./steps/ProductSelectionStep";
-import { VehicleStep } from "./steps/VehicleStep";
-import { RiskProfileStep } from "./steps/RiskProfileStep";
+import { SimulationStep } from "./steps/SimulationStep";
 import { FormulaSelectionStep } from "./steps/FormulaSelectionStep";
-import { DriverInfoStep } from "./steps/DriverInfoStep";
-import { AddressStep } from "./steps/AddressStep";
+import { SubscriptionFlow } from "./steps/SubscriptionFlow";
 import { MobilePaymentStep } from "./steps/MobilePaymentStep";
 import { SignatureEmissionStep } from "./steps/SignatureEmissionStep";
 import { MoloMoloNeedsStep } from "./steps/MoloMoloNeedsStep";
@@ -27,21 +25,20 @@ import { cn } from "@/lib/utils";
 import { calculateAutoPremium, convertToCalculatedPremium } from "@/utils/autoPremiumCalculator";
 import { calculateMoloMoloPremium, convertMoloMoloToCalculatedPremium } from "@/utils/moloMoloPremiumCalculator";
 import { calculatePackObsequesPremium, convertPackObsequesToCalculatedPremium } from "@/utils/packObsequesPremiumCalculator";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 // Step mapping per phase
 const PHASE_STEPS: Record<SalesPhase, number[]> = {
-  preparation: [0, 1, 2], // Product Selection, Vehicle, Risk Profile
-  construction: [3],      // Formula Selection
-  souscription: [4, 5],   // Driver Info, Address
-  finalisation: [6, 7],   // Mobile Payment, Signature & Emission
+  preparation: [0, 1],     // Product Selection, Simulation (with sub-steps)
+  construction: [2],       // Formula Selection
+  souscription: [3],       // Subscription Flow (with sub-steps)
+  finalisation: [4, 5],    // Mobile Payment, Signature & Emission
 };
 
 const getPhaseFromStep = (step: number): SalesPhase => {
-  if (step <= 2) return "preparation";
-  if (step === 3) return "construction";
-  if (step <= 5) return "souscription";
+  if (step <= 1) return "preparation";
+  if (step === 2) return "construction";
+  if (step === 3) return "souscription";
   return "finalisation";
 };
 
@@ -244,13 +241,13 @@ export const GuidedSalesFlow = () => {
   const handleEdit = (section: "vehicle" | "driver" | "payment") => {
     switch (section) {
       case "vehicle":
-        goToStep(1); // VehicleStep
+        goToStep(1); // SimulationStep
         break;
       case "driver":
-        goToStep(4); // DriverInfoStep
+        goToStep(3); // SubscriptionFlow
         break;
       case "payment":
-        goToStep(6); // MobilePaymentStep
+        goToStep(4); // MobilePaymentStep
         break;
     }
   };
@@ -269,21 +266,18 @@ export const GuidedSalesFlow = () => {
 
     switch (state.currentStep) {
       case 0:
+        // Step 0: Product Selection
         return <ProductSelectionStep state={state} onUpdate={updateProductSelection} onNext={nextStep} />;
       
       case 1:
-        // Phase 1.1: Vehicle
-        return <VehicleStep state={state} onUpdate={updateNeedsAnalysis} onNext={nextStep} />;
-      
-      case 2:
-        // Phase 1.2: Risk Profile (with Calculate button)
+        // Step 1: Simulation (17 fields in 5 sub-steps) OR Vie products
         if (product === "molo_molo") {
           return <MoloMoloNeedsStep state={state} onUpdate={updateMoloMoloData} onNext={nextStep} />;
         } else if (product === "pack_obseques") {
           return <PackObsequesNeedsStep state={state} onUpdate={updatePackObsequesData} onNext={nextStep} />;
         }
         return (
-          <RiskProfileStep 
+          <SimulationStep 
             state={state} 
             onUpdate={updateNeedsAnalysis} 
             onCalculate={handleCalculate}
@@ -291,8 +285,8 @@ export const GuidedSalesFlow = () => {
           />
         );
       
-      case 3:
-        // Phase 2: Formula Selection
+      case 2:
+        // Step 2: Formula Selection
         return (
           <FormulaSelectionStep 
             state={state} 
@@ -303,20 +297,16 @@ export const GuidedSalesFlow = () => {
           />
         );
       
+      case 3:
+        // Step 3: Subscription Flow (6 sub-steps)
+        return <SubscriptionFlow state={state} onUpdate={updateSubscription} onNext={nextStep} />;
+      
       case 4:
-        // Phase 3.1: Driver Info
-        return <DriverInfoStep state={state} onUpdate={updateSubscription} onNext={nextStep} />;
-      
-      case 5:
-        // Phase 3.2: Address
-        return <AddressStep state={state} onUpdate={updateSubscription} onNext={nextStep} />;
-      
-      case 6:
-        // Phase 4.1: Mobile Payment
+        // Step 4: Mobile Payment
         return <MobilePaymentStep state={state} onUpdate={updateMobilePayment} onNext={nextStep} />;
       
-      case 7:
-        // Phase 4.2: Signature & Emission
+      case 5:
+        // Step 5: Signature & Emission
         return (
           <SignatureEmissionStep 
             state={state} 
@@ -333,9 +323,6 @@ export const GuidedSalesFlow = () => {
 
   // Determine if we should show the breadcrumb
   const showBreadcrumb = state.currentStep > 1 && state.productSelection.selectedProduct === "auto";
-
-  // Transition from Phase 1 to Phase 2 requires simulation calculated
-  const canProceedToConstruction = state.simulationCalculated;
 
   return (
     <div className="min-h-screen bg-background">
@@ -391,7 +378,7 @@ export const GuidedSalesFlow = () => {
         </div>
 
         {/* Navigation hint for Phase 1 → Phase 2 transition */}
-        {state.currentStep === 2 && state.simulationCalculated && state.productSelection.selectedProduct === "auto" && (
+        {state.currentStep === 1 && state.simulationCalculated && state.productSelection.selectedProduct === "auto" && (
           <div className="mt-6 flex justify-center">
             <Button onClick={nextStep} size="lg" className="gap-2">
               Voir les offres

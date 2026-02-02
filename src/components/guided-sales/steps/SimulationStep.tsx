@@ -26,6 +26,7 @@ interface SimulationStepProps {
   state: GuidedSalesState;
   onUpdate: (data: Partial<GuidedSalesState["needsAnalysis"]>) => void;
   onCalculate: () => void;
+  onNext: () => void;
   isCalculating?: boolean;
 }
 
@@ -69,6 +70,7 @@ export const SimulationStep = ({
   state, 
   onUpdate, 
   onCalculate,
+  onNext,
   isCalculating = false 
 }: SimulationStepProps) => {
   const [subStep, setSubStep] = useState<1 | 2 | 3 | 4 | 5>(1);
@@ -672,11 +674,19 @@ export const SimulationStep = ({
         )}
       </div>
 
-      <div className="flex justify-start">
+      {/* Navigation après calcul */}
+      <div className="flex justify-between">
         <Button variant="outline" onClick={goBack} className="gap-2">
           <ChevronLeft className="h-4 w-4" />
           Retour
         </Button>
+        
+        {simulationCalculated && (
+          <Button onClick={onNext} className="gap-2">
+            Voir les offres
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     </div>
   );

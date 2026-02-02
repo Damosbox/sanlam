@@ -190,26 +190,33 @@ export interface UnderwritingData {
 }
 
 export type IntermediaryStatus = "agent" | "courtier" | "inspecteur" | "directeur";
+export type PriorCertificateType = "documents" | "declaration";
 
 // Phase 3 : Données de souscription (Subscription Data)
 export interface SubscriptionData {
-  // Identité conducteur
-  driverName: string;
-  isHabitualDriver: boolean;
-  // Permis de conduire
-  licenseNumber: string;
-  licenseCategory: LicenseCategory;
-  licenseIssueDate: string;
-  licenseIssuePlace: string;
-  // Véhicule détails
+  // Agent
+  agentCode: string;
+  // Localisation
+  geographicAddress: string;
+  city: CityType;
+  // Véhicule identité
+  vehicleBrand: string;
+  vehicleModel: string;
   vehicleRegistrationNumber: string;
   vehicleChassisNumber: string;
+  // Conducteur
+  driverName: string;
+  isHabitualDriver: boolean;
+  licenseCategory: LicenseCategory;
+  licenseNumber: string;
+  licenseIssueDate: string;
+  licenseIssuePlace: string;
   // Documents
   vehicleRegistrationDocument?: string;
-  honorDeclaration?: string;
-  // Adresse et localisation
-  city: CityType;
-  agencyCode: string;
+  priorCertificateType: PriorCertificateType;
+  priorInsurer?: string;
+  bonusPercentage?: number;
+  declarationText?: string;
 }
 
 // Phase 4 : Données de paiement mobile
@@ -248,6 +255,9 @@ export interface IssuanceData {
 export interface GuidedSalesState {
   currentStep: number;
   currentPhase: SalesPhase;
+  // Sub-step navigation
+  simulationSubStep: 1 | 2 | 3 | 4 | 5;
+  subscriptionSubStep: 1 | 2 | 3 | 4 | 5 | 6;
   productSelection: ProductSelectionData;
   clientIdentification: ClientIdentificationData;
   needsAnalysis: NeedsAnalysisData;
@@ -281,6 +291,8 @@ export interface GuidedSalesState {
 export const initialState: GuidedSalesState = {
   currentStep: 0,
   currentPhase: "preparation",
+  simulationSubStep: 1,
+  subscriptionSubStep: 1,
   productSelection: {
     category: "non_vie",
     selectedProduct: "auto",
@@ -320,16 +332,20 @@ export const initialState: GuidedSalesState = {
     manualReviewRequested: false,
   },
   subscription: {
-    driverName: "",
-    isHabitualDriver: true,
-    licenseNumber: "",
-    licenseCategory: "B",
-    licenseIssueDate: "",
-    licenseIssuePlace: "",
+    agentCode: "DP-9191",
+    geographicAddress: "",
+    city: "abidjan",
+    vehicleBrand: "",
+    vehicleModel: "",
     vehicleRegistrationNumber: "",
     vehicleChassisNumber: "",
-    city: "abidjan",
-    agencyCode: "",
+    driverName: "",
+    isHabitualDriver: true,
+    licenseCategory: "B",
+    licenseNumber: "",
+    licenseIssueDate: "",
+    licenseIssuePlace: "",
+    priorCertificateType: "declaration",
   },
   mobilePayment: {
     paymentMethod: "wave",

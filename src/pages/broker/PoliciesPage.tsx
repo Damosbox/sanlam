@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,7 +16,17 @@ import { ProductSelector, ProductType } from "@/components/broker/dashboard/Prod
 import { FileText, FolderOpen, Clock, Calendar, Search, RotateCcw } from "lucide-react";
 
 export default function PoliciesPage() {
-  const [activeTab, setActiveTab] = useState("policies");
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") || "policies";
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  // Update tab when URL changes
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab && ["policies", "quotations", "renewals", "pending"].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
   const [selectedProduct, setSelectedProduct] = useState<ProductType>("all");
   const [contactFilter, setContactFilter] = useState<ContactFilterType>("all");
   const [renewalFilter, setRenewalFilter] = useState<RenewalFilterType>("all");
@@ -113,7 +124,7 @@ export default function PoliciesPage() {
               <span className="hidden sm:inline">Renouvellements</span>
               <span className="sm:hidden">Renouv.</span>
               {renewalsCount > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs bg-amber-100 text-amber-700">
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs bg-amber-50 text-amber-700">
                   {renewalsCount}
                 </Badge>
               )}

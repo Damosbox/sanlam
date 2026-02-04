@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ProductSelectionStep } from "./steps/ProductSelectionStep";
 import { SimulationStep } from "./steps/SimulationStep";
@@ -53,6 +54,7 @@ const getFirstStepOfPhase = (phase: SalesPhase): number => {
 
 export const GuidedSalesFlow = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [state, setState] = useState<GuidedSalesState>(initialState);
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
   const [isAnimating, setIsAnimating] = useState(false);
@@ -218,9 +220,73 @@ export const GuidedSalesFlow = () => {
   }, []);
 
   const handleSaveQuote = useCallback(async () => {
-    // Mock save quote functionality
-    toast.success("Devis sauvegardé");
-  }, []);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Veuillez vous connecter");
+        return;
+      }
+
+      const product = state.productSelection.selectedProduct;
+      const productNames: Record<string, string> = {
+        auto: "Assurance Auto",
+        mrh: "Assurance Habitation",
+        sante: "Assurance Santé",
+        vie: "Assurance Vie",
+        molo_molo: "Molo Molo",
+        pack_obseques: "Pack Obsèques"
+      };
+
+      // Map periodicity to frequency
+      const mapPeriodicity = (periodicity?: string): string => {
+        switch (periodicity) {
+          case "1_month": return "mensuel";
+          case "3_months": return "trimestriel";
+          case "6_months": return "semestriel";
+          case "1_year":
+          default: return "annuel";
+        }
+      };
+
+      const quotationData = {
+        broker_id: user.id,
+        lead_id: state.clientIdentification.linkedContactId || null,
+        product_type: String(product || "auto"),
+        product_name: productNames[product || "auto"] || "Assurance Auto",
+        premium_amount: state.calculatedPremium.totalAPayer || 0,
+        premium_frequency: mapPeriodicity(state.needsAnalysis.contractPeriodicity),
+        payment_status: "pending_payment",
+        valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        coverage_details: JSON.parse(JSON.stringify({
+          planTier: state.coverage.planTier,
+          vehicleInfo: state.needsAnalysis,
+          clientInfo: state.clientIdentification,
+          options: state.coverage.additionalOptions,
+          moloMoloData: state.moloMoloData,
+          packObsequesData: state.packObsequesData,
+        }))
+      };
+
+      const { error } = await supabase.from("quotations").insert([quotationData]);
+      
+      if (error) {
+        console.error("Error saving quote:", error);
+        toast.error("Erreur lors de la sauvegarde du devis");
+        return;
+      }
+
+      toast.success("Devis sauvegardé", {
+        description: "Retrouvez-le dans Polices → Cotations",
+        action: {
+          label: "Voir",
+          onClick: () => navigate("/b2b/policies?tab=quotations")
+        }
+      });
+    } catch (err) {
+      console.error("Unexpected error saving quote:", err);
+      toast.error("Erreur inattendue lors de la sauvegarde");
+    }
+  }, [state, navigate]);
 
   const goToPhase = (phase: SalesPhase) => {
     const targetStep = getFirstStepOfPhase(phase);

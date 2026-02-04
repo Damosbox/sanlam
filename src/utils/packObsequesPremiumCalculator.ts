@@ -1,4 +1,4 @@
-import { PackObsequesData } from "@/components/guided-sales/types";
+import { PackObsequesData, PackObsequesFormula } from "@/components/guided-sales/types";
 
 export interface PackObsequesPremiumBreakdown {
   primeBase: number;
@@ -19,29 +19,61 @@ const PERIODICITE_MULTIPLIER: Record<string, number> = {
   annuelle: 1,
 };
 
-// Tarifs de base annuels (en FCFA)
-const TARIF_BASE_ANNUEL = 36000; // 3000 FCFA/mois
-const TARIF_ENFANT_ANNUEL = 12000; // 1000 FCFA/mois par enfant
-const TARIF_ASCENDANT_ANNUEL = 18000; // 1500 FCFA/mois par ascendant
-const TARIF_CONJOINT_ANNUEL = 24000; // 2000 FCFA/mois pour le conjoint
+// Tarifs de base annuels par formule (en FCFA)
+const TARIF_BASE_ANNUEL: Record<PackObsequesFormula, number> = {
+  bronze: 36000,   // 3 000 FCFA/mois
+  argent: 60000,   // 5 000 FCFA/mois
+  or: 96000,       // 8 000 FCFA/mois
+};
 
-const CAPITAL_BASE = 500000; // 500 000 FCFA de capital garanti de base
-const CAPITAL_PAR_ENFANT = 100000;
-const CAPITAL_PAR_ASCENDANT = 150000;
+const TARIF_ENFANT_ANNUEL: Record<PackObsequesFormula, number> = {
+  bronze: 12000,   // 1 000 FCFA/mois par enfant
+  argent: 18000,   // 1 500 FCFA/mois par enfant
+  or: 24000,       // 2 000 FCFA/mois par enfant
+};
+
+const TARIF_ASCENDANT_ANNUEL: Record<PackObsequesFormula, number> = {
+  bronze: 18000,   // 1 500 FCFA/mois par ascendant
+  argent: 24000,   // 2 000 FCFA/mois par ascendant
+  or: 36000,       // 3 000 FCFA/mois par ascendant
+};
+
+const TARIF_CONJOINT_ANNUEL: Record<PackObsequesFormula, number> = {
+  bronze: 24000,   // 2 000 FCFA/mois
+  argent: 36000,   // 3 000 FCFA/mois
+  or: 48000,       // 4 000 FCFA/mois
+};
+
+// Capitaux garantis par formule
+const CAPITAL_BASE: Record<PackObsequesFormula, number> = {
+  bronze: 500000,    // 500 000 FCFA
+  argent: 1000000,   // 1 000 000 FCFA
+  or: 2000000,       // 2 000 000 FCFA
+};
+
+const CAPITAL_PAR_ENFANT: Record<PackObsequesFormula, number> = {
+  bronze: 100000,
+  argent: 200000,
+  or: 400000,
+};
+
+const CAPITAL_PAR_ASCENDANT: Record<PackObsequesFormula, number> = {
+  bronze: 150000,
+  argent: 300000,
+  or: 600000,
+};
 
 const FRAIS_ACCESSOIRES = 5000;
 const TAUX_TAXE = 0.14; // 14% de taxes
 
 export const calculatePackObsequesPremium = (data: PackObsequesData): PackObsequesPremiumBreakdown => {
-  const { nombreEnfants, nombreAscendants, subscriberFamilySituation, periodicity } = data;
+  const { nombreEnfants, nombreAscendants, addSpouse, periodicity, formula = "bronze" } = data;
   
-  const hasSpouse = subscriberFamilySituation === "marie";
-  
-  // Calcul des primes annuelles
-  const primeBase = TARIF_BASE_ANNUEL;
-  const primeEnfants = nombreEnfants * TARIF_ENFANT_ANNUEL;
-  const primeAscendants = nombreAscendants * TARIF_ASCENDANT_ANNUEL;
-  const primeConjoint = hasSpouse ? TARIF_CONJOINT_ANNUEL : 0;
+  // Calcul des primes annuelles basées sur la formule
+  const primeBase = TARIF_BASE_ANNUEL[formula];
+  const primeEnfants = nombreEnfants * TARIF_ENFANT_ANNUEL[formula];
+  const primeAscendants = nombreAscendants * TARIF_ASCENDANT_ANNUEL[formula];
+  const primeConjoint = addSpouse ? TARIF_CONJOINT_ANNUEL[formula] : 0;
   
   const primeTotale = primeBase + primeEnfants + primeAscendants + primeConjoint;
   
@@ -51,10 +83,10 @@ export const calculatePackObsequesPremium = (data: PackObsequesData): PackObsequ
   // Prime TTC
   const primeTTC = primeTotale + FRAIS_ACCESSOIRES + taxes;
   
-  // Capital garanti
-  const capitalGaranti = CAPITAL_BASE + 
-    (nombreEnfants * CAPITAL_PAR_ENFANT) + 
-    (nombreAscendants * CAPITAL_PAR_ASCENDANT);
+  // Capital garanti basé sur la formule
+  const capitalGaranti = CAPITAL_BASE[formula] + 
+    (nombreEnfants * CAPITAL_PAR_ENFANT[formula]) + 
+    (nombreAscendants * CAPITAL_PAR_ASCENDANT[formula]);
   
   return {
     primeBase,

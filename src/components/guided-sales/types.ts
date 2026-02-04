@@ -27,12 +27,40 @@ export type CityType = "abidjan" | "bouake" | "yamoussoukro" | "korhogo" | "dalo
 export type MobilePaymentMethod = "orange_money" | "mtn_momo" | "wave" | "moov";
 export type SalesPhase = "preparation" | "construction" | "souscription" | "finalisation";
 
+// Pack Obsèques specific types
+export type PackObsequesFormula = "bronze" | "argent" | "or";
+export type AdhesionType = "individuelle" | "famille" | "famille_ascendant";
+export type TitleType = "monsieur" | "madame" | "mademoiselle" | "docteur" | "maitre" | "corporation" | "entreprise" | "etablissement";
+
 // Données spécifiques Pack Obsèques
 export interface PackObsequesData {
+  // Simulation - Sub-step 1
+  formula: PackObsequesFormula;
+  adhesionType: AdhesionType;
   periodicity: ViePeriodicite;
+  effectiveDate: string;
+  // Simulation - Sub-step 2 (conditional)
   nombreEnfants: number;
+  addSpouse: boolean;
   nombreAscendants: number;
-  // Infos souscripteur
+  // Simulation - Sub-step 3
+  title: TitleType;
+  lastName: string;
+  firstName: string;
+  gender: GenderType;
+  // Simulation - Sub-step 4
+  birthDate: string;
+  birthPlace: string;
+  phone: string;
+  email: string;
+  // Subscription - Sub-step 1
+  identityDocumentFile?: string;
+  identityDocumentType: string;
+  identityNumber: string;
+  maritalStatus: string;
+  // Subscription - Sub-step 3
+  geographicLocation?: string;
+  // Legacy fields for compatibility
   subscriberName: string;
   subscriberFamilySituation: string;
   subscriberBirthDate: string;
@@ -41,7 +69,6 @@ export interface PackObsequesData {
   subscriberProfession: string;
   subscriberEmail: string;
   subscriberPhone: string;
-  // Infos assuré (si différent du souscripteur)
   insuredIsDifferent: boolean;
   insuredName?: string;
   insuredBirthDate?: string;
@@ -50,7 +77,6 @@ export interface PackObsequesData {
   insuredProfession?: string;
   insuredEmail?: string;
   insuredPhone?: string;
-  // Conjoint
   spouseBirthDate?: string;
 }
 
@@ -388,9 +414,25 @@ export const initialState: GuidedSalesState = {
   },
   // Données Pack Obsèques par défaut
   packObsequesData: {
+    formula: "bronze",
+    adhesionType: "individuelle",
     periodicity: "mensuelle",
+    effectiveDate: "",
     nombreEnfants: 0,
+    addSpouse: false,
     nombreAscendants: 0,
+    title: "monsieur",
+    lastName: "",
+    firstName: "",
+    gender: "masculin",
+    birthDate: "",
+    birthPlace: "",
+    phone: "",
+    email: "",
+    identityDocumentType: "",
+    identityNumber: "",
+    maritalStatus: "",
+    geographicLocation: "",
     subscriberName: "",
     subscriberFamilySituation: "",
     subscriberBirthDate: "",

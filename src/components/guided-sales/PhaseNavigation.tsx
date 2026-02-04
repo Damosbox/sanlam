@@ -9,6 +9,7 @@ interface PhaseNavigationProps {
   onPhaseClick: (phase: SalesPhase) => void;
   onPrev?: () => void;
   compact?: boolean;
+  hidden?: boolean; // Option to hide the stepper completely
 }
 
 const phases: { id: SalesPhase; name: string; shortName: string }[] = [
@@ -30,9 +31,15 @@ export const PhaseNavigation = ({
   currentStep,
   onPhaseClick,
   onPrev,
-  compact = false 
+  compact = false,
+  hidden = false
 }: PhaseNavigationProps) => {
   const currentPhaseIndex = phaseOrder[currentPhase];
+
+  // Hide the stepper completely when hidden prop is true
+  if (hidden) {
+    return null;
+  }
 
   if (compact) {
     return (

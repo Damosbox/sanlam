@@ -8,7 +8,8 @@ import { SubscriptionFlow } from "./steps/SubscriptionFlow";
 import { MobilePaymentStep } from "./steps/MobilePaymentStep";
 import { SignatureEmissionStep } from "./steps/SignatureEmissionStep";
 import { MoloMoloNeedsStep } from "./steps/MoloMoloNeedsStep";
-import { PackObsequesNeedsStep } from "./steps/PackObsequesNeedsStep";
+import { PackObsequesSimulationStep } from "./steps/PackObsequesSimulationStep";
+import { PackObsequesSubscriptionFlow } from "./steps/PackObsequesSubscriptionFlow";
 import { PhaseNavigation } from "./PhaseNavigation";
 import { DynamicSummaryBreadcrumb } from "./DynamicSummaryBreadcrumb";
 import { SalesAssistant } from "./SalesAssistant";
@@ -198,6 +199,24 @@ export const GuidedSalesFlow = () => {
     }, 1000);
   }, []);
 
+  const handlePackObsequesCalculate = useCallback(() => {
+    setIsCalculating(true);
+    
+    setTimeout(() => {
+      setState(prev => {
+        const breakdown = calculatePackObsequesPremium(prev.packObsequesData!);
+        const premium = convertPackObsequesToCalculatedPremium(breakdown);
+        return {
+          ...prev,
+          calculatedPremium: premium,
+          simulationCalculated: true
+        };
+      });
+      setIsCalculating(false);
+      toast.success("Tarif calculé avec succès !");
+    }, 1000);
+  }, []);
+
   const handleSaveQuote = useCallback(async () => {
     // Mock save quote functionality
     toast.success("Devis sauvegardé");
@@ -292,7 +311,15 @@ export const GuidedSalesFlow = () => {
         if (product === "molo_molo") {
           return <MoloMoloNeedsStep state={state} onUpdate={updateMoloMoloData} onNext={nextStep} />;
         } else if (product === "pack_obseques") {
-          return <PackObsequesNeedsStep state={state} onUpdate={updatePackObsequesData} onNext={nextStep} />;
+          return (
+            <PackObsequesSimulationStep 
+              state={state} 
+              onUpdate={updatePackObsequesData} 
+              onNext={nextStep}
+              onCalculate={handlePackObsequesCalculate}
+              isCalculating={isCalculating}
+            />
+          );
         }
         return (
           <SimulationStep 
@@ -317,7 +344,10 @@ export const GuidedSalesFlow = () => {
         );
       
       case 3:
-        // Step 3: Subscription Flow (6 sub-steps)
+        // Step 3: Subscription Flow (6 sub-steps) - or Pack Obsèques specific
+        if (product === "pack_obseques") {
+          return <PackObsequesSubscriptionFlow state={state} onUpdate={updatePackObsequesData} onNext={nextStep} />;
+        }
         return <SubscriptionFlow state={state} onUpdate={updateSubscription} onNext={nextStep} />;
       
       case 4:

@@ -17,8 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const primaryActions = [
-  { label: "Nouveau Prospect", icon: UserPlus, route: "/b2b/leads", variant: "default" as const },
-  { label: "Devis rapide", icon: FileText, route: "/b2b/sales", variant: "outline" as const },
+  { label: "Devis rapide", icon: FileText, route: "/b2b/sales", variant: "default" as const },
 ];
 
 const moreActions = [

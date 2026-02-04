@@ -28,6 +28,7 @@ import {
   Newspaper,
   Megaphone,
   Sparkles,
+  FileSearch,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -182,6 +183,7 @@ export function BrokerSidebar() {
           badge: badges.pendingClaims > 0 ? badges.pendingClaims : undefined,
         },
         { title: "Polices", url: "/b2b/policies", icon: Shield },
+        { title: "Cotations", url: "/b2b/policies?tab=quotations", icon: FileSearch },
         { 
           title: "Renouvellement", 
           url: "/b2b/renewals", 

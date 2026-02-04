@@ -19,11 +19,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Eye, MoreHorizontal, Download, Send, Phone, MessageCircle, Mail, RefreshCw, Pencil, XCircle, FileEdit } from "lucide-react";
+import { Eye, MoreHorizontal, Download, Send, Phone, MessageCircle, Mail, RefreshCw, Pencil, XCircle, FileEdit, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PolicyDetailSheet } from "./policies/PolicyDetailSheet";
 import { UnifiedFiltersBar, StatusFilterType } from "./policies/UnifiedFiltersBar";
 import { ProductType } from "./broker/dashboard/ProductSelector";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
 
 interface Subscription {
   id: string;
@@ -221,12 +223,112 @@ export const BrokerSubscriptions = () => {
     });
   };
 
+  // Export functions
+  const exportToExcel = () => {
+    const data = filteredSubscriptions.map(sub => ({
+      Client: sub.profiles?.display_name || "N/A",
+      Email: sub.profiles?.email || "",
+      Téléphone: sub.profiles?.phone || "",
+      Produit: sub.products?.name || "",
+      "N° Police": sub.policy_number,
+      "Prime mensuelle": sub.monthly_premium,
+      "Date début": format(new Date(sub.start_date), "dd/MM/yyyy"),
+      Statut: sub.status,
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Polices");
+    XLSX.writeFile(wb, "polices.xlsx");
+    toast({ title: "Export Excel réussi" });
+  };
+
+  const exportToCSV = () => {
+    const data = filteredSubscriptions.map(sub => ({
+      Client: sub.profiles?.display_name || "N/A",
+      Email: sub.profiles?.email || "",
+      Produit: sub.products?.name || "",
+      "N° Police": sub.policy_number,
+      "Prime mensuelle": sub.monthly_premium,
+      "Date début": format(new Date(sub.start_date), "dd/MM/yyyy"),
+      Statut: sub.status,
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const csv = XLSX.utils.sheet_to_csv(ws);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "polices.csv";
+    link.click();
+    toast({ title: "Export CSV réussi" });
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Liste des Polices", 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Exporté le ${new Date().toLocaleDateString()}`, 14, 28);
+
+    let y = 40;
+    doc.setFontSize(8);
+    
+    doc.setFont("helvetica", "bold");
+    doc.text("Client", 14, y);
+    doc.text("Produit", 60, y);
+    doc.text("N° Police", 100, y);
+    doc.text("Prime", 140, y);
+    doc.text("Statut", 170, y);
+    
+    y += 6;
+    doc.setFont("helvetica", "normal");
+
+    filteredSubscriptions.slice(0, 40).forEach(sub => {
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text((sub.profiles?.display_name || "N/A").substring(0, 25), 14, y);
+      doc.text((sub.products?.name || "").substring(0, 20), 60, y);
+      doc.text(sub.policy_number.substring(0, 18), 100, y);
+      doc.text(`${sub.monthly_premium.toLocaleString()} FCFA`, 140, y);
+      doc.text(sub.status, 170, y);
+      y += 5;
+    });
+
+    doc.save("polices.pdf");
+    toast({ title: "Export PDF réussi" });
+  };
+
   if (loading) {
     return <div className="text-center py-8">Chargement...</div>;
   }
 
   return (
     <div className="space-y-4">
+      {/* Export Button */}
+      <div className="flex justify-end">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2">
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Exporter</span>
+              <ChevronDown className="h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={exportToCSV}>
+              Exporter en CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={exportToExcel}>
+              Exporter en Excel
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={exportToPDF}>
+              Exporter en PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
       {/* Filters Bar */}
       <UnifiedFiltersBar
         searchValue={searchValue}

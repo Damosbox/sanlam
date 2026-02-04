@@ -20,6 +20,7 @@ import { ClientDetailSheet } from "@/components/clients/ClientDetailSheet";
 import { CreateLeadDialog } from "@/components/leads/CreateLeadDialog";
 import type { Tables } from "@/integrations/supabase/types";
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
 type Lead = Tables<"leads">;
 type ViewDensity = "compact" | "standard";
 export default function PortfolioPage() {
@@ -249,6 +250,41 @@ export default function PortfolioPage() {
     });
   };
 
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Portefeuille", 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Exporté le ${new Date().toLocaleDateString()}`, 14, 28);
+
+    let y = 40;
+    doc.setFontSize(8);
+    
+    // Headers
+    doc.setFont("helvetica", "bold");
+    doc.text("Nom", 14, y);
+    doc.text("Type", 70, y);
+    doc.text("Téléphone", 100, y);
+    doc.text("Email", 140, y);
+    
+    y += 6;
+    doc.setFont("helvetica", "normal");
+
+    filteredItems.slice(0, 40).forEach(item => {
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text((item.display_name || "N/A").substring(0, 30), 14, y);
+      doc.text(item.type === "prospect" ? "Prospect" : "Client", 70, y);
+      doc.text((item.phone || "").substring(0, 18), 100, y);
+      doc.text((item.email || "").substring(0, 30), 140, y);
+      y += 5;
+    });
+
+    doc.save("portefeuille.pdf");
+    toast({ title: "Export PDF réussi" });
+  };
   // Handlers
   const handleSelectItem = (item: PortfolioItem) => {
     if (item.type === "prospect") {
@@ -348,6 +384,9 @@ export default function PortfolioPage() {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={exportToExcel}>
                   Exporter en Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={exportToPDF}>
+                  Exporter en PDF
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

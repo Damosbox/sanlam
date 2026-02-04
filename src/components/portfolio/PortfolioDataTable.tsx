@@ -9,16 +9,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { Phone, MessageCircle, Mail, MoreHorizontal, Eye, UserCheck, Clock, Inbox, ShoppingCart, Star } from "lucide-react";
 import { LeadStatusBadge } from "@/components/leads/LeadStatusBadge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ScoreDetailPopover } from "./ScoreDetailPopover";
 
 export interface PortfolioItem {
   id: string;
@@ -127,9 +122,8 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }
   }
 
   return (
-    <TooltipProvider>
-      <div className="rounded-lg border bg-card overflow-x-auto">
-        <Table>
+    <div className="rounded-lg border bg-card overflow-x-auto">
+      <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
               <TableHead className="w-[200px]">Nom</TableHead>
@@ -178,36 +172,33 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }
                     </div>
                   </TableCell>
                   
-                  {/* Score Column */}
+                  {/* Score Column - Clickable for details */}
                   <TableCell className={`hidden sm:table-cell ${rowPadding} text-center`}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="inline-flex flex-col items-center gap-0.5 cursor-help">
-                          <div className="flex">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={cn(
-                                  "h-3 w-3",
-                                  i < itemClass 
-                                    ? "text-amber-500 fill-amber-500" 
-                                    : "text-muted-foreground/20"
-                                )}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-[10px] font-medium text-muted-foreground">
-                            {itemScore}/100
-                          </span>
+                    <ScoreDetailPopover
+                      score={itemScore}
+                      classe={itemClass}
+                      clientId={item.id}
+                      clientType={item.type}
+                    >
+                      <button className="inline-flex flex-col items-center gap-0.5 cursor-pointer hover:opacity-80 transition-opacity">
+                        <div className="flex">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={cn(
+                                "h-3 w-3",
+                                i < itemClass 
+                                  ? "text-amber-500 fill-amber-500" 
+                                  : "text-muted-foreground/20"
+                              )}
+                            />
+                          ))}
                         </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="text-xs">
-                        <p className="font-medium">Score Valeur Client</p>
-                        <p className="text-muted-foreground">
-                          {item.type === "prospect" ? "Score prédictif" : "Score basé sur l'activité"}
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
+                        <span className="text-[10px] font-medium text-muted-foreground">
+                          {itemScore}/100
+                        </span>
+                      </button>
+                    </ScoreDetailPopover>
                   </TableCell>
                   
                   {/* Contact Column */}
@@ -357,6 +348,5 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }
           </TableBody>
         </Table>
       </div>
-    </TooltipProvider>
   );
 };

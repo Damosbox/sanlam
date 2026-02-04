@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -31,12 +32,16 @@ import {
   Clock,
   AlertTriangle,
   FileText,
-  Loader2
+  Loader2,
+  Eye,
+  Edit,
+  ShoppingCart
 } from "lucide-react";
 import { format, differenceInDays, isPast } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatFCFA } from "@/utils/formatCurrency";
 import { toast } from "sonner";
+import { QuotationDetailDialog } from "./QuotationDetailDialog";
 
 interface Quotation {
   id: string;
@@ -74,7 +79,10 @@ const frequencyLabels: Record<string, string> = {
 };
 
 export const PendingQuotationsTable = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: quotations = [], isLoading } = useQuery({
@@ -131,7 +139,26 @@ export const PendingQuotationsTable = () => {
     );
   });
 
-  const getExpirationBadge = (validUntil: string | null) => {
+  const getExpirationBadge = (validUntil: string | null, paymentStatus: string) => {
+    // Show status-based badge first
+    if (paymentStatus === "paid") {
+      return (
+        <Badge className="bg-emerald-100 text-emerald-700 gap-1 text-xs">
+          <CheckCircle className="h-3 w-3" />
+          Converti
+        </Badge>
+      );
+    }
+    
+    if (paymentStatus === "cancelled") {
+      return (
+        <Badge variant="destructive" className="gap-1 text-xs">
+          <XCircle className="h-3 w-3" />
+          Annulé
+        </Badge>
+      );
+    }
+
     if (!validUntil) return null;
     
     const expirationDate = new Date(validUntil);
@@ -139,9 +166,9 @@ export const PendingQuotationsTable = () => {
     
     if (isPast(expirationDate)) {
       return (
-        <Badge variant="destructive" className="gap-1 text-xs">
-          <XCircle className="h-3 w-3" />
-          Expirée
+        <Badge variant="outline" className="text-muted-foreground gap-1 text-xs">
+          <Clock className="h-3 w-3" />
+          Expiré
         </Badge>
       );
     }
@@ -165,11 +192,33 @@ export const PendingQuotationsTable = () => {
     }
     
     return (
-      <Badge variant="outline" className="gap-1 text-xs">
+      <Badge className="bg-blue-100 text-blue-700 gap-1 text-xs">
         <Clock className="h-3 w-3" />
-        {daysLeft}j
+        En cours
       </Badge>
     );
+  };
+
+  const handleViewDetail = (quotation: Quotation) => {
+    setSelectedQuotation(quotation);
+    setDetailDialogOpen(true);
+  };
+
+  const handleModify = (quotation: Quotation) => {
+    const params = new URLSearchParams();
+    if (quotation.lead_id) {
+      params.set("contactId", quotation.lead_id);
+      params.set("type", "prospect");
+    }
+    params.set("quotationId", quotation.id);
+    params.set("product", quotation.product_type);
+    navigate(`/b2b/sales?${params.toString()}`);
+  };
+
+  const handleSubscribe = (quotation: Quotation) => {
+    // Mark as paid and redirect to subscription completion
+    updateStatusMutation.mutate({ id: quotation.id, status: "paid" });
+    toast.success("Souscription finalisée");
   };
 
   const handleContact = (type: "phone" | "whatsapp" | "email", quotation: Quotation) => {
@@ -292,67 +341,111 @@ export const PendingQuotationsTable = () => {
                     {format(new Date(quotation.created_at), "dd MMM", { locale: fr })}
                   </TableCell>
                   <TableCell>
-                    {getExpirationBadge(quotation.valid_until)}
+                    {getExpirationBadge(quotation.valid_until, quotation.payment_status)}
                   </TableCell>
                   <TableCell className="text-right">
-                    <DropdownMenu>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleViewDetail(quotation)}
+                        title="Consulter"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleModify(quotation)}
+                        disabled={quotation.payment_status === "paid"}
+                        title="Modifier"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem 
-                          onClick={() => handleContact("phone", quotation)}
-                          disabled={!quotation.leads?.phone}
-                        >
-                          <Phone className="h-4 w-4 mr-2" />
-                          Appeler
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => handleContact("whatsapp", quotation)}
-                          disabled={!quotation.leads?.phone}
-                        >
-                          <MessageCircle className="h-4 w-4 mr-2" />
-                          WhatsApp
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => handleContact("email", quotation)}
-                          disabled={!quotation.leads?.email}
-                        >
-                          <Mail className="h-4 w-4 mr-2" />
-                          Email
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          onClick={() => handleResendLink(quotation)}
-                          disabled={!quotation.payment_link}
-                        >
-                          <Send className="h-4 w-4 mr-2" />
-                          Renvoyer le lien
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          onClick={() => updateStatusMutation.mutate({ 
-                            id: quotation.id, 
-                            status: "paid" 
-                          })}
-                        >
-                          <CheckCircle className="h-4 w-4 mr-2 text-emerald-600" />
-                          Marquer payé
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => updateStatusMutation.mutate({ 
-                            id: quotation.id, 
-                            status: "cancelled" 
-                          })}
-                          className="text-destructive"
-                        >
-                          <XCircle className="h-4 w-4 mr-2" />
-                          Annuler
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem 
+                            onClick={() => handleViewDetail(quotation)}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Consulter
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleModify(quotation)}
+                            disabled={quotation.payment_status === "paid"}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Modifier
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => handleContact("phone", quotation)}
+                            disabled={!quotation.leads?.phone}
+                          >
+                            <Phone className="h-4 w-4 mr-2" />
+                            Appeler
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleContact("whatsapp", quotation)}
+                            disabled={!quotation.leads?.phone}
+                          >
+                            <MessageCircle className="h-4 w-4 mr-2" />
+                            WhatsApp
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleContact("email", quotation)}
+                            disabled={!quotation.leads?.email}
+                          >
+                            <Mail className="h-4 w-4 mr-2" />
+                            Email
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => handleResendLink(quotation)}
+                            disabled={!quotation.payment_link}
+                          >
+                            <Send className="h-4 w-4 mr-2" />
+                            Renvoyer le lien
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => handleSubscribe(quotation)}
+                            disabled={quotation.payment_status === "paid"}
+                            className="text-primary"
+                          >
+                            <ShoppingCart className="h-4 w-4 mr-2" />
+                            Souscrire
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => updateStatusMutation.mutate({ 
+                              id: quotation.id, 
+                              status: "paid" 
+                            })}
+                            disabled={quotation.payment_status === "paid"}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2 text-emerald-600" />
+                            Marquer payé
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => updateStatusMutation.mutate({ 
+                              id: quotation.id, 
+                              status: "cancelled" 
+                            })}
+                            className="text-destructive"
+                          >
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Annuler
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -372,6 +465,18 @@ export const PendingQuotationsTable = () => {
           </span>
         </div>
       )}
+
+      <QuotationDetailDialog
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        quotation={selectedQuotation}
+        onSubscribe={() => {
+          if (selectedQuotation) {
+            handleSubscribe(selectedQuotation);
+            setDetailDialogOpen(false);
+          }
+        }}
+      />
     </div>
   );
 };

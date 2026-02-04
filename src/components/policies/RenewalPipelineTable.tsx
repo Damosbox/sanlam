@@ -9,6 +9,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { 
@@ -18,6 +19,11 @@ import {
   Eye, 
   Star,
   Calendar,
+  RefreshCw,
+  Edit,
+  FileText,
+  Download,
+  Send,
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { formatFCFA } from "@/utils/formatCurrency";
@@ -26,6 +32,7 @@ import { toast } from "sonner";
 import type { ProductType } from "@/components/broker/dashboard/ProductSelector";
 import { RenewalStatusDropdown } from "./RenewalStatusDropdown";
 import { ChurnReasonDialog } from "./ChurnReasonDialog";
+import { RenewalDetailDialog } from "./RenewalDetailDialog";
 
 interface RenewalPipelineTableProps {
   selectedProduct: ProductType;
@@ -61,6 +68,8 @@ export const RenewalPipelineTable = ({
 }: RenewalPipelineTableProps) => {
   const [churnDialogOpen, setChurnDialogOpen] = useState(false);
   const [selectedSubscription, setSelectedSubscription] = useState<{ id: string; productType: string } | null>(null);
+  const [renewalDialogOpen, setRenewalDialogOpen] = useState(false);
+  const [selectedRenewal, setSelectedRenewal] = useState<any>(null);
 
   const { data: renewals = [], isLoading } = useQuery({
     queryKey: ["broker-renewals", selectedProduct],
@@ -182,6 +191,20 @@ export const RenewalPipelineTable = ({
   const handleChurnReasonNeeded = (subscriptionId: string, productCategory: string) => {
     setSelectedSubscription({ id: subscriptionId, productType: productCategory });
     setChurnDialogOpen(true);
+  };
+
+  const handleRenew = (renewal: RenewalItem) => {
+    setSelectedRenewal({
+      id: renewal.id,
+      policy_number: renewal.policy_number,
+      client_name: renewal.client_name,
+      client_phone: renewal.client_phone,
+      client_email: renewal.client_email,
+      product_name: renewal.product_name,
+      current_premium: renewal.premium,
+      end_date: renewal.end_date,
+    });
+    setRenewalDialogOpen(true);
   };
 
   // Get dynamic column header based on product
@@ -341,6 +364,32 @@ export const RenewalPipelineTable = ({
                             <Star className="h-4 w-4 mr-2" />
                             Score valeur
                           </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => toast.info("Modification des garanties à venir")}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Modifier les garanties
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => toast.info("Génération du devis...")}>
+                            <FileText className="h-4 w-4 mr-2" />
+                            Générer devis
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => handleRenew(renewal)}
+                            className="text-primary"
+                          >
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Renouveler
+                          </DropdownMenuItem>
+                          {renewal.renewal_status === "renewed" && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => toast.info("Téléchargement de l'avenant...")}>
+                                <Download className="h-4 w-4 mr-2" />
+                                Télécharger avenant
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -360,6 +409,12 @@ export const RenewalPipelineTable = ({
           productType={selectedSubscription.productType}
         />
       )}
+
+      <RenewalDetailDialog
+        open={renewalDialogOpen}
+        onOpenChange={setRenewalDialogOpen}
+        subscription={selectedRenewal}
+      />
     </>
   );
 };

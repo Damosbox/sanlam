@@ -14,6 +14,7 @@ import { PaymentMethodsTab } from "./tabs/PaymentMethodsTab";
 import { DocumentsTab } from "./tabs/DocumentsTab";
 import { SalesTab } from "./tabs/SalesTab";
 import { FaqsTab } from "./tabs/FaqsTab";
+import { FormEditorDrawer } from "./FormEditorDrawer";
 
 interface ProductFormProps {
   product: any | null;
@@ -21,6 +22,7 @@ interface ProductFormProps {
 }
 
 export interface ProductFormData {
+  productId?: string; // Added for SalesTab filtering
   name: string;
   description: string;
   category: string;
@@ -42,9 +44,10 @@ export interface ProductFormData {
 }
 
 const defaultFormData: ProductFormData = {
+  productId: undefined,
   name: "",
   description: "",
-  category: "non_vie",
+  category: "non-vie",
   product_type: "",
   is_renewable: false,
   has_claims: true,
@@ -73,13 +76,15 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [formDrawerOpen, setFormDrawerOpen] = useState(false);
 
   const [formData, setFormData] = useState<ProductFormData>(() => {
     if (product) {
       return {
+        productId: product.id,
         name: product.name || "",
         description: product.description || "",
-        category: product.category || "non_vie",
+        category: product.category || "non-vie",
         product_type: product.product_type || "",
         is_renewable: product.is_renewable || false,
         has_claims: product.has_claims ?? true,
@@ -198,7 +203,10 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
         </TabsContent>
 
         <TabsContent value="calculation" className="mt-6">
-          <CalculationRulesTab formData={formData} updateField={updateField} />
+          <CalculationRulesTab 
+            formData={formData}
+            onOpenFormBuilder={() => setFormDrawerOpen(true)}
+          />
         </TabsContent>
 
         {isLifeProduct && (
@@ -223,6 +231,21 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
           <FaqsTab formData={formData} updateField={updateField} />
         </TabsContent>
       </Tabs>
+
+      <FormEditorDrawer
+        open={formDrawerOpen}
+        onOpenChange={setFormDrawerOpen}
+        formId={formData.subscription_form_id}
+        productCategory={formData.category}
+        productType={formData.product_type}
+        productName={formData.name}
+        onFormSaved={(formId) => {
+          updateField("subscription_form_id", formId);
+          setFormDrawerOpen(false);
+          toast({ title: "Formulaire sauvegardé" });
+          queryClient.invalidateQueries({ queryKey: ["form-templates"] });
+        }}
+      />
     </div>
   );
 }

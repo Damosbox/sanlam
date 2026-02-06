@@ -8,14 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import { GeneralInfoTab } from "./tabs/GeneralInfoTab";
 import { SubscriptionFieldsTab } from "./tabs/SubscriptionFieldsTab";
-import { CalculationRulesTab } from "./tabs/CalculationRulesTab";
 import { BeneficiariesTab } from "./tabs/BeneficiariesTab";
 import { PaymentMethodsTab } from "./tabs/PaymentMethodsTab";
 import { DocumentsTab } from "./tabs/DocumentsTab";
 import { SalesTab } from "./tabs/SalesTab";
 import { FaqsTab } from "./tabs/FaqsTab";
 import { FormEditorDrawer } from "./FormEditorDrawer";
-import type { ProductCoverage, ProductCalculationRules } from "@/types/product";
+import type { ProductCalculationRules } from "@/types/product";
 
 interface ProductFormProps {
   product: any | null;
@@ -182,10 +181,9 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 h-auto p-1">
+        <TabsList className="grid w-full grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 h-auto p-1">
           <TabsTrigger value="general" className="text-xs sm:text-sm">Général</TabsTrigger>
           <TabsTrigger value="subscription" className="text-xs sm:text-sm">Souscription</TabsTrigger>
-          <TabsTrigger value="calculation" className="text-xs sm:text-sm">Calcul</TabsTrigger>
           {isLifeProduct && (
             <TabsTrigger value="beneficiaries" className="text-xs sm:text-sm">Bénéf.</TabsTrigger>
           )}
@@ -201,13 +199,6 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
 
         <TabsContent value="subscription" className="mt-6">
           <SubscriptionFieldsTab formData={formData} updateField={updateField} />
-        </TabsContent>
-
-        <TabsContent value="calculation" className="mt-6">
-          <CalculationRulesTab 
-            formData={formData}
-            onOpenFormBuilder={() => setFormDrawerOpen(true)}
-          />
         </TabsContent>
 
         {isLifeProduct && (

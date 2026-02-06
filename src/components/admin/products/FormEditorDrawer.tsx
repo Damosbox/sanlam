@@ -26,9 +26,9 @@ interface FormEditorDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   formId: string | null;
-  productCategory: string;
-  productType: string;
-  productName: string;
+  productCategory?: string;
+  productType?: string;
+  productName?: string;
   onFormSaved?: (formId: string) => void;
 }
 
@@ -36,9 +36,9 @@ export function FormEditorDrawer({
   open,
   onOpenChange,
   formId,
-  productCategory,
-  productType,
-  productName,
+  productCategory = "non-vie",
+  productType = "Automobile",
+  productName = "Nouveau formulaire",
   onFormSaved,
 }: FormEditorDrawerProps) {
   const queryClient = useQueryClient();
@@ -52,12 +52,12 @@ export function FormEditorDrawer({
     if (open && formId) {
       loadFormData();
     } else if (open && !formId) {
-      // New form - set defaults based on product
-      setFormName(`Formulaire ${productName}`);
+      // New form - set defaults
+      setFormName("");
       setDescription("");
       setStructure(createDefaultFormStructure());
     }
-  }, [open, formId, productName]);
+  }, [open, formId]);
 
   const loadFormData = async () => {
     if (!formId) return;
@@ -91,13 +91,13 @@ export function FormEditorDrawer({
       const serializedStructure = serializeFormStructure(structure);
 
       const formData = {
-        name: formName,
-        category: productCategory as "vie" | "non-vie",
-        product_type: productType,
+        name: formName || productName,
+        category: (productCategory || "non-vie") as "vie" | "non-vie",
+        product_type: productType || "Automobile",
         description,
         target_channels: ["B2C", "B2B"],
         steps: serializedStructure,
-        is_active: true,
+        is_active: false,
       };
 
       if (formId) {
@@ -137,7 +137,10 @@ export function FormEditorDrawer({
             {formId ? "Modifier le formulaire" : "Créer un formulaire"}
           </SheetTitle>
           <SheetDescription>
-            Formulaire de souscription pour {productName}
+            {formId 
+              ? "Modifiez les phases (cotation et souscription) et les règles de calcul"
+              : "Créez un nouveau formulaire avec cotation et souscription"
+            }
           </SheetDescription>
         </SheetHeader>
 

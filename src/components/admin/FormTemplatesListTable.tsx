@@ -6,13 +6,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Edit, Trash2, Copy, Eye } from "lucide-react";
+import { Edit, Trash2, Copy } from "lucide-react";
+import { parseFormStructure } from "@/components/admin/form-builder";
 
-interface FormTemplatesListProps {
-  onEdit: (template: any) => void;
+interface FormTemplatesListTableProps {
+  onEdit: (formId: string) => void;
 }
 
-export const FormTemplatesList = ({ onEdit }: FormTemplatesListProps) => {
+export const FormTemplatesListTable = ({ onEdit }: FormTemplatesListTableProps) => {
   const queryClient = useQueryClient();
 
   const { data: templates, isLoading } = useQuery({
@@ -124,8 +125,30 @@ export const FormTemplatesList = ({ onEdit }: FormTemplatesListProps) => {
     ) || false;
   };
 
+  const getStepCount = (template: any) => {
+    const structure = parseFormStructure(template.steps);
+    const totalSteps = structure.phases.reduce((acc, phase) => acc + phase.steps.length, 0);
+    return totalSteps;
+  };
+
   if (isLoading) {
-    return <div>Chargement...</div>;
+    return (
+      <Card>
+        <CardContent className="py-8">
+          <div className="text-center text-muted-foreground">Chargement des formulaires...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!templates || templates.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-8">
+          <div className="text-center text-muted-foreground">Aucun formulaire créé</div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
@@ -140,7 +163,7 @@ export const FormTemplatesList = ({ onEdit }: FormTemplatesListProps) => {
               <TableHead>Nom</TableHead>
               <TableHead>Catégorie</TableHead>
               <TableHead>Type</TableHead>
-              <TableHead>Étapes</TableHead>
+              <TableHead>Sous-étapes</TableHead>
               <TableHead>Actif</TableHead>
               <TableHead>B2C</TableHead>
               <TableHead>B2B</TableHead>
@@ -148,7 +171,7 @@ export const FormTemplatesList = ({ onEdit }: FormTemplatesListProps) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {templates?.map((template) => (
+            {templates.map((template) => (
               <TableRow key={template.id}>
                 <TableCell className="font-medium">{template.name}</TableCell>
                 <TableCell>
@@ -157,9 +180,7 @@ export const FormTemplatesList = ({ onEdit }: FormTemplatesListProps) => {
                   </Badge>
                 </TableCell>
                 <TableCell>{template.product_type}</TableCell>
-                <TableCell>
-                  {Object.keys(template.steps || {}).length} étape(s)
-                </TableCell>
+                <TableCell>{getStepCount(template)}</TableCell>
                 <TableCell>
                   <Switch
                     checked={template.is_active}
@@ -199,7 +220,8 @@ export const FormTemplatesList = ({ onEdit }: FormTemplatesListProps) => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => onEdit(template)}
+                      onClick={() => onEdit(template.id)}
+                      title="Modifier"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -207,6 +229,7 @@ export const FormTemplatesList = ({ onEdit }: FormTemplatesListProps) => {
                       variant="ghost"
                       size="sm"
                       onClick={() => duplicateMutation.mutate(template)}
+                      title="Dupliquer"
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
@@ -218,6 +241,7 @@ export const FormTemplatesList = ({ onEdit }: FormTemplatesListProps) => {
                           deleteMutation.mutate(template.id);
                         }
                       }}
+                      title="Supprimer"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

@@ -1,11 +1,27 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, ArrowLeft } from "lucide-react";
-import { AdminFormBuilder } from "@/components/admin/AdminFormBuilder";
-import { FormTemplatesList } from "@/components/admin/FormTemplatesList";
+import { Plus } from "lucide-react";
+import { FormTemplatesListTable } from "@/components/admin/FormTemplatesListTable";
+import { FormEditorDrawer } from "@/components/admin/products/FormEditorDrawer";
 
 export default function FormsPage() {
-  const [showFormBuilder, setShowFormBuilder] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
+
+  const handleNewForm = () => {
+    setSelectedFormId(null);
+    setDrawerOpen(true);
+  };
+
+  const handleEditForm = (formId: string) => {
+    setSelectedFormId(formId);
+    setDrawerOpen(true);
+  };
+
+  const handleFormSaved = () => {
+    setDrawerOpen(false);
+    setSelectedFormId(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -13,31 +29,23 @@ export default function FormsPage() {
         <div>
           <h1 className="text-2xl font-bold">Générateur de Formulaires</h1>
           <p className="text-muted-foreground">
-            Créez et gérez les formulaires de souscription.
+            Créez et gérez les formulaires de souscription avec cotation et souscription.
           </p>
         </div>
-        {!showFormBuilder && (
-          <Button onClick={() => setShowFormBuilder(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nouveau Formulaire
-          </Button>
-        )}
-        {showFormBuilder && (
-          <Button 
-            variant="outline" 
-            onClick={() => setShowFormBuilder(false)}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Retour à la liste
-          </Button>
-        )}
+        <Button onClick={handleNewForm}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nouveau Formulaire
+        </Button>
       </div>
-      
-      {showFormBuilder ? (
-        <AdminFormBuilder />
-      ) : (
-        <FormTemplatesList onEdit={() => setShowFormBuilder(true)} />
-      )}
+
+      <FormTemplatesListTable onEdit={handleEditForm} />
+
+      <FormEditorDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        formId={selectedFormId}
+        onFormSaved={handleFormSaved}
+      />
     </div>
   );
 }

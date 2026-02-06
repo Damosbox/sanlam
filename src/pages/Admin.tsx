@@ -3,7 +3,7 @@ import { StatCard } from "@/components/StatCard";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, Shield, TrendingUp, AlertCircle, Database, Zap, FileText, Users, GitBranch, Trophy, ClipboardList, KeyRound, ScrollText } from "lucide-react";
+import { Brain, Shield, TrendingUp, AlertCircle, Database, Zap, FileText, Users, GitBranch, Trophy, ClipboardList, KeyRound, ScrollText, Plus } from "lucide-react";
 import { AdminClaimsTable } from "@/components/AdminClaimsTable";
 import { AdminUsersTable } from "@/components/AdminUsersTable";
 import { AdminAnalytics } from "@/components/AdminAnalytics";
@@ -13,18 +13,28 @@ import { AdminSurveys } from "@/components/admin/AdminSurveys";
 import { AdminPermissions } from "@/components/admin/AdminPermissions";
 import { AdminAuditLogs } from "@/components/admin/AdminAuditLogs";
 import { AdminDataGenerator } from "@/components/AdminDataGenerator";
-import { AdminFormBuilder } from "@/components/admin/AdminFormBuilder";
-import { FormTemplatesList } from "@/components/admin/FormTemplatesList";
 import { CompetitiveAnalyzer } from "@/components/CompetitiveAnalyzer";
+import { FormTemplatesListTable } from "@/components/admin/FormTemplatesListTable";
+import { FormEditorDrawer } from "@/components/admin/products/FormEditorDrawer";
 import { useState } from "react";
 
 const Admin = () => {
-  const [showFormBuilder, setShowFormBuilder] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<any>(null);
+  const [formDrawerOpen, setFormDrawerOpen] = useState(false);
+  const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
 
-  const handleEditTemplate = (template: any) => {
-    setEditingTemplate(template);
-    setShowFormBuilder(true);
+  const handleNewForm = () => {
+    setSelectedFormId(null);
+    setFormDrawerOpen(true);
+  };
+
+  const handleEditForm = (formId: string) => {
+    setSelectedFormId(formId);
+    setFormDrawerOpen(true);
+  };
+
+  const handleFormSaved = () => {
+    setFormDrawerOpen(false);
+    setSelectedFormId(null);
   };
 
   return (
@@ -317,31 +327,25 @@ const Admin = () => {
             </TabsContent>
 
             <TabsContent value="forms" className="space-y-4">
-              {!showFormBuilder ? (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-2xl font-bold">Générateur de formulaires produits</h2>
-                      <p className="text-muted-foreground">Créez et gérez des formulaires personnalisés pour vos produits d'assurance</p>
-                    </div>
-                    <Button onClick={() => setShowFormBuilder(true)}>
-                      <FileText className="h-4 w-4 mr-2" />
-                      Créer un formulaire
-                    </Button>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold">Générateur de formulaires</h2>
+                    <p className="text-muted-foreground">Créez et gérez des formulaires avec cotation et souscription</p>
                   </div>
-                  <FormTemplatesList onEdit={handleEditTemplate} />
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <Button variant="outline" onClick={() => {
-                    setShowFormBuilder(false);
-                    setEditingTemplate(null);
-                  }}>
-                    ← Retour à la liste
+                  <Button onClick={handleNewForm}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nouveau Formulaire
                   </Button>
-                  <AdminFormBuilder />
                 </div>
-              )}
+                <FormTemplatesListTable onEdit={handleEditForm} />
+              </div>
+              <FormEditorDrawer
+                open={formDrawerOpen}
+                onOpenChange={setFormDrawerOpen}
+                formId={selectedFormId}
+                onFormSaved={handleFormSaved}
+              />
             </TabsContent>
           </Tabs>
         </div>

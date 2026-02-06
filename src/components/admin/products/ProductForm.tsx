@@ -15,6 +15,7 @@ import { DocumentsTab } from "./tabs/DocumentsTab";
 import { SalesTab } from "./tabs/SalesTab";
 import { FaqsTab } from "./tabs/FaqsTab";
 import { FormEditorDrawer } from "./FormEditorDrawer";
+import type { ProductCoverage, ProductCalculationRules } from "@/types/product";
 
 interface ProductFormProps {
   product: any | null;
@@ -22,7 +23,7 @@ interface ProductFormProps {
 }
 
 export interface ProductFormData {
-  productId?: string; // Added for SalesTab filtering
+  productId?: string;
   name: string;
   description: string;
   category: string;
@@ -32,8 +33,8 @@ export interface ProductFormData {
   is_active: boolean;
   image_url: string;
   base_premium: number;
-  coverages: any;
-  calculation_rules: any;
+  coverages: any; // Json format for Supabase
+  calculation_rules: any; // Json format for Supabase
   beneficiaries_config: any;
   payment_methods: any;
   document_templates: any[];
@@ -54,7 +55,7 @@ const defaultFormData: ProductFormData = {
   is_active: false,
   image_url: "",
   base_premium: 0,
-  coverages: {},
+  coverages: [],
   calculation_rules: {},
   beneficiaries_config: null,
   payment_methods: {
@@ -181,17 +182,17 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
-          <TabsTrigger value="general">Général</TabsTrigger>
-          <TabsTrigger value="subscription">Souscription</TabsTrigger>
-          <TabsTrigger value="calculation">Calcul</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 h-auto p-1">
+          <TabsTrigger value="general" className="text-xs sm:text-sm">Général</TabsTrigger>
+          <TabsTrigger value="subscription" className="text-xs sm:text-sm">Souscription</TabsTrigger>
+          <TabsTrigger value="calculation" className="text-xs sm:text-sm">Calcul</TabsTrigger>
           {isLifeProduct && (
-            <TabsTrigger value="beneficiaries">Bénéficiaires</TabsTrigger>
+            <TabsTrigger value="beneficiaries" className="text-xs sm:text-sm">Bénéf.</TabsTrigger>
           )}
-          <TabsTrigger value="payment">Paiements</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
-          <TabsTrigger value="sales">Ventes</TabsTrigger>
-          <TabsTrigger value="faqs">FAQs</TabsTrigger>
+          <TabsTrigger value="payment" className="text-xs sm:text-sm">Paiement</TabsTrigger>
+          <TabsTrigger value="documents" className="text-xs sm:text-sm">Docs</TabsTrigger>
+          <TabsTrigger value="sales" className="text-xs sm:text-sm">Ventes</TabsTrigger>
+          <TabsTrigger value="faqs" className="text-xs sm:text-sm">FAQs</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="mt-6">

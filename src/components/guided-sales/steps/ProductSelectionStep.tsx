@@ -68,25 +68,25 @@ export const ProductSelectionStep = ({ state, onUpdate, onNext }: ProductSelecti
           <TabsTrigger value="vie" className="text-base">Vie</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="non_vie" className="mt-0">
+        <TabsContent value="non-vie" className="mt-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <ProductCard
               icon={<Car className="h-8 w-8 text-primary" />}
               title="Assurance Auto"
               description="Assurance automobile tous risques ou responsabilité civile pour véhicules particuliers et professionnels"
-              onSelect={() => handleSelectProduct("non_vie", "auto")}
+              onSelect={() => handleSelectProduct("non-vie", "auto")}
             />
             <ProductCard
               icon={<Home className="h-8 w-8 text-primary" />}
               title="Multirisque Habitation"
               description="Protection complète de votre logement et de vos biens contre les risques locatifs et dommages"
-              onSelect={() => handleSelectProduct("non_vie", "mrh")}
+              onSelect={() => handleSelectProduct("non-vie", "mrh")}
             />
             <ProductCard
               icon={<Plane className="h-8 w-8 text-primary" />}
               title="Assistance Voyage"
               description="Couverture médicale et assistance rapatriement pour vos déplacements à l'étranger"
-              onSelect={() => handleSelectProduct("non_vie", "assistance_voyage")}
+              onSelect={() => handleSelectProduct("non-vie", "assistance_voyage")}
             />
           </div>
         </TabsContent>

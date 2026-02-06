@@ -1,5 +1,5 @@
 export type ProductType = "auto" | "habitation" | "sante" | "vie" | "mrh" | "assistance_voyage";
-export type ProductCategory = "vie" | "non_vie";
+export type ProductCategory = "vie" | "non-vie";
 export type SelectedProductType = "auto" | "molo_molo" | "pack_obseques" | "mrh" | "assistance_voyage";
 export type ClientType = "prospect" | "existing";
 export type UsageType = "prive" | "professionnel" | "taxi" | "livraison";
@@ -320,7 +320,7 @@ export const initialState: GuidedSalesState = {
   simulationSubStep: 1,
   subscriptionSubStep: 1,
   productSelection: {
-    category: "non_vie",
+    category: "non-vie",
     selectedProduct: "auto",
   },
   clientIdentification: {

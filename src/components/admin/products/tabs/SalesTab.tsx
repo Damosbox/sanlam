@@ -28,7 +28,7 @@ export function SalesTab({ formData, updateField }: SalesTabProps) {
     },
   });
 
-  const otherProducts = allProducts?.filter((p) => p.id !== formData.name) || [];
+  const otherProducts = allProducts?.filter((p) => p.id !== formData.productId) || [];
 
   const toggleOptional = (productId: string) => {
     const current = formData.optional_products || [];

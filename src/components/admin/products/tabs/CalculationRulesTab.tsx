@@ -1,139 +1,68 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Edit2, Plus } from "lucide-react";
 import { ProductFormData } from "../ProductForm";
+import { CalculationRulesDisplay } from "../CalculationRulesDisplay";
 
 interface CalculationRulesTabProps {
   formData: ProductFormData;
-  updateField: <K extends keyof ProductFormData>(
-    field: K,
-    value: ProductFormData[K]
-  ) => void;
+  onOpenFormBuilder?: () => void;
 }
 
-export function CalculationRulesTab({ formData, updateField }: CalculationRulesTabProps) {
-  const rules = formData.calculation_rules || {};
-
-  const updateRules = (key: string, value: any) => {
-    updateField("calculation_rules", {
-      ...rules,
-      [key]: value,
-    });
-  };
+export function CalculationRulesTab({ formData, onOpenFormBuilder }: CalculationRulesTabProps) {
+  const hasFormula = formData.calculation_rules && Object.keys(formData.calculation_rules).length > 0;
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Formule de base</CardTitle>
+          <CardTitle>Règles de calcul</CardTitle>
           <CardDescription>
-            Définissez la formule de calcul de la prime.
+            Les règles de calcul sont définies dans le formulaire de souscription lié au produit.
+            {!hasFormula && " Créez d'abord un formulaire avec des règles de calcul."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="base_formula">Formule</Label>
-            <Textarea
-              id="base_formula"
-              value={rules.base_formula || "base_premium * coefficient"}
-              onChange={(e) => updateRules("base_formula", e.target.value)}
-              placeholder="base_premium * coefficient"
-              rows={2}
-            />
-            <p className="text-xs text-muted-foreground">
-              Variables disponibles: base_premium, age_factor, bns_factor, duration_factor
-            </p>
-          </div>
+          {hasFormula ? (
+            <>
+              <CalculationRulesDisplay 
+                rules={formData.calculation_rules}
+                onEdit={onOpenFormBuilder}
+              />
+            </>
+          ) : (
+            <div className="border-2 border-dashed rounded-lg p-8 text-center">
+              <p className="text-muted-foreground mb-4">
+                Aucune règle de calcul configurée
+              </p>
+              <Button 
+                onClick={onOpenFormBuilder}
+                disabled={!onOpenFormBuilder}
+                className="inline-flex"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter un formulaire avec règles
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-blue-50 border-blue-200">
         <CardHeader>
-          <CardTitle>Taxes et frais</CardTitle>
-          <CardDescription>
-            Configurez les taxes et frais additionnels.
-          </CardDescription>
+          <CardTitle className="text-base">💡 Comment ça marche ?</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="tax_rate">Taux de taxe (%)</Label>
-              <Input
-                id="tax_rate"
-                type="number"
-                step="0.01"
-                value={rules.taxes?.rate ? rules.taxes.rate * 100 : 14.5}
-                onChange={(e) =>
-                  updateRules("taxes", {
-                    ...rules.taxes,
-                    rate: parseFloat(e.target.value) / 100 || 0,
-                    name: rules.taxes?.name || "TVA",
-                  })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tax_name">Nom de la taxe</Label>
-              <Input
-                id="tax_name"
-                value={rules.taxes?.name || "TVA"}
-                onChange={(e) =>
-                  updateRules("taxes", {
-                    ...rules.taxes,
-                    name: e.target.value,
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="accessories">Frais d'accessoires (FCFA)</Label>
-              <Input
-                id="accessories"
-                type="number"
-                value={rules.fees?.accessories || 5000}
-                onChange={(e) =>
-                  updateRules("fees", {
-                    ...rules.fees,
-                    accessories: parseInt(e.target.value) || 0,
-                  })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="fga_rate">Taux FGA (%)</Label>
-              <Input
-                id="fga_rate"
-                type="number"
-                step="0.01"
-                value={rules.fees?.fga ? rules.fees.fga * 100 : 2}
-                onChange={(e) =>
-                  updateRules("fees", {
-                    ...rules.fees,
-                    fga: parseFloat(e.target.value) / 100 || 0,
-                  })
-                }
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Variables de calcul</CardTitle>
-          <CardDescription>
-            Définissez les coefficients et facteurs de calcul.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Les variables de calcul complexes (facteurs d'âge, BNS, durée) seront configurables 
-            dans une version future avec un éditeur visuel.
+        <CardContent className="text-sm text-muted-foreground space-y-2">
+          <p>
+            Les règles de calcul font partie intégrante du formulaire de souscription. Pour configurer ou modifier les règles :
           </p>
+          <ol className="list-decimal list-inside space-y-1 ml-2">
+            <li>Accédez à l'onglet <strong>Souscription</strong></li>
+            <li>Cliquez sur <strong>Modifier le formulaire</strong></li>
+            <li>Dans la phase <strong>Cotation</strong>, éditez la sous-étape <strong>Règles de calcul</strong></li>
+            <li>Configurez la formule, les coefficients, les taxes et frais</li>
+            <li>Sauvegardez le formulaire</li>
+          </ol>
         </CardContent>
       </Card>
     </div>

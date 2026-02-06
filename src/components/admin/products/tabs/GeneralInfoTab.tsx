@@ -1,3 +1,4 @@
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -13,7 +15,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Upload, Loader2, X } from "lucide-react";
 import { ProductFormData } from "../ProductForm";
+import { useToast } from "@/hooks/use-toast";
 
 interface GeneralInfoTabProps {
   formData: ProductFormData;
@@ -24,6 +28,10 @@ interface GeneralInfoTabProps {
 }
 
 export function GeneralInfoTab({ formData, updateField }: GeneralInfoTabProps) {
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
   const { data: categories } = useQuery({
     queryKey: ["product-categories"],
     queryFn: async () => {
@@ -52,6 +60,77 @@ export function GeneralInfoTab({ formData, updateField }: GeneralInfoTabProps) {
     },
     enabled: !!categories && !!formData.category,
   });
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: "Format non supporté",
+        description: "Utilisez une image JPG, PNG, WebP ou GIF",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Fichier trop volumineux",
+        description: "L'image ne doit pas dépasser 5 Mo",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      // Generate unique filename
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${formData.productId || crypto.randomUUID()}-${Date.now()}.${fileExt}`;
+      const filePath = `products/${fileName}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from("product-images")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from("product-images")
+        .getPublicUrl(filePath);
+
+      updateField("image_url", urlData.publicUrl);
+      
+      toast({
+        title: "Image téléversée",
+        description: "L'image du produit a été mise à jour",
+      });
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast({
+        title: "Erreur de téléversement",
+        description: "Impossible de téléverser l'image",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleRemoveImage = () => {
+    updateField("image_url", "");
+  };
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">
@@ -191,21 +270,68 @@ export function GeneralInfoTab({ formData, updateField }: GeneralInfoTabProps) {
             <CardTitle>Image du produit</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex justify-center">
+            <div className="flex justify-center relative">
               <Avatar className="h-32 w-32">
                 <AvatarImage src={formData.image_url} alt={formData.name} />
                 <AvatarFallback className="text-3xl">
                   {formData.name.charAt(0) || "P"}
                 </AvatarFallback>
               </Avatar>
+              {formData.image_url && (
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                  onClick={handleRemoveImage}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="image_url">URL de l'image</Label>
+
+            {/* Upload button */}
+            <div className="space-y-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Téléversement...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Téléverser une image
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground text-center">
+                JPG, PNG, WebP ou GIF • Max 5 Mo
+              </p>
+            </div>
+
+            {/* URL input as fallback */}
+            <div className="space-y-2 pt-2 border-t">
+              <Label htmlFor="image_url" className="text-xs text-muted-foreground">
+                Ou entrer une URL directe
+              </Label>
               <Input
                 id="image_url"
                 value={formData.image_url}
                 onChange={(e) => updateField("image_url", e.target.value)}
                 placeholder="https://..."
+                className="text-sm"
               />
             </div>
           </CardContent>

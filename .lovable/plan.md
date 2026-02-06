@@ -1,129 +1,178 @@
 
+# Plan : Restructuration du Form Builder avec Phases Cotation/Souscription
 
-# Plan : Sauvegarde des Devis dans l'Onglet Cotations
+## Explication Simple
 
-## Problème Identifié
+**Actuellement**, le form builder a une structure plate :
+- Étape 1 → Étape 2 → Étape 3 (maximum 3)
+- Les champs et les règles de calcul sont séparés dans des onglets différents
 
-Actuellement, le composant `BrokerQuotations.tsx` lit **uniquement** les anciens devis depuis `lead_notes` (format legacy avec `[DEVIS]`). Les nouveaux devis sauvegardés dans la table `quotations` n'apparaissent pas dans cet onglet.
+**Ce que vous voulez** :
+```
+COTATION (Grande Phase 1)
+├── Sous-étape 1.1 : Règles de calcul (en premier !)
+├── Sous-étape 1.2 : Infos véhicule
+└── Sous-étape 1.3 : Options
 
-## Solution
-
-Fusionner les deux sources de données dans l'onglet "Cotations" :
-1. Lire depuis `lead_notes` (legacy)
-2. Lire depuis `quotations` (nouvelle table)
-3. Afficher tout dans un tableau unifié
+SOUSCRIPTION (Grande Phase 2)
+├── Sous-étape 2.1 : Identité client
+├── Sous-étape 2.2 : Coordonnées
+└── Sous-étape 2.3 : Pièces justificatives
+```
 
 ---
 
-## Modifications à Effectuer
+## Architecture Proposée
 
-### 1. GuidedSalesFlow.tsx - Implémenter la Sauvegarde Réelle
-
-Remplacer le mock `handleSaveQuote` par une insertion réelle dans la table `quotations` :
-
-```typescript
-const handleSaveQuote = useCallback(async () => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    toast.error("Veuillez vous connecter");
-    return;
-  }
-
-  const quotationData = {
-    broker_id: user.id,
-    lead_id: state.leadId || null,
-    product_type: state.product?.toLowerCase() || "auto",
-    product_name: state.product || "Assurance Auto",
-    premium_amount: state.calculatedPremium.totalAPayer,
-    premium_frequency: mapPeriodicity(state.needsAnalysis.contractPeriodicity),
-    payment_status: "pending_payment",
-    valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    coverage_details: {
-      planTier: state.coverage.planTier,
-      vehicleInfo: state.needsAnalysis,
-      clientInfo: state.client,
-      options: state.coverage.optionalCoverages,
-    }
-  };
-
-  const { error } = await supabase.from("quotations").insert(quotationData);
-  
-  if (error) {
-    toast.error("Erreur lors de la sauvegarde");
-    return;
-  }
-
-  toast.success("Devis sauvegardé", {
-    description: "Retrouvez-le dans Polices → Cotations",
-    action: { label: "Voir", onClick: () => navigate("/b2b/policies?tab=quotations") }
-  });
-}, [state, navigate]);
-```
-
-### 2. BrokerQuotations.tsx - Fusionner les Sources de Données
-
-Modifier le composant pour lire depuis **les deux tables** :
+### Nouvelle Structure de Données
 
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│ Avant : Lit uniquement lead_notes avec [DEVIS]                  │
-├─────────────────────────────────────────────────────────────────┤
-│ Après : Lit lead_notes + quotations (table)                     │
-│                                                                 │
-│ 1. Requête lead_notes (legacy)                                  │
-│ 2. Requête quotations (nouvelle table)                          │
-│ 3. Mapper les deux vers un format unifié                        │
-│ 4. Trier par date décroissante                                  │
-│ 5. Afficher avec statuts visuels (En cours, Converti, Expiré)   │
-└─────────────────────────────────────────────────────────────────┘
-```
+form_templates.steps (JSONB) - AVANT :
+{
+  "step1": { title: "Infos", fields: [...] },
+  "step2": { title: "Véhicule", fields: [...] }
+}
 
-Structure unifiée :
-```typescript
-interface UnifiedQuotation {
-  id: string;
-  source: "legacy" | "quotations";
-  clientName: string;
-  clientEmail: string | null;
-  clientPhone: string | null;
-  productType: string;
-  productName: string;
-  premiumAmount: number | null;
-  status: "pending" | "converted" | "expired" | "cancelled";
-  createdAt: string;
-  validUntil: string | null;
-  leadId: string | null;
-  coverageDetails: any;
+form_templates.steps (JSONB) - APRÈS :
+{
+  "phases": [
+    {
+      "id": "cotation",
+      "name": "Cotation",
+      "icon": "Calculator",
+      "steps": [
+        {
+          "id": "rules",
+          "title": "Règles de calcul",
+          "type": "calculation_rules",  // Type spécial
+          "rules": {
+            "base_formula": "...",
+            "coefficients": [...]
+          }
+        },
+        {
+          "id": "vehicle",
+          "title": "Informations véhicule",
+          "type": "fields",
+          "fields": [...]
+        }
+      ]
+    },
+    {
+      "id": "souscription",
+      "name": "Souscription",
+      "icon": "FileSignature",
+      "steps": [
+        {
+          "id": "identity",
+          "title": "Identité",
+          "type": "fields",
+          "fields": [...]
+        }
+      ]
+    }
+  ]
 }
 ```
 
-### 3. PoliciesPage.tsx - Support URL Tab Parameter
+---
 
-Ajouter le support du paramètre `?tab=quotations` pour navigation directe :
+## Modifications à Apporter
+
+### 1. Mise à jour de l'interface TypeScript
+
+Créer de nouvelles interfaces dans `FormStepEditor.tsx` :
 
 ```typescript
-import { useSearchParams } from "react-router-dom";
+// Type d'étape
+type StepType = "fields" | "calculation_rules";
 
-const [searchParams] = useSearchParams();
-const initialTab = searchParams.get("tab") || "policies";
-const [activeTab, setActiveTab] = useState(initialTab);
+// Sous-étape (dans une phase)
+interface FormSubStep {
+  id: string;
+  title: string;
+  type: StepType;
+  fields?: FieldConfig[];           // Si type = "fields"
+  calculationRules?: CalculationRules; // Si type = "calculation_rules"
+}
+
+// Grande phase (Cotation ou Souscription)
+interface FormPhase {
+  id: "cotation" | "souscription";
+  name: string;
+  icon: string;
+  steps: FormSubStep[];
+}
+
+// Structure racine
+interface FormStructure {
+  phases: FormPhase[];
+}
 ```
 
-### 4. Affichage Amélioré dans BrokerQuotations
+### 2. Nouveau Composant : PhaseStepEditor
 
-Ajouter les actions et statuts visuels :
+Remplacer le simple `FormStepEditor` par un éditeur hiérarchique :
 
-| Statut | Badge | Condition |
-|--------|-------|-----------|
-| En cours | Bleu | `payment_status = pending_payment` et non expiré |
-| Converti | Vert | `payment_status = paid` |
-| Expiré | Gris | `valid_until < aujourd'hui` |
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│  [COTATION]  │  [SOUSCRIPTION]           ← Onglets des phases   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Phase : COTATION                                               │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │ ▼ Règles de calcul (étape spéciale)    [↑] [↓] [×]         ││
+│  │   - Formule de base                                         ││
+│  │   - Coefficients                                            ││
+│  │   - Taxes                                                   ││
+│  └─────────────────────────────────────────────────────────────┘│
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │ ▼ Informations véhicule                [↑] [↓] [×]         ││
+│  │   - Marque                                                  ││
+│  │   - Modèle                                                  ││
+│  │   - Valeur                                                  ││
+│  └─────────────────────────────────────────────────────────────┘│
+│                                                                 │
+│  [+ Ajouter une sous-étape]                                     │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-Actions par ligne :
-- **Consulter** → Ouvre `QuotationDetailDialog`
-- **Modifier** → Redirige vers `/b2b/sales` avec données pré-remplies
-- **Souscrire** → Lance le processus de paiement
-- **Appeler / Email** → Actions rapides
+### 3. Composant CalculationRulesSubStep
+
+Nouveau composant pour configurer les règles de calcul dans une sous-étape :
+
+| Élément | Description |
+|---------|-------------|
+| Formule de base | Textarea avec variables disponibles |
+| Coefficients | Table avec tranches (min, max, valeur) |
+| Taxes | Taux + nom de la taxe |
+| Frais | Accessoires, FGA, etc. |
+| Simulateur | Tester le calcul avec des valeurs fictives |
+
+### 4. Modifier FormEditorDrawer
+
+Adapter l'interface pour :
+1. Afficher les 2 phases (Cotation / Souscription) comme onglets principaux
+2. Permettre d'ajouter des sous-étapes à chaque phase
+3. Proposer le type de sous-étape : "Champs" ou "Règles de calcul"
+4. Drag & drop pour réordonner les sous-étapes
+
+### 5. Migration des Données Existantes
+
+Script de migration pour convertir l'ancien format :
+
+```typescript
+// Ancien format
+{ step1: {...}, step2: {...} }
+
+// Converti en
+{
+  phases: [
+    { id: "cotation", steps: [step1, step2] },
+    { id: "souscription", steps: [] }
+  ]
+}
+```
 
 ---
 
@@ -131,30 +180,53 @@ Actions par ligne :
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/guided-sales/GuidedSalesFlow.tsx` | Implémenter `handleSaveQuote` réel |
-| `src/components/BrokerQuotations.tsx` | Fusionner lead_notes + quotations |
-| `src/pages/broker/PoliciesPage.tsx` | Support `?tab=quotations` URL |
+| `src/components/admin/FormStepEditor.tsx` | Renommer en `FormSubStepEditor.tsx`, adapter aux sous-étapes |
+| `src/components/admin/FormPhaseEditor.tsx` | **Nouveau** - Éditeur de phase avec sous-étapes |
+| `src/components/admin/CalculationRulesSubStep.tsx` | **Nouveau** - Éditeur de règles dans sous-étape |
+| `src/components/admin/products/FormEditorDrawer.tsx` | Refactoriser pour structure phases/sous-étapes |
+| `src/components/admin/AdminFormBuilder.tsx` | Adapter à la nouvelle structure |
+| `src/components/admin/FormFieldLibrary.tsx` | Ajouter type "Règles de calcul" |
 
 ---
 
-## Résultat Attendu
+## Résultat Visuel Final
 
-Après implémentation :
-
-1. **Sauvegarde** : Clic sur "Sauvegarder le devis" → insertion dans `quotations`
-2. **Affichage** : Le devis apparaît immédiatement dans **Polices → Cotations**
-3. **Navigation** : Toast avec bouton "Voir" → redirige vers l'onglet Cotations
-4. **Actions** : Consulter, Modifier, Souscrire disponibles pour chaque devis
-5. **Statuts visuels** : En cours (bleu), Converti (vert), Expiré (gris)
+```text
+┌──────────────────────────────────────────────────────────────────┐
+│  Formulaire: Auto Tous Risques                                   │
+├────────────────────────┬─────────────────────────────────────────┤
+│                        │                                         │
+│  📊 COTATION           │  ┌─────────────────────────────────────┐│
+│  ├─ 📐 Règles calcul   │  │ Sous-étape: Règles de calcul       ││
+│  ├─ 🚗 Véhicule        │  │                                     ││
+│  └─ ⚙️ Options         │  │ Formule: base * coef * (1 + taxe)  ││
+│                        │  │                                     ││
+│  📝 SOUSCRIPTION       │  │ Coefficients:                       ││
+│  ├─ 👤 Identité        │  │  - Puissance: [table]               ││
+│  ├─ 📍 Coordonnées     │  │  - Zone: [table]                    ││
+│  └─ 📄 Documents       │  │                                     ││
+│                        │  │ Taxes: 14.5%                        ││
+│                        │  └─────────────────────────────────────┘│
+└────────────────────────┴─────────────────────────────────────────┘
+```
 
 ---
 
-## Distinction des Onglets
+## Ordre des Travaux
 
-| Onglet | Contenu | Table(s) |
-|--------|---------|----------|
-| **Polices** | Contrats actifs | `subscriptions` |
-| **Cotations** | Tous les devis (en cours, convertis, expirés) | `quotations` + `lead_notes` |
-| **Renouvellements** | Polices à échéance | `subscriptions` (filtrées) |
-| **En attente** | Devis en attente de paiement | `quotations` (pending_payment) |
+1. **Créer les nouvelles interfaces TypeScript** (FormPhase, FormSubStep)
+2. **Créer FormPhaseEditor.tsx** (éditeur de phase)
+3. **Créer CalculationRulesSubStep.tsx** (éditeur règles intégré)
+4. **Adapter FormEditorDrawer.tsx** (UI phases/sous-étapes)
+5. **Script de migration** (anciens formulaires → nouveau format)
+6. **Tests** (vérifier cotation puis souscription)
 
+---
+
+## Avantage Clé
+
+Les **règles de calcul** seront maintenant **visibles et modifiables directement dans le parcours de cotation**, avant les champs de saisie. Cela permettra à l'admin de :
+
+1. Voir le contexte du calcul
+2. Modifier les formules en sachant quels champs sont collectés
+3. Tester le calcul directement dans le builder

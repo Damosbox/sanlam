@@ -200,37 +200,37 @@ export function SubscriptionFieldsTab({ formData, updateField }: SubscriptionFie
       </Card>
 
       {/* Info cards */}
-      <div className="grid md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Informations du produit</CardTitle>
-            <CardDescription className="text-sm">
-              Champs pour la cotation et le calcul du risque
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              {linkedForm
-                ? "Ces champs sont définis dans le formulaire lié ci-dessus."
-                : "Créez ou liez un formulaire pour définir les champs de cotation."}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Informations du client</CardTitle>
-            <CardDescription className="text-sm">
-              Champs pour valider la souscription
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Les informations client (identité, coordonnées) sont collectées lors du parcours de souscription.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="bg-accent/50 border-accent">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            💡 Contenu du formulaire
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Le formulaire de souscription contient deux phases principales :
+          </p>
+          <ul className="text-sm space-y-2">
+            <li className="flex items-start gap-2">
+              <span className="text-primary font-bold">✓</span>
+              <div>
+                <strong>Phase Cotation</strong> — Collecte des informations produit et 
+                <span className="text-primary font-medium"> règles de calcul de prime</span>
+              </div>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-primary font-bold">✓</span>
+              <div>
+                <strong>Phase Souscription</strong> — Informations client (identité, coordonnées, paiement)
+              </div>
+            </li>
+          </ul>
+          <p className="text-xs text-muted-foreground pt-2 border-t">
+            Les règles de calcul (formule, coefficients, taxes) sont configurées directement dans le formulaire, 
+            dans la phase Cotation.
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Form editor drawer */}
       <FormEditorDrawer

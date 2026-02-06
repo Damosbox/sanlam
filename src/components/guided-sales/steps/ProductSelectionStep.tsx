@@ -62,9 +62,9 @@ export const ProductSelectionStep = ({ state, onUpdate, onNext }: ProductSelecti
         </p>
       </div>
 
-      <Tabs defaultValue="non_vie" className="w-full">
+      <Tabs defaultValue="non-vie" className="w-full">
         <TabsList className="grid w-full grid-cols-2 mb-6">
-          <TabsTrigger value="non_vie" className="text-base">Non-Vie</TabsTrigger>
+          <TabsTrigger value="non-vie" className="text-base">Non-Vie</TabsTrigger>
           <TabsTrigger value="vie" className="text-base">Vie</TabsTrigger>
         </TabsList>
 

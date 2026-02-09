@@ -84,10 +84,13 @@ export const SimulationStep = ({
     : undefined;
 
   // Sub-step validations
+  const isVTCBlocked = needsAnalysis.isVTC === true;
+
   const isSubStep1Valid = () => {
     return (
       needsAnalysis.quoteType &&
       needsAnalysis.isVTC !== undefined &&
+      !isVTCBlocked &&
       needsAnalysis.belongsToCompany !== undefined &&
       needsAnalysis.isExistingClient !== undefined
     );
@@ -222,7 +225,7 @@ export const SimulationStep = ({
                 value={needsAnalysis.isVTC === undefined ? "" : needsAnalysis.isVTC ? "oui" : "non"}
                 onValueChange={(v) => onUpdate({ isVTC: v === "oui" })}
               >
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className={`mt-1 ${isVTCBlocked ? "border-destructive" : ""}`}>
                   <SelectValue placeholder="Sélectionner" />
                 </SelectTrigger>
                 <SelectContent>
@@ -230,6 +233,11 @@ export const SimulationStep = ({
                   <SelectItem value="non">Non</SelectItem>
                 </SelectContent>
               </Select>
+              {isVTCBlocked && (
+                <p className="text-xs text-destructive mt-1 font-medium">
+                  Les véhicules VTC ne sont pas éligibles à ce parcours.
+                </p>
+              )}
             </div>
 
             {/* 3. Entreprise */}

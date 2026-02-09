@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +28,31 @@ export default function PortfolioPage() {
   const {
     toast
   } = useToast();
-  const [activeTab, setActiveTab] = useState<string>("all");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState<string>(
+    tabFromUrl === "clients" ? "clients" : tabFromUrl === "prospects" ? "prospects" : "all"
+  );
+
+  // Sync tab with URL changes (sidebar clicks)
+  useEffect(() => {
+    const newTab = searchParams.get("tab");
+    if (newTab === "clients" || newTab === "prospects") {
+      setActiveTab(newTab);
+    } else if (!newTab) {
+      setActiveTab("all");
+    }
+  }, [searchParams]);
+
+  // Update URL when tab changes internally
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    if (value === "all") {
+      setSearchParams({});
+    } else {
+      setSearchParams({ tab: value });
+    }
+  };
   const [viewDensity, setViewDensity] = useState<ViewDensity>("standard");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -322,7 +347,7 @@ export default function PortfolioPage() {
 
   const handleResetFilters = () => {
     setSearchQuery("");
-    setActiveTab("all");
+    handleTabChange("all");
   };
 
   const isLoading = leadsLoading || clientsLoading;
@@ -399,7 +424,7 @@ export default function PortfolioPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full sm:flex-1">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full sm:flex-1">
             <TabsList className="h-9">
               <TabsTrigger value="all" className="text-xs px-3 gap-1.5">
                 <Users className="h-3.5 w-3.5" />

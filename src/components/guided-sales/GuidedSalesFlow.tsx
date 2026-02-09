@@ -456,35 +456,39 @@ export const GuidedSalesFlow = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Phase Navigation - Desktop */}
-      <div className="hidden lg:block border-b bg-background/95 backdrop-blur sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-3">
-          <PhaseNavigation 
-            currentPhase={state.currentPhase}
-            currentStep={state.currentStep}
-            onPhaseClick={goToPhase}
-            onPrev={state.currentStep > 0 ? prevStep : undefined}
-          />
-        </div>
-      </div>
-
-      {/* Phase Navigation - Mobile */}
-      <div className="lg:hidden px-4 py-3 border-b bg-background/95 backdrop-blur sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          {state.currentStep > 0 && (
-            <Button variant="ghost" size="icon" onClick={prevStep} className="shrink-0 -ml-2">
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-          )}
-          <div className="flex-1">
+      {state.currentStep > 0 && (
+        <div className="hidden lg:block border-b bg-background/95 backdrop-blur sticky top-0 z-10">
+          <div className="max-w-7xl mx-auto px-6 py-3">
             <PhaseNavigation 
               currentPhase={state.currentPhase}
               currentStep={state.currentStep}
               onPhaseClick={goToPhase}
-              compact
+              onPrev={state.currentStep > 0 ? prevStep : undefined}
             />
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Phase Navigation - Mobile */}
+      {state.currentStep > 0 && (
+        <div className="lg:hidden px-4 py-3 border-b bg-background/95 backdrop-blur sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            {state.currentStep > 0 && (
+              <Button variant="ghost" size="icon" onClick={prevStep} className="shrink-0 -ml-2">
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+            )}
+            <div className="flex-1">
+              <PhaseNavigation 
+                currentPhase={state.currentPhase}
+                currentStep={state.currentStep}
+                onPhaseClick={goToPhase}
+                compact
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dynamic Summary Breadcrumb */}
       {showBreadcrumb && (

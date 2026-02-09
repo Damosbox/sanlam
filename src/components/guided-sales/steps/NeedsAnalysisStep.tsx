@@ -110,7 +110,7 @@ export const NeedsAnalysisStep = ({
             value={needsAnalysis.isVTC === undefined ? "" : needsAnalysis.isVTC ? "oui" : "non"} 
             onValueChange={(v) => onUpdate({ isVTC: v === "oui" })}
           >
-            <SelectTrigger>
+            <SelectTrigger className={needsAnalysis.isVTC ? "border-destructive" : ""}>
               <SelectValue placeholder="Sélectionner..." />
             </SelectTrigger>
             <SelectContent>
@@ -118,6 +118,11 @@ export const NeedsAnalysisStep = ({
               <SelectItem value="non">Non</SelectItem>
             </SelectContent>
           </Select>
+          {needsAnalysis.isVTC && (
+            <p className="text-xs text-destructive font-medium">
+              Les véhicules VTC ne sont pas éligibles à ce parcours.
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">

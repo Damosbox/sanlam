@@ -14,6 +14,16 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -40,6 +50,7 @@ export function FaqsTab({ formData, updateField }: FaqsTabProps) {
   const [editingFaq, setEditingFaq] = useState<FAQ | null>(null);
   const [newFaq, setNewFaq] = useState({ question: "", answer: "" });
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [deletingFaqId, setDeletingFaqId] = useState<string | null>(null);
 
   const faqs = ((formData.faqs || []) as FAQ[]).sort((a, b) => a.order - b.order);
 
@@ -66,11 +77,13 @@ export function FaqsTab({ formData, updateField }: FaqsTabProps) {
     setNewFaq({ question: "", answer: "" });
   };
 
-  const handleDeleteFaq = (id: string) => {
+  const handleConfirmDelete = () => {
+    if (!deletingFaqId) return;
     updateField(
       "faqs",
-      faqs.filter((f) => f.id !== id)
+      faqs.filter((f) => f.id !== deletingFaqId)
     );
+    setDeletingFaqId(null);
   };
 
   const openEditDialog = (faq: FAQ) => {
@@ -158,7 +171,7 @@ export function FaqsTab({ formData, updateField }: FaqsTabProps) {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() => handleDeleteFaq(faq.id)}
+                                    onClick={() => setDeletingFaqId(faq.id)}
                                   >
                                     <Trash2 className="h-4 w-4 text-destructive" />
                                   </Button>
@@ -192,6 +205,7 @@ export function FaqsTab({ formData, updateField }: FaqsTabProps) {
         </CardContent>
       </Card>
 
+      {/* Edit/Add dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -228,6 +242,24 @@ export function FaqsTab({ formData, updateField }: FaqsTabProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deletingFaqId} onOpenChange={() => setDeletingFaqId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cette FAQ ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. La question sera définitivement supprimée.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

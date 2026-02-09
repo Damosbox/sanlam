@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Save, Loader2 } from "lucide-react";
+import { Save, Loader2, AlertTriangle } from "lucide-react";
 import { GeneralInfoTab } from "./tabs/GeneralInfoTab";
 import { SubscriptionFieldsTab } from "./tabs/SubscriptionFieldsTab";
 import { BeneficiariesTab } from "./tabs/BeneficiariesTab";
@@ -13,7 +13,19 @@ import { PaymentMethodsTab } from "./tabs/PaymentMethodsTab";
 import { DocumentsTab } from "./tabs/DocumentsTab";
 import { SalesTab } from "./tabs/SalesTab";
 import { FaqsTab } from "./tabs/FaqsTab";
-import { FormEditorDrawer } from "./FormEditorDrawer";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { useProductValidation } from "@/hooks/useProductValidation";
+import { ProductFormSchema } from "@/schemas/product";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { ProductCalculationRules } from "@/types/product";
 
 interface ProductFormProps {
@@ -32,8 +44,8 @@ export interface ProductFormData {
   is_active: boolean;
   image_url: string;
   base_premium: number;
-  coverages: any; // Json format for Supabase
-  calculation_rules: any; // Json format for Supabase
+  coverages: any;
+  calculation_rules: any;
   beneficiaries_config: any;
   payment_methods: any;
   document_templates: any[];
@@ -76,7 +88,9 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [formDrawerOpen, setFormDrawerOpen] = useState(false);
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
+  const [validationTriggered, setValidationTriggered] = useState(false);
 
   const [formData, setFormData] = useState<ProductFormData>(() => {
     if (product) {
@@ -105,11 +119,43 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
     return defaultFormData;
   });
 
-  const updateField = <K extends keyof ProductFormData>(
+  const { isDirty, checkDirty, markClean } = useUnsavedChanges(formData);
+  const validation = useProductValidation(formData);
+
+  const updateField = useCallback(<K extends keyof ProductFormData>(
     field: K,
     value: ProductFormData[K]
   ) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const next = { ...prev, [field]: value };
+      // Defer dirty check
+      setTimeout(() => checkDirty(next), 0);
+      return next;
+    });
+  }, [checkDirty]);
+
+  // Intercept browser back / route changes
+  useEffect(() => {
+    if (!isDirty) return;
+    const handlePopState = (e: PopStateEvent) => {
+      e.preventDefault();
+      window.history.pushState(null, "", window.location.href);
+      setShowLeaveDialog(true);
+      setPendingNavigation("back");
+    };
+    window.history.pushState(null, "", window.location.href);
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [isDirty]);
+
+  const handleLeaveConfirm = () => {
+    markClean();
+    setShowLeaveDialog(false);
+    if (pendingNavigation === "back") {
+      navigate(-1);
+    } else if (pendingNavigation) {
+      navigate(pendingNavigation);
+    }
   };
 
   const saveMutation = useMutation({
@@ -147,6 +193,7 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
       }
     },
     onSuccess: () => {
+      markClean();
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast({ title: isNew ? "Produit créé" : "Produit mis à jour" });
       navigate("/admin/products");
@@ -158,8 +205,16 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
   });
 
   const handleSave = () => {
-    if (!formData.name.trim()) {
-      toast({ title: "Le nom du produit est requis", variant: "destructive" });
+    setValidationTriggered(true);
+    const result = ProductFormSchema.safeParse(formData);
+    if (!result.success) {
+      const firstTab = validation.tabErrors[0]?.tab;
+      const messages = result.error.issues.map((i) => i.message).slice(0, 3);
+      toast({
+        title: "Formulaire incomplet",
+        description: messages.join(" • "),
+        variant: "destructive",
+      });
       return;
     }
     saveMutation.mutate(formData);
@@ -167,34 +222,96 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
 
   const isLifeProduct = formData.category === "vie";
 
+  // Tab completion indicators
+  const getTabStatus = (tab: string): "complete" | "warning" | "error" | null => {
+    if (validationTriggered) {
+      const tabErr = validation.tabErrors.find((t) => t.tab === tab);
+      if (tabErr) return "error";
+    }
+    switch (tab) {
+      case "general":
+        return formData.name && formData.product_type && formData.base_premium > 0 ? "complete" : "warning";
+      case "subscription":
+        return formData.subscription_form_id ? "complete" : "warning";
+      case "payment":
+        return "complete";
+      case "documents":
+        return formData.document_templates?.length > 0 ? "complete" : null;
+      case "faqs":
+        return formData.faqs?.length > 0 ? "complete" : null;
+      case "sales":
+        return (formData.optional_products?.length > 0 || formData.alternative_products?.length > 0) ? "complete" : null;
+      default:
+        return null;
+    }
+  };
+
+  const statusDot = (tab: string) => {
+    const status = getTabStatus(tab);
+    if (!status) return null;
+    const colors: Record<string, string> = {
+      complete: "bg-emerald-500",
+      warning: "bg-amber-500",
+      error: "bg-destructive",
+    };
+    return <span className={`inline-block w-2 h-2 rounded-full ml-1.5 ${colors[status]}`} />;
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={saveMutation.isPending}>
-          {saveMutation.isPending ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4 mr-2" />
-          )}
-          Enregistrer
-        </Button>
+      {/* Sticky save bar */}
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b pb-3 pt-1 -mx-1 px-1">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {isDirty && (
+              <span className="text-xs text-amber-600 flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                Modifications non enregistrées
+              </span>
+            )}
+          </div>
+          <Button onClick={handleSave} disabled={saveMutation.isPending}>
+            {saveMutation.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
+            Enregistrer
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="general" className="w-full">
         <TabsList className="grid w-full grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 h-auto p-1">
-          <TabsTrigger value="general" className="text-xs sm:text-sm">Général</TabsTrigger>
-          <TabsTrigger value="subscription" className="text-xs sm:text-sm">Souscription</TabsTrigger>
+          <TabsTrigger value="general" className="text-xs sm:text-sm">
+            Général{statusDot("general")}
+          </TabsTrigger>
+          <TabsTrigger value="subscription" className="text-xs sm:text-sm">
+            Souscription{statusDot("subscription")}
+          </TabsTrigger>
           {isLifeProduct && (
             <TabsTrigger value="beneficiaries" className="text-xs sm:text-sm">Bénéf.</TabsTrigger>
           )}
-          <TabsTrigger value="payment" className="text-xs sm:text-sm">Paiement</TabsTrigger>
-          <TabsTrigger value="documents" className="text-xs sm:text-sm">Docs</TabsTrigger>
-          <TabsTrigger value="sales" className="text-xs sm:text-sm">Ventes</TabsTrigger>
-          <TabsTrigger value="faqs" className="text-xs sm:text-sm">FAQs</TabsTrigger>
+          <TabsTrigger value="payment" className="text-xs sm:text-sm">
+            Paiement{statusDot("payment")}
+          </TabsTrigger>
+          <TabsTrigger value="documents" className="text-xs sm:text-sm">
+            Docs{statusDot("documents")}
+          </TabsTrigger>
+          <TabsTrigger value="sales" className="text-xs sm:text-sm">
+            Ventes{statusDot("sales")}
+          </TabsTrigger>
+          <TabsTrigger value="faqs" className="text-xs sm:text-sm">
+            FAQs{statusDot("faqs")}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="mt-6">
-          <GeneralInfoTab formData={formData} updateField={updateField} />
+          <GeneralInfoTab
+            formData={formData}
+            updateField={updateField}
+            errors={validationTriggered ? validation.errors : {}}
+          />
         </TabsContent>
 
         <TabsContent value="subscription" className="mt-6">
@@ -224,20 +341,23 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
         </TabsContent>
       </Tabs>
 
-      <FormEditorDrawer
-        open={formDrawerOpen}
-        onOpenChange={setFormDrawerOpen}
-        formId={formData.subscription_form_id}
-        productCategory={formData.category}
-        productType={formData.product_type}
-        productName={formData.name}
-        onFormSaved={(formId) => {
-          updateField("subscription_form_id", formId);
-          setFormDrawerOpen(false);
-          toast({ title: "Formulaire sauvegardé" });
-          queryClient.invalidateQueries({ queryKey: ["form-templates"] });
-        }}
-      />
+      {/* Unsaved changes dialog */}
+      <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Modifications non enregistrées</AlertDialogTitle>
+            <AlertDialogDescription>
+              Vous avez des modifications non enregistrées. Voulez-vous vraiment quitter sans sauvegarder ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Rester</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLeaveConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Quitter sans sauvegarder
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

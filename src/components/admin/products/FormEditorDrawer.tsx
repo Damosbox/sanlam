@@ -26,6 +26,7 @@ interface FormEditorDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   formId: string | null;
+  duplicateFromId?: string | null;
   productCategory?: string;
   productType?: string;
   productName?: string;
@@ -36,6 +37,7 @@ export function FormEditorDrawer({
   open,
   onOpenChange,
   formId,
+  duplicateFromId,
   productCategory = "non-vie",
   productType = "Automobile",
   productName = "Nouveau formulaire",
@@ -47,34 +49,34 @@ export function FormEditorDrawer({
   const [structure, setStructure] = useState<FormStructure>(createDefaultFormStructure());
   const [loading, setLoading] = useState(false);
 
-  // Load existing form data
+  // Determine source ID: edit existing or duplicate from another
+  const sourceId = formId || duplicateFromId;
+  const isDuplicating = !formId && !!duplicateFromId;
+
   useEffect(() => {
-    if (open && formId) {
-      loadFormData();
-    } else if (open && !formId) {
-      // New form - set defaults
+    if (open && sourceId) {
+      loadFormData(sourceId, isDuplicating);
+    } else if (open && !sourceId) {
       setFormName("");
       setDescription("");
       setStructure(createDefaultFormStructure());
     }
-  }, [open, formId]);
+  }, [open, sourceId, isDuplicating]);
 
-  const loadFormData = async () => {
-    if (!formId) return;
+  const loadFormData = async (id: string, duplicate: boolean) => {
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from("form_templates")
         .select("*")
-        .eq("id", formId)
+        .eq("id", id)
         .single();
 
       if (error) throw error;
 
-      setFormName(data.name);
+      setFormName(duplicate ? `${data.name} (copie)` : data.name);
       setDescription(data.description || "");
       
-      // Parse la structure (supporte ancien et nouveau format)
       const parsedStructure = parseFormStructure(data.steps);
       setStructure(parsedStructure);
     } catch (error) {
@@ -87,7 +89,6 @@ export function FormEditorDrawer({
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      // Sérialiser la nouvelle structure
       const serializedStructure = serializeFormStructure(structure);
 
       const formData = {
@@ -100,6 +101,7 @@ export function FormEditorDrawer({
         is_active: false,
       };
 
+      // When editing existing (not duplicating), update
       if (formId) {
         const { error } = await supabase
           .from("form_templates")
@@ -108,6 +110,7 @@ export function FormEditorDrawer({
         if (error) throw error;
         return formId;
       } else {
+        // New form or duplicate → always insert
         const { data, error } = await supabase
           .from("form_templates")
           .insert(formData)
@@ -118,7 +121,7 @@ export function FormEditorDrawer({
       }
     },
     onSuccess: (savedFormId) => {
-      toast.success("Formulaire enregistré");
+      toast.success(isDuplicating ? "Formulaire dupliqué" : "Formulaire enregistré");
       queryClient.invalidateQueries({ queryKey: ["form-templates"] });
       onFormSaved?.(savedFormId);
       onOpenChange(false);
@@ -134,11 +137,17 @@ export function FormEditorDrawer({
       <SheetContent side="right" className="w-full sm:max-w-6xl overflow-y-auto">
         <SheetHeader>
           <SheetTitle>
-            {formId ? "Modifier le formulaire" : "Créer un formulaire"}
+            {formId
+              ? "Modifier le formulaire"
+              : isDuplicating
+              ? "Dupliquer le formulaire"
+              : "Créer un formulaire"}
           </SheetTitle>
           <SheetDescription>
             {formId 
               ? "Modifiez les phases (cotation et souscription) et les règles de calcul"
+              : isDuplicating
+              ? "Un nouveau formulaire sera créé à partir de la copie"
               : "Créez un nouveau formulaire avec cotation et souscription"
             }
           </SheetDescription>
@@ -150,7 +159,6 @@ export function FormEditorDrawer({
           </div>
         ) : (
           <div className="mt-6 space-y-6">
-            {/* Form metadata */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Nom du formulaire</Label>
@@ -171,7 +179,6 @@ export function FormEditorDrawer({
               </div>
             </div>
 
-            {/* Phase Editor */}
             <div className="space-y-2">
               <Label className="text-base font-semibold">
                 Structure du formulaire (Cotation → Souscription)
@@ -185,7 +192,6 @@ export function FormEditorDrawer({
               />
             </div>
 
-            {/* Save button */}
             <div className="flex justify-end pt-4 border-t">
               <Button
                 onClick={() => saveMutation.mutate()}
@@ -196,7 +202,7 @@ export function FormEditorDrawer({
                 ) : (
                   <Save className="h-4 w-4 mr-2" />
                 )}
-                Enregistrer le formulaire
+                {isDuplicating ? "Créer la copie" : "Enregistrer le formulaire"}
               </Button>
             </div>
           </div>

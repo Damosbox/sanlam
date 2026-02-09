@@ -4,18 +4,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Plus, Copy, Pencil, Eye, FileText, AlertCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Plus, Copy, Pencil, Eye, FileText, AlertCircle, Search } from "lucide-react";
 import { ProductFormData } from "../ProductForm";
 import { FormPreviewCard } from "../FormPreviewCard";
 import { FormEditorDrawer } from "../FormEditorDrawer";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface SubscriptionFieldsTabProps {
   formData: ProductFormData;
@@ -29,6 +36,7 @@ export function SubscriptionFieldsTab({ formData, updateField }: SubscriptionFie
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingFormId, setEditingFormId] = useState<string | null>(null);
   const [duplicatingFormId, setDuplicatingFormId] = useState<string | null>(null);
+  const [comboboxOpen, setComboboxOpen] = useState(false);
 
   const { data: formTemplates } = useQuery({
     queryKey: ["form-templates"],
@@ -43,7 +51,6 @@ export function SubscriptionFieldsTab({ formData, updateField }: SubscriptionFie
     },
   });
 
-  // Get the currently linked form
   const linkedForm = formTemplates?.find((f) => f.id === formData.subscription_form_id);
 
   const handleCreateNew = () => {
@@ -60,10 +67,8 @@ export function SubscriptionFieldsTab({ formData, updateField }: SubscriptionFie
     }
   };
 
-  const handleDuplicate = async () => {
+  const handleDuplicate = () => {
     if (!linkedForm) return;
-    
-    // Create a duplicate by opening editor with copied data
     setEditingFormId(null);
     setDuplicatingFormId(linkedForm.id);
     setEditorOpen(true);
@@ -73,7 +78,6 @@ export function SubscriptionFieldsTab({ formData, updateField }: SubscriptionFie
     updateField("subscription_form_id", formId);
   };
 
-  // Filter forms by product category/type for better suggestions
   const suggestedForms = formTemplates?.filter(
     (f) => f.category === formData.category || f.product_type === formData.product_type
   );
@@ -94,60 +98,77 @@ export function SubscriptionFieldsTab({ formData, updateField }: SubscriptionFie
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Form selection */}
+          {/* Form selection - Combobox */}
           <div className="space-y-3">
             <Label>Formulaire lié</Label>
-            <Select
-              value={formData.subscription_form_id || "none"}
-              onValueChange={(value) =>
-                updateField("subscription_form_id", value === "none" ? null : value)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un formulaire..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">
-                  <span className="text-muted-foreground">Aucun formulaire</span>
-                </SelectItem>
-                
-                {suggestedForms && suggestedForms.length > 0 && (
-                  <>
-                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                      Formulaires suggérés
-                    </div>
-                    {suggestedForms.map((form) => (
-                      <SelectItem key={form.id} value={form.id}>
-                        <div className="flex items-center gap-2">
-                          <span>{form.name}</span>
-                          <span className="text-xs text-muted-foreground">
-                            ({form.category} - {form.product_type})
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </>
-                )}
-
-                {otherForms && otherForms.length > 0 && (
-                  <>
-                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                      Autres formulaires
-                    </div>
-                    {otherForms.map((form) => (
-                      <SelectItem key={form.id} value={form.id}>
-                        <div className="flex items-center gap-2">
-                          <span>{form.name}</span>
-                          <span className="text-xs text-muted-foreground">
-                            ({form.category} - {form.product_type})
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </>
-                )}
-              </SelectContent>
-            </Select>
+            <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={comboboxOpen}
+                  className="w-full justify-between font-normal"
+                >
+                  {linkedForm ? linkedForm.name : "Sélectionner un formulaire..."}
+                  <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Rechercher un formulaire..." />
+                  <CommandList>
+                    <CommandEmpty>Aucun formulaire trouvé.</CommandEmpty>
+                    <CommandItem
+                      value="__none__"
+                      onSelect={() => {
+                        updateField("subscription_form_id", null);
+                        setComboboxOpen(false);
+                      }}
+                    >
+                      <span className="text-muted-foreground">Aucun formulaire</span>
+                    </CommandItem>
+                    {suggestedForms && suggestedForms.length > 0 && (
+                      <CommandGroup heading="Formulaires suggérés">
+                        {suggestedForms.map((form) => (
+                          <CommandItem
+                            key={form.id}
+                            value={form.name}
+                            onSelect={() => {
+                              updateField("subscription_form_id", form.id);
+                              setComboboxOpen(false);
+                            }}
+                          >
+                            <span>{form.name}</span>
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              ({form.category} - {form.product_type})
+                            </span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    )}
+                    {otherForms && otherForms.length > 0 && (
+                      <CommandGroup heading="Autres formulaires">
+                        {otherForms.map((form) => (
+                          <CommandItem
+                            key={form.id}
+                            value={form.name}
+                            onSelect={() => {
+                              updateField("subscription_form_id", form.id);
+                              setComboboxOpen(false);
+                            }}
+                          >
+                            <span>{form.name}</span>
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              ({form.category} - {form.product_type})
+                            </span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Action buttons */}
@@ -237,6 +258,7 @@ export function SubscriptionFieldsTab({ formData, updateField }: SubscriptionFie
         open={editorOpen}
         onOpenChange={setEditorOpen}
         formId={editingFormId}
+        duplicateFromId={duplicatingFormId}
         productCategory={formData.category}
         productType={formData.product_type}
         productName={formData.name || "Nouveau produit"}

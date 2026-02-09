@@ -14,8 +14,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload, Loader2, X } from "lucide-react";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Upload, Loader2, X, ImageIcon, Info } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ProductFormData } from "../ProductForm";
 import { useToast } from "@/hooks/use-toast";
 
@@ -25,9 +31,10 @@ interface GeneralInfoTabProps {
     field: K,
     value: ProductFormData[K]
   ) => void;
+  errors?: Record<string, string[]>;
 }
 
-export function GeneralInfoTab({ formData, updateField }: GeneralInfoTabProps) {
+export function GeneralInfoTab({ formData, updateField, errors = {} }: GeneralInfoTabProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -65,7 +72,6 @@ export function GeneralInfoTab({ formData, updateField }: GeneralInfoTabProps) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     const validTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!validTypes.includes(file.type)) {
       toast({
@@ -76,7 +82,6 @@ export function GeneralInfoTab({ formData, updateField }: GeneralInfoTabProps) {
       return;
     }
 
-    // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
       toast({
         title: "Fichier trop volumineux",
@@ -89,19 +94,16 @@ export function GeneralInfoTab({ formData, updateField }: GeneralInfoTabProps) {
     setIsUploading(true);
 
     try {
-      // Generate unique filename
       const fileExt = file.name.split(".").pop();
       const fileName = `${formData.productId || crypto.randomUUID()}-${Date.now()}.${fileExt}`;
       const filePath = `products/${fileName}`;
 
-      // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from("product-images")
         .upload(filePath, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: urlData } = supabase.storage
         .from("product-images")
         .getPublicUrl(filePath);
@@ -121,7 +123,6 @@ export function GeneralInfoTab({ formData, updateField }: GeneralInfoTabProps) {
       });
     } finally {
       setIsUploading(false);
-      // Reset input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -131,6 +132,11 @@ export function GeneralInfoTab({ formData, updateField }: GeneralInfoTabProps) {
   const handleRemoveImage = () => {
     updateField("image_url", "");
   };
+
+  const fieldError = (field: string) =>
+    errors[field]?.length ? (
+      <p className="text-xs text-destructive mt-1">{errors[field][0]}</p>
+    ) : null;
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">
@@ -147,7 +153,9 @@ export function GeneralInfoTab({ formData, updateField }: GeneralInfoTabProps) {
                 value={formData.name}
                 onChange={(e) => updateField("name", e.target.value)}
                 placeholder="Ex: Assurance Auto Essentiel"
+                className={errors.name ? "border-destructive" : ""}
               />
+              {fieldError("name")}
             </div>
 
             <div className="space-y-2">
@@ -163,7 +171,7 @@ export function GeneralInfoTab({ formData, updateField }: GeneralInfoTabProps) {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Catégorie</Label>
+                <Label>Catégorie *</Label>
                 <Select
                   value={formData.category}
                   onValueChange={(value) => {
@@ -171,7 +179,7 @@ export function GeneralInfoTab({ formData, updateField }: GeneralInfoTabProps) {
                     updateField("product_type", "");
                   }}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={errors.category ? "border-destructive" : ""}>
                     <SelectValue placeholder="Sélectionner..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -182,15 +190,17 @@ export function GeneralInfoTab({ formData, updateField }: GeneralInfoTabProps) {
                     ))}
                   </SelectContent>
                 </Select>
+                {fieldError("category")}
               </div>
 
               <div className="space-y-2">
-                <Label>Type de produit</Label>
+                <Label>Type de produit *</Label>
                 <Select
+                  key={formData.category}
                   value={formData.product_type}
                   onValueChange={(value) => updateField("product_type", value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={errors.product_type ? "border-destructive" : ""}>
                     <SelectValue placeholder="Sélectionner..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -201,18 +211,33 @@ export function GeneralInfoTab({ formData, updateField }: GeneralInfoTabProps) {
                     ))}
                   </SelectContent>
                 </Select>
+                {fieldError("product_type")}
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="base_premium">Prime de base (FCFA)</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="base_premium">Prime de base (FCFA) *</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-xs">
+                      <p>Montant de référence pour la tarification. Les règles de calcul détaillées (coefficients, taxes) sont configurées dans le formulaire de cotation, onglet Souscription.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
                 id="base_premium"
                 type="number"
                 value={formData.base_premium}
                 onChange={(e) => updateField("base_premium", parseFloat(e.target.value) || 0)}
                 placeholder="0"
+                className={errors.base_premium ? "border-destructive" : ""}
               />
+              {fieldError("base_premium")}
             </div>
           </CardContent>
         </Card>
@@ -270,26 +295,33 @@ export function GeneralInfoTab({ formData, updateField }: GeneralInfoTabProps) {
             <CardTitle>Image du produit</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex justify-center relative">
-              <Avatar className="h-32 w-32">
-                <AvatarImage src={formData.image_url} alt={formData.name} />
-                <AvatarFallback className="text-3xl">
-                  {formData.name.charAt(0) || "P"}
-                </AvatarFallback>
-              </Avatar>
+            <div className="relative rounded-lg overflow-hidden border bg-muted">
+              <AspectRatio ratio={4 / 3}>
+                {formData.image_url ? (
+                  <img
+                    src={formData.image_url}
+                    alt={formData.name || "Aperçu produit"}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
+                    <ImageIcon className="h-12 w-12 mb-2" />
+                    <span className="text-sm">Aucune image</span>
+                  </div>
+                )}
+              </AspectRatio>
               {formData.image_url && (
                 <Button
                   variant="destructive"
                   size="icon"
-                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                  className="absolute top-2 right-2 h-7 w-7 rounded-full"
                   onClick={handleRemoveImage}
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-3.5 w-3.5" />
                 </Button>
               )}
             </div>
 
-            {/* Upload button */}
             <div className="space-y-3">
               <input
                 ref={fileInputRef}
@@ -321,7 +353,6 @@ export function GeneralInfoTab({ formData, updateField }: GeneralInfoTabProps) {
               </p>
             </div>
 
-            {/* URL input as fallback */}
             <div className="space-y-2 pt-2 border-t">
               <Label htmlFor="image_url" className="text-xs text-muted-foreground">
                 Ou entrer une URL directe

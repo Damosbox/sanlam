@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle, Package, ArrowRightLeft } from "lucide-react";
 import { ProductFormData } from "../ProductForm";
 
 interface SalesTabProps {
@@ -30,13 +31,15 @@ export function SalesTab({ formData, updateField }: SalesTabProps) {
 
   const otherProducts = allProducts?.filter((p) => p.id !== formData.productId) || [];
 
+  // Detect products selected in both lists
+  const duplicateIds = (formData.optional_products || []).filter(
+    (id) => (formData.alternative_products || []).includes(id)
+  );
+
   const toggleOptional = (productId: string) => {
     const current = formData.optional_products || [];
     if (current.includes(productId)) {
-      updateField(
-        "optional_products",
-        current.filter((id) => id !== productId)
-      );
+      updateField("optional_products", current.filter((id) => id !== productId));
     } else {
       updateField("optional_products", [...current, productId]);
     }
@@ -45,20 +48,32 @@ export function SalesTab({ formData, updateField }: SalesTabProps) {
   const toggleAlternative = (productId: string) => {
     const current = formData.alternative_products || [];
     if (current.includes(productId)) {
-      updateField(
-        "alternative_products",
-        current.filter((id) => id !== productId)
-      );
+      updateField("alternative_products", current.filter((id) => id !== productId));
     } else {
       updateField("alternative_products", [...current, productId]);
     }
   };
 
+  const isDuplicate = (productId: string) => duplicateIds.includes(productId);
+
   return (
     <div className="space-y-6">
+      {duplicateIds.length > 0 && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            {duplicateIds.length} produit(s) sélectionné(s) à la fois comme optionnel et alternatif. 
+            Un produit ne devrait apparaître que dans une seule liste.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader>
-          <CardTitle>Produits optionnels</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Produits optionnels
+          </CardTitle>
           <CardDescription>
             Produits proposés en complément du produit principal (add-ons, options).
             Exemple : Assistance dépannage 24/7 pour une assurance auto.
@@ -74,7 +89,9 @@ export function SalesTab({ formData, updateField }: SalesTabProps) {
               {otherProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
+                  className={`flex items-center justify-between p-3 border rounded-lg ${
+                    isDuplicate(product.id) ? "border-destructive bg-destructive/5" : ""
+                  }`}
                 >
                   <div className="flex items-center gap-3">
                     <Checkbox
@@ -88,6 +105,9 @@ export function SalesTab({ formData, updateField }: SalesTabProps) {
                       </Badge>
                     </div>
                   </div>
+                  {isDuplicate(product.id) && (
+                    <Badge variant="destructive" className="text-xs">Doublon</Badge>
+                  )}
                 </div>
               ))}
             </div>
@@ -97,7 +117,10 @@ export function SalesTab({ formData, updateField }: SalesTabProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Produits alternatifs</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <ArrowRightLeft className="h-5 w-5" />
+            Produits alternatifs
+          </CardTitle>
           <CardDescription>
             Produits substituables au produit principal. Utile pour guider le client 
             vers une autre offre si ce produit ne correspond pas à ses besoins ou budget.
@@ -113,7 +136,9 @@ export function SalesTab({ formData, updateField }: SalesTabProps) {
               {otherProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
+                  className={`flex items-center justify-between p-3 border rounded-lg ${
+                    isDuplicate(product.id) ? "border-destructive bg-destructive/5" : ""
+                  }`}
                 >
                   <div className="flex items-center gap-3">
                     <Checkbox
@@ -127,6 +152,9 @@ export function SalesTab({ formData, updateField }: SalesTabProps) {
                       </Badge>
                     </div>
                   </div>
+                  {isDuplicate(product.id) && (
+                    <Badge variant="destructive" className="text-xs">Doublon</Badge>
+                  )}
                 </div>
               ))}
             </div>

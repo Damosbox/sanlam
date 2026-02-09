@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -19,7 +18,23 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ProductFormData } from "../ProductForm";
 
 interface DocumentsTabProps {
@@ -38,16 +53,16 @@ const documentTypes = [
   { value: "autre", label: "Autre" },
 ];
 
-const dynamicVariables = [
-  "{{nom}}",
-  "{{prenom}}",
-  "{{date}}",
-  "{{numero_police}}",
-  "{{montant}}",
-  "{{signature}}",
-  "{{adresse}}",
-  "{{date_effet}}",
-  "{{date_echeance}}",
+const dynamicVariables: { code: string; description: string }[] = [
+  { code: "{{nom}}", description: "Nom de famille du souscripteur" },
+  { code: "{{prenom}}", description: "Prénom du souscripteur" },
+  { code: "{{date}}", description: "Date de génération du document" },
+  { code: "{{numero_police}}", description: "Numéro de police attribué" },
+  { code: "{{montant}}", description: "Montant de la prime calculée" },
+  { code: "{{signature}}", description: "Emplacement de la signature électronique" },
+  { code: "{{adresse}}", description: "Adresse postale du souscripteur" },
+  { code: "{{date_effet}}", description: "Date de début de couverture" },
+  { code: "{{date_echeance}}", description: "Date de fin / échéance du contrat" },
 ];
 
 interface DocumentTemplate {
@@ -60,6 +75,7 @@ interface DocumentTemplate {
 export function DocumentsTab({ formData, updateField }: DocumentsTabProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDoc, setEditingDoc] = useState<DocumentTemplate | null>(null);
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
   const [newDoc, setNewDoc] = useState<Partial<DocumentTemplate>>({
     name: "",
     type: "conditions_generales",
@@ -91,11 +107,13 @@ export function DocumentsTab({ formData, updateField }: DocumentsTabProps) {
     setNewDoc({ name: "", type: "conditions_generales", variables: [] });
   };
 
-  const handleDeleteDocument = (id: string) => {
+  const handleConfirmDelete = () => {
+    if (!deletingDocId) return;
     updateField(
       "document_templates",
-      documents.filter((d) => d.id !== id)
+      documents.filter((d) => d.id !== deletingDocId)
     );
+    setDeletingDocId(null);
   };
 
   const openEditDialog = (doc: DocumentTemplate) => {
@@ -159,7 +177,7 @@ export function DocumentsTab({ formData, updateField }: DocumentsTabProps) {
                       size="icon"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDeleteDocument(doc.id);
+                        setDeletingDocId(doc.id);
                       }}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
@@ -211,21 +229,29 @@ export function DocumentsTab({ formData, updateField }: DocumentsTabProps) {
 
             <div className="space-y-2">
               <Label>Variables dynamiques</Label>
-              <div className="flex flex-wrap gap-2">
-                {dynamicVariables.map((variable) => (
-                  <Badge
-                    key={variable}
-                    variant={newDoc.variables?.includes(variable) ? "default" : "outline"}
-                    className="cursor-pointer"
-                    onClick={() => toggleVariable(variable)}
-                  >
-                    {variable}
-                  </Badge>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Sélectionnez les variables qui seront utilisées dans ce document.
+              <p className="text-xs text-muted-foreground mb-2">
+                Sélectionnez les variables qui seront remplacées automatiquement lors de la génération du document.
               </p>
+              <TooltipProvider>
+                <div className="flex flex-wrap gap-2">
+                  {dynamicVariables.map((variable) => (
+                    <Tooltip key={variable.code}>
+                      <TooltipTrigger asChild>
+                        <Badge
+                          variant={newDoc.variables?.includes(variable.code) ? "default" : "outline"}
+                          className="cursor-pointer"
+                          onClick={() => toggleVariable(variable.code)}
+                        >
+                          {variable.code}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p>{variable.description}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  ))}
+                </div>
+              </TooltipProvider>
             </div>
           </div>
           <DialogFooter>
@@ -236,6 +262,24 @@ export function DocumentsTab({ formData, updateField }: DocumentsTabProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deletingDocId} onOpenChange={() => setDeletingDocId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce document ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Ce template de document sera supprimé de la configuration du produit.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { GuidedSalesState, PackObsequesData, PackObsequesFormula, AdhesionType, TitleType, GenderType, ViePeriodicite } from "../types";
-import { ChevronLeft, ChevronRight, Cross, Calculator, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shield, Calculator, Check } from "lucide-react";
 import { formatFCFA } from "@/utils/formatCurrency";
-import { calculatePackObsequesPremium } from "@/utils/packObsequesPremiumCalculator";
+import { calculatePackObsequesPremium, getPeriodicPremium } from "@/utils/packObsequesPremiumCalculator";
 import { toast } from "sonner";
 
 interface PackObsequesSimulationStepProps {
@@ -65,8 +65,8 @@ export const PackObsequesSimulationStep = ({
   const isSubStep1Valid = data.formula && data.adhesionType && data.periodicity && data.effectiveDate;
   const isSubStep2Valid = data.adhesionType === "individuelle" || 
     (data.nombreEnfants >= 0 && (data.adhesionType === "famille" || data.nombreAscendants >= 0));
-  const isSubStep3Valid = data.title && data.lastName && data.firstName && data.gender;
-  const isSubStep4Valid = data.birthDate && data.birthPlace && data.phone && data.email;
+  const isSubStep3Valid = data.lastName && data.firstName && data.phone && data.birthDate;
+  const isSubStep4Valid = data.email && data.gender && data.title && data.birthPlace;
 
   // Render sub-step 1: Formule & Type
   const renderSubStep1 = () => (
@@ -229,16 +229,105 @@ export const PackObsequesSimulationStep = ({
     </Card>
   );
 
-  // Render sub-step 3: Assuré principal (1/2)
+  // Render sub-step 3: Assuré principal (1/2) — Nom, Prénom, Téléphone, Date naissance
   const renderSubStep3 = () => (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-lg">Assuré principal (1/2)</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* 1. Titre */}
+        {/* 1. Nom */}
         <div className="space-y-2">
-          <Label>1. Titre *</Label>
+          <Label>1. Nom *</Label>
+          <Input
+            value={data.lastName}
+            onChange={(e) => onUpdate({ lastName: e.target.value })}
+            placeholder="Nom de famille"
+          />
+        </div>
+
+        {/* 2. Prénom */}
+        <div className="space-y-2">
+          <Label>2. Prénom *</Label>
+          <Input
+            value={data.firstName}
+            onChange={(e) => onUpdate({ firstName: e.target.value })}
+            placeholder="Prénom"
+          />
+        </div>
+
+        {/* 3. Contact téléphonique */}
+        <div className="space-y-2">
+          <Label>3. Contact téléphonique *</Label>
+          <Input
+            value={data.phone}
+            onChange={(e) => onUpdate({ phone: e.target.value })}
+            placeholder="+225 00 00 00 00 00"
+          />
+        </div>
+
+        {/* 4. Date de naissance */}
+        <div className="space-y-2">
+          <Label>4. Date de naissance *</Label>
+          <Input
+            type="date"
+            value={data.birthDate}
+            onChange={(e) => onUpdate({ birthDate: e.target.value })}
+          />
+        </div>
+
+        <div className="flex justify-between pt-4">
+          <Button variant="outline" onClick={goToPrevSubStep} className="gap-2">
+            <ChevronLeft className="h-4 w-4" />
+            Retour
+          </Button>
+          <Button onClick={goToNextSubStep} disabled={!isSubStep3Valid} className="gap-2">
+            Suivant
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  // Render sub-step 4: Assuré principal (2/2) — Email, Sexe, Titre, Lieu naissance + Calculate
+  const renderSubStep4 = () => (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg">Assuré principal (2/2)</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* 1. E-mail */}
+        <div className="space-y-2">
+          <Label>1. E-mail *</Label>
+          <Input
+            type="email"
+            value={data.email}
+            onChange={(e) => onUpdate({ email: e.target.value })}
+            placeholder="email@exemple.com"
+          />
+        </div>
+
+        {/* 2. Sexe */}
+        <div className="space-y-2">
+          <Label>2. Sexe *</Label>
+          <Select
+            value={data.gender}
+            onValueChange={(value) => onUpdate({ gender: value as GenderType })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="masculin">Masculin</SelectItem>
+              <SelectItem value="feminin">Féminin</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* 3. Titre */}
+        <div className="space-y-2">
+          <Label>3. Titre *</Label>
           <Select
             value={data.title}
             onValueChange={(value) => onUpdate({ title: value as TitleType })}
@@ -259,77 +348,9 @@ export const PackObsequesSimulationStep = ({
           </Select>
         </div>
 
-        {/* 2. Nom */}
+        {/* 4. Lieu de naissance */}
         <div className="space-y-2">
-          <Label>2. Nom *</Label>
-          <Input
-            value={data.lastName}
-            onChange={(e) => onUpdate({ lastName: e.target.value })}
-            placeholder="Nom de famille"
-          />
-        </div>
-
-        {/* 3. Prénom */}
-        <div className="space-y-2">
-          <Label>3. Prénom *</Label>
-          <Input
-            value={data.firstName}
-            onChange={(e) => onUpdate({ firstName: e.target.value })}
-            placeholder="Prénom"
-          />
-        </div>
-
-        {/* 4. Sexe */}
-        <div className="space-y-2">
-          <Label>4. Sexe *</Label>
-          <Select
-            value={data.gender}
-            onValueChange={(value) => onUpdate({ gender: value as GenderType })}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="masculin">Masculin</SelectItem>
-              <SelectItem value="feminin">Féminin</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex justify-between pt-4">
-          <Button variant="outline" onClick={goToPrevSubStep} className="gap-2">
-            <ChevronLeft className="h-4 w-4" />
-            Retour
-          </Button>
-          <Button onClick={goToNextSubStep} disabled={!isSubStep3Valid} className="gap-2">
-            Suivant
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  // Render sub-step 4: Assuré principal (2/2) + Calculate
-  const renderSubStep4 = () => (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg">Assuré principal (2/2)</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* 1. Date de naissance */}
-        <div className="space-y-2">
-          <Label>1. Date de naissance *</Label>
-          <Input
-            type="date"
-            value={data.birthDate}
-            onChange={(e) => onUpdate({ birthDate: e.target.value })}
-          />
-        </div>
-
-        {/* 2. Lieu de naissance */}
-        <div className="space-y-2">
-          <Label>2. Lieu de naissance *</Label>
+          <Label>4. Lieu de naissance *</Label>
           <Input
             value={data.birthPlace}
             onChange={(e) => onUpdate({ birthPlace: e.target.value })}
@@ -337,29 +358,7 @@ export const PackObsequesSimulationStep = ({
           />
         </div>
 
-        {/* 3. Téléphone */}
-        <div className="space-y-2">
-          <Label>3. Contact téléphonique *</Label>
-          <Input
-            value={data.phone}
-            onChange={(e) => onUpdate({ phone: e.target.value })}
-            placeholder="+225 00 00 00 00 00"
-          />
-        </div>
-
-        {/* 4. Email */}
-        <div className="space-y-2">
-          <Label>4. E-mail *</Label>
-          <Input
-            type="email"
-            value={data.email}
-            onChange={(e) => onUpdate({ email: e.target.value })}
-            placeholder="email@exemple.com"
-          />
-        </div>
-
         <div className="flex flex-col gap-3 pt-4">
-          {/* Calculate Button */}
           <Button 
             onClick={handleCalculate} 
             disabled={!isSubStep4Valid || isCalculating}
@@ -388,6 +387,7 @@ export const PackObsequesSimulationStep = ({
     </Card>
   );
 
+
   // Render sub-step 5: Results
   const renderSubStep5 = () => {
     const breakdown = calculatePackObsequesPremium(data);
@@ -408,12 +408,12 @@ export const PackObsequesSimulationStep = ({
                 <p className="text-lg font-semibold">{formatFCFA(breakdown.primeTTC)}</p>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Prime TTC</p>
+                <p className="text-sm text-muted-foreground">Prime TTC annuelle</p>
                 <p className="text-lg font-semibold">{formatFCFA(breakdown.primeTTC)}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Prime périodique nette</p>
-                <p className="text-lg font-semibold">{formatFCFA(breakdown.primeTotale)}</p>
+                <p className="text-lg font-semibold">{formatFCFA(getPeriodicPremium(breakdown.primeTotale, data.periodicity))}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Capital assuré principal</p>
@@ -422,13 +422,13 @@ export const PackObsequesSimulationStep = ({
               {data.nombreAscendants > 0 && (
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Capital par ascendant</p>
-                  <p className="text-lg font-semibold">{formatFCFA(150000)}</p>
+                  <p className="text-lg font-semibold">{formatFCFA(breakdown.capitalParAscendant)}</p>
                 </div>
               )}
               {data.nombreEnfants > 0 && (
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Capital par enfant</p>
-                  <p className="text-lg font-semibold">{formatFCFA(100000)}</p>
+                  <p className="text-lg font-semibold">{formatFCFA(breakdown.capitalParEnfant)}</p>
                 </div>
               )}
             </div>
@@ -486,7 +486,7 @@ export const PackObsequesSimulationStep = ({
       {/* Product Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-          <Cross className="h-6 w-6 text-primary" />
+          <Shield className="h-6 w-6 text-primary" />
         </div>
         <div>
           <h2 className="text-2xl font-bold">Pack Obsèques</h2>

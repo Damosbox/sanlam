@@ -160,7 +160,6 @@ export const GuidedSalesFlow = () => {
         ...prev,
         moloMoloData: newMoloMoloData,
         calculatedPremium: premium,
-        simulationCalculated: true
       };
     });
   }, []);
@@ -171,13 +170,9 @@ export const GuidedSalesFlow = () => {
         ...prev.packObsequesData!,
         ...data
       };
-      const breakdown = calculatePackObsequesPremium(newPackObsequesData);
-      const premium = convertPackObsequesToCalculatedPremium(breakdown);
       return {
         ...prev,
         packObsequesData: newPackObsequesData,
-        calculatedPremium: premium,
-        simulationCalculated: true
       };
     });
   }, []);

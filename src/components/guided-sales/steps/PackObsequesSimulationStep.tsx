@@ -459,14 +459,10 @@ export const PackObsequesSimulationStep = ({
           </CardContent>
         </Card>
 
-        <div className="flex justify-between pt-4">
+        <div className="flex justify-start pt-4">
           <Button variant="outline" onClick={() => setSubStep(4)} className="gap-2">
             <ChevronLeft className="h-4 w-4" />
             Modifier
-          </Button>
-          <Button onClick={onNext} className="gap-2">
-            Voir les offres
-            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </div>

@@ -43,12 +43,6 @@ interface PortfolioDataTableProps {
 
 // Simulate value score calculation based on activity
 const calculateMockScore = (item: PortfolioItem): { score: number; classe: number } => {
-  if (item.type === "prospect") {
-    // Prospects get predictive score based on interest
-    const baseScore = 40 + Math.random() * 30;
-    return { score: Math.round(baseScore), classe: Math.ceil(baseScore / 20) };
-  }
-  
   // Clients get score based on subscriptions and claims
   const subsScore = Math.min((item.subscriptionsCount || 0) * 15, 40);
   const claimsPenalty = Math.min((item.claimsCount || 0) * 5, 20);
@@ -172,33 +166,37 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }
                     </div>
                   </TableCell>
                   
-                  {/* Score Column - Clickable for details */}
+                  {/* Score Column */}
                   <TableCell className={`hidden sm:table-cell ${rowPadding} text-center`}>
-                    <ScoreDetailPopover
-                      score={itemScore}
-                      classe={itemClass}
-                      clientId={item.id}
-                      clientType={item.type}
-                    >
-                      <button className="inline-flex flex-col items-center gap-0.5 cursor-pointer hover:opacity-80 transition-opacity">
-                        <div className="flex">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={cn(
-                                "h-3 w-3",
-                                i < itemClass 
-                                  ? "text-amber-500 fill-amber-500" 
-                                  : "text-muted-foreground/20"
-                              )}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-[10px] font-medium text-muted-foreground">
-                          {itemScore}/100
-                        </span>
-                      </button>
-                    </ScoreDetailPopover>
+                    {item.type === "client" ? (
+                      <ScoreDetailPopover
+                        score={itemScore}
+                        classe={itemClass}
+                        clientId={item.id}
+                        clientType={item.type}
+                      >
+                        <button className="inline-flex flex-col items-center gap-0.5 cursor-pointer hover:opacity-80 transition-opacity">
+                          <div className="flex">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={cn(
+                                  "h-3 w-3",
+                                  i < itemClass 
+                                    ? "text-amber-500 fill-amber-500" 
+                                    : "text-muted-foreground/20"
+                                )}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-[10px] font-medium text-muted-foreground">
+                            {itemScore}/100
+                          </span>
+                        </button>
+                      </ScoreDetailPopover>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
                   </TableCell>
                   
                   {/* Contact Column */}

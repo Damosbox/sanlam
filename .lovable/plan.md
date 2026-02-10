@@ -1,51 +1,37 @@
 
 
-# Aligner Pack Obseques sur le pattern Auto (suppression sub-step 5)
+# Supprimer le scoring pour les prospects
 
-## Probleme
+## Contexte
 
-Dans Auto, le bouton "Calculer" et les resultats sont sur la **meme sous-etape** (sub-step 5). Apres calcul, le resultat s'affiche en dessous et le bouton "Voir les offres" apparait inline. Pas de navigation vers un ecran separe.
+Le score valeur client (etoiles + note /100) est affiche pour tous les enregistrements du portefeuille, y compris les prospects. Pour les prospects, ce score est base sur des donnees aleatoires simulees (ligne 48 : `Math.random()`) et n'a aucune valeur metier reelle. Il sera conserve uniquement pour les clients.
 
-Dans Pack Obseques, cliquer "Calculer" navigue vers une sous-etape 5 separee (resultats seuls + bouton "Modifier"), ce qui cree un conflit avec le "Voir les offres" du SalesAssistant.
+## Modifications
 
-## Solution
+**Fichier** : `src/components/portfolio/PortfolioDataTable.tsx`
 
-Fusionner sub-step 4 et sub-step 5 : garder le bouton "Calculer" sur sub-step 4 et afficher les resultats **en dessous** sur le meme ecran apres calcul, exactement comme Auto.
+1. **Colonne Score (ligne 176-202)** : Conditionner l'affichage du `ScoreDetailPopover` au type `client`. Pour les prospects, afficher un tiret "—" comme pour les autres colonnes non-applicables (Contrats, Sinistres).
 
-### Modifications
+2. **Calcul mock (lignes 46-49)** : Supprimer le bloc prospect dans `calculateMockScore` puisqu'il ne sera plus utilise pour les prospects.
 
-**Fichier** : `src/components/guided-sales/steps/PackObsequesSimulationStep.tsx`
+**Fichier** : `src/components/portfolio/ScoreDetailPopover.tsx`
 
-1. **Supprimer `renderSubStep5()`** entierement (lignes 391-470)
-2. **Modifier `renderSubStep4()`** pour :
-   - Garder les 4 champs (Email, Sexe, Titre, Lieu de naissance)
-   - Garder le bouton "Calculer la prime" (sans navigation vers sub-step 5)
-   - Apres calcul (`simulationCalculated === true`), afficher le resultat inline en dessous (carte prime + carte recapitulatif) - meme pattern que Auto
-   - Le `handleCalculate` ne fait plus `setSubStep(5)`, il appelle juste `onCalculate()`
-3. **Mettre a jour le state** : supprimer sub-step 5 du type (`useState<1 | 2 | 3 | 4>`)
-4. **Corriger `getTotalSteps()`** : famille = 4, individuelle = 3
-5. **Supprimer le rendu conditionnel** `{subStep === 5 && renderSubStep5()}` du return
+3. Aucune modification necessaire - le composant ne sera simplement plus appele pour les prospects.
 
-### Pattern cible (identique a Auto)
+## Detail technique
+
+Dans la cellule Score (ligne 176), remplacer le rendu actuel par :
 
 ```text
-Sub-step 4 : Assure principal (2/2)
-  - 4 champs (Email, Sexe, Titre, Lieu)
-  - [Calculer la prime]          <- bouton principal
-  - [Retour]
-  
-  --- apres calcul (inline) ---
-  
-  [Carte resultat prime]         <- apparait sous le bouton
-  [Carte recapitulatif]
-  [Retour]                       <- seul bouton, pas de "Voir les offres"
+Si item.type === "client" :
+  -> Afficher ScoreDetailPopover (etoiles + score)
+Si item.type === "prospect" :
+  -> Afficher "—" en texte muted (coherent avec Contrats et Sinistres)
 ```
 
-Le "Voir les offres" reste uniquement dans le SalesAssistant sidebar = source unique d'action principale.
+## Impact
 
-## Fichier impacte
-
-| Fichier | Modification |
-|---|---|
-| `src/components/guided-sales/steps/PackObsequesSimulationStep.tsx` | Fusion sub-step 4+5, suppression sub-step 5, correction compteurs |
+- Les prospects n'affichent plus de score fictif
+- Les clients conservent leur scoring complet avec le popover radar
+- Aucun changement sur les autres colonnes ou fonctionnalites
 

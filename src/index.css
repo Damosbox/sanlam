@@ -55,6 +55,16 @@
     
     --radius: 1rem;
     
+    /* Sidebar */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 207 17% 25%;
+    --sidebar-primary: 203 100% 39%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 207 17% 25%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 203 100% 39%;
+    
     /* Gradients */
     --gradient-activated: linear-gradient(135deg, hsl(var(--sanlam-blue)), hsl(var(--allianz-blue)));
     --gradient-warm: linear-gradient(135deg, hsl(var(--orange)), hsl(var(--yellow)));

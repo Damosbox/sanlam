@@ -297,10 +297,16 @@ export const GuidedSalesFlow = () => {
 
   const nextStep = () => {
     setDirection("forward");
-    setState(prev => ({
-      ...prev,
-      currentStep: prev.currentStep + 1
-    }));
+    setState(prev => {
+      const product = prev.productSelection.selectedProduct;
+      const isLifeProduct = product === "pack_obseques" || product === "molo_molo";
+      // Skip FormulaSelectionStep (step 2) for life products - formula already chosen in simulation
+      const nextStepNum = (prev.currentStep === 1 && isLifeProduct) ? 3 : prev.currentStep + 1;
+      return {
+        ...prev,
+        currentStep: nextStepNum
+      };
+    });
   };
 
   const prevStep = () => {

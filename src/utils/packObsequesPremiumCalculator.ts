@@ -10,6 +10,8 @@ export interface PackObsequesPremiumBreakdown {
   taxes: number;
   primeTTC: number;
   capitalGaranti: number;
+  capitalParEnfant: number;
+  capitalParAscendant: number;
 }
 
 const PERIODICITE_MULTIPLIER: Record<string, number> = {
@@ -98,6 +100,8 @@ export const calculatePackObsequesPremium = (data: PackObsequesData): PackObsequ
     taxes,
     primeTTC,
     capitalGaranti,
+    capitalParEnfant: CAPITAL_PAR_ENFANT[formula],
+    capitalParAscendant: CAPITAL_PAR_ASCENDANT[formula],
   };
 };
 

@@ -26,7 +26,7 @@ export const PackObsequesSimulationStep = ({
   onCalculate,
   isCalculating
 }: PackObsequesSimulationStepProps) => {
-  const [subStep, setSubStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [subStep, setSubStep] = useState<1 | 2 | 3 | 4>(1);
   
   const data = state.packObsequesData!;
   const simulationCalculated = state.simulationCalculated;
@@ -37,14 +37,13 @@ export const PackObsequesSimulationStep = ({
   // Sub-step navigation
   const goToNextSubStep = () => {
     if (subStep === 1) {
-      // If individual, skip to sub-step 3
       if (data.adhesionType === "individuelle") {
         setSubStep(3);
       } else {
         setSubStep(2);
       }
-    } else if (subStep < 5) {
-      setSubStep((subStep + 1) as 1 | 2 | 3 | 4 | 5);
+    } else if (subStep < 4) {
+      setSubStep((subStep + 1) as 1 | 2 | 3 | 4);
     }
   };
   
@@ -52,13 +51,12 @@ export const PackObsequesSimulationStep = ({
     if (subStep === 3 && data.adhesionType === "individuelle") {
       setSubStep(1);
     } else if (subStep > 1) {
-      setSubStep((subStep - 1) as 1 | 2 | 3 | 4 | 5);
+      setSubStep((subStep - 1) as 1 | 2 | 3 | 4);
     }
   };
 
   const handleCalculate = () => {
     onCalculate();
-    setSubStep(5);
   };
 
   // Validation checks
@@ -291,195 +289,190 @@ export const PackObsequesSimulationStep = ({
   );
 
   // Render sub-step 4: Assuré principal (2/2) — Email, Sexe, Titre, Lieu naissance + Calculate
-  const renderSubStep4 = () => (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg">Assuré principal (2/2)</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* 1. E-mail */}
-        <div className="space-y-2">
-          <Label>1. E-mail *</Label>
-          <Input
-            type="email"
-            value={data.email}
-            onChange={(e) => onUpdate({ email: e.target.value })}
-            placeholder="email@exemple.com"
-          />
-        </div>
-
-        {/* 2. Sexe */}
-        <div className="space-y-2">
-          <Label>2. Sexe *</Label>
-          <Select
-            value={data.gender}
-            onValueChange={(value) => onUpdate({ gender: value as GenderType })}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="masculin">Masculin</SelectItem>
-              <SelectItem value="feminin">Féminin</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* 3. Titre */}
-        <div className="space-y-2">
-          <Label>3. Titre *</Label>
-          <Select
-            value={data.title}
-            onValueChange={(value) => onUpdate({ title: value as TitleType })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Sélectionner" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="monsieur">Monsieur</SelectItem>
-              <SelectItem value="madame">Madame</SelectItem>
-              <SelectItem value="mademoiselle">Mademoiselle</SelectItem>
-              <SelectItem value="docteur">Docteur</SelectItem>
-              <SelectItem value="maitre">Maître</SelectItem>
-              <SelectItem value="corporation">Corporation</SelectItem>
-              <SelectItem value="entreprise">Entreprise</SelectItem>
-              <SelectItem value="etablissement">Établissement</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* 4. Lieu de naissance */}
-        <div className="space-y-2">
-          <Label>4. Lieu de naissance *</Label>
-          <Input
-            value={data.birthPlace}
-            onChange={(e) => onUpdate({ birthPlace: e.target.value })}
-            placeholder="Lieu de naissance"
-          />
-        </div>
-
-        <div className="flex flex-col gap-3 pt-4">
-          <Button 
-            onClick={handleCalculate} 
-            disabled={!isSubStep4Valid || isCalculating}
-            className="w-full gap-2"
-            size="lg"
-          >
-            {isCalculating ? (
-              <>
-                <Calculator className="h-4 w-4 animate-spin" />
-                Calcul en cours...
-              </>
-            ) : (
-              <>
-                <Calculator className="h-4 w-4" />
-                Calculer la prime
-              </>
-            )}
-          </Button>
-          
-          <Button variant="outline" onClick={goToPrevSubStep} className="gap-2">
-            <ChevronLeft className="h-4 w-4" />
-            Retour
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-
-  // Render sub-step 5: Results
-  const renderSubStep5 = () => {
-    const breakdown = calculatePackObsequesPremium(data);
+  const renderSubStep4 = () => {
+    const breakdown = simulationCalculated ? calculatePackObsequesPremium(data) : null;
     
     return (
-      <div className="space-y-4">
-        <Card className="border-primary/20 bg-primary/5">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Check className="h-5 w-5 text-primary" />
-              Résultat de la simulation
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Première prime</p>
-                <p className="text-lg font-semibold">{formatFCFA(breakdown.primeTTC)}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Prime TTC annuelle</p>
-                <p className="text-lg font-semibold">{formatFCFA(breakdown.primeTTC)}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Prime périodique nette</p>
-                <p className="text-lg font-semibold">{formatFCFA(getPeriodicPremium(breakdown.primeTotale, data.periodicity))}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Capital assuré principal</p>
-                <p className="text-lg font-semibold">{formatFCFA(breakdown.capitalGaranti)}</p>
-              </div>
-              {data.nombreAscendants > 0 && (
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Capital par ascendant</p>
-                  <p className="text-lg font-semibold">{formatFCFA(breakdown.capitalParAscendant)}</p>
-                </div>
-              )}
-              {data.nombreEnfants > 0 && (
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Capital par enfant</p>
-                  <p className="text-lg font-semibold">{formatFCFA(breakdown.capitalParEnfant)}</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Summary Card */}
+      <>
         <Card>
-          <CardContent className="pt-4">
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Formule</span>
-                <span className="font-medium uppercase">{data.formula}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Type d'adhésion</span>
-                <span className="font-medium capitalize">{data.adhesionType.replace("_", " + ")}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Périodicité</span>
-                <span className="font-medium capitalize">{data.periodicity}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Assuré</span>
-                <span className="font-medium">{data.firstName} {data.lastName}</span>
-              </div>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Assuré principal (2/2)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* 1. E-mail */}
+            <div className="space-y-2">
+              <Label>1. E-mail *</Label>
+              <Input
+                type="email"
+                value={data.email}
+                onChange={(e) => onUpdate({ email: e.target.value })}
+                placeholder="email@exemple.com"
+              />
+            </div>
+
+            {/* 2. Sexe */}
+            <div className="space-y-2">
+              <Label>2. Sexe *</Label>
+              <Select
+                value={data.gender}
+                onValueChange={(value) => onUpdate({ gender: value as GenderType })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="masculin">Masculin</SelectItem>
+                  <SelectItem value="feminin">Féminin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* 3. Titre */}
+            <div className="space-y-2">
+              <Label>3. Titre *</Label>
+              <Select
+                value={data.title}
+                onValueChange={(value) => onUpdate({ title: value as TitleType })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monsieur">Monsieur</SelectItem>
+                  <SelectItem value="madame">Madame</SelectItem>
+                  <SelectItem value="mademoiselle">Mademoiselle</SelectItem>
+                  <SelectItem value="docteur">Docteur</SelectItem>
+                  <SelectItem value="maitre">Maître</SelectItem>
+                  <SelectItem value="corporation">Corporation</SelectItem>
+                  <SelectItem value="entreprise">Entreprise</SelectItem>
+                  <SelectItem value="etablissement">Établissement</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* 4. Lieu de naissance */}
+            <div className="space-y-2">
+              <Label>4. Lieu de naissance *</Label>
+              <Input
+                value={data.birthPlace}
+                onChange={(e) => onUpdate({ birthPlace: e.target.value })}
+                placeholder="Lieu de naissance"
+              />
+            </div>
+
+            <div className="flex flex-col gap-3 pt-4">
+              {!simulationCalculated && (
+                <Button 
+                  onClick={handleCalculate} 
+                  disabled={!isSubStep4Valid || isCalculating}
+                  className="w-full gap-2"
+                  size="lg"
+                >
+                  {isCalculating ? (
+                    <>
+                      <Calculator className="h-4 w-4 animate-spin" />
+                      Calcul en cours...
+                    </>
+                  ) : (
+                    <>
+                      <Calculator className="h-4 w-4" />
+                      Calculer la prime
+                    </>
+                  )}
+                </Button>
+              )}
+              
+              <Button variant="outline" onClick={goToPrevSubStep} className="gap-2">
+                <ChevronLeft className="h-4 w-4" />
+                Retour
+              </Button>
             </div>
           </CardContent>
         </Card>
 
-        <div className="flex justify-start pt-4">
-          <Button variant="outline" onClick={() => setSubStep(4)} className="gap-2">
-            <ChevronLeft className="h-4 w-4" />
-            Modifier
-          </Button>
-        </div>
-      </div>
+        {/* Inline results after calculation - same pattern as Auto */}
+        {simulationCalculated && breakdown && (
+          <div className="space-y-4">
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Check className="h-5 w-5 text-primary" />
+                  Résultat de la simulation
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Première prime</p>
+                    <p className="text-lg font-semibold">{formatFCFA(breakdown.primeTTC)}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Prime TTC annuelle</p>
+                    <p className="text-lg font-semibold">{formatFCFA(breakdown.primeTTC)}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Prime périodique nette</p>
+                    <p className="text-lg font-semibold">{formatFCFA(getPeriodicPremium(breakdown.primeTotale, data.periodicity))}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Capital assuré principal</p>
+                    <p className="text-lg font-semibold">{formatFCFA(breakdown.capitalGaranti)}</p>
+                  </div>
+                  {data.nombreAscendants > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">Capital par ascendant</p>
+                      <p className="text-lg font-semibold">{formatFCFA(breakdown.capitalParAscendant)}</p>
+                    </div>
+                  )}
+                  {data.nombreEnfants > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">Capital par enfant</p>
+                      <p className="text-lg font-semibold">{formatFCFA(breakdown.capitalParEnfant)}</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-4">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Formule</span>
+                    <span className="font-medium uppercase">{data.formula}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Type d'adhésion</span>
+                    <span className="font-medium capitalize">{data.adhesionType.replace("_", " + ")}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Périodicité</span>
+                    <span className="font-medium capitalize">{data.periodicity}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Assuré</span>
+                    <span className="font-medium">{data.firstName} {data.lastName}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </>
     );
   };
 
-  // Get current step number for display
+
+
   const getCurrentStepNumber = () => {
     if (subStep === 1) return 1;
     if (subStep === 2) return 2;
     if (subStep === 3) return showFamilyStep ? 3 : 2;
     if (subStep === 4) return showFamilyStep ? 4 : 3;
-    if (subStep === 5) return showFamilyStep ? 5 : 4;
     return 1;
   };
 
-  const getTotalSteps = () => showFamilyStep ? 5 : 4;
+  const getTotalSteps = () => showFamilyStep ? 4 : 3;
 
   return (
     <div className="space-y-6">
@@ -496,13 +489,11 @@ export const PackObsequesSimulationStep = ({
 
       {/* Progress indicators */}
       <div className="flex gap-1">
-        {[1, 2, 3, 4, 5].filter(s => showFamilyStep || s !== 2).map((step) => (
+        {Array.from({ length: getTotalSteps() }, (_, i) => i + 1).map((step) => (
           <div 
             key={step}
             className={`h-1 flex-1 rounded-full transition-colors ${
-              getCurrentStepNumber() >= (showFamilyStep ? step : step - (step > 2 ? 1 : 0)) 
-                ? 'bg-primary' 
-                : 'bg-muted'
+              getCurrentStepNumber() >= step ? 'bg-primary' : 'bg-muted'
             }`}
           />
         ))}
@@ -513,7 +504,6 @@ export const PackObsequesSimulationStep = ({
       {subStep === 2 && renderSubStep2()}
       {subStep === 3 && renderSubStep3()}
       {subStep === 4 && renderSubStep4()}
-      {subStep === 5 && renderSubStep5()}
     </div>
   );
 };

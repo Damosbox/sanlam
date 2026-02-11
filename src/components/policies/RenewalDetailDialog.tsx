@@ -364,23 +364,70 @@ export const RenewalDetailDialog = ({
                     )}
                   </Button>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
                       <p className="text-sm text-blue-700">
                         Lien envoyé au client. En attente de paiement.
                       </p>
                     </div>
                     
-                    <div className="flex gap-2">
-                      <Button variant="outline" className="flex-1" disabled>
-                        <FileText className="h-4 w-4 mr-2" />
-                        Avenant (après paiement)
-                      </Button>
-                      <Button variant="outline" className="flex-1" disabled>
-                        <Download className="h-4 w-4 mr-2" />
-                        Attestation (après paiement)
-                      </Button>
+                    {/* Documents conditionnels vie / non-vie */}
+                    {(() => {
+                      const isLifeProduct = ["Molo Molo", "Pack Obsèques"].some(p => 
+                        subscription.product_name?.toLowerCase().includes(p.toLowerCase())
+                      );
+                      return (
+                        <div className="flex flex-wrap gap-2">
+                          <Button variant="outline" className="flex-1" disabled>
+                            <FileText className="h-4 w-4 mr-2" />
+                            {isLifeProduct ? "Avenant vie" : "Avenant"}
+                          </Button>
+                          <Button variant="outline" className="flex-1" disabled>
+                            <Download className="h-4 w-4 mr-2" />
+                            Attestation
+                          </Button>
+                          {isLifeProduct ? (
+                            <Button variant="outline" className="flex-1" disabled>
+                              <FileText className="h-4 w-4 mr-2" />
+                              Relevé de situation
+                            </Button>
+                          ) : subscription.product_name?.toLowerCase().includes("auto") ? (
+                            <Button variant="outline" className="flex-1" disabled>
+                              <FileText className="h-4 w-4 mr-2" />
+                              Carte verte
+                            </Button>
+                          ) : null}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Cross-selling */}
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                      <p className="text-sm font-medium text-amber-800 mb-2">💡 Opportunité commerciale</p>
+                      <p className="text-sm text-amber-700">
+                        {(() => {
+                          const name = subscription.product_name?.toLowerCase() || "";
+                          if (name.includes("auto")) return "Proposez une Assurance MRH pour protéger le domicile du client.";
+                          if (name.includes("mrh")) return "Proposez une Assurance Auto pour compléter la couverture.";
+                          if (name.includes("voyage")) return "Proposez une Assurance Santé pour une protection continue.";
+                          if (name.includes("molo")) return "Proposez un Pack Obsèques pour la famille.";
+                          if (name.includes("obsèques")) return "Proposez Molo Molo pour constituer une épargne.";
+                          return "Proposez un produit complémentaire adapté au profil client.";
+                        })()}
+                      </p>
                     </div>
+
+                    {/* Enquête NPS */}
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => {
+                        toast.success("Enquête de satisfaction envoyée au client");
+                      }}
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      Envoyer enquête de satisfaction
+                    </Button>
                   </div>
                 )}
               </div>

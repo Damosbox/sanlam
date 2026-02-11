@@ -534,36 +534,6 @@ export const CoverageStep = ({ state, onUpdate, onNeedsUpdate, onPremiumUpdate, 
         </Card>
       )}
 
-      {/* Additional Options */}
-      <Card>
-        <CardContent className="pt-6">
-          <h3 className="font-semibold mb-4">Options Additionnelles</h3>
-          <div className="space-y-4">
-            {additionalOptions.map((option) => (
-              <div
-                key={option.id}
-                className="flex items-start justify-between py-3 border-b last:border-0"
-              >
-                <div className="flex items-start gap-3">
-                  <Checkbox
-                    id={option.id}
-                    checked={coverage.additionalOptions.includes(option.id)}
-                    onCheckedChange={(checked) => handleOptionToggle(option.id, checked as boolean)}
-                  />
-                  <div>
-                    <Label htmlFor={option.id} className="font-medium cursor-pointer">
-                      {option.name}
-                    </Label>
-                    <p className="text-sm text-muted-foreground">{option.description}</p>
-                  </div>
-                </div>
-                <span className="text-primary font-medium">+{formatFCFA(option.price)}</span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Desktop Next Button - Hidden on mobile */}
       <div className="hidden sm:flex justify-end pt-4 pb-4">
         <Button onClick={onNext} size="lg">

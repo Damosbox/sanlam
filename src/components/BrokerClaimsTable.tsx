@@ -444,6 +444,11 @@ export const BrokerClaimsTable = () => {
             <TableRow>
               <TableHead className="min-w-[150px]">Client</TableHead>
               <TableHead className="min-w-[80px]">Type</TableHead>
+              {selectedProduct !== "all" && (
+                <TableHead className="min-w-[100px] hidden sm:table-cell">
+                  {selectedProduct === "auto" ? "Immatriculation" : selectedProduct === "mrh" ? "Adresse du bien" : selectedProduct === "sante" ? "N° Assuré" : selectedProduct === "vie" ? "N° Contrat" : selectedProduct === "obseques" ? "N° Bénéficiaire" : "Référence"}
+                </TableHead>
+              )}
               <TableHead className="min-w-[100px] hidden sm:table-cell">Police</TableHead>
               <TableHead className="min-w-[90px]">Incident</TableHead>
               <TableHead className="min-w-[90px] hidden md:table-cell">Déclaration</TableHead>
@@ -455,7 +460,7 @@ export const BrokerClaimsTable = () => {
           <TableBody>
             {filteredClaims.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={selectedProduct !== "all" ? 9 : 8} className="text-center text-muted-foreground py-8">
                   {hasActiveFilters ? "Aucun sinistre ne correspond aux filtres" : "Aucun sinistre"}
                 </TableCell>
               </TableRow>
@@ -473,6 +478,22 @@ export const BrokerClaimsTable = () => {
                     </div>
                   </TableCell>
                   <TableCell className="capitalize text-sm">{claim.claim_type}</TableCell>
+                  {selectedProduct !== "all" && (
+                    <TableCell className="hidden sm:table-cell text-sm">
+                      {(() => {
+                        const ocr = claim.ocr_data as Record<string, any> | null;
+                        if (!ocr) return "—";
+                        switch (selectedProduct) {
+                          case "auto": return ocr.immatriculation || ocr.license_plate || "—";
+                          case "mrh": return ocr.address || ocr.adresse || "—";
+                          case "sante": return ocr.insured_number || ocr.numero_assure || "—";
+                          case "vie": return ocr.contract_number || ocr.numero_contrat || "—";
+                          case "obseques": return ocr.beneficiary_number || ocr.beneficiaire || "—";
+                          default: return ocr.reference || "—";
+                        }
+                      })()}
+                    </TableCell>
+                  )}
                   <TableCell className="hidden sm:table-cell text-sm">{claim.policy_id}</TableCell>
                   <TableCell className="text-sm">
                     {claim.incident_date

@@ -34,21 +34,17 @@ export const PackObsequesSimulationStep = ({
   // Check if family step should be shown
   const showFamilyStep = data.adhesionType !== "individuelle";
   
-  // Sub-step navigation
+  // Sub-step navigation (skip sub-step 2, family fields are now inline in step 1)
   const goToNextSubStep = () => {
     if (subStep === 1) {
-      if (data.adhesionType === "individuelle") {
-        setSubStep(3);
-      } else {
-        setSubStep(2);
-      }
+      setSubStep(3);
     } else if (subStep < 4) {
       setSubStep((subStep + 1) as 1 | 2 | 3 | 4);
     }
   };
   
   const goToPrevSubStep = () => {
-    if (subStep === 3 && data.adhesionType === "individuelle") {
+    if (subStep === 3) {
       setSubStep(1);
     } else if (subStep > 1) {
       setSubStep((subStep - 1) as 1 | 2 | 3 | 4);
@@ -60,22 +56,40 @@ export const PackObsequesSimulationStep = ({
   };
 
   // Validation checks
-  const isSubStep1Valid = data.formula && data.adhesionType && data.periodicity && data.effectiveDate;
+  const isSubStep1Valid = data.selectedOption && data.formula && data.adhesionType && data.periodicity && data.effectiveDate;
   const isSubStep2Valid = data.adhesionType === "individuelle" || 
     (data.nombreEnfants >= 0 && (data.adhesionType === "famille" || data.nombreAscendants >= 0));
   const isSubStep3Valid = data.lastName && data.firstName && data.phone && data.birthDate;
   const isSubStep4Valid = data.email && data.gender && data.title && data.birthPlace;
 
-  // Render sub-step 1: Formule & Type
+  // Render sub-step 1: Option, Formule & Type
   const renderSubStep1 = () => (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-lg">Formule et Type d'adhésion</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* 1. Formule */}
+        {/* 0. Sélectionner une option */}
         <div className="space-y-2">
-          <Label>1. Formule *</Label>
+          <Label>1. Sélectionner une option *</Label>
+          <RadioGroup
+            value={data.selectedOption}
+            onValueChange={(value) => onUpdate({ selectedOption: value as "option1" | "option2" })}
+            className="flex gap-4"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="option1" id="option1" />
+              <Label htmlFor="option1" className="font-normal cursor-pointer">Option 1</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="option2" id="option2" />
+              <Label htmlFor="option2" className="font-normal cursor-pointer">Option 2</Label>
+            </div>
+          </RadioGroup>
+        </div>
+        {/* 2. Formule */}
+        <div className="space-y-2">
+          <Label>2. Formule *</Label>
           <Select
             value={data.formula}
             onValueChange={(value) => onUpdate({ formula: value as PackObsequesFormula })}
@@ -91,9 +105,9 @@ export const PackObsequesSimulationStep = ({
           </Select>
         </div>
 
-        {/* 2. Type d'adhésion */}
+        {/* 3. Type d'adhésion */}
         <div className="space-y-2">
-          <Label>2. Type d'adhésion *</Label>
+          <Label>3. Type d'adhésion *</Label>
           <Select
             value={data.adhesionType}
             onValueChange={(value) => onUpdate({ adhesionType: value as AdhesionType })}
@@ -109,9 +123,9 @@ export const PackObsequesSimulationStep = ({
           </Select>
         </div>
 
-        {/* 3. Périodicité */}
+        {/* 4. Périodicité */}
         <div className="space-y-2">
-          <Label>3. Périodicité *</Label>
+          <Label>4. Périodicité *</Label>
           <Select
             value={data.periodicity}
             onValueChange={(value) => onUpdate({ periodicity: value as ViePeriodicite })}
@@ -128,9 +142,71 @@ export const PackObsequesSimulationStep = ({
           </Select>
         </div>
 
-        {/* 4. Date d'effet */}
+        {/* 5. Nombre d'enfants (conditional) */}
+        {(data.adhesionType === "famille" || data.adhesionType === "famille_ascendant") && (
+          <div className="space-y-2">
+            <Label>5. Nombre d'enfants à charge (0-3) *</Label>
+            <Select
+              value={String(data.nombreEnfants)}
+              onValueChange={(value) => onUpdate({ nombreEnfants: Number(value) })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">0</SelectItem>
+                <SelectItem value="1">1</SelectItem>
+                <SelectItem value="2">2</SelectItem>
+                <SelectItem value="3">3</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* 6. Nombre d'ascendants (conditional) */}
+        {data.adhesionType === "famille_ascendant" && (
+          <div className="space-y-2">
+            <Label>6. Nombre d'ascendants à charge (0-2) *</Label>
+            <Select
+              value={String(data.nombreAscendants)}
+              onValueChange={(value) => onUpdate({ nombreAscendants: Number(value) })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">0</SelectItem>
+                <SelectItem value="1">1</SelectItem>
+                <SelectItem value="2">2</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* 7. Ajouter conjoint (conditional) */}
+        {(data.adhesionType === "famille" || data.adhesionType === "famille_ascendant") && (
+          <div className="space-y-2">
+            <Label>7. Voulez-vous ajouter votre conjoint(e) ?</Label>
+            <RadioGroup
+              value={data.addSpouse ? "oui" : "non"}
+              onValueChange={(value) => onUpdate({ addSpouse: value === "oui" })}
+              className="flex gap-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="oui" id="spouse-yes-s1" />
+                <Label htmlFor="spouse-yes-s1" className="font-normal cursor-pointer">Oui</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="non" id="spouse-no-s1" />
+                <Label htmlFor="spouse-no-s1" className="font-normal cursor-pointer">Non</Label>
+              </div>
+            </RadioGroup>
+          </div>
+        )}
+
+        {/* 8. Date d'effet */}
         <div className="space-y-2">
-          <Label>4. Date d'effet *</Label>
+          <Label>{data.adhesionType === "individuelle" ? "5" : "8"}. Date d'effet *</Label>
           <Input
             type="date"
             value={data.effectiveDate}

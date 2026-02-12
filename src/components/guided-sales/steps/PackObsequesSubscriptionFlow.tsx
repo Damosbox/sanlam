@@ -137,9 +137,9 @@ export const PackObsequesSubscriptionFlow = ({
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* 1. Nom de famille */}
+        {/* 5. Nom de famille */}
         <div className="space-y-2">
-          <Label>1. Nom de famille *</Label>
+          <Label>5. Nom de famille * <span className="text-xs text-muted-foreground italic">(pré-rempli)</span></Label>
           <Input
             value={data.lastName}
             onChange={(e) => onUpdate({ lastName: e.target.value })}
@@ -147,9 +147,9 @@ export const PackObsequesSubscriptionFlow = ({
           />
         </div>
 
-        {/* 2. Prénom */}
+        {/* 6. Prénom */}
         <div className="space-y-2">
-          <Label>2. Prénom *</Label>
+          <Label>6. Prénom * <span className="text-xs text-muted-foreground italic">(pré-rempli)</span></Label>
           <Input
             value={data.firstName}
             onChange={(e) => onUpdate({ firstName: e.target.value })}
@@ -157,9 +157,9 @@ export const PackObsequesSubscriptionFlow = ({
           />
         </div>
 
-        {/* 3. Sexe */}
+        {/* 7. Sexe */}
         <div className="space-y-2">
-          <Label>3. Sexe *</Label>
+          <Label>7. Sexe * <span className="text-xs text-muted-foreground italic">(pré-rempli)</span></Label>
           <Select
             value={data.gender}
             onValueChange={(value) => onUpdate({ gender: value as GenderType })}
@@ -174,9 +174,9 @@ export const PackObsequesSubscriptionFlow = ({
           </Select>
         </div>
 
-        {/* 4. Date de naissance */}
+        {/* 8. Date de naissance */}
         <div className="space-y-2">
-          <Label>4. Date de naissance *</Label>
+          <Label>8. Date de naissance * <span className="text-xs text-muted-foreground italic">(pré-rempli)</span></Label>
           <Input
             type="date"
             value={data.birthDate}
@@ -205,9 +205,9 @@ export const PackObsequesSubscriptionFlow = ({
         <CardTitle className="text-lg">Coordonnées</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* 1. Lieu de naissance */}
+        {/* 9. Lieu de naissance */}
         <div className="space-y-2">
-          <Label>1. Lieu de naissance *</Label>
+          <Label>9. Lieu de naissance * <span className="text-xs text-muted-foreground italic">(pré-rempli)</span></Label>
           <Input
             value={data.birthPlace}
             onChange={(e) => onUpdate({ birthPlace: e.target.value })}
@@ -215,9 +215,9 @@ export const PackObsequesSubscriptionFlow = ({
           />
         </div>
 
-        {/* 2. Numéro de téléphone */}
+        {/* 10. Numéro de téléphone */}
         <div className="space-y-2">
-          <Label>2. Numéro de téléphone *</Label>
+          <Label>10. Numéro de téléphone * <span className="text-xs text-muted-foreground italic">(pré-rempli)</span></Label>
           <Input
             value={data.phone}
             onChange={(e) => onUpdate({ phone: e.target.value })}
@@ -225,9 +225,9 @@ export const PackObsequesSubscriptionFlow = ({
           />
         </div>
 
-        {/* 3. Situation géographique (optionnel) */}
+        {/* 11. Situation géographique (optionnel) */}
         <div className="space-y-2">
-          <Label>3. Situation géographique <span className="text-muted-foreground">(optionnel)</span></Label>
+          <Label>11. Situation géographique <span className="text-muted-foreground">(optionnel)</span></Label>
           <Input
             value={data.geographicLocation || ""}
             onChange={(e) => onUpdate({ geographicLocation: e.target.value })}

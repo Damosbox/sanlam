@@ -35,6 +35,7 @@ export type TitleType = "monsieur" | "madame" | "mademoiselle" | "docteur" | "ma
 // Données spécifiques Pack Obsèques
 export interface PackObsequesData {
   // Simulation - Sub-step 1
+  selectedOption: "option1" | "option2";
   formula: PackObsequesFormula;
   adhesionType: AdhesionType;
   periodicity: ViePeriodicite;
@@ -345,6 +346,7 @@ export const initialState: GuidedSalesState = {
   simulationCalculated: false,
   // Données Pack Obsèques par défaut
   packObsequesData: {
+    selectedOption: "option1",
     formula: "bronze",
     adhesionType: "individuelle",
     periodicity: "mensuelle",

@@ -1,88 +1,84 @@
 
-# Implementations requises - 5 chantiers
+# Plan: Simplification du flux de vente guidée - Garder uniquement Auto et Pack Obsèques
 
-## 1. Vente guidee : suppression de l'etape analyse des risques
+## Contexte
+Actuellement, le système de vente guidée supporte 5 produits : Auto, MRH, Assistance Voyage, Molo Molo, et Pack Obsèques. L'objectif est de réduire à 2 produits uniquement : **Auto** et **Pack Obsèques**.
 
-L'etape `UnderwritingStep` (Step 4 actuel) sera completement supprimee du flux. Le parcours passera directement de la souscription (Step 3) a la finalisation.
+## Fichiers à modifier
 
-**Fichiers concernes :**
-- `src/components/guided-sales/GuidedSalesFlow.tsx` : Supprimer l'import de `UnderwritingStep`, re-mapper les etapes pour que Step 4 = MobilePayment et Step 5 = SignatureEmission (flux en 6 etapes -> 5 etapes). Mettre a jour `PHASE_STEPS`, `getPhaseFromStep`, `renderStep()`, et les labels de navigation.
-- `src/components/guided-sales/steps/UnderwritingStep.tsx` : Fichier conserve mais plus importe (nettoyage optionnel).
+### 1. `src/components/guided-sales/types.ts`
+**Modifications requises :**
+- Ligne 1 : Simplifier `ProductType` pour supprimer "habitation", "sante", "mrh", "assistance_voyage"
+  - Avant : `export type ProductType = "auto" | "habitation" | "sante" | "vie" | "mrh" | "assistance_voyage";`
+  - Après : `export type ProductType = "auto" | "vie";`
+- Ligne 3 : Simplifier `SelectedProductType` pour garder uniquement "auto" et "pack_obseques"
+  - Avant : `export type SelectedProductType = "auto" | "molo_molo" | "pack_obseques" | "mrh" | "assistance_voyage";`
+  - Après : `export type SelectedProductType = "auto" | "pack_obseques";`
+- Supprimer les interfaces et types inutilisés : `MoloMoloData` (lignes 84-103), tous les champs MRH et Assistance Voyage des données de needs analysis (lignes 155-187)
+- Mettre à jour l'état initial pour retirer les références à Molo Molo et les produits supprimés (lignes 317-445)
 
-**Mapping actuel -> nouveau :**
+### 2. `src/components/guided-sales/steps/ProductSelectionStep.tsx`
+**Modifications requises :**
+- Supprimer le ProductCard pour "Multirisque Habitation" (lignes 79-84)
+- Supprimer le ProductCard pour "Assistance Voyage" (lignes 85-90)
+- Supprimer le ProductCard pour "Molo Molo" (lignes 96-101)
+- Retirer les imports inutilisés : `Home`, `Plane`, `Landmark` (ligne 4)
+- Garder uniquement Auto (Non-Vie) et Pack Obsèques (Vie)
 
-```text
-Step 0: Product Selection     -> Step 0 (inchange)
-Step 1: Simulation            -> Step 1 (inchange)
-Step 2: Formula Selection     -> Step 2 (inchange)
-Step 3: Subscription Flow     -> Step 3 (inchange)
-Step 4: Mobile Payment        -> Step 4 (ancien Step 4 supprime)
-Step 5: Signature & Emission  -> Step 5 (inchange en numero, ancien Step 5)
-```
+### 3. `src/components/guided-sales/steps/NeedsAnalysisStep.tsx`
+**Modifications requises :**
+- Supprimer les cas d'utilisation pour "habitation", "sante", "mrh", "assistance_voyage" du switch statement (lignes 796-808)
+- Supprimer les fonctions de rendu : `renderHabitationFields()` (lignes 458-525), `renderSanteFields()` (lignes 527-648), `renderMRHFields()` (lignes 650-796), `renderAssistanceVoyageFields()`
+- Supprimer les configurations de type de produit inutilisées (lignes 23-30)
+- Ce composant ne sera plus utilisé pour les produits Vie (Pack Obsèques utilise PackObsequesSimulationStep), mais garder la structure pour la compatibilité Auto
 
-Note : L'etape UnderwritingStep n'est en fait jamais appelee dans le `renderStep()` actuel (les steps vont de 0 a 5, avec 4=MobilePayment et 5=Signature). L'import existe mais le composant n'est pas utilise. Verification : le `renderStep` actuel ne contient pas de case pour UnderwritingStep. **Aucune modification de flux n'est necessaire**, seul le nettoyage de l'import mort sera fait.
+### 4. `src/components/guided-sales/GuidedSalesFlow.tsx`
+**Modifications requises :**
+- Supprimer l'import de `MoloMoloNeedsStep` (ligne 11)
+- Supprimer la logique de gestion de Molo Molo dans `updateMoloMoloData()` (lignes 151-165)
+- Supprimer la logique de gestion de Molo Molo dans `handleCalculate()` (ne concerne pas ce flux)
+- Mettre à jour le `renderStep()` : supprimer le cas `product === "molo_molo"` dans le switch step 1 (lignes 378-379)
+- La logique life product pour skip step 2 restera : `const isLifeProduct = product === "pack_obseques"`
 
----
+### 5. `src/components/guided-sales/SalesAssistant.tsx`
+**Modifications requises :**
+- Supprimer les entrées des produits supprimés dans l'objet `productLabels` (lignes 21-25)
+- Garder uniquement : `auto: "Assurance Auto"` et `pack_obseques: "Pack Obsèques"`
 
-## 2. Vente guidee : suppression des garanties optionnelles sur le recap
+### 6. `src/components/guided-sales/SalesAIChat.tsx`
+**Modifications requises :**
+- Supprimer les entrées des produits supprimés dans l'objet `productLabels` (lignes 18-22)
+- Garder uniquement : `auto: "Assurance Auto"` et `pack_obseques: "Pack Obsèques"`
 
-Les garanties optionnelles (checkboxes "Options Additionnelles") apparaissent dans `CoverageStep.tsx` (lignes ~540+). Elles seront supprimees de la page recap/formule.
+### 7. `src/components/guided-sales/steps/PaymentStatusDialog.tsx`
+**Modifications requises :**
+- Supprimer les cas "mrh" et "assistance_voyage" des deux objets de conseils (lignes 101-115 et 126-145)
+- Supprimer les imports inutilisés si présents
+- Garder uniquement "auto" et "pack_obseques"
 
-**Fichier concerne :**
-- `src/components/guided-sales/steps/CoverageStep.tsx` : Supprimer la section "Options Additionnelles" (le bloc avec les checkboxes `additionalOptions.map(...)`). Conserver les garanties incluses par defaut (RC, Defense, etc.) qui sont des informations obligatoires.
-- `src/components/guided-sales/steps/FormulaSelectionStep.tsx` : Aucune option additionnelle n'y figure, donc pas de changement.
+### 8. `src/components/broker/dashboard/ProductSelector.tsx` (optionnel mais recommandé)
+**Modifications requises :**
+- Ligne 13 : Simplifier `ProductType` pour retirer "mrh", "sante", "vie"
+  - Avant : `export type ProductType = "all" | "auto" | "mrh" | "sante" | "vie" | "obseques";`
+  - Après : `export type ProductType = "all" | "auto" | "obseques";`
+- Lignes 23-30 : Mettre à jour l'array `PRODUCTS` pour retirer MRH et Santé
+  - Supprimer les lignes pour MRH, Santé, Vie/Épargne
+  - Garder uniquement : "all", "auto", "obseques"
 
----
+## Logique de navigation modifiée
+- **Onglet Non-Vie** : affichera uniquement **Auto**
+- **Onglet Vie** : affichera uniquement **Pack Obsèques**
+- Step 2 (FormulaSelectionStep) sera sauté uniquement pour `pack_obseques` (la logique `isLifeProduct` changera de vérifier `product === "pack_obseques"`)
 
-## 3. Sinistres : tableau dynamique par produit
+## Points clés
+- ✅ Pas de suppression de tables ou modifications de base de données
+- ✅ Compatibilité avec les données existantes : les quotations/subscriptions existantes pour Auto et Pack Obsèques continueront à fonctionner
+- ✅ Les chemins de paiement, signature et émission demeurent inchangés
+- ✅ Les interfaces d'admin et de gestion des produits ne sont pas affectées (elles utilisent d'autres tables)
+- ✅ La logique SignatureEmissionStep pour les documents générés reste applicable aux deux produits
 
-Actuellement, le tableau `BrokerClaimsTable` a des colonnes statiques. Il faut afficher des colonnes specifiques selon le type de sinistre selectionne (via le `ProductSelector` deja en place).
+## Impact d'interface utilisateur
+- Réduction visuelle simple : seulement 2 cartes de produits dans ProductSelectionStep
+- Aucun changement dans les étapes suivantes (Simulation, Souscription, Paiement, Signature)
+- Les filtres produits (ProductSelector) dans les tableaux afficheront "Auto" et "Obsèques" (optionnel)
 
-**Fichier concerne :**
-- `src/components/BrokerClaimsTable.tsx` : Ajouter une colonne dynamique entre "Type" et "Police" qui affiche :
-  - **Auto** : "Immatriculation" (extraite de `ocr_data` ou `description`)
-  - **Voyage** : "N Passeport"
-  - **MRH** : "Adresse du bien"
-  - **Sante** : "N Assure"
-  - **Tous** : Colonne masquee ou generique "Reference"
-  
-  La donnee sera lue depuis le champ `ocr_data` (jsonb) qui peut stocker ces informations specifiques au produit. L'en-tete de colonne changera dynamiquement selon `selectedProduct`.
-
----
-
-## 4. Renouvellements : distinction avenant vie / non-vie
-
-Actuellement, le `RenewalDetailDialog` affiche un bouton generique "Avenant (apres paiement)". Il faut distinguer :
-- **Non-vie** (Auto, MRH, Voyage) : Avenant classique avec recap des garanties
-- **Vie** (Molo Molo, Pack Obseques) : Avenant specifique avec valeur de rachat, capital, beneficiaires
-
-**Fichier concerne :**
-- `src/components/policies/RenewalDetailDialog.tsx` : Ajouter le champ `product_name` dans la logique post-paiement pour conditionner l'affichage. Apres paiement, afficher :
-  - Non-vie : boutons "Avenant" + "Attestation" + "Carte verte" (pour auto)
-  - Vie : boutons "Avenant vie" + "Attestation" + "Releve de situation"
-
-  La distinction sera basee sur `subscription.product_name` (qui contient "Molo Molo", "Pack Obseques" pour vie, et "Auto", "MRH", "Voyage" pour non-vie).
-
----
-
-## 5. Renouvellements : cross-selling / enquete de satisfaction post-paiement
-
-Apres l'envoi du lien et la confirmation de paiement (etat `paymentSent`), ajouter deux actions :
-1. **Cross-selling** : Proposer un produit complementaire (ex: Auto -> MRH, Vie -> Pack Obseques)
-2. **Enquete NPS** : Bouton pour declencher l'envoi d'une enquete de satisfaction
-
-**Fichier concerne :**
-- `src/components/policies/RenewalDetailDialog.tsx` : Apres le bloc post-paiement actuel (lignes 367-384), ajouter :
-  - Une section "Opportunite commerciale" avec une suggestion de produit complementaire basee sur `product_name`
-  - Un bouton "Envoyer enquete de satisfaction" qui appelle l'edge function `send-survey` existante ou affiche un toast de confirmation
-
----
-
-## Resume des fichiers modifies
-
-| Fichier | Modifications |
-|---------|--------------|
-| `GuidedSalesFlow.tsx` | Nettoyage import UnderwritingStep |
-| `CoverageStep.tsx` | Suppression section Options Additionnelles |
-| `BrokerClaimsTable.tsx` | Colonne dynamique par produit |
-| `RenewalDetailDialog.tsx` | Distinction vie/non-vie + cross-selling + NPS |

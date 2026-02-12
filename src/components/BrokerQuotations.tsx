@@ -50,23 +50,15 @@ const getProductTypeFromInterest = (interest?: string | null): ProductType => {
   if (!interest) return "all";
   const interestLower = interest.toLowerCase();
   if (interestLower.includes("auto")) return "auto";
-  if (interestLower.includes("mrh") || interestLower.includes("habitation")) return "mrh";
-  if (interestLower.includes("santé") || interestLower.includes("sante")) return "sante";
-  if (interestLower.includes("vie") || interestLower.includes("épargne") || interestLower.includes("epargne")) return "vie";
   if (interestLower.includes("obsèques") || interestLower.includes("obseques")) return "obseques";
-  if (interestLower.includes("molo")) return "molo_molo" as ProductType;
   return "all";
 };
 
 const mapProductType = (type: string): ProductType => {
   const mapping: Record<string, ProductType> = {
     auto: "auto",
-    mrh: "mrh",
-    habitation: "mrh",
-    sante: "sante",
-    vie: "vie",
-    molo_molo: "molo_molo" as ProductType,
     pack_obseques: "obseques",
+    obseques: "obseques",
   };
   return mapping[type.toLowerCase()] || "all";
 };

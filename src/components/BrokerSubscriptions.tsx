@@ -58,13 +58,6 @@ const getProductTypeFromCategory = (category?: string): ProductType => {
   const categoryMap: Record<string, ProductType> = {
     "auto": "auto",
     "automobile": "auto",
-    "mrh": "mrh",
-    "habitation": "mrh",
-    "sante": "sante",
-    "santé": "sante",
-    "vie": "vie",
-    "epargne": "vie",
-    "épargne": "vie",
     "obseques": "obseques",
     "obsèques": "obseques",
   };

@@ -25,28 +25,10 @@ const topicsByProduct: Record<SelectedProductType, ThematicTopic[]> = {
     { id: "bon_remplacement", label: "Bon de remplacement", description: "Véhicule de remplacement pendant réparation", icon: FileCheck },
     { id: "rc_etranger", label: "RC Étranger", description: "Couverture dans les pays de la CEDEAO", icon: Globe },
   ],
-  molo_molo: [
-    { id: "epargne", label: "Épargne projetée", description: "Simulation du capital accumulé à terme", icon: PiggyBank },
-    { id: "capital_deces", label: "Capital décès", description: "Garanties en cas de décès du souscripteur", icon: Heart },
-    { id: "rachat", label: "Rachat anticipé", description: "Conditions et pénalités de sortie avant terme", icon: ArrowDownToLine },
-    { id: "beneficiaires", label: "Bénéficiaires", description: "Désignation et modification des bénéficiaires", icon: Users },
-  ],
   pack_obseques: [
     { id: "capital_garanti", label: "Capital garanti", description: "Montant versé aux bénéficiaires", icon: Flower2 },
     { id: "prise_en_charge", label: "Prise en charge", description: "Services funéraires inclus dans le pack", icon: HandCoins },
     { id: "famille", label: "Famille couverte", description: "Conjoint, enfants et ascendants assurés", icon: UserCheck },
-  ],
-  mrh: [
-    { id: "incendie", label: "Incendie", description: "Couverture et indemnisation en cas d'incendie", icon: Shield },
-    { id: "vol", label: "Vol", description: "Conditions de prise en charge du vol", icon: Shield },
-    { id: "degats_eaux", label: "Dégâts des eaux", description: "Dommages liés aux fuites et inondations", icon: Shield },
-    { id: "rc_familiale", label: "RC Familiale", description: "Responsabilité civile vie privée", icon: Users },
-  ],
-  assistance_voyage: [
-    { id: "frais_medicaux", label: "Frais médicaux", description: "Prise en charge des soins à l'étranger", icon: Heart },
-    { id: "rapatriement", label: "Rapatriement", description: "Conditions de rapatriement sanitaire", icon: Globe },
-    { id: "bagages", label: "Bagages", description: "Indemnisation en cas de perte ou vol", icon: Shield },
-    { id: "annulation", label: "Annulation", description: "Remboursement en cas d'annulation de voyage", icon: FileCheck },
   ],
 };
 

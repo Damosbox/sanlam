@@ -18,11 +18,7 @@ interface QuoteSummaryCardProps {
 
 const productLabels: Record<ProductType, string> = {
   auto: "Assurance Auto",
-  habitation: "Multirisque Habitation",
-  sante: "Complémentaire Santé",
-  vie: "Prévoyance Vie",
-  mrh: "Multirisque Habitation",
-  assistance_voyage: "Assistance Voyage",
+  vie: "Pack Obsèques",
 };
 
 // Définitions des termes techniques pour les infobulles

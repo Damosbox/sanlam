@@ -4,7 +4,23 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { GuidedSalesState, MoloMoloData } from "../types";
+import { GuidedSalesState } from "../types";
+
+// Legacy type kept for compatibility - this component is no longer used
+interface MoloMoloData {
+  montantCotisation: number;
+  periodicity: string;
+  dureeContrat: number;
+  subscriberName: string;
+  subscriberFamilySituation: string;
+  subscriberBirthDate: string;
+  subscriberIdType: string;
+  subscriberIdNumber: string;
+  subscriberProfession: string;
+  subscriberEmail: string;
+  subscriberPhone: string;
+  beneficiaries: Array<{ name: string; relationship: string; percentage: number }>;
+}
 import { ArrowRight, Heart, PiggyBank, Users, Plus, Trash2, User } from "lucide-react";
 import { useState } from "react";
 
@@ -25,7 +41,7 @@ interface Beneficiary {
 }
 
 export const MoloMoloNeedsStep = ({ state, onUpdate, onNext }: MoloMoloNeedsStepProps) => {
-  const moloMoloData = state.moloMoloData || {
+  const moloMoloData = (state as any).moloMoloData || {
     montantCotisation: 10000,
     periodicity: "mensuelle",
     dureeContrat: 10,

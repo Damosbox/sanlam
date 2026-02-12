@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Car, Heart, Landmark, Construction, Home, Plane } from "lucide-react";
+import { Car, Shield, Construction } from "lucide-react";
 import { GuidedSalesState, ProductCategory, SelectedProductType } from "../types";
 
 interface ProductSelectionStepProps {
@@ -76,31 +76,13 @@ export const ProductSelectionStep = ({ state, onUpdate, onNext }: ProductSelecti
               description="Assurance automobile tous risques ou responsabilité civile pour véhicules particuliers et professionnels"
               onSelect={() => handleSelectProduct("non-vie", "auto")}
             />
-            <ProductCard
-              icon={<Home className="h-8 w-8 text-primary" />}
-              title="Multirisque Habitation"
-              description="Protection complète de votre logement et de vos biens contre les risques locatifs et dommages"
-              onSelect={() => handleSelectProduct("non-vie", "mrh")}
-            />
-            <ProductCard
-              icon={<Plane className="h-8 w-8 text-primary" />}
-              title="Assistance Voyage"
-              description="Couverture médicale et assistance rapatriement pour vos déplacements à l'étranger"
-              onSelect={() => handleSelectProduct("non-vie", "assistance_voyage")}
-            />
           </div>
         </TabsContent>
 
         <TabsContent value="vie" className="mt-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <ProductCard
-              icon={<Heart className="h-8 w-8 text-primary" />}
-              title="Molo Molo"
-              description="Contrat d'épargne et de prévoyance pour sécuriser votre avenir et celui de votre famille"
-              onSelect={() => handleSelectProduct("vie", "molo_molo")}
-            />
-            <ProductCard
-              icon={<Landmark className="h-8 w-8 text-primary" />}
+              icon={<Shield className="h-8 w-8 text-primary" />}
               title="Pack Obsèques"
               description="Garantit le versement d'un capital défini en cas de décès pour couvrir les frais funéraires"
               onSelect={() => handleSelectProduct("vie", "pack_obseques")}

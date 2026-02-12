@@ -1,6 +1,6 @@
-export type ProductType = "auto" | "habitation" | "sante" | "vie" | "mrh" | "assistance_voyage";
+export type ProductType = "auto" | "vie";
 export type ProductCategory = "vie" | "non-vie";
-export type SelectedProductType = "auto" | "molo_molo" | "pack_obseques" | "mrh" | "assistance_voyage";
+export type SelectedProductType = "auto" | "pack_obseques";
 export type ClientType = "prospect" | "existing";
 export type UsageType = "prive" | "professionnel" | "taxi" | "livraison";
 export type PlanTier = "basic" | "standard" | "premium";
@@ -80,27 +80,6 @@ export interface PackObsequesData {
   spouseBirthDate?: string;
 }
 
-// Données spécifiques Molo Molo
-export interface MoloMoloData {
-  montantCotisation: number;
-  periodicity: ViePeriodicite;
-  dureeContrat: number;
-  // Infos souscripteur
-  subscriberName: string;
-  subscriberFamilySituation: string;
-  subscriberBirthDate: string;
-  subscriberIdType: string;
-  subscriberIdNumber: string;
-  subscriberProfession: string;
-  subscriberEmail: string;
-  subscriberPhone: string;
-  // Bénéficiaires
-  beneficiaries: Array<{
-    name: string;
-    relationship: string;
-    percentage: number;
-  }>;
-}
 
 export interface ProductSelectionData {
   category: ProductCategory;
@@ -152,38 +131,6 @@ export interface NeedsAnalysisData {
   bonusMalus?: string;
   socioProfessionalCategory?: string;
   hasClaimHistory?: boolean;
-  // MRH specific
-  buildingValue?: number;
-  rentValue?: number;
-  contentValue?: number;
-  itEquipmentValue?: number;
-  numberOfRooms?: number;
-  propertyAddress?: string;
-  // Habitation specific (legacy)
-  housingType?: "appartement" | "maison";
-  materials?: "dur" | "semi-dur" | "leger";
-  surface?: number;
-  security?: string[];
-  // Santé specific
-  beneficiaryCount?: number;
-  memberAges?: number[];
-  region?: string;
-  medicalHistory?: string[];
-  coverageLevel?: "essentiel" | "standard" | "premium";
-  // Vie specific
-  capitalAmount?: number;
-  duration?: number;
-  isSmoker?: boolean;
-  familyStatus?: string;
-  monthlyIncome?: number;
-  objective?: "protection" | "epargne" | "mixte";
-  // Assistance Voyage specific
-  travelZone?: TravelZone;
-  travelerBirthDate?: string;
-  departureDate?: string;
-  returnDate?: string;
-  numberOfDays?: number;
-  passportNumber?: string;
 }
 
 export interface QuickQuoteData {
@@ -295,7 +242,6 @@ export interface GuidedSalesState {
   binding: BindingData;
   issuance: IssuanceData;
   // Données spécifiques produits Vie
-  moloMoloData?: MoloMoloData;
   packObsequesData?: PackObsequesData;
   calculatedPremium: {
     primeNette: number;
@@ -397,21 +343,6 @@ export const initialState: GuidedSalesState = {
     documentsGenerated: [],
   },
   simulationCalculated: false,
-  // Données Molo Molo par défaut
-  moloMoloData: {
-    montantCotisation: 10000,
-    periodicity: "mensuelle",
-    dureeContrat: 10,
-    subscriberName: "",
-    subscriberFamilySituation: "",
-    subscriberBirthDate: "",
-    subscriberIdType: "",
-    subscriberIdNumber: "",
-    subscriberProfession: "",
-    subscriberEmail: "",
-    subscriberPhone: "",
-    beneficiaries: [],
-  },
   // Données Pack Obsèques par défaut
   packObsequesData: {
     formula: "bronze",

@@ -98,50 +98,23 @@ const productTips: Record<string, { icon: string; message: string }> = {
     icon: "🚗",
     message: "Veillez à vérifier régulièrement la pression de vos pneus pour votre sécurité !"
   },
-  mrh: {
-    icon: "🏠", 
-    message: "Pensez à mettre à jour votre inventaire de biens chaque année."
-  },
-  molo_molo: {
-    icon: "💰",
-    message: "Votre épargne fructifie ! Consultez votre solde sur notre app mobile."
-  },
   pack_obseques: {
     icon: "👨‍👩‍👧‍👦",
     message: "Gardez vos documents de contrat dans un endroit sûr, accessible à vos proches."
-  },
-  assistance_voyage: {
-    icon: "✈️",
-    message: "Bon voyage ! En cas d'urgence, contactez notre assistance 24/7."
   }
 };
 
 // Cross-sell offers by product
 const crossSellOffers: Record<string, { title: string; discount: string; description: string }> = {
   auto: {
-    title: "Protection Corporelle Conducteur",
-    discount: "-45%",
-    description: "Protégez-vous en cas d'accident corporel"
-  },
-  mrh: {
-    title: "Assurance Objets de Valeur",
-    discount: "-30%",
-    description: "Couvrez vos bijoux et objets précieux"
-  },
-  molo_molo: {
     title: "Pack Obsèques Famille",
     discount: "-25%",
-    description: "Protégez aussi vos proches"
+    description: "Protégez aussi vos proches avec notre Pack Obsèques"
   },
   pack_obseques: {
-    title: "Épargne Molo Molo",
+    title: "Assurance Auto",
     discount: "-20%",
-    description: "Constituez un capital pour votre famille"
-  },
-  assistance_voyage: {
-    title: "Assurance Bagages Premium",
-    discount: "-35%",
-    description: "Protection complète de vos effets personnels"
+    description: "Assurez votre véhicule à tarif préférentiel"
   }
 };
 

@@ -1,84 +1,88 @@
 
-# Plan: Simplification du flux de vente guidée - Garder uniquement Auto et Pack Obsèques
+# Correction du parcours Pack Obseques - Elimination des residus Auto
 
-## Contexte
-Actuellement, le système de vente guidée supporte 5 produits : Auto, MRH, Assistance Voyage, Molo Molo, et Pack Obsèques. L'objectif est de réduire à 2 produits uniquement : **Auto** et **Pack Obsèques**.
+## Problemes identifies
 
-## Fichiers à modifier
+### 1. Champ manquant en simulation (PackObsequesSimulationStep.tsx)
+Le premier champ de la spec ("Selectionner une option - Radio Option 1 / Option 2") est absent du sub-step 1. Ce radio doit etre ajoute avant le champ Formule.
 
-### 1. `src/components/guided-sales/types.ts`
-**Modifications requises :**
-- Ligne 1 : Simplifier `ProductType` pour supprimer "habitation", "sante", "mrh", "assistance_voyage"
-  - Avant : `export type ProductType = "auto" | "habitation" | "sante" | "vie" | "mrh" | "assistance_voyage";`
-  - Après : `export type ProductType = "auto" | "vie";`
-- Ligne 3 : Simplifier `SelectedProductType` pour garder uniquement "auto" et "pack_obseques"
-  - Avant : `export type SelectedProductType = "auto" | "molo_molo" | "pack_obseques" | "mrh" | "assistance_voyage";`
-  - Après : `export type SelectedProductType = "auto" | "pack_obseques";`
-- Supprimer les interfaces et types inutilisés : `MoloMoloData` (lignes 84-103), tous les champs MRH et Assistance Voyage des données de needs analysis (lignes 155-187)
-- Mettre à jour l'état initial pour retirer les références à Molo Molo et les produits supprimés (lignes 317-445)
+### 2. Champs manquants/mal ordonnes en souscription (PackObsequesSubscriptionFlow.tsx)
+La spec demande 11 champs dans "Sousc 1/7" :
+1. Upload piece d'identite
+2. Type de piece d'identite
+3. Numero d'identification
+4. Situation matrimoniale
+5. Nom de famille (pre-rempli)
+6. Prenom (pre-rempli)
+7. Sexe (pre-rempli) -- **MANQUANT**
+8. Date de naissance (pre-rempli)
+9. Lieu de naissance (pre-rempli)
+10. Numero de telephone (pre-rempli)
+11. Situation geographique (optionnel)
 
-### 2. `src/components/guided-sales/steps/ProductSelectionStep.tsx`
-**Modifications requises :**
-- Supprimer le ProductCard pour "Multirisque Habitation" (lignes 79-84)
-- Supprimer le ProductCard pour "Assistance Voyage" (lignes 85-90)
-- Supprimer le ProductCard pour "Molo Molo" (lignes 96-101)
-- Retirer les imports inutilisés : `Home`, `Plane`, `Landmark` (ligne 4)
-- Garder uniquement Auto (Non-Vie) et Pack Obsèques (Vie)
+Actuellement les champs sont repartis en 3 sub-steps avec le Sexe absent. Il faut :
+- Ajouter le champ Sexe (dropdown, pre-rempli depuis la simulation) en position 7
+- Reorganiser les sub-steps pour respecter l'ordre : sub-step 1 (champs 1-4), sub-step 2 (champs 5-8), sub-step 3 (champs 9-11)
 
-### 3. `src/components/guided-sales/steps/NeedsAnalysisStep.tsx`
-**Modifications requises :**
-- Supprimer les cas d'utilisation pour "habitation", "sante", "mrh", "assistance_voyage" du switch statement (lignes 796-808)
-- Supprimer les fonctions de rendu : `renderHabitationFields()` (lignes 458-525), `renderSanteFields()` (lignes 527-648), `renderMRHFields()` (lignes 650-796), `renderAssistanceVoyageFields()`
-- Supprimer les configurations de type de produit inutilisées (lignes 23-30)
-- Ce composant ne sera plus utilisé pour les produits Vie (Pack Obsèques utilise PackObsequesSimulationStep), mais garder la structure pour la compatibilité Auto
+### 3. SignatureEmissionStep.tsx - Contenu 100% Auto (probleme majeur)
 
-### 4. `src/components/guided-sales/GuidedSalesFlow.tsx`
-**Modifications requises :**
-- Supprimer l'import de `MoloMoloNeedsStep` (ligne 11)
-- Supprimer la logique de gestion de Molo Molo dans `updateMoloMoloData()` (lignes 151-165)
-- Supprimer la logique de gestion de Molo Molo dans `handleCalculate()` (ne concerne pas ce flux)
-- Mettre à jour le `renderStep()` : supprimer le cas `product === "molo_molo"` dans le switch step 1 (lignes 378-379)
-- La logique life product pour skip step 2 restera : `const isLifeProduct = product === "pack_obseques"`
+Le composant affiche du contenu exclusivement Auto meme pour Pack Obseques :
 
-### 5. `src/components/guided-sales/SalesAssistant.tsx`
-**Modifications requises :**
-- Supprimer les entrées des produits supprimés dans l'objet `productLabels` (lignes 21-25)
-- Garder uniquement : `auto: "Assurance Auto"` et `pack_obseques: "Pack Obsèques"`
+| Element | Actuel (Auto) | Attendu (Pack Obseques) |
+|---------|---------------|------------------------|
+| N de police | AUTO-2025-XXXXX | OBSEQ-2025-XXXXX |
+| Documents | Attestation, Conditions, **Carte verte** | **Certificat d'adhesion**, Conditions, **Tableau des garanties** |
+| Recap section 1 | **Vehicule** (marque, modele, CV) | **Souscripteur** (nom, prenom) |
+| Recap section 2 | **Conducteur** (permis) | **Formule** (Bronze/Argent/Or) |
+| Recap section 3 | Formule (MINI/BASIC/TOUT RISQUE) | **Adhesion** (type, periodicite) |
 
-### 6. `src/components/guided-sales/SalesAIChat.tsx`
-**Modifications requises :**
-- Supprimer les entrées des produits supprimés dans l'objet `productLabels` (lignes 18-22)
-- Garder uniquement : `auto: "Assurance Auto"` et `pack_obseques: "Pack Obsèques"`
+---
 
-### 7. `src/components/guided-sales/steps/PaymentStatusDialog.tsx`
-**Modifications requises :**
-- Supprimer les cas "mrh" et "assistance_voyage" des deux objets de conseils (lignes 101-115 et 126-145)
-- Supprimer les imports inutilisés si présents
-- Garder uniquement "auto" et "pack_obseques"
+## Plan d'implementation
 
-### 8. `src/components/broker/dashboard/ProductSelector.tsx` (optionnel mais recommandé)
-**Modifications requises :**
-- Ligne 13 : Simplifier `ProductType` pour retirer "mrh", "sante", "vie"
-  - Avant : `export type ProductType = "all" | "auto" | "mrh" | "sante" | "vie" | "obseques";`
-  - Après : `export type ProductType = "all" | "auto" | "obseques";`
-- Lignes 23-30 : Mettre à jour l'array `PRODUCTS` pour retirer MRH et Santé
-  - Supprimer les lignes pour MRH, Santé, Vie/Épargne
-  - Garder uniquement : "all", "auto", "obseques"
+### Fichier 1 : `src/components/guided-sales/steps/PackObsequesSimulationStep.tsx`
+- Ajouter un champ Radio "Selectionner une option" (Option 1 / Option 2) en position 1 du sub-step 1, avant le champ Formule
+- Ajouter le champ dans le type `PackObsequesData` (types.ts) : `selectedOption: "option1" | "option2"`
+- Mettre a jour la validation du sub-step 1 pour inclure ce champ
 
-## Logique de navigation modifiée
-- **Onglet Non-Vie** : affichera uniquement **Auto**
-- **Onglet Vie** : affichera uniquement **Pack Obsèques**
-- Step 2 (FormulaSelectionStep) sera sauté uniquement pour `pack_obseques` (la logique `isLifeProduct` changera de vérifier `product === "pack_obseques"`)
+### Fichier 2 : `src/components/guided-sales/types.ts`
+- Ajouter `selectedOption?: "option1" | "option2"` dans `PackObsequesData`
+- Ajouter la valeur par defaut dans `initialState`
 
-## Points clés
-- ✅ Pas de suppression de tables ou modifications de base de données
-- ✅ Compatibilité avec les données existantes : les quotations/subscriptions existantes pour Auto et Pack Obsèques continueront à fonctionner
-- ✅ Les chemins de paiement, signature et émission demeurent inchangés
-- ✅ Les interfaces d'admin et de gestion des produits ne sont pas affectées (elles utilisent d'autres tables)
-- ✅ La logique SignatureEmissionStep pour les documents générés reste applicable aux deux produits
+### Fichier 3 : `src/components/guided-sales/steps/PackObsequesSubscriptionFlow.tsx`
+- Sub-step 2 : ajouter le champ Sexe (dropdown pre-rempli depuis `data.gender`) entre Prenom et Date de naissance
+- Marquer visuellement les champs pre-remplis avec un indicateur "(pre-rempli depuis la simulation)"
+- Reordonner les champs du sub-step 2 : Nom, Prenom, Sexe, Date de naissance
+- Sub-step 3 : Lieu de naissance, Telephone, Situation geographique (inchange mais ajouter mention pre-rempli)
 
-## Impact d'interface utilisateur
-- Réduction visuelle simple : seulement 2 cartes de produits dans ProductSelectionStep
-- Aucun changement dans les étapes suivantes (Simulation, Souscription, Paiement, Signature)
-- Les filtres produits (ProductSelector) dans les tableaux afficheront "Auto" et "Obsèques" (optionnel)
+### Fichier 4 : `src/components/guided-sales/steps/SignatureEmissionStep.tsx`
+Conditionner le contenu selon `state.productSelection.selectedProduct` :
 
+**Section police emise :**
+- Prefixe dynamique : `AUTO-` pour auto, `OBSEQ-` pour pack_obseques
+
+**Section documents generes :**
+- Auto : Attestation d'assurance, Conditions particulieres, Carte verte
+- Pack Obseques : Certificat d'adhesion, Conditions particulieres, Tableau des garanties
+
+**Section recap du contrat :**
+- Auto : Vehicule + Conducteur + Formule (MINI/BASIC/TOUT RISQUE) -- inchange
+- Pack Obseques : Souscripteur (nom/prenom depuis packObsequesData) + Formule (BRONZE/ARGENT/OR) + Adhesion (type + periodicite)
+
+Les boutons "Editer" pour Pack Obseques redirigeront vers step 1 (simulation) au lieu de "vehicle"/"driver".
+
+---
+
+## Fichiers modifies
+
+| Fichier | Nature |
+|---------|--------|
+| `types.ts` | Ajout champ `selectedOption` |
+| `PackObsequesSimulationStep.tsx` | Ajout radio "Selectionner une option" |
+| `PackObsequesSubscriptionFlow.tsx` | Ajout Sexe pre-rempli, mentions pre-rempli |
+| `SignatureEmissionStep.tsx` | Conditionnement complet par produit |
+
+## Impact
+- Aucune modification de base de donnees
+- Modifications purement UI dans 4 fichiers
+- Le parcours Auto reste inchange

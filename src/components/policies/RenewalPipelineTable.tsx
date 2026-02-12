@@ -211,9 +211,7 @@ export const RenewalPipelineTable = ({
   const getObjectColumnHeader = () => {
     switch (selectedProduct) {
       case "auto": return "Immat.";
-      case "mrh": return "Adresse";
-      case "sante": return "Bénéf.";
-      case "vie": return "Type";
+      case "obseques": return "Formule";
       case "obseques": return "Formule";
       default: return "Identifiant";
     }

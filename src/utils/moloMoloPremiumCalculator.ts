@@ -1,4 +1,18 @@
-import { MoloMoloData } from "@/components/guided-sales/types";
+// Legacy type kept for compatibility - this calculator is no longer used
+interface MoloMoloData {
+  montantCotisation: number;
+  periodicity: string;
+  dureeContrat: number;
+  subscriberName: string;
+  subscriberFamilySituation: string;
+  subscriberBirthDate: string;
+  subscriberIdType: string;
+  subscriberIdNumber: string;
+  subscriberProfession: string;
+  subscriberEmail: string;
+  subscriberPhone: string;
+  beneficiaries: Array<{ name: string; relationship: string; percentage: number }>;
+}
 
 export interface MoloMoloPremiumBreakdown {
   cotisationMensuelle: number;

@@ -80,50 +80,6 @@ const productPlansConfig: Record<SelectedProductType, {
     ],
     additionalOptions: [],
   },
-  molo_molo: {
-    plans: [
-      {
-        tier: "basic",
-        name: "Essentiel",
-        price: 10000,
-        coverages: [
-          { name: "Épargne garantie", included: true },
-          { name: "Capital décès", included: true },
-          { name: "Participation aux bénéfices", included: false },
-          { name: "Garantie invalidité", included: false },
-          { name: "Avance sur contrat", included: false },
-        ],
-      },
-      {
-        tier: "standard",
-        name: "Confort",
-        price: 25000,
-        coverages: [
-          { name: "Épargne garantie", included: true },
-          { name: "Capital décès", included: true },
-          { name: "Participation aux bénéfices", included: true },
-          { name: "Garantie invalidité", included: true },
-          { name: "Avance sur contrat", included: false },
-        ],
-      },
-      {
-        tier: "premium",
-        name: "Premium",
-        price: 50000,
-        coverages: [
-          { name: "Épargne garantie", included: true },
-          { name: "Capital décès", included: true },
-          { name: "Participation aux bénéfices", included: true },
-          { name: "Garantie invalidité", included: true },
-          { name: "Avance sur contrat", included: true },
-        ],
-      },
-    ],
-    additionalOptions: [
-      { id: "exoneration_primes", name: "Exonération des Primes", description: "En cas d'invalidité", price: 5000 },
-      { id: "double_capital", name: "Double Capital Accident", description: "En cas de décès accidentel", price: 8000 },
-    ],
-  },
   pack_obseques: {
     plans: [
       {
@@ -168,96 +124,6 @@ const productPlansConfig: Record<SelectedProductType, {
       { id: "soutien_famille", name: "Soutien Familial", description: "Accompagnement psychologique", price: 5000 },
     ],
   },
-  mrh: {
-    plans: [
-      {
-        tier: "basic",
-        name: "Essentiel",
-        price: 85000,
-        coverages: [
-          { name: "Incendie & Explosion", included: true },
-          { name: "Dégât des eaux", included: true },
-          { name: "Vol & Vandalisme", included: false },
-          { name: "Bris de glace", included: false },
-          { name: "RC Vie Privée", included: false },
-        ],
-      },
-      {
-        tier: "standard",
-        name: "Confort",
-        price: 135000,
-        coverages: [
-          { name: "Incendie & Explosion", included: true },
-          { name: "Dégât des eaux", included: true },
-          { name: "Vol & Vandalisme", included: true },
-          { name: "Bris de glace", included: true },
-          { name: "RC Vie Privée", included: false },
-        ],
-      },
-      {
-        tier: "premium",
-        name: "Premium",
-        price: 195000,
-        coverages: [
-          { name: "Incendie & Explosion", included: true },
-          { name: "Dégât des eaux", included: true },
-          { name: "Vol & Vandalisme", included: true },
-          { name: "Bris de glace", included: true },
-          { name: "RC Vie Privée", included: true },
-        ],
-      },
-    ],
-    additionalOptions: [
-      { id: "piscine", name: "Piscine", description: "Couverture piscine et équipements", price: 25000 },
-      { id: "dependances", name: "Dépendances", description: "Garage, cave, abri de jardin", price: 18000 },
-      { id: "objets_valeur", name: "Objets de Valeur", description: "Bijoux, œuvres d'art, collections", price: 45000 },
-    ],
-  },
-  assistance_voyage: {
-    plans: [
-      {
-        tier: "basic",
-        name: "Essentiel",
-        price: 45000,
-        coverages: [
-          { name: "Rapatriement sanitaire", included: true },
-          { name: "Frais médicaux urgents", included: true },
-          { name: "Perte de bagages", included: false },
-          { name: "Annulation voyage", included: false },
-          { name: "Assistance juridique", included: false },
-        ],
-      },
-      {
-        tier: "standard",
-        name: "Confort",
-        price: 85000,
-        coverages: [
-          { name: "Rapatriement sanitaire", included: true },
-          { name: "Frais médicaux urgents", included: true },
-          { name: "Perte de bagages", included: true },
-          { name: "Annulation voyage", included: true },
-          { name: "Assistance juridique", included: false },
-        ],
-      },
-      {
-        tier: "premium",
-        name: "Premium",
-        price: 135000,
-        coverages: [
-          { name: "Rapatriement sanitaire", included: true },
-          { name: "Frais médicaux urgents", included: true },
-          { name: "Perte de bagages", included: true },
-          { name: "Annulation voyage", included: true },
-          { name: "Assistance juridique", included: true },
-        ],
-      },
-    ],
-    additionalOptions: [
-      { id: "sports_hiver", name: "Sports d'Hiver", description: "Ski et sports de montagne", price: 25000 },
-      { id: "sports_extreme", name: "Sports Extrêmes", description: "Parachutisme, plongée, etc.", price: 35000 },
-      { id: "prolongation", name: "Prolongation Séjour", description: "Hébergement supplémentaire", price: 15000 },
-    ],
-  },
 };
 
 const periodicityOptions: { id: ContractPeriodicity; name: string; months: number; discount: number }[] = [
@@ -280,23 +146,9 @@ const getRecommendedPlan = (productType: SelectedProductType, state: GuidedSales
       if (vehicleAge <= 7) return "standard";
       return "basic";
     }
-    case "molo_molo":
     case "pack_obseques": {
-      // Pour produits vie : recommandation basée sur le nombre de bénéficiaires
-      const beneficiaries = state.needsAnalysis.beneficiaryCount || 1;
-      if (beneficiaries >= 4) return "premium";
-      if (beneficiaries >= 2) return "standard";
       return "basic";
     }
-    case "mrh": {
-      // Pour MRH : basé sur la surface
-      const surface = state.needsAnalysis.surface || 0;
-      if (surface >= 150) return "premium";
-      if (surface >= 80) return "standard";
-      return "basic";
-    }
-    case "assistance_voyage":
-      return "standard";
     default:
       return "standard";
   }
@@ -369,10 +221,7 @@ export const CoverageStep = ({ state, onUpdate, onNeedsUpdate, onPremiumUpdate, 
   const getProductTitle = () => {
     switch (productType) {
       case "auto": return "Niveaux de Couverture Auto";
-      case "molo_molo": return "Niveaux de Couverture Molo Molo";
       case "pack_obseques": return "Niveaux de Couverture Pack Obsèques";
-      case "mrh": return "Niveaux de Couverture MRH";
-      case "assistance_voyage": return "Niveaux de Couverture Voyage";
       default: return "Niveaux de Couverture";
     }
   };

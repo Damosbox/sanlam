@@ -446,7 +446,7 @@ export const BrokerClaimsTable = () => {
               <TableHead className="min-w-[80px]">Type</TableHead>
               {selectedProduct !== "all" && (
                 <TableHead className="min-w-[100px] hidden sm:table-cell">
-                  {selectedProduct === "auto" ? "Immatriculation" : selectedProduct === "mrh" ? "Adresse du bien" : selectedProduct === "sante" ? "N° Assuré" : selectedProduct === "vie" ? "N° Contrat" : selectedProduct === "obseques" ? "N° Bénéficiaire" : "Référence"}
+                  {selectedProduct === "auto" ? "Immatriculation" : selectedProduct === "obseques" ? "N° Bénéficiaire" : "Référence"}
                 </TableHead>
               )}
               <TableHead className="min-w-[100px] hidden sm:table-cell">Police</TableHead>
@@ -483,14 +483,11 @@ export const BrokerClaimsTable = () => {
                       {(() => {
                         const ocr = claim.ocr_data as Record<string, any> | null;
                         if (!ocr) return "—";
-                        switch (selectedProduct) {
-                          case "auto": return ocr.immatriculation || ocr.license_plate || "—";
-                          case "mrh": return ocr.address || ocr.adresse || "—";
-                          case "sante": return ocr.insured_number || ocr.numero_assure || "—";
-                          case "vie": return ocr.contract_number || ocr.numero_contrat || "—";
-                          case "obseques": return ocr.beneficiary_number || ocr.beneficiaire || "—";
-                          default: return ocr.reference || "—";
-                        }
+                         switch (selectedProduct) {
+                           case "auto": return ocr.immatriculation || ocr.license_plate || "—";
+                           case "obseques": return ocr.beneficiary_number || ocr.beneficiaire || "—";
+                           default: return ocr.reference || "—";
+                         }
                       })()}
                     </TableCell>
                   )}

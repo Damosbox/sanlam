@@ -24,30 +24,6 @@ const getChurnReasons = (product: ProductType) => {
         { name: "Autre agent", value: 12, color: "#8b5cf6" },
         { name: "Autre", value: 7, color: "#6b7280" },
       ];
-    case "mrh":
-      return [
-        { name: "Bien vendu", value: 32, color: "#3b82f6" },
-        { name: "Déménagement", value: 25, color: "#f59e0b" },
-        { name: "Prix concurrent", value: 22, color: "#ef4444" },
-        { name: "Service", value: 14, color: "#8b5cf6" },
-        { name: "Autre", value: 7, color: "#6b7280" },
-      ];
-    case "sante":
-      return [
-        { name: "Changement employeur", value: 30, color: "#3b82f6" },
-        { name: "Couverture insuffisante", value: 25, color: "#f59e0b" },
-        { name: "Délais remboursement", value: 20, color: "#ef4444" },
-        { name: "Prix", value: 18, color: "#8b5cf6" },
-        { name: "Autre", value: 7, color: "#6b7280" },
-      ];
-    case "vie":
-      return [
-        { name: "Besoin liquidités", value: 35, color: "#3b82f6" },
-        { name: "Rendement insuffisant", value: 25, color: "#f59e0b" },
-        { name: "Rachat anticipé", value: 20, color: "#ef4444" },
-        { name: "Concurrence", value: 13, color: "#8b5cf6" },
-        { name: "Autre", value: 7, color: "#6b7280" },
-      ];
     default:
       return [
         { name: "Prix concurrent", value: 30, color: "#3b82f6" },

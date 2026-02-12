@@ -18,10 +18,7 @@ interface SalesAssistantProps {
 
 const productLabels: Record<SelectedProductType, string> = {
   auto: "Assurance Auto",
-  molo_molo: "Épargne Molo Molo",
   pack_obseques: "Pack Obsèques",
-  mrh: "Multirisque Habitation",
-  assistance_voyage: "Assistance Voyage",
 };
 
 export const SalesAssistant = ({ 

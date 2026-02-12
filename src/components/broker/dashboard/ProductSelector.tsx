@@ -2,15 +2,12 @@ import { useState, useEffect } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Car, 
-  Home, 
-  HeartPulse, 
-  Wallet, 
   Users,
   LayoutGrid 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type ProductType = "all" | "auto" | "mrh" | "sante" | "vie" | "obseques";
+export type ProductType = "all" | "auto" | "obseques";
 
 interface ProductSelectorProps {
   value: ProductType;
@@ -23,9 +20,6 @@ interface ProductSelectorProps {
 const PRODUCTS: { id: ProductType; label: string; shortLabel: string; icon: React.ElementType }[] = [
   { id: "all", label: "Tous", shortLabel: "Tous", icon: LayoutGrid },
   { id: "auto", label: "Auto", shortLabel: "Auto", icon: Car },
-  { id: "mrh", label: "MRH", shortLabel: "MRH", icon: Home },
-  { id: "sante", label: "Santé", shortLabel: "Santé", icon: HeartPulse },
-  { id: "vie", label: "Vie/Épargne", shortLabel: "Vie", icon: Wallet },
   { id: "obseques", label: "Obsèques", shortLabel: "Obsq", icon: Users },
 ];
 

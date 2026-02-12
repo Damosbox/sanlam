@@ -8,7 +8,7 @@ import { FormulaSelectionStep } from "./steps/FormulaSelectionStep";
 import { SubscriptionFlow } from "./steps/SubscriptionFlow";
 import { MobilePaymentStep } from "./steps/MobilePaymentStep";
 import { SignatureEmissionStep } from "./steps/SignatureEmissionStep";
-import { MoloMoloNeedsStep } from "./steps/MoloMoloNeedsStep";
+
 import { PackObsequesSimulationStep } from "./steps/PackObsequesSimulationStep";
 import { PackObsequesSubscriptionFlow } from "./steps/PackObsequesSubscriptionFlow";
 import { PhaseNavigation } from "./PhaseNavigation";
@@ -21,14 +21,13 @@ import {
   SalesPhase, 
   ProductCategory, 
   SelectedProductType, 
-  MoloMoloData, 
   PackObsequesData,
   PlanTier
 } from "./types";
 import { ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { calculateAutoPremium, convertToCalculatedPremium } from "@/utils/autoPremiumCalculator";
-import { calculateMoloMoloPremium, convertMoloMoloToCalculatedPremium } from "@/utils/moloMoloPremiumCalculator";
+
 import { calculatePackObsequesPremium, convertPackObsequesToCalculatedPremium } from "@/utils/packObsequesPremiumCalculator";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -148,21 +147,6 @@ export const GuidedSalesFlow = () => {
     }));
   }, []);
 
-  const updateMoloMoloData = useCallback((data: Partial<MoloMoloData>) => {
-    setState(prev => {
-      const newMoloMoloData = {
-        ...prev.moloMoloData!,
-        ...data
-      };
-      const breakdown = calculateMoloMoloPremium(newMoloMoloData);
-      const premium = convertMoloMoloToCalculatedPremium(breakdown);
-      return {
-        ...prev,
-        moloMoloData: newMoloMoloData,
-        calculatedPremium: premium,
-      };
-    });
-  }, []);
 
   const updatePackObsequesData = useCallback((data: Partial<PackObsequesData>) => {
     setState(prev => {
@@ -257,7 +241,6 @@ export const GuidedSalesFlow = () => {
           vehicleInfo: state.needsAnalysis,
           clientInfo: state.clientIdentification,
           options: state.coverage.additionalOptions,
-          moloMoloData: state.moloMoloData,
           packObsequesData: state.packObsequesData,
         }))
       };
@@ -299,7 +282,7 @@ export const GuidedSalesFlow = () => {
     setDirection("forward");
     setState(prev => {
       const product = prev.productSelection.selectedProduct;
-      const isLifeProduct = product === "pack_obseques" || product === "molo_molo";
+      const isLifeProduct = product === "pack_obseques";
       // Skip FormulaSelectionStep (step 2) for life products - formula already chosen in simulation
       const nextStepNum = (prev.currentStep === 1 && isLifeProduct) ? 3 : prev.currentStep + 1;
       return {
@@ -375,9 +358,7 @@ export const GuidedSalesFlow = () => {
       
       case 1:
         // Step 1: Simulation (17 fields in 5 sub-steps) OR Vie products
-        if (product === "molo_molo") {
-          return <MoloMoloNeedsStep state={state} onUpdate={updateMoloMoloData} onNext={nextStep} />;
-        } else if (product === "pack_obseques") {
+        if (product === "pack_obseques") {
           return (
             <PackObsequesSimulationStep 
               state={state} 

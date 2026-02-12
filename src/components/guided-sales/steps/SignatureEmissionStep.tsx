@@ -33,7 +33,8 @@ export const SignatureEmissionStep = ({
   onEdit,
   onEmit 
 }: SignatureEmissionStepProps) => {
-  const { calculatedPremium, binding, needsAnalysis, subscription, coverage } = state;
+  const { calculatedPremium, binding, needsAnalysis, subscription, coverage, productSelection, packObsequesData } = state;
+  const isObseques = productSelection.selectedProduct === "pack_obseques";
   const [isEmitting, setIsEmitting] = useState(false);
   const [isEmitted, setIsEmitted] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -67,6 +68,11 @@ export const SignatureEmissionStep = ({
 
   const canEmit = binding.acceptTerms && binding.acceptDataSharing && binding.signatureCompleted;
 
+  const policyPrefix = isObseques ? "OBSEQ" : "AUTO";
+  const documents = isObseques
+    ? ["Certificat d'adhésion", "Conditions particulières", "Tableau des garanties"]
+    : ["Attestation d'assurance", "Conditions particulières", "Carte verte"];
+
   if (isEmitted) {
     return (
       <div className="space-y-6">
@@ -79,7 +85,7 @@ export const SignatureEmissionStep = ({
             Le contrat a été créé et les documents sont prêts
           </p>
           <Badge variant="secondary" className="text-lg px-4 py-2">
-            N° Police: AUTO-2025-{Math.floor(Math.random() * 100000)}
+            N° Police: {policyPrefix}-2025-{Math.floor(Math.random() * 100000)}
           </Badge>
         </div>
 
@@ -87,7 +93,7 @@ export const SignatureEmissionStep = ({
           <CardContent className="pt-6">
             <h3 className="font-semibold mb-4">Documents générés</h3>
             <div className="space-y-3">
-              {["Attestation d'assurance", "Conditions particulières", "Carte verte"].map((doc) => (
+              {documents.map((doc) => (
                 <div key={doc} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                   <div className="flex items-center gap-3">
                     <FileText className="h-5 w-5 text-primary" />
@@ -166,41 +172,80 @@ export const SignatureEmissionStep = ({
           <h3 className="font-semibold mb-4">Récapitulatif du contrat</h3>
           
           <div className="space-y-4">
-            {/* Section Véhicule */}
-            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-              <div>
-                <p className="font-medium">Véhicule</p>
-                <p className="text-sm text-muted-foreground">
-                  {needsAnalysis.vehicleBrand} {needsAnalysis.vehicleModel} - {needsAnalysis.vehicleFiscalPower} CV
-                </p>
-              </div>
-              <Button variant="ghost" size="sm" onClick={() => onEdit("vehicle")}>
-                Éditer
-              </Button>
-            </div>
+            {isObseques ? (
+              <>
+                {/* Section Souscripteur */}
+                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <div>
+                    <p className="font-medium">Souscripteur</p>
+                    <p className="text-sm text-muted-foreground">
+                      {packObsequesData?.firstName} {packObsequesData?.lastName}
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => onEdit("vehicle")}>
+                    Éditer
+                  </Button>
+                </div>
 
-            {/* Section Conducteur */}
-            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-              <div>
-                <p className="font-medium">Conducteur</p>
-                <p className="text-sm text-muted-foreground">
-                  {subscription.driverName || "Non renseigné"} - Permis {subscription.licenseCategory}
-                </p>
-              </div>
-              <Button variant="ghost" size="sm" onClick={() => onEdit("driver")}>
-                Éditer
-              </Button>
-            </div>
+                {/* Section Formule */}
+                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <div>
+                    <p className="font-medium">Formule</p>
+                    <p className="text-sm text-muted-foreground uppercase">
+                      {packObsequesData?.formula || "BRONZE"}
+                    </p>
+                  </div>
+                </div>
 
-            {/* Section Formule */}
-            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-              <div>
-                <p className="font-medium">Formule</p>
-                <p className="text-sm text-muted-foreground">
-                  {coverage.planTier === "basic" ? "MINI" : coverage.planTier === "standard" ? "BASIC" : "TOUT RISQUE"}
-                </p>
-              </div>
-            </div>
+                {/* Section Adhésion */}
+                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <div>
+                    <p className="font-medium">Adhésion</p>
+                    <p className="text-sm text-muted-foreground capitalize">
+                      {packObsequesData?.adhesionType?.replace("_", " + ") || "Individuelle"} — {packObsequesData?.periodicity || "Mensuelle"}
+                    </p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Section Véhicule */}
+                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <div>
+                    <p className="font-medium">Véhicule</p>
+                    <p className="text-sm text-muted-foreground">
+                      {needsAnalysis.vehicleBrand} {needsAnalysis.vehicleModel} - {needsAnalysis.vehicleFiscalPower} CV
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => onEdit("vehicle")}>
+                    Éditer
+                  </Button>
+                </div>
+
+                {/* Section Conducteur */}
+                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <div>
+                    <p className="font-medium">Conducteur</p>
+                    <p className="text-sm text-muted-foreground">
+                      {subscription.driverName || "Non renseigné"} - Permis {subscription.licenseCategory}
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => onEdit("driver")}>
+                    Éditer
+                  </Button>
+                </div>
+
+                {/* Section Formule */}
+                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <div>
+                    <p className="font-medium">Formule</p>
+                    <p className="text-sm text-muted-foreground">
+                      {coverage.planTier === "basic" ? "MINI" : coverage.planTier === "standard" ? "BASIC" : "TOUT RISQUE"}
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>

@@ -30,38 +30,100 @@ export type SalesPhase = "preparation" | "construction" | "souscription" | "fina
 // Pack Obsèques specific types
 export type PackObsequesFormula = "bronze" | "argent" | "or";
 export type AdhesionType = "individuelle" | "famille" | "famille_ascendant";
-export type TitleType = "monsieur" | "madame" | "mademoiselle" | "docteur" | "maitre" | "corporation" | "entreprise" | "etablissement";
+export type TitleType = "monsieur" | "madame" | "mademoiselle" | "docteur" | "professeur" | "maitre" | "corporation" | "entreprise" | "etablissement" | "general" | "commandant" | "lieutenant" | "colonel" | "warrant_officer" | "caporal" | "lieutenant_colonel" | "sergent" | "marechal" | "monseigneur" | "cardinal" | "eveque" | "pasteur" | "camarade" | "compagnie" | "groupe" | "president";
+export type MaritalStatusType = "marie" | "celibataire" | "divorce" | "veuf";
+export type ProfessionType = "agriculteur_exploitant" | "artisans" | "cadres" | "employes" | "ouvriers" | "professions_intermediaires" | "retraites";
+export type IdentityDocType = "attestation_identite" | "cni" | "passeport" | "permis" | "carte_sejour";
+export type PrelevementType = "banque" | "solde" | "aps" | "ewallet";
+export type PaymentMethodObseques = "orange_money" | "mtn" | "wave" | "moov";
+export type BeneficiaireType = "ayant_droit" | "autre";
+export type SignatureMethodType = "signer_ici" | "telecharger";
 
 // Données spécifiques Pack Obsèques
 export interface PackObsequesData {
-  // Simulation - Sub-step 1
+  // Simulation - Étape 1/2
   selectedOption: "option1" | "option2";
   formula: PackObsequesFormula;
   adhesionType: AdhesionType;
   periodicity: ViePeriodicite;
   effectiveDate: string;
-  // Simulation - Sub-step 2 (conditional)
   nombreEnfants: number;
   addSpouse: boolean;
   nombreAscendants: number;
-  // Simulation - Sub-step 3
+  // Simulation - Étape 2/2 (Assuré principal)
   title: TitleType;
   lastName: string;
   firstName: string;
   gender: GenderType;
-  // Simulation - Sub-step 4
   birthDate: string;
   birthPlace: string;
   phone: string;
   email: string;
-  // Subscription - Sub-step 1
-  identityDocumentFile?: string;
-  identityDocumentType: string;
+
+  // Souscription - Étape 1/7: Enregistrement assuré principal
+  identityDocumentType: IdentityDocType | string;
   identityNumber: string;
-  maritalStatus: string;
-  // Subscription - Sub-step 3
-  geographicLocation?: string;
+  identityDocumentFile?: string;
+  nationality: string;
+  profession: ProfessionType | string;
+  paysResidence: string;
+  villeResidence: string;
+  maritalStatus: MaritalStatusType | string;
+
+  // Souscription - Étape 2/7: Conjoint (conditionnel)
+  conjointIdType: IdentityDocType | string;
+  conjointIdNumber: string;
+  conjointDocumentFile?: string;
+  conjointLastName: string;
+  conjointFirstName: string;
+  conjointBirthDate: string;
+  conjointNationality: string;
+  conjointProfession: ProfessionType | string;
+  conjointPaysResidence: string;
+  conjointVilleResidence: string;
+  conjointEmail: string;
+  conjointPhone: string;
+
+  // Souscription - Étape 3/7: Questionnaire médical
+  taille: number;
+  poids: number;
+  medicalQ1?: boolean;
+  medicalQ2?: boolean;
+  medicalQ3?: boolean;
+  medicalQ4?: boolean;
+  medicalQ5?: boolean;
+  medicalQ6?: boolean;
+  medicalQ7?: boolean;
+  medicalQ8?: boolean;
+  medicalQ9?: boolean;
+  medicalQ10?: boolean;
+
+  // Souscription - Étape 4/7: Bénéficiaires
+  beneficiaireType: BeneficiaireType;
+  beneficiaireNom?: string;
+  beneficiairePrenom?: string;
+  beneficiaireLien?: string;
+  beneficiairePourcentage?: number;
+
+  // Souscription - Étape 5/7: Moyen de prélèvement
+  prelevementAuto?: boolean;
+  typePrelevement?: PrelevementType;
+  rib?: string;
+  nomBanque?: string;
+  titulaireBanque?: string;
+  ribDocumentFile?: string;
+
+  // Souscription - Étape 6/7: Résumé & Signature
+  acceptCGU: boolean;
+  signatureMethod: SignatureMethodType;
+  signatureData?: string;
+
+  // Souscription - Étape 7/7: Paiement
+  paymentPhoneNumber: string;
+  selectedPaymentMethod?: PaymentMethodObseques;
+
   // Legacy fields for compatibility
+  geographicLocation?: string;
   subscriberName: string;
   subscriberFamilySituation: string;
   subscriberBirthDate: string;
@@ -365,6 +427,27 @@ export const initialState: GuidedSalesState = {
     identityDocumentType: "",
     identityNumber: "",
     maritalStatus: "",
+    nationality: "",
+    profession: "",
+    paysResidence: "",
+    villeResidence: "",
+    conjointIdType: "",
+    conjointIdNumber: "",
+    conjointLastName: "",
+    conjointFirstName: "",
+    conjointBirthDate: "",
+    conjointNationality: "",
+    conjointProfession: "",
+    conjointPaysResidence: "",
+    conjointVilleResidence: "",
+    conjointEmail: "",
+    conjointPhone: "",
+    taille: 0,
+    poids: 0,
+    beneficiaireType: "ayant_droit",
+    acceptCGU: false,
+    signatureMethod: "signer_ici",
+    paymentPhoneNumber: "",
     geographicLocation: "",
     subscriberName: "",
     subscriberFamilySituation: "",

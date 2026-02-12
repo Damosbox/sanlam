@@ -142,26 +142,24 @@ export const PackObsequesSimulationStep = ({
           </Select>
         </div>
 
-        {/* 5. Nombre d'enfants (conditional) */}
-        {(data.adhesionType === "famille" || data.adhesionType === "famille_ascendant") && (
-          <div className="space-y-2">
-            <Label>5. Nombre d'enfants à charge (0-3) *</Label>
-            <Select
-              value={String(data.nombreEnfants)}
-              onValueChange={(value) => onUpdate({ nombreEnfants: Number(value) })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">0</SelectItem>
-                <SelectItem value="1">1</SelectItem>
-                <SelectItem value="2">2</SelectItem>
-                <SelectItem value="3">3</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+        {/* 5. Nombre d'enfants à charge */}
+        <div className="space-y-2">
+          <Label>5. Nombre d'enfants à charge (0-3) *</Label>
+          <Select
+            value={String(data.nombreEnfants)}
+            onValueChange={(value) => onUpdate({ nombreEnfants: Number(value) })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">0</SelectItem>
+              <SelectItem value="1">1</SelectItem>
+              <SelectItem value="2">2</SelectItem>
+              <SelectItem value="3">3</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* 6. Nombre d'ascendants (conditional) */}
         {data.adhesionType === "famille_ascendant" && (
@@ -206,7 +204,7 @@ export const PackObsequesSimulationStep = ({
 
         {/* 8. Date d'effet */}
         <div className="space-y-2">
-          <Label>{data.adhesionType === "individuelle" ? "5" : "8"}. Date d'effet *</Label>
+          <Label>{data.adhesionType === "individuelle" ? "6" : data.adhesionType === "famille" ? "8" : "8"}. Date d'effet *</Label>
           <Input
             type="date"
             value={data.effectiveDate}
@@ -418,10 +416,28 @@ export const PackObsequesSimulationStep = ({
                   <SelectItem value="madame">Madame</SelectItem>
                   <SelectItem value="mademoiselle">Mademoiselle</SelectItem>
                   <SelectItem value="docteur">Docteur</SelectItem>
+                  <SelectItem value="professeur">Professeur</SelectItem>
                   <SelectItem value="maitre">Maître</SelectItem>
                   <SelectItem value="corporation">Corporation</SelectItem>
                   <SelectItem value="entreprise">Entreprise</SelectItem>
                   <SelectItem value="etablissement">Établissement</SelectItem>
+                  <SelectItem value="general">Général</SelectItem>
+                  <SelectItem value="commandant">Commandant</SelectItem>
+                  <SelectItem value="lieutenant">Lieutenant</SelectItem>
+                  <SelectItem value="colonel">Colonel</SelectItem>
+                  <SelectItem value="warrant_officer">Warrant Officer</SelectItem>
+                  <SelectItem value="caporal">Caporal</SelectItem>
+                  <SelectItem value="lieutenant_colonel">Lieutenant Colonel</SelectItem>
+                  <SelectItem value="sergent">Sergent</SelectItem>
+                  <SelectItem value="marechal">Maréchal</SelectItem>
+                  <SelectItem value="monseigneur">Monseigneur</SelectItem>
+                  <SelectItem value="cardinal">Cardinal</SelectItem>
+                  <SelectItem value="eveque">Évêque</SelectItem>
+                  <SelectItem value="pasteur">Pasteur</SelectItem>
+                  <SelectItem value="camarade">Camarade</SelectItem>
+                  <SelectItem value="compagnie">Compagnie</SelectItem>
+                  <SelectItem value="groupe">Groupe</SelectItem>
+                  <SelectItem value="president">Président</SelectItem>
                 </SelectContent>
               </Select>
             </div>

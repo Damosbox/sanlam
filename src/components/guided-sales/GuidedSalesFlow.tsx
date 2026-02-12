@@ -283,12 +283,16 @@ export const GuidedSalesFlow = () => {
     setState(prev => {
       const product = prev.productSelection.selectedProduct;
       const isLifeProduct = product === "pack_obseques";
-      // Skip FormulaSelectionStep (step 2) for life products - formula already chosen in simulation
-      const nextStepNum = (prev.currentStep === 1 && isLifeProduct) ? 3 : prev.currentStep + 1;
-      return {
-        ...prev,
-        currentStep: nextStepNum
-      };
+      // Skip FormulaSelectionStep (step 2) for life products
+      if (prev.currentStep === 1 && isLifeProduct) {
+        return { ...prev, currentStep: 3 };
+      }
+      // For pack_obseques, step 3 is the final step (7 internal sub-steps handle everything)
+      if (prev.currentStep === 3 && isLifeProduct) {
+        // Flow completed - handled internally by PackObsequesSubscriptionFlow
+        return prev;
+      }
+      return { ...prev, currentStep: prev.currentStep + 1 };
     });
   };
 

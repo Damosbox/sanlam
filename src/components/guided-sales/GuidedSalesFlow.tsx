@@ -349,8 +349,10 @@ export const GuidedSalesFlow = () => {
     setState(initialState);
   };
 
-  // Determine if SalesAssistant should be shown (after simulation is calculated)
-  const showSalesAssistant = state.simulationCalculated && state.currentStep >= 1;
+  // Determine if SalesAssistant should be shown
+  // For pack_obseques: only show during simulation (step 1) after calculation, NOT during subscription (step 3+)
+  const isPackObseques = state.productSelection.selectedProduct === "pack_obseques";
+  const showSalesAssistant = state.simulationCalculated && state.currentStep >= 1 && !(isPackObseques && state.currentStep >= 3);
 
   const renderStep = () => {
     const product = state.productSelection.selectedProduct;

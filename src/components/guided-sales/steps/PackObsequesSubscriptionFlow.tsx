@@ -58,8 +58,9 @@ export const PackObsequesSubscriptionFlow = ({
     } else if (currentStep < 7) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Step 7: finalize
+      // Step 7: finalize and advance main flow
       toast.success("Paiement initié avec succès !");
+      onNext();
     }
   };
 

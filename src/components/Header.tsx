@@ -84,7 +84,7 @@ export const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full">
-      {/* Top Bar - Simplified (only on public pages) */}
+      {/* Top Bar (only on public pages) */}
       {isPublicPage && (
         <div className="bg-secondary text-secondary-foreground">
           <div className="container flex h-10 items-center justify-end">
@@ -94,7 +94,7 @@ export const Header = () => {
                 <span className="hidden sm:inline">(+225) 27 20 25 97 00</span>
               </a>
               
-              {user ? (
+              {user && (
                 <div className="flex items-center gap-2">
                   <Link to="/b2b/dashboard">
                     <Button variant="ghost" size="sm" className="text-white hover:bg-white/10">
@@ -104,13 +104,6 @@ export const Header = () => {
                   </Link>
                   <LogoutButton />
                 </div>
-              ) : (
-                <Link to="/auth/partner">
-                  <Button variant="ghost" size="sm" className="text-white hover:bg-white/10">
-                    <User className="w-4 h-4 mr-2" />
-                    Se connecter
-                  </Button>
-                </Link>
               )}
             </div>
           </div>
@@ -128,21 +121,10 @@ export const Header = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* CTA for partner access */}
-            {isPublicPage && (
+            {!user && (
               <Link to="/auth/partner">
-                <Button className="hidden sm:flex">
-                  Accéder à mon espace
-                </Button>
-              </Link>
-            )}
-            
-            {/* Show login on non-public pages if not inside platform */}
-            {!isPublicPage && !isInsidePlatform && !user && (
-              <Link to="/auth/partner">
-                <Button variant="ghost" size="sm">
-                  <User className="w-4 h-4 mr-2" />
-                  Se connecter
+                <Button>
+                  Se connecter à mon espace
                 </Button>
               </Link>
             )}

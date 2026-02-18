@@ -19,7 +19,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Plus, Trash2, Save, Loader2 } from "lucide-react";
-import type { CalcRule, CalcRuleParameter, CalcRuleFormula, CalcRuleGuarantee, CalcRuleTax, CalcRuleFee } from "./types";
+import type { CalcRule, CalcRuleParameter, CalcRuleFormula, CalcRuleGuarantee, CalcRuleTax, CalcRuleFee, CalcRuleTableRef } from "./types";
+import { CalcRuleSimulator } from "./CalcRuleSimulator";
 
 interface CalcRuleEditorProps {
   rule: CalcRule | null;
@@ -42,7 +43,7 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
     base_formula: rule?.base_formula || "",
     is_active: rule?.is_active ?? true,
     rules: rule?.rules || {},
-    tables_ref: rule?.tables_ref || [],
+    tables_ref: (rule?.tables_ref as CalcRuleTableRef[]) || [],
   });
 
   useEffect(() => {
@@ -60,90 +61,164 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
       base_formula: rule?.base_formula || "",
       is_active: rule?.is_active ?? true,
       rules: rule?.rules || {},
-      tables_ref: rule?.tables_ref || [],
+      tables_ref: (rule?.tables_ref as CalcRuleTableRef[]) || [],
     });
   }, [rule]);
 
+  // --- Parameter CRUD ---
   const addParameter = () => {
     setForm((f) => ({
       ...f,
       parameters: [...f.parameters, { id: crypto.randomUUID(), code: "", label: "", type: "text", required: true }],
     }));
   };
-
   const updateParameter = (idx: number, updates: Partial<CalcRuleParameter>) => {
-    setForm((f) => ({
-      ...f,
-      parameters: f.parameters.map((p, i) => (i === idx ? { ...p, ...updates } : p)),
-    }));
+    setForm((f) => ({ ...f, parameters: f.parameters.map((p, i) => (i === idx ? { ...p, ...updates } : p)) }));
   };
-
   const removeParameter = (idx: number) => {
     setForm((f) => ({ ...f, parameters: f.parameters.filter((_, i) => i !== idx) }));
   };
 
+  // --- Formula CRUD ---
   const addFormula = () => {
     setForm((f) => ({
       ...f,
       formulas: [...f.formulas, { id: crypto.randomUUID(), code: "", name: "", guarantees: [], formula: "" }],
     }));
   };
-
   const updateFormula = (idx: number, updates: Partial<CalcRuleFormula>) => {
-    setForm((f) => ({
-      ...f,
-      formulas: f.formulas.map((fo, i) => (i === idx ? { ...fo, ...updates } : fo)),
-    }));
+    setForm((f) => ({ ...f, formulas: f.formulas.map((fo, i) => (i === idx ? { ...fo, ...updates } : fo)) }));
   };
-
   const removeFormula = (idx: number) => {
     setForm((f) => ({ ...f, formulas: f.formulas.filter((_, i) => i !== idx) }));
   };
-
   const addGuarantee = (formulaIdx: number) => {
     const newG: CalcRuleGuarantee = { id: crypto.randomUUID(), code: "", label: "", isRequired: false };
     setForm((f) => ({
       ...f,
-      formulas: f.formulas.map((fo, i) =>
-        i === formulaIdx ? { ...fo, guarantees: [...fo.guarantees, newG] } : fo
-      ),
+      formulas: f.formulas.map((fo, i) => (i === formulaIdx ? { ...fo, guarantees: [...fo.guarantees, newG] } : fo)),
     }));
   };
 
+  // --- Tax CRUD ---
   const addTax = () => {
-    setForm((f) => ({
-      ...f,
-      taxes: [...f.taxes, { id: crypto.randomUUID(), code: "", name: "", rate: 0, isActive: true }],
-    }));
+    setForm((f) => ({ ...f, taxes: [...f.taxes, { id: crypto.randomUUID(), code: "", name: "", rate: 0, isActive: true }] }));
   };
-
   const updateTax = (idx: number, updates: Partial<CalcRuleTax>) => {
-    setForm((f) => ({
-      ...f,
-      taxes: f.taxes.map((t, i) => (i === idx ? { ...t, ...updates } : t)),
-    }));
+    setForm((f) => ({ ...f, taxes: f.taxes.map((t, i) => (i === idx ? { ...t, ...updates } : t)) }));
   };
-
   const removeTax = (idx: number) => {
     setForm((f) => ({ ...f, taxes: f.taxes.filter((_, i) => i !== idx) }));
   };
 
+  // --- Fee CRUD ---
   const addFee = () => {
-    setForm((f) => ({
-      ...f,
-      fees: [...f.fees, { id: crypto.randomUUID(), code: "", name: "", amount: 0 }],
-    }));
+    setForm((f) => ({ ...f, fees: [...f.fees, { id: crypto.randomUUID(), code: "", name: "", amount: 0 }] }));
   };
-
   const updateFee = (idx: number, updates: Partial<CalcRuleFee>) => {
-    setForm((f) => ({
-      ...f,
-      fees: f.fees.map((fe, i) => (i === idx ? { ...fe, ...updates } : fe)),
-    }));
+    setForm((f) => ({ ...f, fees: f.fees.map((fe, i) => (i === idx ? { ...fe, ...updates } : fe)) }));
   };
-
   const removeFee = (idx: number) => {
     setForm((f) => ({ ...f, fees: f.fees.filter((_, i) => i !== idx) }));
+  };
+
+  // --- Tables Ref CRUD ---
+  const addTableRef = () => {
+    setForm((f) => ({
+      ...f,
+      tables_ref: [...f.tables_ref, { id: crypto.randomUUID(), code: "", name: "", type: "key_value" as const, data: {} }],
+    }));
+  };
+  const updateTableRef = (idx: number, updates: Partial<CalcRuleTableRef>) => {
+    setForm((f) => ({ ...f, tables_ref: f.tables_ref.map((t, i) => (i === idx ? { ...t, ...updates } : t)) }));
+  };
+  const removeTableRef = (idx: number) => {
+    setForm((f) => ({ ...f, tables_ref: f.tables_ref.filter((_, i) => i !== idx) }));
+  };
+
+  const renderTableRefData = (table: CalcRuleTableRef, idx: number) => {
+    if (table.type === "key_value") {
+      const data = (table.data || {}) as Record<string, number>;
+      const entries = Object.entries(data);
+      return (
+        <div className="space-y-2">
+          {entries.map(([key, value], eIdx) => (
+            <div key={eIdx} className="flex items-center gap-2">
+              <Input
+                placeholder="Clé"
+                value={key}
+                onChange={(e) => {
+                  const newData = { ...data };
+                  delete newData[key];
+                  newData[e.target.value] = value;
+                  updateTableRef(idx, { data: newData });
+                }}
+                className="w-32"
+              />
+              <Input
+                type="number"
+                placeholder="Valeur"
+                value={value}
+                onChange={(e) => {
+                  updateTableRef(idx, { data: { ...data, [key]: parseFloat(e.target.value) || 0 } });
+                }}
+                className="w-28"
+              />
+              <Button variant="ghost" size="icon" onClick={() => {
+                const newData = { ...data };
+                delete newData[key];
+                updateTableRef(idx, { data: newData });
+              }}>
+                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+              </Button>
+            </div>
+          ))}
+          <Button variant="ghost" size="sm" onClick={() => {
+            updateTableRef(idx, { data: { ...data, [`cle_${entries.length + 1}`]: 0 } });
+          }}>
+            <Plus className="h-3 w-3 mr-1" /> Entrée
+          </Button>
+        </div>
+      );
+    }
+
+    // Brackets
+    const brackets = (table.data || []) as Array<{ min: number; max: number; value: number }>;
+    return (
+      <div className="space-y-2">
+        {brackets.map((b, bIdx) => (
+          <div key={bIdx} className="flex items-center gap-2">
+            <Input type="number" placeholder="Min" value={b.min} onChange={(e) => {
+              const newBrackets = [...brackets];
+              newBrackets[bIdx] = { ...b, min: parseFloat(e.target.value) || 0 };
+              updateTableRef(idx, { data: newBrackets });
+            }} className="w-20" />
+            <span className="text-xs text-muted-foreground">→</span>
+            <Input type="number" placeholder="Max" value={b.max} onChange={(e) => {
+              const newBrackets = [...brackets];
+              newBrackets[bIdx] = { ...b, max: parseFloat(e.target.value) || 0 };
+              updateTableRef(idx, { data: newBrackets });
+            }} className="w-20" />
+            <span className="text-xs text-muted-foreground">=</span>
+            <Input type="number" placeholder="Valeur" value={b.value} onChange={(e) => {
+              const newBrackets = [...brackets];
+              newBrackets[bIdx] = { ...b, value: parseFloat(e.target.value) || 0 };
+              updateTableRef(idx, { data: newBrackets });
+            }} className="w-24" />
+            <Button variant="ghost" size="icon" onClick={() => {
+              updateTableRef(idx, { data: brackets.filter((_, i) => i !== bIdx) });
+            }}>
+              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+            </Button>
+          </div>
+        ))}
+        <Button variant="ghost" size="sm" onClick={() => {
+          updateTableRef(idx, { data: [...brackets, { min: 0, max: 0, value: 0 }] });
+        }}>
+          <Plus className="h-3 w-3 mr-1" /> Tranche
+        </Button>
+      </div>
+    );
   };
 
   return (
@@ -200,7 +275,7 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
                 <div className="flex-1 grid gap-2 grid-cols-3">
                   <Input placeholder="Code" value={p.code} onChange={(e) => updateParameter(idx, { code: e.target.value })} />
                   <Input placeholder="Libellé" value={p.label} onChange={(e) => updateParameter(idx, { label: e.target.value })} />
-                  <Select value={p.type} onValueChange={(v) => updateParameter(idx, { type: v as any })}>
+                  <Select value={p.type} onValueChange={(v) => updateParameter(idx, { type: v as CalcRuleParameter["type"] })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="text">Texte</SelectItem>
@@ -298,10 +373,53 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
             <Textarea
               value={form.base_formula}
               onChange={(e) => setForm((f) => ({ ...f, base_formula: e.target.value }))}
-              placeholder="Entrez la formule de calcul principale..."
+              placeholder="Ex: base_rc * coeff_usage * coeff_energie + LOOKUP(assistance, niveau_assistance)"
               rows={4}
               className="font-mono text-sm"
             />
+            <p className="text-xs text-muted-foreground mt-2">
+              Variables : utilisez les codes des paramètres. Fonctions : IF(), MIN(), MAX(), LOOKUP(), BRACKET()
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Tables de référence */}
+        <AccordionItem value="tables_ref" className="border rounded-lg px-4">
+          <AccordionTrigger className="text-sm font-semibold">
+            Tables de référence <Badge variant="secondary" className="ml-2">{form.tables_ref.length}</Badge>
+          </AccordionTrigger>
+          <AccordionContent className="space-y-4 pb-4">
+            <p className="text-xs text-muted-foreground">Barèmes et tables utilisés dans les formules via LOOKUP() et BRACKET()</p>
+            {form.tables_ref.map((table, idx) => (
+              <div key={table.id} className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-start gap-2">
+                  <div className="flex-1 grid gap-2 grid-cols-3">
+                    <Input placeholder="Code" value={table.code} onChange={(e) => updateTableRef(idx, { code: e.target.value })} />
+                    <Input placeholder="Nom" value={table.name} onChange={(e) => updateTableRef(idx, { name: e.target.value })} />
+                    <Select
+                      value={table.type}
+                      onValueChange={(v) => updateTableRef(idx, {
+                        type: v as "key_value" | "brackets",
+                        data: v === "key_value" ? {} : [],
+                      })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="key_value">Clé → Valeur</SelectItem>
+                        <SelectItem value="brackets">Tranches</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => removeTableRef(idx)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+                {renderTableRefData(table, idx)}
+              </div>
+            ))}
+            <Button variant="outline" size="sm" onClick={addTableRef}>
+              <Plus className="h-3.5 w-3.5 mr-1" /> Ajouter une table
+            </Button>
           </AccordionContent>
         </AccordionItem>
 
@@ -347,6 +465,24 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
             <Button variant="outline" size="sm" onClick={addFee}>
               <Plus className="h-3.5 w-3.5 mr-1" /> Ajouter un frais
             </Button>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Simulation */}
+        <AccordionItem value="simulation" className="border rounded-lg px-4">
+          <AccordionTrigger className="text-sm font-semibold">
+            🧪 Simulation
+          </AccordionTrigger>
+          <AccordionContent className="pb-4">
+            <CalcRuleSimulator
+              ruleId={form.id}
+              parameters={form.parameters}
+              formulas={form.formulas}
+              taxes={form.taxes}
+              fees={form.fees}
+              tablesRef={form.tables_ref}
+              baseFormula={form.base_formula}
+            />
           </AccordionContent>
         </AccordionItem>
       </Accordion>

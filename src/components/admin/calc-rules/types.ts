@@ -5,6 +5,8 @@ export interface CalcRuleParameter {
   type: "text" | "number" | "select" | "date" | "boolean";
   options?: string[];
   required?: boolean;
+  source?: "manual" | "catalogue";
+  variable_id?: string;
 }
 
 export interface CalcRuleGuarantee {

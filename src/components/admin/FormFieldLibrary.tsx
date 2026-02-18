@@ -34,6 +34,9 @@ export interface FieldConfig {
       value: any;
     };
   };
+  locked?: boolean;
+  sourceType?: "calc_rule";
+  sourceRuleId?: string;
 }
 
 const FIELD_TYPES = [

@@ -2,7 +2,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, GripVertical, Calculator, FileText } from "lucide-react";
+import { Trash2, GripVertical, Calculator, FileText, Lock } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { FormSubStep, CalculationRules } from "./types";
 import { FieldConfig, FieldType } from "../FormFieldLibrary";
@@ -15,6 +16,7 @@ interface FormSubStepEditorProps {
   selectedFieldId: string | null;
   onRemoveField: (fieldId: string) => void;
   availableVariables?: string[];
+  lockedFields?: FieldConfig[];
 }
 
 export function FormSubStepEditor({
@@ -24,6 +26,7 @@ export function FormSubStepEditor({
   selectedFieldId,
   onRemoveField,
   availableVariables = [],
+  lockedFields = [],
 }: FormSubStepEditorProps) {
   // Mise à jour du titre
   const updateTitle = (title: string) => {
@@ -107,7 +110,43 @@ export function FormSubStepEditor({
       </div>
 
       <div className="min-h-[200px] rounded-lg border-2 border-dashed border-border p-4">
-        {(!step.fields || step.fields.length === 0) ? (
+        {/* Locked fields from calc rules */}
+        {lockedFields.length > 0 && (
+          <div className="space-y-2 mb-4">
+            <p className="text-xs font-medium text-primary flex items-center gap-1">
+              <Lock className="h-3 w-3" /> Champs de la règle de calcul
+            </p>
+            {lockedFields.map((field) => (
+              <Card
+                key={field.id}
+                className={`border-l-4 border-l-primary/60 bg-primary/5 cursor-pointer ${
+                  selectedFieldId === field.id ? "ring-2 ring-primary" : ""
+                }`}
+                onClick={() => onSelectField(field)}
+              >
+                <CardContent className="p-3 flex items-center gap-3">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Lock className="h-4 w-4 text-primary/60 shrink-0" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Ce champ provient de la règle de calcul et ne peut pas être modifié
+                    </TooltipContent>
+                  </Tooltip>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{field.label}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {field.type} • Requis
+                    </p>
+                  </div>
+                  <Badge variant="secondary" className="text-xs shrink-0">Calcul</Badge>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {(!step.fields || step.fields.length === 0) && lockedFields.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-muted-foreground">
             <p className="text-sm">
               Glissez des champs depuis la bibliothèque ou cliquez sur un type
@@ -122,7 +161,7 @@ export function FormSubStepEditor({
                   {...provided.droppableProps}
                   className="space-y-2"
                 >
-                  {step.fields.map((field, index) => (
+                  {(step.fields || []).map((field, index) => (
                     <Draggable
                       key={field.id}
                       draggableId={field.id}

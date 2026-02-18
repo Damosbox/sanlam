@@ -244,6 +244,57 @@ export function GeneralInfoTab({ formData, updateField, errors = {} }: GeneralIn
 
         <Card>
           <CardHeader>
+            <CardTitle>Canaux & Périodicité</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Canaux de distribution</Label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 text-sm">
+                  <Switch
+                    checked={(formData as any).channels?.b2b ?? true}
+                    onCheckedChange={(checked) => updateField("channels" as any, { ...(formData as any).channels, b2b: checked })}
+                  />
+                  B2B (Courtiers)
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <Switch
+                    checked={(formData as any).channels?.b2c ?? false}
+                    onCheckedChange={(checked) => updateField("channels" as any, { ...(formData as any).channels, b2c: checked })}
+                  />
+                  B2C (Clients directs)
+                </label>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Périodicité de paiement</Label>
+              <div className="flex flex-wrap gap-2">
+                {["Unique", "Mensuelle", "Trimestrielle", "Semestrielle", "Annuelle"].map((p) => {
+                  const selected = ((formData as any).periodicity || []).includes(p);
+                  return (
+                    <Button
+                      key={p}
+                      variant={selected ? "default" : "outline"}
+                      size="sm"
+                      type="button"
+                      onClick={() => {
+                        const current: string[] = (formData as any).periodicity || [];
+                        const next = selected ? current.filter((x: string) => x !== p) : [...current, p];
+                        updateField("periodicity" as any, next);
+                      }}
+                    >
+                      {p}
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Options</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -270,6 +321,45 @@ export function GeneralInfoTab({ formData, updateField, errors = {} }: GeneralIn
               <Switch
                 checked={formData.has_claims}
                 onCheckedChange={(checked) => updateField("has_claims", checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Réductions & Bonus</Label>
+                <p className="text-sm text-muted-foreground">
+                  Activer les réductions et bonus pour ce produit
+                </p>
+              </div>
+              <Switch
+                checked={(formData as any).discounts_enabled ?? false}
+                onCheckedChange={(checked) => updateField("discounts_enabled" as any, checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Questionnaires médicaux</Label>
+                <p className="text-sm text-muted-foreground">
+                  Poser des questions médicales à l'assuré
+                </p>
+              </div>
+              <Switch
+                checked={(formData as any).medical_questionnaire_enabled ?? false}
+                onCheckedChange={(checked) => updateField("medical_questionnaire_enabled" as any, checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Bénéficiaires</Label>
+                <p className="text-sm text-muted-foreground">
+                  Permettre la désignation de bénéficiaires
+                </p>
+              </div>
+              <Switch
+                checked={(formData as any).beneficiaries_enabled ?? false}
+                onCheckedChange={(checked) => updateField("beneficiaries_enabled" as any, checked)}
               />
             </div>
 

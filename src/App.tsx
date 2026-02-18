@@ -65,6 +65,7 @@ import AdminAIMonitoringPage from "./pages/admin/AIMonitoringPage";
 import AdminCompetitivePage from "./pages/admin/CompetitivePage";
 import AdminTestDataPage from "./pages/admin/TestDataPage";
 import AdminBrokerNewsPage from "./pages/admin/BrokerNewsPage";
+import AdminCalcRulesPage from "./pages/admin/CalcRulesPage";
 
 const queryClient = new QueryClient();
 
@@ -156,6 +157,7 @@ const App = () => (
             <Route path="forms" element={<AdminFormsPage />} />
             <Route path="products" element={<AdminProductsPage />} />
             <Route path="products/:id" element={<AdminProductEditPage />} />
+            <Route path="calc-rules" element={<AdminCalcRulesPage />} />
             <Route path="ai" element={<AdminAIMonitoringPage />} />
             <Route path="competitive" element={<AdminCompetitivePage />} />
             <Route path="data" element={<AdminTestDataPage />} />

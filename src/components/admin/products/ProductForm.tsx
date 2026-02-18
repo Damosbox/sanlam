@@ -13,6 +13,10 @@ import { PaymentMethodsTab } from "./tabs/PaymentMethodsTab";
 import { DocumentsTab } from "./tabs/DocumentsTab";
 import { SalesTab } from "./tabs/SalesTab";
 import { FaqsTab } from "./tabs/FaqsTab";
+import { CalcRulesTab } from "./tabs/CalcRulesTab";
+import { DiscountsTab } from "./tabs/DiscountsTab";
+import { QuestionnairesTab } from "./tabs/QuestionnairesTab";
+import { ClaimsConfigTab } from "./tabs/ClaimsConfigTab";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { useProductValidation } from "@/hooks/useProductValidation";
 import { ProductFormSchema } from "@/schemas/product";
@@ -53,6 +57,15 @@ export interface ProductFormData {
   alternative_products: string[];
   faqs: any[];
   subscription_form_id: string | null;
+  // New fields
+  channels: { b2b: boolean; b2c: boolean };
+  periodicity: string[];
+  discounts_enabled: boolean;
+  medical_questionnaire_enabled: boolean;
+  beneficiaries_enabled: boolean;
+  claims_config: any;
+  discounts: any[];
+  questionnaires: any[];
 }
 
 const defaultFormData: ProductFormData = {
@@ -82,6 +95,14 @@ const defaultFormData: ProductFormData = {
   alternative_products: [],
   faqs: [],
   subscription_form_id: null,
+  channels: { b2b: true, b2c: false },
+  periodicity: [],
+  discounts_enabled: false,
+  medical_questionnaire_enabled: false,
+  beneficiaries_enabled: false,
+  claims_config: {},
+  discounts: [],
+  questionnaires: [],
 };
 
 export function ProductForm({ product, isNew }: ProductFormProps) {
@@ -114,6 +135,14 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
         alternative_products: product.alternative_products || [],
         faqs: product.faqs || [],
         subscription_form_id: product.subscription_form_id,
+        channels: product.channels || { b2b: true, b2c: false },
+        periodicity: product.periodicity || [],
+        discounts_enabled: product.discounts_enabled ?? false,
+        medical_questionnaire_enabled: product.medical_questionnaire_enabled ?? false,
+        beneficiaries_enabled: product.beneficiaries_enabled ?? false,
+        claims_config: product.claims_config || {},
+        discounts: product.discounts || [],
+        questionnaires: product.questionnaires || [],
       };
     }
     return defaultFormData;
@@ -179,6 +208,14 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
         alternative_products: data.alternative_products,
         faqs: data.faqs,
         subscription_form_id: data.subscription_form_id,
+        channels: data.channels,
+        periodicity: data.periodicity,
+        discounts_enabled: data.discounts_enabled,
+        medical_questionnaire_enabled: data.medical_questionnaire_enabled,
+        beneficiaries_enabled: data.beneficiaries_enabled,
+        claims_config: data.claims_config,
+        discounts: data.discounts,
+        questionnaires: data.questionnaires,
       };
 
       if (isNew) {
@@ -282,9 +319,12 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 h-auto p-1">
+        <TabsList className="grid w-full grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-4 lg:flex lg:flex-wrap h-auto p-1">
           <TabsTrigger value="general" className="text-xs sm:text-sm">
             Général{statusDot("general")}
+          </TabsTrigger>
+          <TabsTrigger value="calc-rules" className="text-xs sm:text-sm">
+            Calcul
           </TabsTrigger>
           <TabsTrigger value="subscription" className="text-xs sm:text-sm">
             Souscription{statusDot("subscription")}
@@ -304,6 +344,15 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
           <TabsTrigger value="faqs" className="text-xs sm:text-sm">
             FAQs{statusDot("faqs")}
           </TabsTrigger>
+          {formData.discounts_enabled && (
+            <TabsTrigger value="discounts" className="text-xs sm:text-sm">Réductions</TabsTrigger>
+          )}
+          {formData.medical_questionnaire_enabled && (
+            <TabsTrigger value="questionnaires" className="text-xs sm:text-sm">Questionnaires</TabsTrigger>
+          )}
+          {formData.has_claims && (
+            <TabsTrigger value="claims-config" className="text-xs sm:text-sm">Sinistres</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="general" className="mt-6">
@@ -312,6 +361,10 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
             updateField={updateField}
             errors={validationTriggered ? validation.errors : {}}
           />
+        </TabsContent>
+
+        <TabsContent value="calc-rules" className="mt-6">
+          <CalcRulesTab productId={formData.productId} />
         </TabsContent>
 
         <TabsContent value="subscription" className="mt-6">
@@ -339,6 +392,24 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
         <TabsContent value="faqs" className="mt-6">
           <FaqsTab formData={formData} updateField={updateField} />
         </TabsContent>
+
+        {formData.discounts_enabled && (
+          <TabsContent value="discounts" className="mt-6">
+            <DiscountsTab formData={formData} updateField={updateField} />
+          </TabsContent>
+        )}
+
+        {formData.medical_questionnaire_enabled && (
+          <TabsContent value="questionnaires" className="mt-6">
+            <QuestionnairesTab formData={formData} updateField={updateField} />
+          </TabsContent>
+        )}
+
+        {formData.has_claims && (
+          <TabsContent value="claims-config" className="mt-6">
+            <ClaimsConfigTab formData={formData} updateField={updateField} />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Unsaved changes dialog */}

@@ -30,6 +30,7 @@ interface FormEditorDrawerProps {
   productCategory?: string;
   productType?: string;
   productName?: string;
+  productId?: string;
   onFormSaved?: (formId: string) => void;
 }
 
@@ -41,6 +42,7 @@ export function FormEditorDrawer({
   productCategory = "non-vie",
   productType = "Automobile",
   productName = "Nouveau formulaire",
+  productId,
   onFormSaved,
 }: FormEditorDrawerProps) {
   const queryClient = useQueryClient();
@@ -189,6 +191,7 @@ export function FormEditorDrawer({
               <FormPhaseEditor
                 structure={structure}
                 onChange={setStructure}
+                productId={productId}
               />
             </div>
 

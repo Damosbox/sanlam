@@ -4,8 +4,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Lock, ExternalLink } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
 
 interface FormFieldEditorProps {
   field: FieldConfig | null;
@@ -14,10 +16,63 @@ interface FormFieldEditorProps {
 }
 
 export const FormFieldEditor = ({ field, onUpdate, onDelete }: FormFieldEditorProps) => {
+  const navigate = useNavigate();
+
   if (!field) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
         <p className="text-sm">Sélectionnez un champ pour le modifier</p>
+      </div>
+    );
+  }
+
+  // Locked field — read-only view
+  if (field.locked) {
+    return (
+      <div className="space-y-4 p-4">
+        <div className="flex items-center gap-2">
+          <Lock className="h-4 w-4 text-primary" />
+          <h3 className="font-semibold">Champ verrouillé</h3>
+          <Badge variant="secondary" className="text-xs">Règle de calcul</Badge>
+        </div>
+        <Separator />
+        <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 space-y-3">
+          <div>
+            <Label className="text-xs text-muted-foreground">Label</Label>
+            <p className="font-medium">{field.label}</p>
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground">Type</Label>
+            <p>{field.type}</p>
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground">Requis</Label>
+            <p>{field.required ? "Oui" : "Non"}</p>
+          </div>
+          {field.options && field.options.length > 0 && (
+            <div>
+              <Label className="text-xs text-muted-foreground">Options</Label>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {field.options.map((o, i) => (
+                  <Badge key={i} variant="outline">{o}</Badge>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Ce champ est généré automatiquement depuis la règle de calcul.
+          Pour le modifier, éditez la règle dans l'espace Actuariat.
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={() => navigate("/admin/calc-rules")}
+        >
+          <ExternalLink className="h-3.5 w-3.5 mr-1" />
+          Aller aux règles de calcul
+        </Button>
       </div>
     );
   }

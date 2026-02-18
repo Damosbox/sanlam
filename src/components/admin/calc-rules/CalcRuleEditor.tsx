@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +20,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Plus, Trash2, Save, Loader2 } from "lucide-react";
+import { Plus, Trash2, Save, Loader2, BookOpen } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import type { CalcRule, CalcRuleParameter, CalcRuleFormula, CalcRuleGuarantee, CalcRuleTax, CalcRuleFee, CalcRuleTableRef } from "./types";
 import { CalcRuleSimulator } from "./CalcRuleSimulator";
 
@@ -29,6 +36,24 @@ interface CalcRuleEditorProps {
 }
 
 export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) {
+  // Catalogue variables query
+  const { data: catalogueVars = [] } = useQuery({
+    queryKey: ["calculation-variables-active"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("calculation_variables" as never)
+        .select("*")
+        .eq("is_active", true)
+        .order("category")
+        .order("label");
+      if (error) throw error;
+      return (data as unknown as Array<{
+        id: string; code: string; label: string; type: string;
+        options: string[]; category: string; description: string | null;
+      }>) || [];
+    },
+  });
+  const [catalogueFilter, setCatalogueFilter] = useState("");
   const [form, setForm] = useState({
     id: rule?.id,
     name: rule?.name || "",
@@ -69,7 +94,25 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
   const addParameter = () => {
     setForm((f) => ({
       ...f,
-      parameters: [...f.parameters, { id: crypto.randomUUID(), code: "", label: "", type: "text", required: true }],
+      parameters: [...f.parameters, { id: crypto.randomUUID(), code: "", label: "", type: "text", required: true, source: "manual" as const }],
+    }));
+  };
+  const importFromCatalogue = (v: { id: string; code: string; label: string; type: string; options: string[] }) => {
+    setForm((f) => ({
+      ...f,
+      parameters: [
+        ...f.parameters,
+        {
+          id: crypto.randomUUID(),
+          code: v.code,
+          label: v.label,
+          type: v.type as CalcRuleParameter["type"],
+          options: v.options,
+          required: true,
+          source: "catalogue" as const,
+          variable_id: v.id,
+        },
+      ],
     }));
   };
   const updateParameter = (idx: number, updates: Partial<CalcRuleParameter>) => {
@@ -271,11 +314,14 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
           <AccordionContent className="space-y-3 pb-4">
             <p className="text-xs text-muted-foreground">Champs obligatoires affichés lors de la cotation</p>
             {form.parameters.map((p, idx) => (
-              <div key={p.id} className="flex items-start gap-2 p-3 border rounded-md bg-muted/30">
+              <div key={p.id} className={`flex items-start gap-2 p-3 border rounded-md ${p.source === "catalogue" ? "bg-primary/5 border-primary/20" : "bg-muted/30"}`}>
+                {p.source === "catalogue" && (
+                  <Badge variant="outline" className="text-xs shrink-0 mt-1.5">Catalogue</Badge>
+                )}
                 <div className="flex-1 grid gap-2 grid-cols-3">
-                  <Input placeholder="Code" value={p.code} onChange={(e) => updateParameter(idx, { code: e.target.value })} />
+                  <Input placeholder="Code" value={p.code} onChange={(e) => updateParameter(idx, { code: e.target.value })} disabled={p.source === "catalogue"} />
                   <Input placeholder="Libellé" value={p.label} onChange={(e) => updateParameter(idx, { label: e.target.value })} />
-                  <Select value={p.type} onValueChange={(v) => updateParameter(idx, { type: v as CalcRuleParameter["type"] })}>
+                  <Select value={p.type} onValueChange={(v) => updateParameter(idx, { type: v as CalcRuleParameter["type"] })} disabled={p.source === "catalogue"}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="text">Texte</SelectItem>
@@ -291,9 +337,55 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
                 </Button>
               </div>
             ))}
-            <Button variant="outline" size="sm" onClick={addParameter}>
-              <Plus className="h-3.5 w-3.5 mr-1" /> Ajouter un paramètre
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={addParameter}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Ajouter un paramètre
+              </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <BookOpen className="h-3.5 w-3.5 mr-1" /> Importer depuis le catalogue
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-2" align="start">
+                  <Input
+                    placeholder="Rechercher..."
+                    value={catalogueFilter}
+                    onChange={(e) => setCatalogueFilter(e.target.value)}
+                    className="mb-2"
+                  />
+                  <div className="max-h-60 overflow-y-auto space-y-1">
+                    {catalogueVars
+                      .filter((v) =>
+                        v.label.toLowerCase().includes(catalogueFilter.toLowerCase()) ||
+                        v.code.toLowerCase().includes(catalogueFilter.toLowerCase())
+                      )
+                      .map((v) => {
+                        const alreadyAdded = form.parameters.some((p) => p.variable_id === v.id);
+                        return (
+                          <button
+                            key={v.id}
+                            className="w-full text-left p-2 rounded hover:bg-muted text-sm disabled:opacity-50 flex items-center justify-between"
+                            disabled={alreadyAdded}
+                            onClick={() => importFromCatalogue(v)}
+                          >
+                            <div>
+                              <p className="font-medium">{v.label}</p>
+                              <p className="text-xs text-muted-foreground font-mono">{v.code} • {v.category}</p>
+                            </div>
+                            {alreadyAdded && <Badge variant="secondary" className="text-xs">Ajouté</Badge>}
+                          </button>
+                        );
+                      })}
+                    {catalogueVars.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        Aucune variable dans le catalogue
+                      </p>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           </AccordionContent>
         </AccordionItem>
 

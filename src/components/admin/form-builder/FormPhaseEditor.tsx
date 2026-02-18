@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -34,21 +36,84 @@ import { FormStructure, FormPhase, FormSubStep, StepType, createDefaultFormStruc
 import { FormSubStepEditor } from "./FormSubStepEditor";
 import { FormFieldLibrary, FieldConfig, FieldType } from "../FormFieldLibrary";
 import { FormFieldEditor } from "../FormFieldEditor";
+import type { CalcRuleParameter } from "../calc-rules/types";
 
 interface FormPhaseEditorProps {
   structure: FormStructure;
   onChange: (structure: FormStructure) => void;
+  productId?: string;
 }
 
-export function FormPhaseEditor({ structure, onChange }: FormPhaseEditorProps) {
+export function FormPhaseEditor({ structure, onChange, productId }: FormPhaseEditorProps) {
   const [activePhase, setActivePhase] = useState<"cotation" | "souscription">("cotation");
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
 
+  // Load locked fields from calc rule linked to product
+  const { data: lockedFields = [] } = useQuery({
+    queryKey: ["product-locked-fields", productId],
+    enabled: !!productId,
+    queryFn: async (): Promise<FieldConfig[]> => {
+      // 1. Find primary calc rule for this product
+      const { data: links } = await supabase
+        .from("product_calc_rules" as never)
+        .select("calc_rule_id")
+        .eq("product_id", productId!)
+        .eq("is_primary", true)
+        .limit(1);
+      if (!links?.length) return [];
+
+      const { data: rule } = await supabase
+        .from("calculation_rules")
+        .select("id, parameters")
+        .eq("id", (links[0] as { calc_rule_id: string }).calc_rule_id)
+        .eq("is_active", true)
+        .single();
+      if (!rule) return [];
+
+      const params = rule.parameters as unknown as CalcRuleParameter[];
+      if (!Array.isArray(params)) return [];
+
+      return params.map((p) => ({
+        id: `calc_${p.code}`,
+        type: mapParamType(p.type),
+        label: p.label,
+        required: p.required ?? true,
+        options: p.options,
+        locked: true,
+        sourceType: "calc_rule" as const,
+        sourceRuleId: rule.id,
+      }));
+    },
+  });
+
+  const mapParamType = (type: string): FieldType => {
+    const map: Record<string, FieldType> = {
+      text: "text",
+      number: "number",
+      select: "select",
+      date: "date",
+      boolean: "checkbox",
+    };
+    return map[type] || "text";
+  };
+
   // Trouver la phase active
   const currentPhase = structure.phases.find((p) => p.id === activePhase);
   const currentStep = currentPhase?.steps.find((s) => s.id === selectedStepId);
-  const currentField = currentStep?.fields?.find((f) => f.id === selectedFieldId);
+
+  // Merge locked fields into current step fields for display
+  const getDisplayFields = (): FieldConfig[] | undefined => {
+    if (!currentStep || currentStep.type !== "fields") return currentStep?.fields;
+    if (activePhase !== "cotation" || !lockedFields.length) return currentStep.fields;
+    // Only inject in the first fields step of cotation
+    const firstFieldsStep = currentPhase?.steps.find((s) => s.type === "fields");
+    if (firstFieldsStep?.id !== currentStep.id) return currentStep.fields;
+    return [...lockedFields, ...(currentStep.fields || [])];
+  };
+
+  const displayFields = getDisplayFields();
+  const currentField = displayFields?.find((f) => f.id === selectedFieldId);
 
   // Auto-sélectionner la première étape si aucune n'est sélectionnée
   if (!selectedStepId && currentPhase && currentPhase.steps.length > 0) {
@@ -161,6 +226,8 @@ export function FormPhaseEditor({ structure, onChange }: FormPhaseEditorProps) {
   // Mettre à jour un champ
   const updateField = (updates: Partial<FieldConfig>) => {
     if (!currentPhase || !selectedStepId || !selectedFieldId) return;
+    // Don't allow updating locked fields
+    if (currentField?.locked) return;
 
     const step = currentPhase.steps.find((s) => s.id === selectedStepId);
     if (!step || !step.fields) return;
@@ -175,6 +242,9 @@ export function FormPhaseEditor({ structure, onChange }: FormPhaseEditorProps) {
   // Supprimer un champ
   const removeField = (fieldId: string) => {
     if (!currentPhase || !selectedStepId) return;
+    // Don't allow removing locked fields
+    const field = displayFields?.find((f) => f.id === fieldId);
+    if (field?.locked) return;
 
     const step = currentPhase.steps.find((s) => s.id === selectedStepId);
     if (!step || !step.fields) return;
@@ -366,6 +436,12 @@ export function FormPhaseEditor({ structure, onChange }: FormPhaseEditorProps) {
               selectedFieldId={selectedFieldId}
               onRemoveField={removeField}
               availableVariables={getAvailableVariables()}
+              lockedFields={
+                activePhase === "cotation" &&
+                currentPhase?.steps.find((s) => s.type === "fields")?.id === currentStep.id
+                  ? lockedFields
+                  : []
+              }
             />
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground">

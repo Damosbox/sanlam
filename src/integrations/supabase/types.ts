@@ -177,6 +177,66 @@ export type Database = {
         }
         Relationships: []
       }
+      calculation_rules: {
+        Row: {
+          base_formula: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          fees: Json
+          formulas: Json
+          id: string
+          is_active: boolean
+          name: string
+          parameters: Json
+          rules: Json
+          tables_ref: Json
+          taxes: Json
+          type: string
+          updated_at: string
+          usage_category: string
+          usage_category_label: string | null
+        }
+        Insert: {
+          base_formula?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          fees?: Json
+          formulas?: Json
+          id?: string
+          is_active?: boolean
+          name: string
+          parameters?: Json
+          rules?: Json
+          tables_ref?: Json
+          taxes?: Json
+          type: string
+          updated_at?: string
+          usage_category: string
+          usage_category_label?: string | null
+        }
+        Update: {
+          base_formula?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          fees?: Json
+          formulas?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          parameters?: Json
+          rules?: Json
+          tables_ref?: Json
+          taxes?: Json
+          type?: string
+          updated_at?: string
+          usage_category?: string
+          usage_category_label?: string | null
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           created_at: string
@@ -1448,6 +1508,45 @@ export type Database = {
           },
         ]
       }
+      product_calc_rules: {
+        Row: {
+          calc_rule_id: string
+          created_at: string
+          id: string
+          is_primary: boolean
+          product_id: string
+        }
+        Insert: {
+          calc_rule_id: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          product_id: string
+        }
+        Update: {
+          calc_rule_id?: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_calc_rules_calc_rule_id_fkey"
+            columns: ["calc_rule_id"]
+            isOneToOne: false
+            referencedRelation: "calculation_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_calc_rules_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_categories: {
         Row: {
           created_at: string | null
@@ -1512,11 +1611,16 @@ export type Database = {
           alternative_products: string[] | null
           base_premium: number
           beneficiaries_config: Json | null
+          beneficiaries_enabled: boolean | null
           calculation_rules: Json | null
           category: string
+          channels: Json | null
+          claims_config: Json | null
           coverages: Json
           created_at: string | null
           description: string | null
+          discounts: Json | null
+          discounts_enabled: boolean | null
           document_templates: Json | null
           faqs: Json | null
           has_claims: boolean | null
@@ -1524,10 +1628,13 @@ export type Database = {
           image_url: string | null
           is_active: boolean | null
           is_renewable: boolean | null
+          medical_questionnaire_enabled: boolean | null
           name: string
           optional_products: string[] | null
           payment_methods: Json | null
+          periodicity: string[] | null
           product_type: string | null
+          questionnaires: Json | null
           subscription_form_id: string | null
           terms: string | null
           updated_at: string | null
@@ -1536,11 +1643,16 @@ export type Database = {
           alternative_products?: string[] | null
           base_premium: number
           beneficiaries_config?: Json | null
+          beneficiaries_enabled?: boolean | null
           calculation_rules?: Json | null
           category: string
+          channels?: Json | null
+          claims_config?: Json | null
           coverages: Json
           created_at?: string | null
           description?: string | null
+          discounts?: Json | null
+          discounts_enabled?: boolean | null
           document_templates?: Json | null
           faqs?: Json | null
           has_claims?: boolean | null
@@ -1548,10 +1660,13 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           is_renewable?: boolean | null
+          medical_questionnaire_enabled?: boolean | null
           name: string
           optional_products?: string[] | null
           payment_methods?: Json | null
+          periodicity?: string[] | null
           product_type?: string | null
+          questionnaires?: Json | null
           subscription_form_id?: string | null
           terms?: string | null
           updated_at?: string | null
@@ -1560,11 +1675,16 @@ export type Database = {
           alternative_products?: string[] | null
           base_premium?: number
           beneficiaries_config?: Json | null
+          beneficiaries_enabled?: boolean | null
           calculation_rules?: Json | null
           category?: string
+          channels?: Json | null
+          claims_config?: Json | null
           coverages?: Json
           created_at?: string | null
           description?: string | null
+          discounts?: Json | null
+          discounts_enabled?: boolean | null
           document_templates?: Json | null
           faqs?: Json | null
           has_claims?: boolean | null
@@ -1572,10 +1692,13 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           is_renewable?: boolean | null
+          medical_questionnaire_enabled?: boolean | null
           name?: string
           optional_products?: string[] | null
           payment_methods?: Json | null
+          periodicity?: string[] | null
           product_type?: string | null
+          questionnaires?: Json | null
           subscription_form_id?: string | null
           terms?: string | null
           updated_at?: string | null

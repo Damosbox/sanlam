@@ -1,117 +1,109 @@
 
+# Plan d'implementation complet -- Configuration Produits & Tarification
 
-# Refonte page d'accueil Espace Intermediaire (sans temoignages)
+## Vue d'ensemble
 
-La section "Preuve sociale / Temoignages" est exclue de cette implementation. Elle sera ajoutee ulterieurement avec de vrais retours d'utilisateurs.
-
----
-
-## 1. Header -- Bouton unique
-
-**Fichier** : `src/components/Header.tsx`
-
-- Supprimer le bouton ghost "Se connecter" dans la top-bar ET le bouton "Acceder a mon espace" dans la nav principale
-- Les remplacer par un seul bouton **"Se connecter a mon espace"** dans la nav principale, pointant vers `/auth/partner`
+Ce plan couvre l'ensemble des 4 sprints definis dans l'atelier du 16 fevrier. L'implementation cree une architecture de regles de calcul independantes (service Actuariat), liees aux produits (service Marketing), avec de nouveaux onglets dans la fiche produit et une entree dans le sidebar admin.
 
 ---
 
-## 2. Hero -- Carrousel 5 slides + 4 badges
+## Sprint 1 : Base de donnees + CRUD Regles de Calcul + Liaison Produit
 
-**Nouveau fichier** : `src/components/broker-landing/HeroCarousel.tsx`
+### 1.1 Migration base de donnees
 
-Carrousel Embla (deja installe) avec autoplay toutes les 6 secondes et dots de pagination :
+Creer une migration SQL avec :
 
-| Slide | Titre | Accroche |
-|-------|-------|----------|
-| 1 | Bienvenue sur votre espace | Une plateforme unique pour connecter, accompagner et renforcer durablement notre reseau d'intermediaires. |
-| 2 | Un seul espace. Tous vos outils. | Pilotez vos activites, accedez aux services et suivez vos performances dans un environnement simple et centralise. |
-| 3 | Une experience simple, humaine et efficace. | Des parcours clairs, une assistance disponible et un accompagnement pense pour chaque etape de votre activite. |
-| 4 | Des outils concus pour votre performance. | Gagnez en efficacite, en visibilite et en reactivite grace a des outils adaptes a votre quotidien. |
-| 5 | Un ecosysteme qui anticipe vos besoins. | Une plateforme concue pour evoluer avec vos besoins et enrichir progressivement votre experience. |
+**Table `calculation_rules`** (entite autonome actuariat) :
+- id, name, description, type (vie/non-vie), usage_category, usage_category_label
+- parameters (jsonb) -- champs obligatoires pour la cotation
+- formulas (jsonb) -- packs/garanties
+- rules (jsonb) -- formules de calcul, limites, delais de carence
+- taxes, fees, tables_ref (jsonb)
+- base_formula (text), is_active, created_by, created_at, updated_at
 
-Chaque slide : fond gradient, bouton CTA "Se connecter a mon espace", image dashboard a droite.
+**Table `product_calc_rules`** (liaison N:N) :
+- id, product_id (FK products), calc_rule_id (FK calculation_rules), is_primary, created_at
+- Contrainte UNIQUE(product_id, calc_rule_id)
 
-**4 badges permanents** en bas du hero (overlay) :
-- Plateforme securisee (Shield)
-- Accompagnement dedie (Users)
-- Accessible web et mobile (Smartphone)
-- En constante evolution (Rocket)
+**Nouvelles colonnes sur `products`** :
+- channels (jsonb), periodicity (text[])
+- discounts_enabled, medical_questionnaire_enabled, beneficiaries_enabled (boolean)
+- claims_config, discounts, questionnaires (jsonb)
 
----
+**RLS** : Admins full access, Brokers SELECT sur regles actives.
+**Trigger** : updated_at automatique sur calculation_rules.
 
-## 3. Section "Promesse globale" (nouvelle)
+### 1.2 Page admin "Regles de Calcul"
 
-**Fichier** : `src/pages/Commercial.tsx`
+**Fichier** : `src/pages/admin/CalcRulesPage.tsx`
+- Route `/admin/calc-rules`
+- Table listant les regles avec filtres type/recherche
+- Actions : Creer, Modifier (Sheet lateral), Dupliquer, Activer/Desactiver, Supprimer
 
-Apres le hero, une section de transition :
-- Titre : "Un espace unique pour simplifier votre quotidien"
-- Texte : "Cette plateforme a ete concue pour vous faire gagner du temps, structurer votre activite et faciliter vos interactions avec SanlamAllianz, dans un environnement simple, securise et evolutif."
+**Fichier** : `src/components/admin/calc-rules/CalcRuleEditor.tsx`
+- Editeur dans un Sheet avec sections en Accordion :
+  - Infos generales (nom, type, categorie d'usage)
+  - Parametres de cotation (champs dynamiques avec code/label/type)
+  - Formules/Packs (nom, code, garanties couvertes avec limites, delai de carence)
+  - Formule de base (textarea)
+  - Taxes (code, nom, taux, actif)
+  - Frais (code, nom, montant)
 
----
+### 1.3 Sidebar admin
 
-## 4. Section "Fonctionnalites cles" -- 4 nouvelles cartes
+**Fichier** : `src/components/admin/AdminSidebar.tsx`
+- Ajouter "Regles de calcul" avec icone Calculator dans la section Configuration
 
-**Fichier** : `src/pages/Commercial.tsx` (remplacement des cartes existantes)
+### 1.4 Route
 
-Titre : "Tous les outils essentiels, reunis en un seul espace"
+**Fichier** : `src/App.tsx`
+- Ajouter `<Route path="calc-rules" element={<CalcRulesPage />} />` dans les routes admin
 
-| Carte | Titre | Description |
-|-------|-------|-------------|
-| 1 | Prospecter efficacement | Identifiez, suivez et priorisez vos opportunites commerciales depuis un seul espace. |
-| 2 | Vendre simplement | Accedez a des parcours de vente guides et generez vos devis en quelques etapes. |
-| 3 | Agir au bon moment | Recevez des recommandations intelligentes basees sur votre activite et vos priorites. |
-| 4 | Rester conforme sans effort | Centralisez vos documents et automatisez les controles reglementaires en toute securite. |
+### 1.5 Onglet "Regles de calcul" dans ProductForm
 
----
+**Fichier** : `src/components/admin/products/tabs/CalcRulesTab.tsx`
+- Liste les regles liees au produit via product_calc_rules
+- Permet d'ajouter/retirer des regles avec un Select
+- Marquer une regle comme "principale" (etoile)
+- Apercu en lecture seule des parametres et formules
 
-## 5. Section "Pilotage et performance" (revision)
-
-**Fichier** : `src/pages/Commercial.tsx` (remplacement de la section dashboard preview)
-
-- Titre : "Enfin une vision claire de votre activite"
-- Liste : Vue globale, Alertes automatiques, Suivi simplifie, Reporting accessible
-- Image dashboard conservee a droite
-
----
-
-## 6. Section "Valeur SanlamAllianz" -- 4 piliers
-
-**Fichier** : `src/pages/Commercial.tsx` (remplacement de la section benefits)
-
-Titre : "Plus qu'une plateforme, un partenariat durable"
-
-4 cartes :
-- Accompagnement et proximite
-- Outils digitaux performants
-- Formation et montee en competences
-- Communaute d'intermediaires
+**Fichier** : `src/components/admin/products/ProductForm.tsx`
+- Ajouter l'onglet "Calcul" entre General et Souscription
+- Ajouter les nouveaux champs au ProductFormData (channels, periodicity, discounts_enabled, etc.)
+- Ajouter les onglets conditionnels (Reductions, Questionnaires, Sinistres)
 
 ---
 
-## 7. Section "Innovation et projection" (nouvelle)
+## Sprint 2 : Enrichissement de la Fiche Produit
 
-**Fichier** : `src/pages/Commercial.tsx`
+### 2.1 GeneralInfoTab enrichi
 
-- Titre : "Un ecosysteme moderne, evolutif et intelligent"
-- Texte sur l'evolution continue de la plateforme
+**Fichier** : `src/components/admin/products/tabs/GeneralInfoTab.tsx`
+- Ajouter les nouveaux champs du workshop :
+  - Canaux : B2B / B2C (checkboxes)
+  - Periodicite : Unique, Mensuelle, Trimestrielle, Semestrielle, Annuelle (multi-select)
+  - Options supplementaires (switches) :
+    - Reductions (Oui/Non)
+    - Questionnaires medicaux (Oui/Non)
+    - Beneficiaires (Oui/Non) -- deja present mais regroupe dans les options
 
----
+### 2.2 Onglet "Reductions"
 
-## 8. CTA final unifie
+**Fichier** : `src/components/admin/products/tabs/DiscountsTab.tsx`
+- Affiche uniquement si discounts_enabled est active
+- Liste de reductions/bonus : Nom, Type (pourcentage/fixe), Valeur, Condition
 
-**Fichier** : `src/pages/Commercial.tsx`
+### 2.3 Onglet "Questionnaires"
 
-- Texte : "Connectez-vous pour acceder a l'ensemble des services et outils mis a votre disposition."
-- Un seul bouton : "Se connecter a mon espace"
-- Suppression du bouton "Nous contacter"
+**Fichier** : `src/components/admin/products/tabs/QuestionnairesTab.tsx`
+- Affiche uniquement si medical_questionnaire_enabled est active
+- Builder de questions medicales avec impact surprime
 
----
+### 2.4 Onglet "Sinistres"
 
-## 9. Suppressions
-
-- Section temoignages : supprimee entierement
-- Barre de stats en dur dans le hero (500+, +35%, 2.5x, 24/7) : supprimee
-- Badge flottant "+35% Productivite" : supprime
+**Fichier** : `src/components/admin/products/tabs/ClaimsConfigTab.tsx`
+- Regles generales de gestion sinistre
+- Types de sinistres autorises (rachat total, partiel, etc.)
 
 ---
 
@@ -119,15 +111,25 @@ Titre : "Plus qu'une plateforme, un partenariat durable"
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/Header.tsx` | Modifier : un seul bouton CTA |
-| `src/components/broker-landing/HeroCarousel.tsx` | Creer : carrousel 5 slides + badges |
-| `src/pages/Commercial.tsx` | Recrire : nouvelles sections, suppression temoignages |
+| Migration SQL | Creer tables + colonnes |
+| `src/pages/admin/CalcRulesPage.tsx` | Creer |
+| `src/components/admin/calc-rules/CalcRuleEditor.tsx` | Creer |
+| `src/components/admin/AdminSidebar.tsx` | Modifier (ajouter entree) |
+| `src/App.tsx` | Modifier (ajouter route) |
+| `src/components/admin/products/ProductForm.tsx` | Modifier (nouveaux onglets + champs) |
+| `src/components/admin/products/tabs/GeneralInfoTab.tsx` | Modifier (canaux, periodicite, options) |
+| `src/components/admin/products/tabs/CalcRulesTab.tsx` | Creer |
+| `src/components/admin/products/tabs/DiscountsTab.tsx` | Creer |
+| `src/components/admin/products/tabs/QuestionnairesTab.tsx` | Creer |
+| `src/components/admin/products/tabs/ClaimsConfigTab.tsx` | Creer |
+
+---
 
 ## Details techniques
 
-- Carrousel : composant `Carousel` de `src/components/ui/carousel.tsx` (Embla, deja installe)
-- Autoplay : plugin `embla-carousel-autoplay` (a ajouter si absent, sinon setInterval)
-- Badges : positionnement absolu en bas du hero, grille 2x2 sur mobile, 4 colonnes sur desktop
-- Icones Lucide : Shield, Users, Smartphone, Rocket, Target, Zap, Bell, FileCheck, Eye, BarChart3, Award, Lightbulb
-- Design system existant conserve (couleurs Sanlam, Tailwind, shadcn)
-
+- Les `parameters` d'une regle de calcul sont un tableau JSON de champs (code, label, type, options) rendus dynamiquement dans le parcours de cotation
+- Les `formulas` contiennent : nom, code, garanties couvertes (avec limites et delais de carence), et la formule de calcul associee
+- La table `product_calc_rules` gere la relation N:N avec indicateur "principale"
+- Les nouveaux onglets conditionnels (Reductions, Questionnaires) n'apparaissent que si l'option est activee dans l'onglet General
+- Le `ProductFormData` est enrichi avec les nouvelles colonnes, et le payload de sauvegarde est mis a jour
+- Toutes les nouvelles tables ont des RLS policies appropriees (admin full, broker read-only)

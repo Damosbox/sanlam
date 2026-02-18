@@ -40,6 +40,14 @@ export interface CalcRuleFee {
   condition?: string;
 }
 
+export interface CalcRuleTableRef {
+  id: string;
+  code: string;
+  name: string;
+  type: "key_value" | "brackets";
+  data: Record<string, number> | Array<{ min: number; max: number; value: number }>;
+}
+
 export interface CalcRule {
   id: string;
   name: string;
@@ -52,7 +60,7 @@ export interface CalcRule {
   rules: Record<string, unknown>;
   taxes: CalcRuleTax[];
   fees: CalcRuleFee[];
-  tables_ref: unknown[];
+  tables_ref: CalcRuleTableRef[];
   base_formula: string;
   is_active: boolean;
   created_by: string | null;

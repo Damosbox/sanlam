@@ -294,6 +294,9 @@ export interface GuidedSalesState {
   // Sub-step navigation
   simulationSubStep: 1 | 2 | 3 | 4 | 5;
   subscriptionSubStep: 1 | 2 | 3 | 4 | 5 | 6;
+  // Dynamic calc engine
+  dynamicParameters?: Record<string, unknown>;
+  calcRuleId?: string;
   productSelection: ProductSelectionData;
   clientIdentification: ClientIdentificationData;
   needsAnalysis: NeedsAnalysisData;

@@ -27,6 +27,7 @@ import {
 import { ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { calculateAutoPremium, convertToCalculatedPremium } from "@/utils/autoPremiumCalculator";
+import { useProductCalcRule } from "@/hooks/useProductCalcRule";
 
 import { calculatePackObsequesPremium, convertPackObsequesToCalculatedPremium } from "@/utils/packObsequesPremiumCalculator";
 import { toast } from "sonner";
@@ -59,6 +60,10 @@ export const GuidedSalesFlow = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
   const isMobile = useIsMobile();
+
+  // Load dynamic calc rule for current product
+  const productType = state.productSelection.selectedProduct === "auto" ? "auto" : undefined;
+  const { data: calcRule } = useProductCalcRule(productType);
 
   // Update phase based on current step
   useEffect(() => {
@@ -161,10 +166,62 @@ export const GuidedSalesFlow = () => {
     });
   }, []);
 
-  const handleCalculate = useCallback(() => {
+  const handleCalculate = useCallback(async () => {
     setIsCalculating(true);
-    
-    // Simulate calculation delay
+
+    // Try dynamic engine first if a calc rule is linked
+    if (calcRule?.id) {
+      try {
+        const params: Record<string, unknown> = {};
+        // Map needs analysis fields to calc rule parameters
+        const na = state.needsAnalysis as unknown as Record<string, unknown>;
+        for (const p of calcRule.parameters) {
+          const val = na[p.code];
+          if (val !== undefined) params[p.code] = val;
+        }
+        // Also include any dynamicParameters
+        if (state.dynamicParameters) {
+          Object.assign(params, state.dynamicParameters);
+        }
+
+        const { data, error } = await supabase.functions.invoke("execute-calc-rule", {
+          body: {
+            calc_rule_id: calcRule.id,
+            parameters: params,
+            selected_formula_code: state.coverage.planTier,
+          },
+        });
+
+        if (!error && data && !data.error) {
+          setState(prev => ({
+            ...prev,
+            calcRuleId: calcRule.id,
+            calculatedPremium: {
+              primeNette: data.primeNette,
+              fraisAccessoires: data.totalFees,
+              taxes: data.totalTaxes,
+              primeTTC: data.primeTTC,
+              fga: 0,
+              cedeao: 0,
+              totalAPayer: data.totalAPayer,
+              netPremium: data.primeNette,
+              fees: data.totalFees,
+              total: data.totalAPayer,
+            },
+            simulationCalculated: true,
+          }));
+          setIsCalculating(false);
+          toast.success("Tarif calculé avec succès !");
+          return;
+        }
+        // Fallback to static calculator on error
+        console.warn("Dynamic calc failed, falling back to static:", data?.error || error);
+      } catch (e) {
+        console.warn("Dynamic calc error, falling back:", e);
+      }
+    }
+
+    // Fallback: static calculator
     setTimeout(() => {
       setState(prev => {
         const breakdown = calculateAutoPremium(prev);
@@ -178,7 +235,7 @@ export const GuidedSalesFlow = () => {
       setIsCalculating(false);
       toast.success("Tarif calculé avec succès !");
     }, 1000);
-  }, []);
+  }, [calcRule, state.needsAnalysis, state.dynamicParameters, state.coverage.planTier]);
 
   const handlePackObsequesCalculate = useCallback(() => {
     setIsCalculating(true);

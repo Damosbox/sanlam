@@ -46,6 +46,9 @@ export function useProductCalcRule(productType: string | undefined) {
         fees: rule.fees as unknown as CalcRuleFee[],
         tables_ref: rule.tables_ref as unknown as CalcRuleTableRef[],
         rules: rule.rules as Record<string, unknown>,
+        options: (rule as any).options || [],
+        packages: (rule as any).packages || [],
+        charges: (rule as any).charges || [],
       } as CalcRule;
     },
   });

@@ -19,7 +19,7 @@ const fieldToTab: Record<string, string> = {
   description: "general",
   category: "general",
   product_type: "general",
-  base_premium: "general",
+  
   is_renewable: "general",
   has_claims: "general",
   is_active: "general",

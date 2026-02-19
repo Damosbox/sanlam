@@ -82,9 +82,7 @@ export const ProductFormSchema = z.object({
   has_claims: z.boolean().optional().default(true),
   is_active: z.boolean().optional().default(false),
   image_url: z.string().url().optional().or(z.literal("")),
-  base_premium: z
-    .number()
-    .gt(0, "La prime de base doit être supérieure à 0"),
+  base_premium: z.number().optional().default(0),
   coverages: z.any().optional(), // Json format
   calculation_rules: z.any().optional(), // Json format
   beneficiaries_config: z.any().optional(),

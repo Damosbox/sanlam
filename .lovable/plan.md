@@ -1,138 +1,142 @@
 
+# Plan : Refonte du configurateur de produits
 
-# Plan : Champs auto-generes verrouilles + Catalogue de variables partagees
+## Resume des changements
 
-## Contexte
-
-Deux fonctionnalites complementaires pour renforcer la coherence entre les regles de calcul (Actuariat) et le builder de formulaires (Marketing) :
-
-1. **Champs verrouilles** : quand une regle de calcul est liee a un produit, ses `parameters` apparaissent automatiquement dans le builder de formulaire, non-supprimables et non-modifiables
-2. **Catalogue de variables** : une table centralisee de variables reutilisables, selectionnable lors de la creation de parametres dans les regles de calcul
+1. Un produit peut etre lie a **plusieurs formulaires** (pas un seul)
+2. La **distribution/canal** se configure au niveau produit ET au niveau de chaque formulaire lie
+3. **Supprimer l'onglet "Calcul"** du produit
+4. Dans l'onglet **Formulaires**, pouvoir lier une regle de calcul a chaque formulaire
+5. Si aucune regle de calcul n'existe, **rediriger vers la page regles de calcul**
+6. Transformer le formulaire produit en **stepper** avec sauvegarde a chaque etape
 
 ---
 
-## Partie 1 : Catalogue de variables partagees
+## Partie 1 : Stepper de creation produit
 
-### 1.1 Nouvelle table `calculation_variables`
+### Remplacement des Tabs par un Stepper
 
-Migration SQL pour creer la table :
+**Fichier** : `src/components/admin/products/ProductForm.tsx` (refonte majeure)
+
+Le formulaire actuel utilise `<Tabs>` avec un bouton "Enregistrer" global. Il sera remplace par un stepper sequentiel :
 
 ```text
-calculation_variables
-- id          uuid (PK, gen_random_uuid())
-- code        text NOT NULL UNIQUE   -- ex: "puissance_fiscale"
-- label       text NOT NULL          -- ex: "Puissance fiscale"
-- type        text NOT NULL          -- "text" | "number" | "select" | "date" | "boolean"
-- options     jsonb DEFAULT '[]'     -- pour type "select" : ["essence","diesel","electrique"]
-- category    text NOT NULL          -- "vehicule" | "assure" | "contrat" | "bien" | "sante"
-- description text                   -- aide contextuelle
-- is_active   boolean DEFAULT true
-- created_at  timestamptz DEFAULT now()
-- updated_at  timestamptz DEFAULT now()
+Etape 1 : Informations generales
+  -> Bouton "Enregistrer & Continuer"
+  -> Insert en base, recupere le productId
+
+Etape 2 : Formulaires & Regles de calcul  (ancien "Souscription" + "Calcul")
+  -> Bouton "Enregistrer & Continuer"
+
+Etape 3 : Paiement
+  -> Bouton "Enregistrer & Continuer"
+
+Etape 4 : Documents
+  -> Bouton "Enregistrer & Continuer"
+
+Etape 5 : Ventes croisees
+  -> Bouton "Enregistrer & Continuer"
+
+Etape 6 : FAQs
+  -> Bouton "Enregistrer & Continuer"
+
+(Etapes conditionnelles selon les options activees dans l'etape 1)
+Etape 7 : Reductions     (si discounts_enabled)
+Etape 8 : Questionnaires (si medical_questionnaire_enabled)
+Etape 9 : Sinistres      (si has_claims)
+Etape 10 : Beneficiaires (si categorie = "vie")
 ```
 
-RLS : admin ALL, broker/authenticated SELECT (is_active = true).
+**Comportement du stepper** :
+- Barre de progression horizontale en haut avec les etapes numerotees
+- Chaque etape a son propre bouton "Enregistrer" qui persiste en base
+- On peut revenir a une etape precedente sans perdre les donnees
+- Pour un produit existant, on arrive directement a l'etape 1 mais on peut naviguer librement
+- L'etape 1 (creation) doit etre completee avant de pouvoir avancer (car on a besoin du `productId`)
 
-### 1.2 Page d'administration des variables
-
-**Fichier** : `src/pages/admin/CalcVariablesPage.tsx` (creer)
-
-- Table listant toutes les variables avec filtre par categorie
-- CRUD via Sheet/drawer : code, label, type, options (si select), categorie, description
-- Route : `/admin/calc-variables` ajoutee dans `AdminSidebar` et `App.tsx`
-
-### 1.3 Selection de variables dans l'editeur de regles
-
-**Fichier** : `src/components/admin/calc-rules/CalcRuleEditor.tsx` (modifier)
-
-Dans la section "Parametres de cotation" :
-- Ajouter un bouton "Importer depuis le catalogue" a cote de "Ajouter un parametre"
-- Ouvre un Dialog/Popover listant les variables du catalogue, filtrable par categorie
-- Au clic sur une variable : cree un parametre pre-rempli (code, label, type, options) avec un flag `source: "catalogue"` et `variable_id` pour tracer l'origine
-- Les parametres importes du catalogue ont le code en lecture seule (pour garder la coherence)
-- Les parametres crees manuellement restent editables normalement
-
-### 1.4 Type mis a jour
-
-**Fichier** : `src/components/admin/calc-rules/types.ts` (modifier)
-
-```typescript
-export interface CalcRuleParameter {
-  id: string;
-  code: string;
-  label: string;
-  type: "text" | "number" | "select" | "date" | "boolean";
-  options?: string[];
-  required?: boolean;
-  source?: "manual" | "catalogue";  // nouveau
-  variable_id?: string;              // nouveau - ref vers calculation_variables
-}
-```
+**Fichiers concernes** :
+- `src/components/admin/products/ProductForm.tsx` : Refonte stepper
+- `src/pages/admin/ProductEditPage.tsx` : Ajustements mineurs (passer le product)
 
 ---
 
-## Partie 2 : Champs auto-generes et verrouilles dans le builder
+## Partie 2 : Supprimer l'onglet "Calcul" du produit
 
-### 2.1 Concept
+**Fichier** : `src/components/admin/products/ProductForm.tsx`
 
-Quand un produit a une regle de calcul liee (via `product_calc_rules`), le builder de formulaire (`FormPhaseEditor`) doit :
+- Supprimer le `<TabsTrigger value="calc-rules">` et le `<TabsContent value="calc-rules">`
+- L'import de `CalcRulesTab` est retire du ProductForm
+- Le composant `CalcRulesTab` n'est pas supprime car il sera reutilise dans l'onglet Formulaires (voir partie 3)
 
-1. Charger la regle principale du produit
-2. Convertir ses `parameters` en `FieldConfig[]` avec un flag `locked: true`
-3. Injecter ces champs en tete de la premiere etape "fields" de la phase Cotation
-4. Ces champs sont affiches avec un style visuel distinct (bordure coloree, icone cadenas, badge "Calcul")
-5. Ils ne peuvent pas etre supprimes, deplaces, ni modifies par l'utilisateur Marketing
+---
 
-### 2.2 Extension du type FieldConfig
+## Partie 3 : Multi-formulaires par produit + canal par formulaire
 
-**Fichier** : `src/components/admin/FormFieldLibrary.tsx` (modifier)
+### 3.1 Nouveau modele de donnees
 
-```typescript
-export interface FieldConfig {
-  // ... champs existants
-  locked?: boolean;         // nouveau - champ verrouille non editable
-  sourceType?: "calc_rule"; // nouveau - origine du champ
-  sourceRuleId?: string;    // nouveau - id de la regle source
-}
+Actuellement un produit a un seul `subscription_form_id`. On passe a une relation N:N via une table de liaison existante ou nouvelle.
+
+**Migration SQL** : Creer la table `product_forms`
+
+```text
+product_forms
+- id            uuid (PK, gen_random_uuid())
+- product_id    uuid NOT NULL REFERENCES products(id) ON DELETE CASCADE
+- form_template_id  uuid NOT NULL REFERENCES form_templates(id) ON DELETE CASCADE
+- calc_rule_id  uuid REFERENCES calculation_rules(id) ON DELETE SET NULL
+- channel       text NOT NULL DEFAULT 'b2b'   -- 'b2b' | 'b2c' | 'both'
+- is_active     boolean NOT NULL DEFAULT true
+- display_order integer NOT NULL DEFAULT 0
+- created_at    timestamptz DEFAULT now()
+- UNIQUE(product_id, form_template_id)
 ```
 
-### 2.3 Modification du FormPhaseEditor
+RLS : admin ALL, broker SELECT (is_active = true).
 
-**Fichier** : `src/components/admin/form-builder/FormPhaseEditor.tsx` (modifier)
+### 3.2 Refonte de l'onglet "Formulaires" (ex-Souscription)
 
-- Accepter une nouvelle prop `productId?: string`
-- Utiliser un `useQuery` pour charger la regle principale via `product_calc_rules` + `calculation_rules`
-- Convertir les `parameters` de la regle en `FieldConfig[]` verrouilles
-- Fusionner ces champs avec ceux du builder (champs verrouilles en premier, non-deplacables)
-- Empecher `removeField()` et `updateField()` sur les champs verrouilles
-- Empecher le drag-and-drop des champs verrouilles
+**Fichier** : `src/components/admin/products/tabs/SubscriptionFieldsTab.tsx` (renommer en `FormsTab.tsx`)
 
-### 2.4 Modification du FormSubStepEditor
+Le nouveau contenu :
 
-**Fichier** : `src/components/admin/form-builder/FormSubStepEditor.tsx` (modifier)
+1. **Liste des formulaires lies** : tableau/cards affichant chaque formulaire lie avec :
+   - Nom du formulaire
+   - Canal (B2B / B2C / Les deux) modifiable via Select
+   - Regle de calcul liee (Select parmi les regles existantes)
+   - Boutons : Modifier / Dupliquer / Supprimer le lien
+   - Switch actif/inactif
 
-- Afficher les champs verrouilles avec un style distinct :
-  - Bordure bleue/amber a gauche
-  - Icone cadenas au lieu du grip
-  - Badge "Regle de calcul" 
-  - Fond legerement colore
-- Masquer les boutons supprimer / deplacer pour ces champs
-- Au survol : tooltip "Ce champ provient de la regle de calcul et ne peut pas etre modifie"
+2. **Ajouter un formulaire** : 
+   - Bouton "Lier un formulaire existant" -> Combobox de selection
+   - Bouton "Creer un nouveau formulaire" -> ouvre FormEditorDrawer
 
-### 2.5 Modification du FormFieldEditor
+3. **Lier une regle de calcul** :
+   - Pour chaque formulaire lie, un Select affiche les regles de calcul disponibles
+   - Si aucune regle n'existe dans le systeme : afficher un message d'alerte avec un bouton "Creer une regle de calcul" qui redirige vers `/admin/calc-rules`
+   - Le badge "Aucune regle" apparait en orange pour signaler l'absence
 
-**Fichier** : `src/components/admin/FormFieldEditor.tsx` (modifier)
+4. **Distribution/Canal** :
+   - Au niveau produit : les canaux globaux restent dans GeneralInfoTab (B2B/B2C)
+   - Au niveau formulaire : chaque lien produit-formulaire a son propre canal
+   - Un formulaire ne peut etre actif sur un canal que si le produit l'est aussi
 
-- Si le champ selectionne a `locked: true` : afficher tous les champs en lecture seule
-- Afficher un message explicatif : "Ce champ est genere automatiquement depuis la regle de calcul [nom]. Pour le modifier, editez la regle dans l'espace Actuariat."
-- Lien vers `/admin/calc-rules` pour navigation rapide
+### 3.3 Suppression de `subscription_form_id`
 
-### 2.6 Modification du FormEditorDrawer
+- Le champ `subscription_form_id` dans `ProductFormData` devient obsolete
+- Les references a ce champ dans le code seront remplacees par des requetes vers `product_forms`
+- Le champ en base reste pour compatibilite mais n'est plus utilise par le UI
 
-**Fichier** : `src/components/admin/products/FormEditorDrawer.tsx` (modifier)
+---
 
-- Passer `productId` au `FormPhaseEditor` pour permettre le chargement des regles
-- Lors de la sauvegarde : ne pas persister les champs verrouilles dans `form_templates` (ils sont dynamiques, generes a la volee depuis la regle)
+## Partie 4 : Flow de redirection si 0 regles de calcul
+
+**Fichier** : `src/components/admin/products/tabs/FormsTab.tsx` (nouveau nom)
+
+Quand l'utilisateur essaie de lier une regle de calcul a un formulaire :
+- Si `allRules.length === 0` : afficher une Alert avec :
+  - Message : "Aucune regle de calcul n'est disponible. Vous devez d'abord creer une regle de calcul."
+  - Bouton : "Aller aux regles de calcul" -> `navigate("/admin/calc-rules")`
+- Si des regles existent : afficher le Select normalement
 
 ---
 
@@ -140,53 +144,53 @@ export interface FieldConfig {
 
 | Fichier | Action | Description |
 |---------|--------|-------------|
-| Migration SQL | Creer | Table `calculation_variables` |
-| `src/pages/admin/CalcVariablesPage.tsx` | Creer | CRUD des variables du catalogue |
-| `src/components/admin/calc-rules/types.ts` | Modifier | Ajouter `source` et `variable_id` a `CalcRuleParameter` |
-| `src/components/admin/calc-rules/CalcRuleEditor.tsx` | Modifier | Bouton "Importer depuis catalogue" |
-| `src/components/admin/FormFieldLibrary.tsx` | Modifier | Ajouter `locked`, `sourceType`, `sourceRuleId` a `FieldConfig` |
-| `src/components/admin/form-builder/FormPhaseEditor.tsx` | Modifier | Charger regle, injecter champs verrouilles |
-| `src/components/admin/form-builder/FormSubStepEditor.tsx` | Modifier | Style visuel distinct pour champs verrouilles |
-| `src/components/admin/FormFieldEditor.tsx` | Modifier | Mode lecture seule pour champs verrouilles |
-| `src/components/admin/products/FormEditorDrawer.tsx` | Modifier | Passer productId, exclure champs verrouilles a la sauvegarde |
-| `src/components/admin/AdminSidebar.tsx` | Modifier | Ajouter lien "Variables" |
-| `src/App.tsx` | Modifier | Route `/admin/calc-variables` |
+| Migration SQL | Creer | Table `product_forms` (liaison produit-formulaire-regle-canal) |
+| `src/components/admin/products/ProductForm.tsx` | Refonte | Stepper avec sauvegarde par etape |
+| `src/components/admin/products/tabs/SubscriptionFieldsTab.tsx` | Renommer/Refonte | Devient `FormsTab.tsx` avec multi-formulaires + regles + canaux |
+| `src/components/admin/products/tabs/CalcRulesTab.tsx` | Conserver | Reutilise en tant que sous-composant dans FormsTab |
+| `src/pages/admin/ProductEditPage.tsx` | Modifier | Adapter au stepper |
+| `src/hooks/useProductValidation.ts` | Modifier | Adapter au stepper (validation par etape) |
+| `src/schemas/product.ts` | Modifier | Retirer `subscription_form_id` de la validation |
 
 ---
 
 ## Details techniques
 
-### Conversion parametre -> FieldConfig
+### Structure du stepper
 
 ```text
-function parameterToFieldConfig(param: CalcRuleParameter, ruleId: string): FieldConfig {
-  return {
-    id: `calc_${param.code}`,          // prefixe pour eviter les collisions
-    type: mapParamType(param.type),     // "number" -> "number", "select" -> "select", etc.
-    label: param.label,
-    required: param.required ?? true,
-    options: param.options,
-    locked: true,
-    sourceType: "calc_rule",
-    sourceRuleId: ruleId,
-  };
-}
+const STEPS = [
+  { id: "general", label: "Informations", component: GeneralInfoTab },
+  { id: "forms", label: "Formulaires", component: FormsTab },
+  { id: "payment", label: "Paiement", component: PaymentMethodsTab },
+  { id: "documents", label: "Documents", component: DocumentsTab },
+  { id: "sales", label: "Ventes", component: SalesTab },
+  { id: "faqs", label: "FAQs", component: FaqsTab },
+];
+
+// Etapes conditionnelles ajoutees dynamiquement
 ```
 
-### Fusion dans le builder
+### Sauvegarde par etape
 
-Les champs verrouilles sont injectes dynamiquement lors du rendu, pas stockes en base. Cela garantit que :
-- Si la regle est modifiee (ajout/suppression de parametre), le builder se met a jour automatiquement
-- Pas de desynchronisation entre la regle et le formulaire
-- Les champs marketing restent independants et editables
+A chaque clic sur "Enregistrer & Continuer" :
+1. Validation Zod de l'etape courante uniquement
+2. Insert/Update en base (upsert du produit)
+3. Recuperation du `productId` si creation
+4. Passage a l'etape suivante
+5. Toast de confirmation
 
-### Categories de variables suggerees
+### Schema de la table product_forms
 
-| Categorie | Exemples |
-|-----------|----------|
-| vehicule | puissance_fiscale, energie, date_1ere_circ, nombre_places, valeur_neuve |
-| assure | age, genre, anciennete_permis, situation_pro |
-| contrat | duree, periodicite, date_effet, usage |
-| bien | surface, nb_pieces, type_construction, localisation |
-| sante | age, nb_enfants, zone_couverture, formule |
+```text
+product_forms
+  product_id ──── products.id
+  form_template_id ── form_templates.id
+  calc_rule_id ────── calculation_rules.id (nullable)
+  channel ──────────── 'b2b' | 'b2c' | 'both'
+```
 
+Cela permet :
+- 1 produit -> N formulaires
+- Chaque formulaire a sa propre regle de calcul
+- Chaque formulaire a son propre canal de distribution

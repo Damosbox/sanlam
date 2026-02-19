@@ -309,7 +309,7 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
         {/* 2. Parameters (enriched) */}
         <AccordionItem value="parameters" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold">
-            Paramètres de cotation <Badge variant="secondary" className="ml-2">{form.parameters.length}</Badge>
+            <span className="flex items-center gap-2">Paramètres de cotation <Badge variant="secondary">{form.parameters.length}</Badge></span>
           </AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
             <p className="text-xs text-muted-foreground">Champs obligatoires affichés lors de la cotation</p>
@@ -409,7 +409,7 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
         {/* 3. Chargements (NEW) */}
         <AccordionItem value="charges" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold">
-            Chargements <Badge variant="secondary" className="ml-2">{form.charges.length}</Badge>
+            <span className="flex items-center gap-2">Chargements <Badge variant="secondary">{form.charges.length}</Badge></span>
           </AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
             <p className="text-xs text-muted-foreground">Chargements d'acquisition, de gestion et techniques</p>
@@ -443,7 +443,7 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
         {/* 4. Formules de calcul (separated from packs) */}
         <AccordionItem value="formulas" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold">
-            Formules de calcul <Badge variant="secondary" className="ml-2">{form.formulas.length}</Badge>
+            <span className="flex items-center gap-2">Formules de calcul <Badge variant="secondary">{form.formulas.length}</Badge></span>
           </AccordionTrigger>
           <AccordionContent className="space-y-4 pb-4">
             <p className="text-xs text-muted-foreground">Expressions mathématiques (PUC, PAC, primes périodiques)</p>
@@ -502,7 +502,7 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
         {/* 5. Packs commerciaux (NEW, separated from formulas) */}
         <AccordionItem value="packages" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold">
-            Packs commerciaux <Badge variant="secondary" className="ml-2">{form.packages.length}</Badge>
+            <span className="flex items-center gap-2">Packs commerciaux <Badge variant="secondary">{form.packages.length}</Badge></span>
           </AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
             <p className="text-xs text-muted-foreground">Formules commerciales (Bronze, Argent, Or) avec leurs configurations</p>
@@ -544,7 +544,7 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
         {/* 6. Options (NEW) */}
         <AccordionItem value="options" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold">
-            Options <Badge variant="secondary" className="ml-2">{form.options.length}</Badge>
+            <span className="flex items-center gap-2">Options <Badge variant="secondary">{form.options.length}</Badge></span>
           </AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
             <p className="text-xs text-muted-foreground">Configurations paramétrables (ex: nombre d'enfants, niveaux de couverture)</p>
@@ -597,7 +597,7 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
         {/* 8. Tables de référence */}
         <AccordionItem value="tables_ref" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold">
-            Tables de référence <Badge variant="secondary" className="ml-2">{form.tables_ref.length}</Badge>
+            <span className="flex items-center gap-2">Tables de référence <Badge variant="secondary">{form.tables_ref.length}</Badge></span>
           </AccordionTrigger>
           <AccordionContent className="space-y-4 pb-4">
             <p className="text-xs text-muted-foreground">Barèmes et tables utilisés dans les formules via LOOKUP() et BRACKET()</p>
@@ -631,7 +631,7 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
         {/* 9. Taxes */}
         <AccordionItem value="taxes" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold">
-            Taxes <Badge variant="secondary" className="ml-2">{form.taxes.length}</Badge>
+            <span className="flex items-center gap-2">Taxes <Badge variant="secondary">{form.taxes.length}</Badge></span>
           </AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
             {form.taxes.map((t, idx) => (
@@ -652,7 +652,7 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
         {/* 10. Fees */}
         <AccordionItem value="fees" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold">
-            Frais <Badge variant="secondary" className="ml-2">{form.fees.length}</Badge>
+            <span className="flex items-center gap-2">Frais <Badge variant="secondary">{form.fees.length}</Badge></span>
           </AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
             {form.fees.map((fe, idx) => (

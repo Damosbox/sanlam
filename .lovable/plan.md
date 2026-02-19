@@ -1,196 +1,173 @@
 
-# Plan : Refonte du configurateur de produits
 
-## Resume des changements
+# Plan : Enrichissement de l'editeur de regles de calcul
 
-1. Un produit peut etre lie a **plusieurs formulaires** (pas un seul)
-2. La **distribution/canal** se configure au niveau produit ET au niveau de chaque formulaire lie
-3. **Supprimer l'onglet "Calcul"** du produit
-4. Dans l'onglet **Formulaires**, pouvoir lier une regle de calcul a chaque formulaire
-5. Si aucune regle de calcul n'existe, **rediriger vers la page regles de calcul**
-6. Transformer le formulaire produit en **stepper** avec sauvegarde a chaque etape
+## Contexte
+
+Le fichier JSON de reference (moteur_produit.json) revele 4 manques dans l'editeur actuel :
+
+1. Les **formules** (expressions de calcul) et les **packs** (formules commerciales Bronze/Argent/Or) sont melanges dans un seul bloc
+2. Il manque un bloc **Options** (configurations parametrables comme "3 enfants", "6 enfants")
+3. Il manque un bloc **Charges** (chargements d'acquisition, de gestion - actuellement noyes dans les parametres)
+4. Les parametres manquent de champs : `category`, `value`, `valueType`
 
 ---
 
-## Partie 1 : Stepper de creation produit
+## Partie 1 : Nouveaux types
 
-### Remplacement des Tabs par un Stepper
+**Fichier** : `src/components/admin/calc-rules/types.ts`
 
-**Fichier** : `src/components/admin/products/ProductForm.tsx` (refonte majeure)
-
-Le formulaire actuel utilise `<Tabs>` avec un bouton "Enregistrer" global. Il sera remplace par un stepper sequentiel :
+Ajouter 3 nouvelles interfaces :
 
 ```text
-Etape 1 : Informations generales
-  -> Bouton "Enregistrer & Continuer"
-  -> Insert en base, recupere le productId
+CalcRuleOption
+  - id: string
+  - code: string        (ex: OPTION_1)
+  - name: string        (ex: Option 1)
+  - description: string (ex: 3 enfants)
+  - parameters: string  (ex: NOMBRE_ENFANTS=3)
+  - displayOrder: number
+  - isActive: boolean
 
-Etape 2 : Formulaires & Regles de calcul  (ancien "Souscription" + "Calcul")
-  -> Bouton "Enregistrer & Continuer"
+CalcRulePackage
+  - id: string
+  - code: string        (ex: BRONZE)
+  - name: string        (ex: Formule Bronze)
+  - description: string
+  - configuration: string (ex: CAPITAL_ASSURE=300000;CAPITAL_ENFANT=150000)
+  - displayOrder: number
+  - isActive: boolean
 
-Etape 3 : Paiement
-  -> Bouton "Enregistrer & Continuer"
-
-Etape 4 : Documents
-  -> Bouton "Enregistrer & Continuer"
-
-Etape 5 : Ventes croisees
-  -> Bouton "Enregistrer & Continuer"
-
-Etape 6 : FAQs
-  -> Bouton "Enregistrer & Continuer"
-
-(Etapes conditionnelles selon les options activees dans l'etape 1)
-Etape 7 : Reductions     (si discounts_enabled)
-Etape 8 : Questionnaires (si medical_questionnaire_enabled)
-Etape 9 : Sinistres      (si has_claims)
-Etape 10 : Beneficiaires (si categorie = "vie")
+CalcRuleCharge
+  - id: string
+  - code: string        (ex: CHARGEMENT_ACQUISITION)
+  - name: string        (ex: Chargement d'acquisition)
+  - description: string
+  - value: string       (ex: 0.2)
+  - category: string    (ex: CHARGEMENT, TECHNIQUE)
+  - displayOrder: number
 ```
 
-**Comportement du stepper** :
-- Barre de progression horizontale en haut avec les etapes numerotees
-- Chaque etape a son propre bouton "Enregistrer" qui persiste en base
-- On peut revenir a une etape precedente sans perdre les donnees
-- Pour un produit existant, on arrive directement a l'etape 1 mais on peut naviguer librement
-- L'etape 1 (creation) doit etre completee avant de pouvoir avancer (car on a besoin du `productId`)
+Enrichir `CalcRuleParameter` avec :
+- `category?: string` (TECHNIQUE, CHARGEMENT, FRAIS, COTATION)
+- `value?: string` (valeur par defaut)
+- `valueType?: number` (type de valeur)
 
-**Fichiers concernes** :
-- `src/components/admin/products/ProductForm.tsx` : Refonte stepper
-- `src/pages/admin/ProductEditPage.tsx` : Ajustements mineurs (passer le product)
-
----
-
-## Partie 2 : Supprimer l'onglet "Calcul" du produit
-
-**Fichier** : `src/components/admin/products/ProductForm.tsx`
-
-- Supprimer le `<TabsTrigger value="calc-rules">` et le `<TabsContent value="calc-rules">`
-- L'import de `CalcRulesTab` est retire du ProductForm
-- Le composant `CalcRulesTab` n'est pas supprime car il sera reutilise dans l'onglet Formulaires (voir partie 3)
+Enrichir `CalcRule` avec :
+- `options: CalcRuleOption[]`
+- `packages: CalcRulePackage[]`
+- `charges: CalcRuleCharge[]`
 
 ---
 
-## Partie 3 : Multi-formulaires par produit + canal par formulaire
+## Partie 2 : Migration base de donnees
 
-### 3.1 Nouveau modele de donnees
-
-Actuellement un produit a un seul `subscription_form_id`. On passe a une relation N:N via une table de liaison existante ou nouvelle.
-
-**Migration SQL** : Creer la table `product_forms`
+**Migration SQL** : Ajouter 3 colonnes jsonb a `calculation_rules`
 
 ```text
-product_forms
-- id            uuid (PK, gen_random_uuid())
-- product_id    uuid NOT NULL REFERENCES products(id) ON DELETE CASCADE
-- form_template_id  uuid NOT NULL REFERENCES form_templates(id) ON DELETE CASCADE
-- calc_rule_id  uuid REFERENCES calculation_rules(id) ON DELETE SET NULL
-- channel       text NOT NULL DEFAULT 'b2b'   -- 'b2b' | 'b2c' | 'both'
-- is_active     boolean NOT NULL DEFAULT true
-- display_order integer NOT NULL DEFAULT 0
-- created_at    timestamptz DEFAULT now()
-- UNIQUE(product_id, form_template_id)
+ALTER TABLE calculation_rules
+  ADD COLUMN options jsonb NOT NULL DEFAULT '[]'::jsonb,
+  ADD COLUMN packages jsonb NOT NULL DEFAULT '[]'::jsonb,
+  ADD COLUMN charges jsonb NOT NULL DEFAULT '[]'::jsonb;
 ```
-
-RLS : admin ALL, broker SELECT (is_active = true).
-
-### 3.2 Refonte de l'onglet "Formulaires" (ex-Souscription)
-
-**Fichier** : `src/components/admin/products/tabs/SubscriptionFieldsTab.tsx` (renommer en `FormsTab.tsx`)
-
-Le nouveau contenu :
-
-1. **Liste des formulaires lies** : tableau/cards affichant chaque formulaire lie avec :
-   - Nom du formulaire
-   - Canal (B2B / B2C / Les deux) modifiable via Select
-   - Regle de calcul liee (Select parmi les regles existantes)
-   - Boutons : Modifier / Dupliquer / Supprimer le lien
-   - Switch actif/inactif
-
-2. **Ajouter un formulaire** : 
-   - Bouton "Lier un formulaire existant" -> Combobox de selection
-   - Bouton "Creer un nouveau formulaire" -> ouvre FormEditorDrawer
-
-3. **Lier une regle de calcul** :
-   - Pour chaque formulaire lie, un Select affiche les regles de calcul disponibles
-   - Si aucune regle n'existe dans le systeme : afficher un message d'alerte avec un bouton "Creer une regle de calcul" qui redirige vers `/admin/calc-rules`
-   - Le badge "Aucune regle" apparait en orange pour signaler l'absence
-
-4. **Distribution/Canal** :
-   - Au niveau produit : les canaux globaux restent dans GeneralInfoTab (B2B/B2C)
-   - Au niveau formulaire : chaque lien produit-formulaire a son propre canal
-   - Un formulaire ne peut etre actif sur un canal que si le produit l'est aussi
-
-### 3.3 Suppression de `subscription_form_id`
-
-- Le champ `subscription_form_id` dans `ProductFormData` devient obsolete
-- Les references a ce champ dans le code seront remplacees par des requetes vers `product_forms`
-- Le champ en base reste pour compatibilite mais n'est plus utilise par le UI
 
 ---
 
-## Partie 4 : Flow de redirection si 0 regles de calcul
+## Partie 3 : Refonte de l'editeur (CalcRuleEditor)
 
-**Fichier** : `src/components/admin/products/tabs/FormsTab.tsx` (nouveau nom)
+**Fichier** : `src/components/admin/calc-rules/CalcRuleEditor.tsx`
 
-Quand l'utilisateur essaie de lier une regle de calcul a un formulaire :
-- Si `allRules.length === 0` : afficher une Alert avec :
-  - Message : "Aucune regle de calcul n'est disponible. Vous devez d'abord creer une regle de calcul."
-  - Bouton : "Aller aux regles de calcul" -> `navigate("/admin/calc-rules")`
-- Si des regles existent : afficher le Select normalement
+### 3.1 Separation "Formules / Packs" en deux accordions
+
+L'accordion actuel "Formules / Packs" sera scinde en :
+
+- **Accordion "Formules de calcul"** : expressions mathematiques (PUC, PAC, primes periodiques)
+  - Code, nom, expression, variable resultat
+  - Chaque formule garde ses garanties couvertes
+  
+- **Accordion "Packs commerciaux"** : formules commerciales (Bronze, Argent, Or)
+  - Code, nom, description
+  - Configuration sous forme cle=valeur (ex: CAPITAL_ASSURE=300000;CAPITAL_ENFANT=150000)
+  - Ordre d'affichage, switch actif/inactif
+
+### 3.2 Nouveau bloc "Options"
+
+Nouvel accordion entre les packs et les taxes :
+
+- Code, nom, description
+- Parametres sous forme cle=valeur (ex: NOMBRE_ENFANTS=3)
+- Ordre d'affichage, switch actif/inactif
+
+### 3.3 Nouveau bloc "Chargements"
+
+Nouvel accordion apres les parametres :
+
+- Code, nom, description
+- Valeur (taux ou montant fixe)
+- Categorie (TECHNIQUE, CHARGEMENT, FRAIS)
+- Ordre d'affichage
+
+### 3.4 Parametres enrichis
+
+Dans l'accordion "Parametres de cotation", ajouter :
+- Champ `category` (select : TECHNIQUE, CHARGEMENT, FRAIS, COTATION)
+- Champ `value` (valeur par defaut)
+- Ces champs sont optionnels et collapses par defaut
+
+---
+
+## Partie 4 : Mise a jour du formulaire d'etat
+
+**Fichier** : `src/components/admin/calc-rules/CalcRuleEditor.tsx`
+
+Le state `form` sera enrichi avec :
+- `options: CalcRuleOption[]`
+- `packages: CalcRulePackage[]`
+- `charges: CalcRuleCharge[]`
+
+Les fonctions CRUD suivantes seront ajoutees :
+- `addOption`, `updateOption`, `removeOption`
+- `addPackage`, `updatePackage`, `removePackage`
+- `addCharge`, `updateCharge`, `removeCharge`
+
+Le `useEffect` d'hydratation et le `onSave` incluront ces 3 nouveaux tableaux.
+
+---
+
+## Partie 5 : Mise a jour de la page CalcRulesPage
+
+**Fichier** : `src/pages/admin/CalcRulesPage.tsx`
+
+- Ajouter les colonnes Options, Packs, Charges dans le tableau de la liste
+- Le payload de sauvegarde inclura `options`, `packages`, `charges`
+
+---
+
+## Ordre des accordions dans l'editeur final
+
+```text
+1. Informations generales
+2. Parametres de cotation (enrichis avec category/value)
+3. Chargements (NOUVEAU)
+4. Formules de calcul (separe des packs)
+5. Packs commerciaux (NOUVEAU, separe des formules)
+6. Options (NOUVEAU)
+7. Formule de base
+8. Tables de reference
+9. Taxes
+10. Frais
+11. Simulation
+```
 
 ---
 
 ## Resume des fichiers
 
-| Fichier | Action | Description |
-|---------|--------|-------------|
-| Migration SQL | Creer | Table `product_forms` (liaison produit-formulaire-regle-canal) |
-| `src/components/admin/products/ProductForm.tsx` | Refonte | Stepper avec sauvegarde par etape |
-| `src/components/admin/products/tabs/SubscriptionFieldsTab.tsx` | Renommer/Refonte | Devient `FormsTab.tsx` avec multi-formulaires + regles + canaux |
-| `src/components/admin/products/tabs/CalcRulesTab.tsx` | Conserver | Reutilise en tant que sous-composant dans FormsTab |
-| `src/pages/admin/ProductEditPage.tsx` | Modifier | Adapter au stepper |
-| `src/hooks/useProductValidation.ts` | Modifier | Adapter au stepper (validation par etape) |
-| `src/schemas/product.ts` | Modifier | Retirer `subscription_form_id` de la validation |
+| Fichier | Action |
+|---------|--------|
+| Migration SQL | Ajouter colonnes `options`, `packages`, `charges` |
+| `src/components/admin/calc-rules/types.ts` | Ajouter 3 interfaces + enrichir CalcRuleParameter et CalcRule |
+| `src/components/admin/calc-rules/CalcRuleEditor.tsx` | 3 nouveaux accordions + separation formules/packs + parametres enrichis |
+| `src/pages/admin/CalcRulesPage.tsx` | Colonnes et payload mis a jour |
+| `src/components/admin/calc-rules/CalcRuleSimulator.tsx` | Passer les nouvelles props si necessaire |
 
----
-
-## Details techniques
-
-### Structure du stepper
-
-```text
-const STEPS = [
-  { id: "general", label: "Informations", component: GeneralInfoTab },
-  { id: "forms", label: "Formulaires", component: FormsTab },
-  { id: "payment", label: "Paiement", component: PaymentMethodsTab },
-  { id: "documents", label: "Documents", component: DocumentsTab },
-  { id: "sales", label: "Ventes", component: SalesTab },
-  { id: "faqs", label: "FAQs", component: FaqsTab },
-];
-
-// Etapes conditionnelles ajoutees dynamiquement
-```
-
-### Sauvegarde par etape
-
-A chaque clic sur "Enregistrer & Continuer" :
-1. Validation Zod de l'etape courante uniquement
-2. Insert/Update en base (upsert du produit)
-3. Recuperation du `productId` si creation
-4. Passage a l'etape suivante
-5. Toast de confirmation
-
-### Schema de la table product_forms
-
-```text
-product_forms
-  product_id ──── products.id
-  form_template_id ── form_templates.id
-  calc_rule_id ────── calculation_rules.id (nullable)
-  channel ──────────── 'b2b' | 'b2c' | 'both'
-```
-
-Cela permet :
-- 1 produit -> N formulaires
-- Chaque formulaire a sa propre regle de calcul
-- Chaque formulaire a son propre canal de distribution

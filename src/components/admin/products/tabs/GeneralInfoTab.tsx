@@ -215,30 +215,6 @@ export function GeneralInfoTab({ formData, updateField, errors = {} }: GeneralIn
               </div>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="base_premium">Prime de base (FCFA) *</Label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="max-w-xs">
-                      <p>Montant de référence pour la tarification. Les règles de calcul détaillées (coefficients, taxes) sont configurées dans le formulaire de cotation, onglet Souscription.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <Input
-                id="base_premium"
-                type="number"
-                value={formData.base_premium}
-                onChange={(e) => updateField("base_premium", parseFloat(e.target.value) || 0)}
-                placeholder="0"
-                className={errors.base_premium ? "border-destructive" : ""}
-              />
-              {fieldError("base_premium")}
-            </div>
           </CardContent>
         </Card>
 

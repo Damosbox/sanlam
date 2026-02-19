@@ -180,6 +180,7 @@ export type Database = {
       calculation_rules: {
         Row: {
           base_formula: string | null
+          charges: Json
           created_at: string
           created_by: string | null
           description: string | null
@@ -188,6 +189,8 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          options: Json
+          packages: Json
           parameters: Json
           rules: Json
           tables_ref: Json
@@ -199,6 +202,7 @@ export type Database = {
         }
         Insert: {
           base_formula?: string | null
+          charges?: Json
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -207,6 +211,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          options?: Json
+          packages?: Json
           parameters?: Json
           rules?: Json
           tables_ref?: Json
@@ -218,6 +224,7 @@ export type Database = {
         }
         Update: {
           base_formula?: string | null
+          charges?: Json
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -226,6 +233,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          options?: Json
+          packages?: Json
           parameters?: Json
           rules?: Json
           tables_ref?: Json

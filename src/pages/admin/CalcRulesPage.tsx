@@ -41,6 +41,9 @@ const emptyRule: Omit<CalcRule, "id" | "created_at" | "updated_at"> = {
   base_formula: "",
   is_active: true,
   created_by: null,
+  options: [],
+  packages: [],
+  charges: [],
 };
 
 export default function CalcRulesPage() {
@@ -79,6 +82,9 @@ export default function CalcRulesPage() {
         tables_ref: JSON.parse(JSON.stringify(rule.tables_ref || [])),
         base_formula: rule.base_formula,
         is_active: rule.is_active,
+        options: JSON.parse(JSON.stringify(rule.options || [])),
+        packages: JSON.parse(JSON.stringify(rule.packages || [])),
+        charges: JSON.parse(JSON.stringify(rule.charges || [])),
       };
       if (rule.id) {
         const { error } = await supabase.from("calculation_rules").update(payload as any).eq("id", rule.id);
@@ -168,18 +174,21 @@ export default function CalcRulesPage() {
             <TableRow>
               <TableHead>Nom</TableHead>
               <TableHead>Type</TableHead>
-              <TableHead>Catégorie d'usage</TableHead>
-              <TableHead>Paramètres</TableHead>
-              <TableHead>Formules</TableHead>
+              <TableHead>Catégorie</TableHead>
+              <TableHead>Param.</TableHead>
+              <TableHead>Form.</TableHead>
+              <TableHead>Packs</TableHead>
+              <TableHead>Opt.</TableHead>
+              <TableHead>Charg.</TableHead>
               <TableHead>Actif</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Chargement...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">Chargement...</TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Aucune règle trouvée</TableCell></TableRow>
+              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">Aucune règle trouvée</TableCell></TableRow>
             ) : (
               filtered.map((rule) => (
                 <TableRow key={rule.id}>
@@ -197,6 +206,9 @@ export default function CalcRulesPage() {
                   </TableCell>
                   <TableCell>{(rule.parameters as any[])?.length || 0}</TableCell>
                   <TableCell>{(rule.formulas as any[])?.length || 0}</TableCell>
+                  <TableCell>{(rule.packages as any[])?.length || 0}</TableCell>
+                  <TableCell>{(rule.options as any[])?.length || 0}</TableCell>
+                  <TableCell>{(rule.charges as any[])?.length || 0}</TableCell>
                   <TableCell>
                     <Switch
                       checked={rule.is_active}

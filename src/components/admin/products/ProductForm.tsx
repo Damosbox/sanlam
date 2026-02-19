@@ -3,23 +3,21 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Save, Loader2, AlertTriangle } from "lucide-react";
+import { Save, Loader2, AlertTriangle, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { GeneralInfoTab } from "./tabs/GeneralInfoTab";
-import { SubscriptionFieldsTab } from "./tabs/SubscriptionFieldsTab";
+import { FormsTab } from "./tabs/FormsTab";
 import { BeneficiariesTab } from "./tabs/BeneficiariesTab";
 import { PaymentMethodsTab } from "./tabs/PaymentMethodsTab";
 import { DocumentsTab } from "./tabs/DocumentsTab";
 import { SalesTab } from "./tabs/SalesTab";
 import { FaqsTab } from "./tabs/FaqsTab";
-import { CalcRulesTab } from "./tabs/CalcRulesTab";
 import { DiscountsTab } from "./tabs/DiscountsTab";
 import { QuestionnairesTab } from "./tabs/QuestionnairesTab";
 import { ClaimsConfigTab } from "./tabs/ClaimsConfigTab";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
-import { useProductValidation } from "@/hooks/useProductValidation";
 import { ProductFormSchema } from "@/schemas/product";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +28,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import type { ProductCalculationRules } from "@/types/product";
 
 interface ProductFormProps {
   product: any | null;
@@ -57,7 +54,6 @@ export interface ProductFormData {
   alternative_products: string[];
   faqs: any[];
   subscription_form_id: string | null;
-  // New fields
   channels: { b2b: boolean; b2c: boolean };
   periodicity: string[];
   discounts_enabled: boolean;
@@ -105,13 +101,32 @@ const defaultFormData: ProductFormData = {
   questionnaires: [],
 };
 
+interface StepDef {
+  id: string;
+  label: string;
+  condition?: (data: ProductFormData) => boolean;
+}
+
+const ALL_STEPS: StepDef[] = [
+  { id: "general", label: "Informations" },
+  { id: "forms", label: "Formulaires" },
+  { id: "payment", label: "Paiement" },
+  { id: "documents", label: "Documents" },
+  { id: "sales", label: "Ventes croisées" },
+  { id: "faqs", label: "FAQs" },
+  { id: "discounts", label: "Réductions", condition: (d) => d.discounts_enabled },
+  { id: "questionnaires", label: "Questionnaires", condition: (d) => d.medical_questionnaire_enabled },
+  { id: "claims-config", label: "Sinistres", condition: (d) => d.has_claims },
+  { id: "beneficiaries", label: "Bénéficiaires", condition: (d) => d.category === "vie" },
+];
+
 export function ProductForm({ product, isNew }: ProductFormProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [currentStep, setCurrentStep] = useState(0);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
-  const [validationTriggered, setValidationTriggered] = useState(false);
 
   const [formData, setFormData] = useState<ProductFormData>(() => {
     if (product) {
@@ -149,7 +164,8 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
   });
 
   const { isDirty, checkDirty, markClean } = useUnsavedChanges(formData);
-  const validation = useProductValidation(formData);
+
+  const activeSteps = ALL_STEPS.filter((s) => !s.condition || s.condition(formData));
 
   const updateField = useCallback(<K extends keyof ProductFormData>(
     field: K,
@@ -157,13 +173,12 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
   ) => {
     setFormData((prev) => {
       const next = { ...prev, [field]: value };
-      // Defer dirty check
       setTimeout(() => checkDirty(next), 0);
       return next;
     });
   }, [checkDirty]);
 
-  // Intercept browser back / route changes
+  // Intercept browser back
   useEffect(() => {
     if (!isDirty) return;
     const handlePopState = (e: PopStateEvent) => {
@@ -218,22 +233,41 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
         questionnaires: data.questionnaires,
       };
 
-      if (isNew) {
-        const { error } = await supabase.from("products").insert(payload);
+      if (!data.productId) {
+        const { data: inserted, error } = await supabase
+          .from("products")
+          .insert(payload)
+          .select("id")
+          .single();
         if (error) throw error;
+        return inserted.id as string;
       } else {
         const { error } = await supabase
           .from("products")
           .update(payload)
-          .eq("id", product.id);
+          .eq("id", data.productId);
         if (error) throw error;
+        return data.productId;
       }
     },
-    onSuccess: () => {
+    onSuccess: (productId) => {
       markClean();
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast({ title: isNew ? "Produit créé" : "Produit mis à jour" });
-      navigate("/admin/products");
+      queryClient.invalidateQueries({ queryKey: ["product", productId] });
+
+      // Update local state with productId if it was a creation
+      if (!formData.productId) {
+        setFormData((prev) => ({ ...prev, productId }));
+      }
+
+      const isLastStep = currentStep === activeSteps.length - 1;
+      if (isLastStep) {
+        toast({ title: "Produit enregistré avec succès !" });
+        navigate("/admin/products");
+      } else {
+        toast({ title: "Étape enregistrée" });
+        setCurrentStep((s) => s + 1);
+      }
     },
     onError: (error) => {
       console.error("Save error:", error);
@@ -241,176 +275,141 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
     },
   });
 
-  const handleSave = () => {
-    setValidationTriggered(true);
-    const result = ProductFormSchema.safeParse(formData);
-    if (!result.success) {
-      const firstTab = validation.tabErrors[0]?.tab;
-      const messages = result.error.issues.map((i) => i.message).slice(0, 3);
-      toast({
-        title: "Formulaire incomplet",
-        description: messages.join(" • "),
-        variant: "destructive",
-      });
-      return;
+  const handleSaveStep = () => {
+    // For step 0 (general), validate required fields
+    if (currentStep === 0) {
+      if (!formData.name || !formData.product_type) {
+        toast({
+          title: "Formulaire incomplet",
+          description: "Le nom et le type de produit sont requis.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
     saveMutation.mutate(formData);
   };
 
-  const isLifeProduct = formData.category === "vie";
+  const canGoToStep = (stepIndex: number) => {
+    // Can always go back
+    if (stepIndex < currentStep) return true;
+    // Must have productId to go beyond step 0
+    if (stepIndex > 0 && !formData.productId) return false;
+    return true;
+  };
 
-  // Tab completion indicators
-  const getTabStatus = (tab: string): "complete" | "warning" | "error" | null => {
-    if (validationTriggered) {
-      const tabErr = validation.tabErrors.find((t) => t.tab === tab);
-      if (tabErr) return "error";
-    }
-    switch (tab) {
+  const currentStepDef = activeSteps[currentStep];
+  const isLastStep = currentStep === activeSteps.length - 1;
+
+  const renderStepContent = () => {
+    switch (currentStepDef?.id) {
       case "general":
-        return formData.name && formData.product_type && formData.base_premium > 0 ? "complete" : "warning";
-      case "subscription":
-        return formData.subscription_form_id ? "complete" : "warning";
+        return <GeneralInfoTab formData={formData} updateField={updateField} errors={{}} />;
+      case "forms":
+        return (
+          <FormsTab
+            productId={formData.productId}
+            productCategory={formData.category}
+            productType={formData.product_type}
+            productName={formData.name}
+          />
+        );
       case "payment":
-        return "complete";
+        return <PaymentMethodsTab formData={formData} updateField={updateField} />;
       case "documents":
-        return formData.document_templates?.length > 0 ? "complete" : null;
-      case "faqs":
-        return formData.faqs?.length > 0 ? "complete" : null;
+        return <DocumentsTab formData={formData} updateField={updateField} />;
       case "sales":
-        return (formData.optional_products?.length > 0 || formData.alternative_products?.length > 0) ? "complete" : null;
+        return <SalesTab formData={formData} updateField={updateField} />;
+      case "faqs":
+        return <FaqsTab formData={formData} updateField={updateField} />;
+      case "discounts":
+        return <DiscountsTab formData={formData} updateField={updateField} />;
+      case "questionnaires":
+        return <QuestionnairesTab formData={formData} updateField={updateField} />;
+      case "claims-config":
+        return <ClaimsConfigTab formData={formData} updateField={updateField} />;
+      case "beneficiaries":
+        return <BeneficiariesTab formData={formData} updateField={updateField} />;
       default:
         return null;
     }
   };
 
-  const statusDot = (tab: string) => {
-    const status = getTabStatus(tab);
-    if (!status) return null;
-    const colors: Record<string, string> = {
-      complete: "bg-emerald-500",
-      warning: "bg-amber-500",
-      error: "bg-destructive",
-    };
-    return <span className={`inline-block w-2 h-2 rounded-full ml-1.5 ${colors[status]}`} />;
-  };
-
   return (
     <div className="space-y-6">
-      {/* Sticky save bar */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b pb-3 pt-1 -mx-1 px-1">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {isDirty && (
-              <span className="text-xs text-amber-600 flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" />
-                Modifications non enregistrées
-              </span>
-            )}
-          </div>
-          <Button onClick={handleSave} disabled={saveMutation.isPending}>
-            {saveMutation.isPending ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4 mr-2" />
-            )}
-            Enregistrer
-          </Button>
+      {/* Stepper navigation */}
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b pb-4 pt-2 -mx-1 px-1">
+        {/* Step indicators */}
+        <div className="flex items-center gap-1 overflow-x-auto pb-2">
+          {activeSteps.map((step, index) => {
+            const isActive = index === currentStep;
+            const isCompleted = index < currentStep;
+            const isClickable = canGoToStep(index);
+
+            return (
+              <button
+                key={step.id}
+                onClick={() => isClickable && setCurrentStep(index)}
+                disabled={!isClickable}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors",
+                  isActive && "bg-primary text-primary-foreground",
+                  isCompleted && "bg-primary/10 text-primary",
+                  !isActive && !isCompleted && isClickable && "text-muted-foreground hover:bg-muted",
+                  !isClickable && "text-muted-foreground/50 cursor-not-allowed"
+                )}
+              >
+                <span
+                  className={cn(
+                    "flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold",
+                    isActive && "bg-primary-foreground text-primary",
+                    isCompleted && "bg-primary text-primary-foreground",
+                    !isActive && !isCompleted && "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {isCompleted ? <Check className="h-3 w-3" /> : index + 1}
+                </span>
+                {step.label}
+              </button>
+            );
+          })}
         </div>
+
+        {/* Unsaved indicator */}
+        {isDirty && (
+          <span className="text-xs text-amber-600 flex items-center gap-1 mt-1">
+            <AlertTriangle className="h-3 w-3" />
+            Modifications non enregistrées
+          </span>
+        )}
       </div>
 
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 gap-1 sm:grid-cols-3 md:grid-cols-4 lg:flex lg:flex-wrap h-auto p-1">
-          <TabsTrigger value="general" className="text-xs sm:text-sm">
-            Général{statusDot("general")}
-          </TabsTrigger>
-          <TabsTrigger value="calc-rules" className="text-xs sm:text-sm">
-            Calcul
-          </TabsTrigger>
-          <TabsTrigger value="subscription" className="text-xs sm:text-sm">
-            Souscription{statusDot("subscription")}
-          </TabsTrigger>
-          {isLifeProduct && (
-            <TabsTrigger value="beneficiaries" className="text-xs sm:text-sm">Bénéf.</TabsTrigger>
+      {/* Step content */}
+      <div className="mt-4">
+        {renderStepContent()}
+      </div>
+
+      {/* Navigation buttons */}
+      <div className="flex items-center justify-between border-t pt-4">
+        <Button
+          variant="outline"
+          onClick={() => setCurrentStep((s) => s - 1)}
+          disabled={currentStep === 0}
+        >
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Précédent
+        </Button>
+
+        <Button onClick={handleSaveStep} disabled={saveMutation.isPending}>
+          {saveMutation.isPending ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Save className="h-4 w-4 mr-2" />
           )}
-          <TabsTrigger value="payment" className="text-xs sm:text-sm">
-            Paiement{statusDot("payment")}
-          </TabsTrigger>
-          <TabsTrigger value="documents" className="text-xs sm:text-sm">
-            Docs{statusDot("documents")}
-          </TabsTrigger>
-          <TabsTrigger value="sales" className="text-xs sm:text-sm">
-            Ventes{statusDot("sales")}
-          </TabsTrigger>
-          <TabsTrigger value="faqs" className="text-xs sm:text-sm">
-            FAQs{statusDot("faqs")}
-          </TabsTrigger>
-          {formData.discounts_enabled && (
-            <TabsTrigger value="discounts" className="text-xs sm:text-sm">Réductions</TabsTrigger>
-          )}
-          {formData.medical_questionnaire_enabled && (
-            <TabsTrigger value="questionnaires" className="text-xs sm:text-sm">Questionnaires</TabsTrigger>
-          )}
-          {formData.has_claims && (
-            <TabsTrigger value="claims-config" className="text-xs sm:text-sm">Sinistres</TabsTrigger>
-          )}
-        </TabsList>
-
-        <TabsContent value="general" className="mt-6">
-          <GeneralInfoTab
-            formData={formData}
-            updateField={updateField}
-            errors={validationTriggered ? validation.errors : {}}
-          />
-        </TabsContent>
-
-        <TabsContent value="calc-rules" className="mt-6">
-          <CalcRulesTab productId={formData.productId} />
-        </TabsContent>
-
-        <TabsContent value="subscription" className="mt-6">
-          <SubscriptionFieldsTab formData={formData} updateField={updateField} />
-        </TabsContent>
-
-        {isLifeProduct && (
-          <TabsContent value="beneficiaries" className="mt-6">
-            <BeneficiariesTab formData={formData} updateField={updateField} />
-          </TabsContent>
-        )}
-
-        <TabsContent value="payment" className="mt-6">
-          <PaymentMethodsTab formData={formData} updateField={updateField} />
-        </TabsContent>
-
-        <TabsContent value="documents" className="mt-6">
-          <DocumentsTab formData={formData} updateField={updateField} />
-        </TabsContent>
-
-        <TabsContent value="sales" className="mt-6">
-          <SalesTab formData={formData} updateField={updateField} />
-        </TabsContent>
-
-        <TabsContent value="faqs" className="mt-6">
-          <FaqsTab formData={formData} updateField={updateField} />
-        </TabsContent>
-
-        {formData.discounts_enabled && (
-          <TabsContent value="discounts" className="mt-6">
-            <DiscountsTab formData={formData} updateField={updateField} />
-          </TabsContent>
-        )}
-
-        {formData.medical_questionnaire_enabled && (
-          <TabsContent value="questionnaires" className="mt-6">
-            <QuestionnairesTab formData={formData} updateField={updateField} />
-          </TabsContent>
-        )}
-
-        {formData.has_claims && (
-          <TabsContent value="claims-config" className="mt-6">
-            <ClaimsConfigTab formData={formData} updateField={updateField} />
-          </TabsContent>
-        )}
-      </Tabs>
+          {isLastStep ? "Enregistrer & Terminer" : "Enregistrer & Continuer"}
+          {!isLastStep && <ChevronRight className="h-4 w-4 ml-1" />}
+        </Button>
+      </div>
 
       {/* Unsaved changes dialog */}
       <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>

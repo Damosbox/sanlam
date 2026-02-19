@@ -1610,6 +1610,61 @@ export type Database = {
         }
         Relationships: []
       }
+      product_forms: {
+        Row: {
+          calc_rule_id: string | null
+          channel: string
+          created_at: string | null
+          display_order: number
+          form_template_id: string
+          id: string
+          is_active: boolean
+          product_id: string
+        }
+        Insert: {
+          calc_rule_id?: string | null
+          channel?: string
+          created_at?: string | null
+          display_order?: number
+          form_template_id: string
+          id?: string
+          is_active?: boolean
+          product_id: string
+        }
+        Update: {
+          calc_rule_id?: string | null
+          channel?: string
+          created_at?: string | null
+          display_order?: number
+          form_template_id?: string
+          id?: string
+          is_active?: boolean
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_forms_calc_rule_id_fkey"
+            columns: ["calc_rule_id"]
+            isOneToOne: false
+            referencedRelation: "calculation_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_forms_form_template_id_fkey"
+            columns: ["form_template_id"]
+            isOneToOne: false
+            referencedRelation: "form_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_forms_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_types: {
         Row: {
           category_id: string | null

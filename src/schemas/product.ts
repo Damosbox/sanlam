@@ -91,7 +91,7 @@ export const ProductFormSchema = z.object({
   optional_products: z.array(z.string()).optional().default([]),
   alternative_products: z.array(z.string()).optional().default([]),
   faqs: z.array(z.any()).optional().default([]),
-  subscription_form_id: z.string().uuid().nullable().optional(),
+  subscription_form_id: z.string().uuid().nullable().optional().default(null),
 });
 
 export type ProductFormSchemaType = z.infer<typeof ProductFormSchema>;

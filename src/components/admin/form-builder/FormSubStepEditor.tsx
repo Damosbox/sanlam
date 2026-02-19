@@ -2,12 +2,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, GripVertical, Calculator, FileText, Lock } from "lucide-react";
+import { Trash2, GripVertical, Calculator, FileText, Lock, ExternalLink } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { FormSubStep, CalculationRules } from "./types";
 import { FieldConfig, FieldType } from "../FormFieldLibrary";
-import { CalculationRulesEditor } from "./CalculationRulesEditor";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 interface FormSubStepEditorProps {
   step: FormSubStep;
@@ -28,10 +33,26 @@ export function FormSubStepEditor({
   availableVariables = [],
   lockedFields = [],
 }: FormSubStepEditorProps) {
+  const navigate = useNavigate();
+
   // Mise à jour du titre
   const updateTitle = (title: string) => {
     onUpdateStep({ ...step, title });
   };
+
+  // Fetch calc rules for linking
+  const { data: calcRules = [] } = useQuery({
+    queryKey: ["calculation-rules-for-form"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("calculation_rules")
+        .select("id, name, type, usage_category")
+        .eq("is_active", true)
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
 
   // Mise à jour des règles de calcul
   const updateCalculationRules = (rules: CalculationRules) => {
@@ -61,6 +82,9 @@ export function FormSubStepEditor({
 
   // Rendu pour le type "calculation_rules"
   if (step.type === "calculation_rules") {
+    const linkedRuleId = (step.calculationRules as any)?.linkedRuleId || null;
+    const linkedRule = calcRules.find((r) => r.id === linkedRuleId);
+
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-3">
@@ -76,19 +100,66 @@ export function FormSubStepEditor({
           />
         </div>
 
-        <CalculationRulesEditor
-          rules={
-            step.calculationRules || {
-              baseFormula: "",
-              coefficients: [],
-              taxes: [],
-              fees: [],
-              variables: [],
-            }
-          }
-          onChange={updateCalculationRules}
-          availableVariables={availableVariables}
-        />
+        {calcRules.length === 0 ? (
+          <Alert className="border-amber-300 bg-amber-50">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-800">
+              Aucune règle de calcul n'est disponible. Vous devez d'abord en créer une.
+              <Button
+                variant="link"
+                className="px-1 text-amber-800 underline"
+                onClick={() => navigate("/admin/calc-rules")}
+              >
+                <ExternalLink className="h-3 w-3 mr-1" />
+                Aller aux règles de calcul
+              </Button>
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Règle de calcul liée</label>
+              <Select
+                value={linkedRuleId || "__none__"}
+                onValueChange={(value) => {
+                  updateCalculationRules({
+                    ...(step.calculationRules || { baseFormula: "", coefficients: [], taxes: [], fees: [], variables: [] }),
+                    linkedRuleId: value === "__none__" ? null : value,
+                  } as any);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner une règle..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Aucune règle</SelectItem>
+                  {calcRules.map((rule) => (
+                    <SelectItem key={rule.id} value={rule.id}>
+                      {rule.name} ({rule.usage_category})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {linkedRule && (
+              <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                <p><strong>Règle :</strong> {linkedRule.name}</p>
+                <p><strong>Type :</strong> {linkedRule.type}</p>
+                <p><strong>Catégorie :</strong> {linkedRule.usage_category}</p>
+              </div>
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/admin/calc-rules")}
+            >
+              <ExternalLink className="h-3 w-3 mr-1" />
+              Gérer les règles de calcul
+            </Button>
+          </div>
+        )}
       </div>
     );
   }

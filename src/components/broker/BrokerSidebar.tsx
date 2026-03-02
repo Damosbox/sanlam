@@ -202,8 +202,8 @@ export function BrokerSidebar() {
     {
       label: "Communications",
       items: [
-        { title: "Messages", url: "/b2b/messages", icon: MessageSquare },
-        { title: "Actualités", url: "/b2b/news", icon: Newspaper },
+        { title: "Messages", url: "/b2b/messages", icon: MessageSquare, disabled: true },
+        { title: "Actualités", url: "/b2b/news", icon: Newspaper, disabled: true },
         { title: "Campagnes", url: "/b2b/campaigns", icon: Megaphone, disabled: true },
       ],
     },

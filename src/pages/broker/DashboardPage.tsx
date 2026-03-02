@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { DashboardHeader } from "@/components/broker/dashboard/DashboardHeader";
 import { RenewalRateCards } from "@/components/broker/dashboard/RenewalRateCards";
-import { ContactIndicatorsCard } from "@/components/broker/dashboard/ContactIndicatorsCard";
 import { LeadsPipeline } from "@/components/broker/dashboard/LeadsPipeline";
 import { AIRecommendations } from "@/components/broker/dashboard/AIRecommendations";
 import { QuickActions } from "@/components/broker/dashboard/QuickActions";
 import { NewsBanner } from "@/components/broker/dashboard/NewsBanner";
 import { KPICard } from "@/components/broker/dashboard/KPICard";
+import { PeriodFilter, computeDateRange, type DateRange } from "@/components/broker/dashboard/PeriodFilter";
 import type { ProductType } from "@/components/broker/dashboard/ProductSelector";
 import { CheckSquare, Wallet, TrendingUp, FileText } from "lucide-react";
 import { formatFCFA } from "@/utils/formatCurrency";
@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const DashboardPage = () => {
   const [selectedProduct, setSelectedProduct] = useState<ProductType>("all");
+  const [dateRange, setDateRange] = useState<DateRange>(() => computeDateRange("fiscal_year"));
   const [kpiStats, setKpiStats] = useState({
     tasksCount: 0,
     commissions: 0,
@@ -25,25 +26,32 @@ const DashboardPage = () => {
 
   useEffect(() => {
     fetchKPIStats();
-  }, [selectedProduct]);
+  }, [selectedProduct, dateRange]);
 
   const fetchKPIStats = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch subscriptions for KPIs
+      const fromISO = dateRange.from.toISOString();
+      const toISO = dateRange.to.toISOString();
+
+      // Fetch subscriptions for KPIs filtered by start_date
       const { data: subscriptions } = await supabase
         .from("subscriptions")
         .select("monthly_premium, products(category)")
-        .eq("assigned_broker_id", user.id);
+        .eq("assigned_broker_id", user.id)
+        .gte("start_date", fromISO)
+        .lte("start_date", toISO);
 
-      // Fetch leads for tasks count
+      // Fetch leads for tasks count filtered by created_at
       const { data: leads } = await supabase
         .from("leads")
         .select("id, status")
         .eq("assigned_broker_id", user.id)
-        .in("status", ["nouveau", "en_cours", "relance"]);
+        .in("status", ["nouveau", "en_cours", "relance"])
+        .gte("created_at", fromISO)
+        .lte("created_at", toISO);
 
       // Filter by product type if not "all"
       let filteredSubs = subscriptions || [];
@@ -85,6 +93,9 @@ const DashboardPage = () => {
         />
         <QuickActions />
       </div>
+
+      {/* Period Filter */}
+      <PeriodFilter onPeriodChange={setDateRange} />
 
       {/* ROW 1: KPI Cards - 4 columns */}
       {isLoading ? (
@@ -129,13 +140,12 @@ const DashboardPage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Left Column: 7 cols */}
         <div className="lg:col-span-7 space-y-4">
-          <RenewalRateCards selectedProduct={selectedProduct} />
-          <ContactIndicatorsCard selectedProduct={selectedProduct} />
+          <RenewalRateCards selectedProduct={selectedProduct} dateRange={dateRange} />
         </div>
 
         {/* Right Column: 5 cols */}
         <div className="lg:col-span-5 space-y-4">
-          <LeadsPipeline />
+          <LeadsPipeline dateRange={dateRange} />
           <AIRecommendations />
         </div>
       </div>

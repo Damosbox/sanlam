@@ -60,7 +60,7 @@ const HeroCarousel = () => {
         <div className="flex">
           {slides.map((slide, index) =>
           <div key={index} className="min-w-0 shrink-0 grow-0 basis-full">
-              <div className="container py-16 md:py-24">
+              <div className="container py-16 md:py-24 mx-0">
                 <div className="grid lg:grid-cols-2 gap-12 items-center">
                   <div className="space-y-6">
                     <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight">
@@ -87,7 +87,7 @@ const HeroCarousel = () => {
       </div>
 
       {/* Dots */}
-      <div className="absolute bottom-[7.5rem] md:bottom-[6rem] left-1/2 -translate-x-1/2 flex gap-2 z-10">
+      <div className="absolute bottom-[7.5rem] md:bottom-[6rem] left-1/2 -translate-x-1/2 flex gap-2 z-10 my-[8px]">
         {slides.map((_, i) =>
         <button
           key={i}

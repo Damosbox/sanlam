@@ -36,25 +36,28 @@ const DashboardPage = () => {
       const fromISO = dateRange.from.toISOString();
       const toISO = dateRange.to.toISOString();
 
-      // Fetch subscriptions for KPIs filtered by start_date
+      // Fetch subscriptions active during the period
+      // A subscription is active in period if: start_date <= period.to AND (end_date >= period.from OR end_date is null)
       const { data: subscriptions } = await supabase
         .from("subscriptions")
-        .select("monthly_premium, products(category)")
+        .select("monthly_premium, start_date, end_date, products(category)")
         .eq("assigned_broker_id", user.id)
-        .gte("start_date", fromISO)
         .lte("start_date", toISO);
 
-      // Fetch leads for tasks count filtered by created_at
+      // Fetch active leads (tasks) — no date filter, these are current open tasks
       const { data: leads } = await supabase
         .from("leads")
         .select("id, status")
         .eq("assigned_broker_id", user.id)
-        .in("status", ["nouveau", "en_cours", "relance"])
-        .gte("created_at", fromISO)
-        .lte("created_at", toISO);
+        .in("status", ["nouveau", "en_cours", "relance"]);
+
+      // Filter subscriptions active during the selected period
+      let filteredSubs = (subscriptions || []).filter(sub => {
+        const endDate = sub.end_date ? new Date(sub.end_date) : null;
+        return !endDate || endDate >= dateRange.from;
+      });
 
       // Filter by product type if not "all"
-      let filteredSubs = subscriptions || [];
       if (selectedProduct !== "all") {
         const categoryMap: Record<string, string[]> = {
           auto: ["auto", "automobile"],
@@ -64,7 +67,7 @@ const DashboardPage = () => {
           obseques: ["obseques", "obsèques", "funeral"],
         };
         const categories = categoryMap[selectedProduct] || [];
-        filteredSubs = (subscriptions || []).filter(sub => {
+        filteredSubs = filteredSubs.filter(sub => {
           const productCategory = ((sub.products as any)?.category || "").toLowerCase();
           return categories.some(cat => productCategory.includes(cat));
         });

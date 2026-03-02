@@ -87,7 +87,7 @@ const HeroCarousel = () => {
       </div>
 
       {/* Dots */}
-      <div className="absolute bottom-28 md:bottom-24 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+      <div className="absolute bottom-[7.5rem] md:bottom-[6rem] left-1/2 -translate-x-1/2 flex gap-2 z-10">
         {slides.map((_, i) =>
         <button
           key={i}

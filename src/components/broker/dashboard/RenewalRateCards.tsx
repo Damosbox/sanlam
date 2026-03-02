@@ -179,76 +179,52 @@ export const RenewalRateCards = ({ selectedProduct, dateRange }: RenewalRateCard
           className="border-border/60 animate-fade-in overflow-hidden"
           style={{ animationDelay: `${index * 50}ms` }}
         >
-          <CardContent className="p-4 relative">
+          <CardContent className="p-3 relative">
             {/* Background circle decoration */}
-            <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-primary/5" />
+            <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-primary/5" />
             
             <div className="relative z-10">
-              <p className="text-xs text-muted-foreground font-medium mb-1">
-                {card.label}
-              </p>
-              <p className="text-[10px] text-muted-foreground/70 mb-3">
-                {card.sublabel}
-              </p>
-              
-              {/* Circular progress indicator */}
-              <div className="flex items-center gap-4">
-                <div className="relative w-16 h-16">
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 64 64">
-                    {/* Background circle */}
-                    <circle
-                      cx="32"
-                      cy="32"
-                      r="28"
-                      fill="none"
-                      stroke="hsl(var(--muted))"
-                      strokeWidth="6"
-                    />
-                    {/* Progress circle */}
-                    <circle
-                      cx="32"
-                      cy="32"
-                      r="28"
-                      fill="none"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth="6"
-                      strokeLinecap="round"
-                      strokeDasharray={`${card.rate * 1.76} 176`}
-                      className="transition-all duration-1000 ease-out"
-                    />
-                  </svg>
-                  {/* Center text */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-lg font-bold text-foreground">
-                      {card.rate}%
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="flex-1">
-                  {/* Delta indicator */}
-                  <div className={cn(
-                    "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-                    card.delta > 0 
-                      ? "bg-success/10 text-success" 
-                      : card.delta < 0 
-                        ? "bg-destructive/10 text-destructive"
-                        : "bg-muted text-muted-foreground"
-                  )}>
-                    {card.delta > 0 ? (
-                      <TrendingUp className="w-3 h-3" />
-                    ) : card.delta < 0 ? (
-                      <TrendingDown className="w-3 h-3" />
-                    ) : (
-                      <Minus className="w-3 h-3" />
-                    )}
-                    {card.delta > 0 ? "+" : ""}{card.delta} pts
-                  </div>
-                  
-                  <p className="text-[10px] text-muted-foreground mt-2 truncate">
-                    {card.detail}
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">
+                    {card.label}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground/70">
+                    {card.sublabel}
                   </p>
                 </div>
+                {/* Delta indicator */}
+                <div className={cn(
+                  "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium",
+                  card.delta > 0 
+                    ? "bg-success/10 text-success" 
+                    : card.delta < 0 
+                      ? "bg-destructive/10 text-destructive"
+                      : "bg-muted text-muted-foreground"
+                )}>
+                  {card.delta > 0 ? (
+                    <TrendingUp className="w-3 h-3" />
+                  ) : card.delta < 0 ? (
+                    <TrendingDown className="w-3 h-3" />
+                  ) : (
+                    <Minus className="w-3 h-3" />
+                  )}
+                  {card.delta > 0 ? "+" : ""}{card.delta} pts
+                </div>
+              </div>
+              
+              {/* Compact row: circle + detail */}
+              <div className="flex items-center gap-3">
+                <div className="relative w-12 h-12 shrink-0">
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 64 64">
+                    <circle cx="32" cy="32" r="28" fill="none" stroke="hsl(var(--muted))" strokeWidth="6" />
+                    <circle cx="32" cy="32" r="28" fill="none" stroke="hsl(var(--primary))" strokeWidth="6" strokeLinecap="round" strokeDasharray={`${card.rate * 1.76} 176`} className="transition-all duration-1000 ease-out" />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-sm font-bold text-foreground">{card.rate}%</span>
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground truncate">{card.detail}</p>
               </div>
             </div>
           </CardContent>

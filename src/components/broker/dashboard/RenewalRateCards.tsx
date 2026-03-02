@@ -20,9 +20,10 @@ interface RenewalStats {
 
 interface RenewalRateCardsProps {
   selectedProduct: ProductType;
+  dateRange?: { from: Date; to: Date };
 }
 
-export const RenewalRateCards = ({ selectedProduct }: RenewalRateCardsProps) => {
+export const RenewalRateCards = ({ selectedProduct, dateRange }: RenewalRateCardsProps) => {
   const [stats, setStats] = useState<RenewalStats>({
     rateByCount: 0,
     rateByPremium: 0,
@@ -37,7 +38,7 @@ export const RenewalRateCards = ({ selectedProduct }: RenewalRateCardsProps) => 
 
   useEffect(() => {
     fetchRenewalStats();
-  }, [selectedProduct]);
+  }, [selectedProduct, dateRange]);
 
   const fetchRenewalStats = async () => {
     setIsLoading(true);
@@ -45,11 +46,19 @@ export const RenewalRateCards = ({ selectedProduct }: RenewalRateCardsProps) => 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch all subscriptions for renewal calculation
-      const { data: subscriptions } = await supabase
+      // Fetch subscriptions for renewal calculation, filtered by dateRange
+      let query = supabase
         .from("subscriptions")
         .select("*, products(name, category)")
         .eq("assigned_broker_id", user.id);
+
+      if (dateRange) {
+        query = query
+          .gte("end_date", dateRange.from.toISOString())
+          .lte("end_date", dateRange.to.toISOString());
+      }
+
+      const { data: subscriptions } = await query;
 
       if (!subscriptions) {
         setIsLoading(false);

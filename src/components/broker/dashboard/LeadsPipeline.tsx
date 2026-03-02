@@ -24,7 +24,11 @@ const statusConfig: Record<LeadStatus, { label: string; color: string }> = {
   perdu: { label: "Perdu", color: "bg-destructive/60" },
 };
 
-export const LeadsPipeline = () => {
+interface LeadsPipelineProps {
+  dateRange?: { from: Date; to: Date };
+}
+
+export const LeadsPipeline = ({ dateRange }: LeadsPipelineProps) => {
   const navigate = useNavigate();
   const [stats, setStats] = useState<PipelineStats>({
     nouveau: 0,
@@ -37,17 +41,25 @@ export const LeadsPipeline = () => {
 
   useEffect(() => {
     fetchPipelineStats();
-  }, []);
+  }, [dateRange]);
 
   const fetchPipelineStats = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: leads } = await supabase
+      let query = supabase
         .from("leads")
         .select("status")
         .eq("assigned_broker_id", user.id);
+
+      if (dateRange) {
+        query = query
+          .gte("created_at", dateRange.from.toISOString())
+          .lte("created_at", dateRange.to.toISOString());
+      }
+
+      const { data: leads } = await query;
 
       if (leads) {
         const counts: PipelineStats = {

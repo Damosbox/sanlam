@@ -140,13 +140,13 @@ const DashboardPage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Left Column: 7 cols */}
         <div className="lg:col-span-7 space-y-4">
-          <RenewalRateCards selectedProduct={selectedProduct} dateRange={dateRange} />
+          <LeadsPipeline dateRange={dateRange} />
+          <AIRecommendations />
         </div>
 
         {/* Right Column: 5 cols */}
         <div className="lg:col-span-5 space-y-4">
-          <LeadsPipeline dateRange={dateRange} />
-          <AIRecommendations />
+          <RenewalRateCards selectedProduct={selectedProduct} dateRange={dateRange} />
         </div>
       </div>
 

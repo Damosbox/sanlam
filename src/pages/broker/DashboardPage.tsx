@@ -125,9 +125,9 @@ const DashboardPage = () => {
           />
           <KPICard
             icon={TrendingUp}
-            label="Mes Primes"
+            label="Mon Chiffre d'Affaires"
             value={formatFCFA(kpiStats.totalGWP)}
-            trend="Prime annuelle brute"
+            trend="CA annuel brut"
           />
           <KPICard
             icon={FileText}

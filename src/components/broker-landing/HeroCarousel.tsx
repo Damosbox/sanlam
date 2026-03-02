@@ -38,7 +38,7 @@ const badges = [
 
 const HeroCarousel = () => {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, [
-    Autoplay({ delay: 6000, stopOnInteraction: false }),
+    Autoplay({ delay: 10000, stopOnInteraction: false }),
   ]);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -69,12 +69,6 @@ const HeroCarousel = () => {
                     <p className="text-white/80 text-lg max-w-xl">
                       {slide.text}
                     </p>
-                    <Link to="/auth/partner">
-                      <Button size="lg" className="bg-white text-primary hover:bg-white/90 mt-4">
-                        Se connecter à mon espace
-                        <ArrowRight className="w-5 h-5 ml-2" />
-                      </Button>
-                    </Link>
                   </div>
                   <div className="hidden lg:block">
                     <div className="rounded-2xl overflow-hidden shadow-2xl border border-white/20">
@@ -108,7 +102,7 @@ const HeroCarousel = () => {
 
       {/* Badges */}
       <div className="relative z-10 pb-6">
-        <div className="container">
+        <div className="container space-y-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {badges.map((badge) => (
               <div
@@ -119,6 +113,14 @@ const HeroCarousel = () => {
                 <span className="text-sm font-medium text-white">{badge.label}</span>
               </div>
             ))}
+          </div>
+          <div className="flex justify-center">
+            <Link to="/auth/partner">
+              <Button size="lg" className="bg-white text-primary hover:bg-white/90">
+                Se connecter à mon espace
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

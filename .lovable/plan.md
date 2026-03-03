@@ -1,18 +1,26 @@
 
 
-## Ajouter Hybride et Électrique aux options d'énergie
+## Corrections sur les champs valeur et calendrier
 
-### Constat
+### 3 modifications demandées
 
-- Le type `EnergyType` dans `types.ts` inclut déjà `"hybride" | "electrique"`
-- Le calculateur de prime (`autoPremiumCalculator.ts`) a déjà les coefficients pour les 4 énergies (essence: 1.0, gasoil: 1.05, hybride: 0.95, électrique: 0.90)
-- Seul le dropdown UI dans `SimulationStep.tsx` est limité à 2 options (ligne 34-37)
+**1. Validation valeur neuve > valeur vénale**
+- Dans `NeedsAnalysisStep.tsx` et `SimulationStep.tsx` : ajouter un message d'erreur sous le champ "Valeur vénale" si `vehicleVenalValue >= vehicleNewValue`
+- Bloquer visuellement avec une bordure rouge et un texte d'erreur
 
-### Modification
+**2. Séparateur de milliers sur les champs monétaires**
+- Remplacer les `<Input type="number">` par des `<Input type="text">` avec formatage dynamique
+- Afficher `7 000 000` au lieu de `7000000` — formater avec `Intl.NumberFormat('fr-FR')` à l'affichage
+- Parser la valeur nettoyée (sans espaces) au `onChange` pour stocker le nombre brut dans le state
+
+**3. Calendrier en français**
+- Dans `src/components/ui/calendar.tsx` : passer `locale={fr}` de `date-fns/locale` au composant `DayPicker` pour que les mois et jours s'affichent en français (Mars, Lundi, etc.)
+
+### Fichiers modifiés
 
 | Fichier | Action |
 |---|---|
-| `src/components/guided-sales/steps/SimulationStep.tsx` | Ajouter `{ value: "hybride", label: "Hybride" }` et `{ value: "electrique", label: "Électrique" }` dans le tableau `energyOptions` (lignes 34-37) et retirer le commentaire "Only Essence and Gasoil" |
-
-Aucun autre fichier à modifier — le backend de calcul gère déjà les 4 valeurs.
+| `src/components/ui/calendar.tsx` | Ajouter `locale={fr}` au DayPicker |
+| `src/components/guided-sales/steps/NeedsAnalysisStep.tsx` | Formater valeurs avec séparateur + validation neuf > vénal |
+| `src/components/guided-sales/steps/SimulationStep.tsx` | Idem |
 

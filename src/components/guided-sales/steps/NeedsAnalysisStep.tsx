@@ -233,6 +233,8 @@ export const NeedsAnalysisStep = ({
             <SelectContent>
               <SelectItem value="essence">Essence</SelectItem>
               <SelectItem value="gasoil">Gasoil</SelectItem>
+              <SelectItem value="hybride">Hybride</SelectItem>
+              <SelectItem value="electrique">Électrique</SelectItem>
             </SelectContent>
           </Select>
         </div>

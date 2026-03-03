@@ -233,9 +233,20 @@ export const AdminClaimsTable = () => {
       Submitted: "secondary",
       Approved: "default",
       Rejected: "destructive",
+      Reviewed: "default",
+      Closed: "outline",
     };
 
-    return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
+    const labels: Record<string, string> = {
+      Draft: "Brouillon",
+      Submitted: "Soumis",
+      Reviewed: "Examiné",
+      Approved: "Approuvé",
+      Rejected: "Rejeté",
+      Closed: "Clôturé",
+    };
+
+    return <Badge variant={variants[status] || "outline"}>{labels[status] || status}</Badge>;
   };
 
   const getBrokerBadge = (claim: Claim) => {

@@ -616,6 +616,7 @@ export const GuidedSalesFlow = () => {
             onUpdateBinding={updateBinding}
             onEdit={handleEdit}
             onEmit={handleEmit}
+            onEditStep={goToStep}
           />
         );
       

@@ -1,34 +1,28 @@
 
 
-## Simplification de l'étape 5 — Équipements uniquement
+## Modale d'informations client lors de "Enregistrer et quitter" (non bloquant)
 
-### Contexte
-
-Actuellement, l'étape 5/5 de la simulation contient :
-1. Les champs équipements (toit panoramique, GPS)
-2. Un bouton "CALCULER" / "Recalculer"
-3. L'affichage de l'estimation de prime
-
-L'utilisateur souhaite que le calcul de prime se fasse automatiquement au clic sur "Voir les offres" (passage à l'étape formules), pas dans l'étape 5.
+### Objectif
+Quand le courtier clique sur "Enregistrer et quitter", la modale `QuotationSaveDialog` s'ouvre pour collecter nom/prenom/email. Mais c'est **non bloquant** : le courtier peut fermer la modale ou cliquer un bouton "Passer" et le brouillon est sauvegardé quand même (sans infos client).
 
 ### Modifications
 
-**Fichier : `SimulationStep.tsx`**
-
-- **Supprimer** le sous-titre "Étape 5/5 - Options du véhicule"
-- **Supprimer** le bloc d'estimation de prime (carte avec `formatFCFA`)
-- **Supprimer** le bouton "CALCULER" / "Recalculer" et le message d'aide
-- **Remplacer** par un bouton "Voir les offres" qui :
-  1. Déclenche `onCalculate()` 
-  2. Puis enchaîne vers `onNext()` une fois le calcul terminé
-- Conserver le bouton "Retour"
-
 **Fichier : `GuidedSalesFlow.tsx`**
 
-- Ajuster la logique pour que `simulationCalculated` soit mis à `true` lors du passage étape 5 → formules (le calcul se fait au moment du clic "Voir les offres")
-- S'assurer que la transition vers l'étape suivante attend la fin du calcul
+1. Ajouter un state `saveAndQuitDialogOpen` pour contrôler la modale
+2. Le bouton "Enregistrer et quitter" ouvre la modale au lieu d'appeler directement `handleSaveAndQuit`
+3. Modifier `handleSaveAndQuit` pour accepter un paramètre optionnel `clientInfo?: { firstName, lastName, email }`
+4. Si `clientInfo` est fourni, l'inclure dans `coverage_details` et/ou créer/lier un lead
+5. Si la modale est fermée sans saisie (dismiss), appeler `handleSaveAndQuit()` sans infos client — le brouillon est sauvegardé tel quel
+6. Ajouter le composant `QuotationSaveDialog` en mode "save" avec pré-remplissage depuis `state.clientIdentification`
 
-### Résultat
+**Comportement de la modale :**
+- Bouton "Sauvegarder" → sauvegarde avec les infos client renseignées
+- Bouton "Annuler" ou fermeture (X) → sauvegarde le brouillon **sans** infos client et redirige vers le portfolio
+- Les champs ne sont PAS obligatoires (validation retirée ou rendue optionnelle pour ce mode)
 
-L'étape 5 ne montre que les 2 champs équipements + un bouton "Voir les offres" qui calcule et navigue en une seule action.
+**Approche technique :**
+- Réutiliser `QuotationSaveDialog` mais ajouter une prop `optional?: boolean` qui rend les champs non requis
+- Quand `optional=true`, le bouton "Annuler" déclenche aussi la sauvegarde (sans infos)
+- Le `onOpenChange(false)` (fermeture) déclenche la sauvegarde sans infos
 

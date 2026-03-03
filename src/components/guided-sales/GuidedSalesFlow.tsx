@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ import {
   PackObsequesData,
   PlanTier
 } from "./types";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Save, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { calculateAutoPremium, convertToCalculatedPremium } from "@/utils/autoPremiumCalculator";
 import { useProductCalcRule } from "@/hooks/useProductCalcRule";
@@ -60,6 +60,13 @@ export const GuidedSalesFlow = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
   const isMobile = useIsMobile();
+  
+  // Ref for sub-step back handler from child components
+  const stepBackHandlerRef = useRef<(() => boolean) | null>(null);
+  
+  const registerBackHandler = useCallback((handler: (() => boolean) | null) => {
+    stepBackHandlerRef.current = handler;
+  }, []);
 
   // Load dynamic calc rule for current product
   const productType = state.productSelection.selectedProduct === "auto" ? "auto" : undefined;
@@ -357,13 +364,27 @@ export const GuidedSalesFlow = () => {
   };
 
   const prevStep = () => {
+    // First try to go back within the current step's sub-steps
+    if (stepBackHandlerRef.current && stepBackHandlerRef.current()) {
+      return; // Handled internally by the child component
+    }
     if (state.currentStep > 0) {
       setDirection("backward");
-      setState(prev => ({
-        ...prev,
-        currentStep: prev.currentStep - 1
-      }));
+      setState(prev => {
+        const product = prev.productSelection.selectedProduct;
+        const isLifeProduct = product === "pack_obseques";
+        // Skip step 2 for life products (reverse of nextStep logic)
+        if (prev.currentStep === 3 && isLifeProduct) {
+          return { ...prev, currentStep: 1 };
+        }
+        return { ...prev, currentStep: prev.currentStep - 1 };
+      });
     }
+  };
+
+  const handleSaveAndQuit = async () => {
+    await handleSaveQuote();
+    navigate("/b2b/portfolio?tab=quotations");
   };
 
   const goToStep = (step: number) => {
@@ -433,6 +454,7 @@ export const GuidedSalesFlow = () => {
               onCalculate={handlePackObsequesCalculate}
               onSaveQuote={handleSaveQuote}
               isCalculating={isCalculating}
+              onRegisterBackHandler={registerBackHandler}
             />
           );
         }
@@ -443,6 +465,7 @@ export const GuidedSalesFlow = () => {
             onCalculate={handleCalculate}
             onNext={nextStep}
             isCalculating={isCalculating}
+            onRegisterBackHandler={registerBackHandler}
           />
         );
       
@@ -574,6 +597,20 @@ export const GuidedSalesFlow = () => {
                 <Button onClick={nextStep} size="lg" className="gap-2">
                   Voir les offres
                   <ChevronLeft className="h-4 w-4 rotate-180" />
+                </Button>
+              </div>
+            )}
+
+            {/* Enregistrer et quitter */}
+            {state.currentStep > 0 && (
+              <div className="mt-6">
+                <Button 
+                  variant="outline" 
+                  onClick={handleSaveAndQuit}
+                  className="gap-2 text-muted-foreground"
+                >
+                  <Save className="h-4 w-4" />
+                  Enregistrer et quitter
                 </Button>
               </div>
             )}

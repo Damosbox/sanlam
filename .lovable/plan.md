@@ -1,50 +1,40 @@
 
 
-## Page Récapitulative après le choix de la formule
+## Étape 6/6 — Récap global + Validation + Signature
 
-### Contexte
+### Objectif
 
-Actuellement le flux est : Simulation (step 1) → Formules (step 2) → Souscription (step 3). L'utilisateur veut insérer une **page récapitulative** entre le choix de la formule et la souscription, qui résume toutes les informations avant de s'engager.
+Transformer l'étape 6 (`SignatureEmissionStep`) en un récapitulatif global qui regroupe :
+1. Les données de la **cotation** (véhicule, formule, garanties) — reprises du `RecapStep` (étape 3)
+2. Les données de la **souscription** (agent, localisation, véhicule immatriculé, conducteur, documents) — reprises du sub-step 6 de `SubscriptionFlow`
+3. Le **décompte de prime** détaillé avec tooltips
+4. Les **cases de validation légale** (CGU + partage de données)
+5. La **signature digitale** du client
+6. Le bouton **Émettre la police**
 
-### Approche
-
-Ajouter une nouvelle étape (step 3 = Récap) et décaler les étapes suivantes (+1). La page récap restera dans la phase "construction" et affichera un résumé complet : véhicule, formule choisie, garanties, décompte de prime, et les actions (Sauvegarder, Envoyer, Souscrire).
+La vue post-émission (documents générés, n° de police) reste inchangée.
 
 ### Modifications
 
-**1. Nouveau composant : `src/components/guided-sales/steps/RecapStep.tsx`**
+**Fichier : `src/components/guided-sales/steps/SignatureEmissionStep.tsx`**
 
-Page récapitulative avec sections :
-- **Véhicule** : marque, modèle, puissance fiscale, énergie, valeur vénale, usage, date de circulation
-- **Formule sélectionnée** : plan (MINI/BASIC/TOUT RISQUE), durée du contrat, date d'effet
-- **Garanties incluses** : liste des garanties selon le plan + assistance si sélectionnée
-- **Décompte de prime** : Prime Nette, Frais d'accessoires, Taxes, Prime TTC, FGA, CEDEAO, **Total à payer** (réutilise les tooltips de `QuoteSummaryCard`)
-- **Actions** : Sauvegarder, Envoyer, SOUSCRIRE (déplacés depuis `FormulaSelectionStep`)
+Réécrire le contenu principal (état non-émis) pour inclure dans l'ordre :
 
-Chaque section aura un bouton "Modifier" pour revenir à l'étape concernée.
+1. **Section Véhicule** (depuis `state.needsAnalysis`) : marque, modèle, puissance fiscale, énergie, valeur vénale, places, date de circulation — avec bouton "Modifier" vers step 1
+2. **Section Formule & Garanties** (depuis `state.coverage`) : badge plan, garanties incluses, durée, date d'effet — avec bouton "Modifier" vers step 2
+3. **Section Souscription** : Agent, Localisation, Véhicule immatriculé, Conducteur, Documents (depuis `state.subscription`) — avec bouton "Modifier" vers step 4
+4. **Décompte de prime** : Prime Nette, Frais, Taxes, Prime TTC, FGA, CEDEAO, Total — avec tooltips (réutiliser le pattern `PremiumLine` du `RecapStep`)
+5. **Validation légale** : 2 checkboxes (CGU + partage données) — existant, inchangé
+6. **Signature digitale** : zone de signature + bouton — existant, inchangé
+7. **Bouton Émettre** — existant, inchangé
 
-**2. Fichier : `GuidedSalesFlow.tsx`**
+**Props** : Ajouter `onEditStep: (step: number) => void` pour permettre la navigation vers les étapes antérieures (simulation, formule, souscription).
 
-- Mettre à jour `PHASE_STEPS` : `construction: [2, 3]` (formule + récap)
-- Décaler les étapes : souscription → step 4, paiement → step 5, signature → step 6
-- Mettre à jour `getPhaseFromStep`, `renderStep`, `getNextLabel`, `handleEdit`
-- Le skip pour produits Vie (pack_obseques) saute du step 1 au step 4 (souscription)
-- Importer et rendre `RecapStep` au step 3
-- Déplacer les actions Sauvegarder/Envoyer/Souscrire de `FormulaSelectionStep` vers `RecapStep`
+**Fichier : `src/components/guided-sales/GuidedSalesFlow.tsx`**
 
-**3. Fichier : `FormulaSelectionStep.tsx`**
-
-- Supprimer le bloc "Résumé prix" et les boutons d'actions (Sauvegarder, Envoyer, Souscrire)
-- Supprimer le `QuotationSaveDialog`
-- Le bouton principal devient "Voir le récapitulatif" qui appelle `onSubscribe` (renommé `onNext`)
-- Simplifier les props (supprimer `onSaveQuote`)
-
-**4. Fichiers impactés par le décalage des numéros d'étape :**
-
-- `PhaseNavigation.tsx` : aucun changement (basé sur les phases, pas les steps)
-- `QuoteSummaryCard.tsx` / `SalesAssistant.tsx` / `MobileCoverageStickyBar.tsx` : ajuster les conditions si elles référencent des numéros d'étape
+Passer `onEditStep={goToStep}` au composant `SignatureEmissionStep` en plus des props existantes.
 
 ### Résultat
 
-Le flux devient : Simulation → Formule → **Récap** → Souscription → Paiement → Signature. La page récap centralise le décompte de prime détaillé et les actions de devis, offrant au courtier une vue claire avant de s'engager dans la souscription.
+L'étape 6/6 devient un récapitulatif complet et final du contrat (cotation + souscription + prime), suivi des validations légales et de la signature, avant l'émission de la police.
 

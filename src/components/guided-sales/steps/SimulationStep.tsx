@@ -27,6 +27,8 @@ interface SimulationStepProps {
   onNext: () => void;
   isCalculating?: boolean;
   onRegisterBackHandler?: (handler: (() => boolean) | null) => void;
+  initialSubStep?: number;
+  onSubStepChange?: (subStep: number) => void;
 }
 
 const energyOptions: { value: EnergyType; label: string }[] = [
@@ -72,10 +74,17 @@ export const SimulationStep = ({
   onCalculate,
   onNext,
   isCalculating = false,
-  onRegisterBackHandler
+  onRegisterBackHandler,
+  initialSubStep,
+  onSubStepChange
 }: SimulationStepProps) => {
-  const [subStep, setSubStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [subStep, setSubStepLocal] = useState<1 | 2 | 3 | 4 | 5>((initialSubStep ?? 1) as 1 | 2 | 3 | 4 | 5);
   const { needsAnalysis, simulationCalculated, calculatedPremium } = state;
+
+  const setSubStep = (val: 1 | 2 | 3 | 4 | 5) => {
+    setSubStepLocal(val);
+    onSubStepChange?.(val);
+  };
 
   // Register back handler for smart navigation
   useEffect(() => {

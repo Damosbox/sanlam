@@ -20,6 +20,8 @@ interface PackObsequesSimulationStepProps {
   onSaveQuote: (clientInfo?: { firstName: string; lastName: string; email: string }) => void;
   isCalculating: boolean;
   onRegisterBackHandler?: (handler: (() => boolean) | null) => void;
+  initialSubStep?: number;
+  onSubStepChange?: (subStep: number) => void;
 }
 
 export const PackObsequesSimulationStep = ({
@@ -29,9 +31,18 @@ export const PackObsequesSimulationStep = ({
   onCalculate,
   onSaveQuote,
   isCalculating,
-  onRegisterBackHandler
+  onRegisterBackHandler,
+  initialSubStep,
+  onSubStepChange
 }: PackObsequesSimulationStepProps) => {
-  const [subStep, setSubStep] = useState<1 | 2 | 3 | 4>(1);
+  const [subStepLocal, setSubStepLocal] = useState<1 | 2 | 3 | 4>((initialSubStep ?? 1) as 1 | 2 | 3 | 4);
+
+  const setSubStep = (val: 1 | 2 | 3 | 4) => {
+    setSubStepLocal(val);
+    onSubStepChange?.(val);
+  };
+
+  const subStep = subStepLocal;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<"save" | "send">("save");
   

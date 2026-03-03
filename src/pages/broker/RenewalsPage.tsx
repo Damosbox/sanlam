@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { startOfYear, endOfYear } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProductSelector, ProductType } from "@/components/broker/dashboard/ProductSelector";
+import { PeriodFilter, DateRange } from "@/components/broker/dashboard/PeriodFilter";
 import { RenewalPipelineTable } from "@/components/policies/RenewalPipelineTable";
 import { RenewalStatusToggles } from "@/components/policies/RenewalStatusToggles";
 import { ContactIndicatorsTable } from "@/components/broker/stats/ContactIndicatorsTable";
@@ -13,6 +15,7 @@ export default function RenewalsPage() {
   const [activeTab, setActiveTab] = useState("pipeline");
   const [contactFilter, setContactFilter] = useState<"all" | "contacted" | "not_contacted">("all");
   const [renewalFilter, setRenewalFilter] = useState<"all" | "renewed" | "pending" | "lost">("all");
+  const [dateRange, setDateRange] = useState<DateRange>({ from: startOfYear(new Date()), to: endOfYear(new Date()) });
 
   return (
     <div className="space-y-6 max-w-7xl animate-fade-in">
@@ -29,7 +32,10 @@ export default function RenewalsPage() {
             </p>
           </div>
         </div>
-        <ProductSelector value={selectedProduct} onChange={setSelectedProduct} />
+        <div className="flex items-center gap-2 flex-wrap">
+          <ProductSelector value={selectedProduct} onChange={setSelectedProduct} />
+          <PeriodFilter onPeriodChange={setDateRange} />
+        </div>
       </div>
 
       {/* Quick Stats */}
@@ -97,6 +103,7 @@ export default function RenewalsPage() {
                 selectedProduct={selectedProduct}
                 contactFilter={contactFilter}
                 renewalFilter={renewalFilter}
+                dateRange={dateRange}
               />
             </CardContent>
           </Card>

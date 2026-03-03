@@ -39,6 +39,7 @@ interface RenewalPipelineTableProps {
   contactFilter: "all" | "contacted" | "not_contacted";
   renewalFilter: "all" | "renewed" | "pending" | "lost";
   searchQuery?: string;
+  dateRange?: { from: Date; to: Date };
   onViewClient?: (clientId: string) => void;
 }
 
@@ -64,6 +65,7 @@ export const RenewalPipelineTable = ({
   contactFilter,
   renewalFilter,
   searchQuery = "",
+  dateRange,
   onViewClient 
 }: RenewalPipelineTableProps) => {
   const [churnDialogOpen, setChurnDialogOpen] = useState(false);
@@ -72,7 +74,7 @@ export const RenewalPipelineTable = ({
   const [selectedRenewal, setSelectedRenewal] = useState<any>(null);
 
   const { data: renewals = [], isLoading } = useQuery({
-    queryKey: ["broker-renewals", selectedProduct],
+    queryKey: ["broker-renewals", selectedProduct, dateRange?.from?.toISOString(), dateRange?.to?.toISOString()],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
@@ -90,12 +92,15 @@ export const RenewalPipelineTable = ({
       if (error) throw error;
 
       const now = new Date();
-      const threeMonthsFromNow = new Date();
-      threeMonthsFromNow.setMonth(now.getMonth() + 3);
 
-      // Filter subscriptions expiring within 3 months
+      // Filter by date range or default 3 months
       const upcomingRenewals = (subscriptions || []).filter(sub => {
         const endDate = new Date(sub.end_date);
+        if (dateRange) {
+          return endDate >= dateRange.from && endDate <= dateRange.to;
+        }
+        const threeMonthsFromNow = new Date();
+        threeMonthsFromNow.setMonth(now.getMonth() + 3);
         return endDate <= threeMonthsFromNow;
       });
 

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
+import { startOfYear, endOfYear } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,6 +14,7 @@ import { PendingQuotationsTable } from "@/components/policies/PendingQuotationsT
 import { RenewalPipelineTable } from "@/components/policies/RenewalPipelineTable";
 import { RenewalStatusToggles, ContactFilterType, RenewalFilterType } from "@/components/policies/RenewalStatusToggles";
 import { ProductSelector, ProductType } from "@/components/broker/dashboard/ProductSelector";
+import { PeriodFilter, DateRange } from "@/components/broker/dashboard/PeriodFilter";
 import { FileText, FolderOpen, Clock, Calendar, Search, RotateCcw } from "lucide-react";
 
 export default function PoliciesPage() {
@@ -31,6 +33,7 @@ export default function PoliciesPage() {
   const [contactFilter, setContactFilter] = useState<ContactFilterType>("all");
   const [renewalFilter, setRenewalFilter] = useState<RenewalFilterType>("all");
   const [renewalSearch, setRenewalSearch] = useState("");
+  const [dateRange, setDateRange] = useState<DateRange>({ from: startOfYear(new Date()), to: endOfYear(new Date()) });
 
   // Fetch pending quotations count
   const { data: pendingCount = 0 } = useQuery({
@@ -52,19 +55,17 @@ export default function PoliciesPage() {
 
   // Fetch renewals with counts
   const { data: renewalsData } = useQuery({
-    queryKey: ["renewals-data-with-counts"],
+    queryKey: ["renewals-data-with-counts", dateRange.from.toISOString(), dateRange.to.toISOString()],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return { total: 0, contactCounts: { all: 0, contacted: 0, not_contacted: 0 }, renewalCounts: { all: 0, renewed: 0, pending: 0, lost: 0 } };
-
-      const threeMonthsFromNow = new Date();
-      threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
 
       const { data: subscriptions, error } = await supabase
         .from("subscriptions")
         .select("contact_status, renewal_status")
         .eq("assigned_broker_id", user.id)
-        .lte("end_date", threeMonthsFromNow.toISOString());
+        .gte("end_date", dateRange.from.toISOString())
+        .lte("end_date", dateRange.to.toISOString());
 
       if (error) return { total: 0, contactCounts: { all: 0, contacted: 0, not_contacted: 0 }, renewalCounts: { all: 0, renewed: 0, pending: 0, lost: 0 } };
 
@@ -99,6 +100,7 @@ export default function PoliciesPage() {
     setSelectedProduct("all");
     setContactFilter("all");
     setRenewalFilter("all");
+    setDateRange({ from: startOfYear(new Date()), to: endOfYear(new Date()) });
   };
 
   return (
@@ -161,12 +163,15 @@ export default function PoliciesPage() {
               />
             </div>
 
-            {/* Product Selector and Filters */}
+            {/* Product Selector, Period Filter and Filters */}
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <ProductSelector
-                value={selectedProduct}
-                onChange={setSelectedProduct}
-              />
+              <div className="flex items-center gap-2 flex-wrap">
+                <ProductSelector
+                  value={selectedProduct}
+                  onChange={setSelectedProduct}
+                />
+                <PeriodFilter onPeriodChange={setDateRange} />
+              </div>
               <RenewalStatusToggles
                 contactFilter={contactFilter}
                 renewalFilter={renewalFilter}
@@ -203,6 +208,7 @@ export default function PoliciesPage() {
               contactFilter={contactFilter}
               renewalFilter={renewalFilter}
               searchQuery={renewalSearch}
+              dateRange={dateRange}
             />
           </TabsContent>
 

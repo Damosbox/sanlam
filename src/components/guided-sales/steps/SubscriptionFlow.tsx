@@ -53,13 +53,12 @@ const SUB_STEPS = [
   { id: 3, title: "Véhicule" },
   { id: 4, title: "Conducteur" },
   { id: 5, title: "Documents" },
-  { id: 6, title: "Paiement" },
 ];
 
 export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSubStepChange }: SubscriptionFlowProps) => {
-  const [subStepLocal, setSubStepLocal] = useState<1 | 2 | 3 | 4 | 5 | 6>((initialSubStep ?? 1) as 1 | 2 | 3 | 4 | 5 | 6);
+  const [subStepLocal, setSubStepLocal] = useState<1 | 2 | 3 | 4 | 5>((initialSubStep ?? 1) as 1 | 2 | 3 | 4 | 5);
 
-  const setSubStep = (val: 1 | 2 | 3 | 4 | 5 | 6) => {
+  const setSubStep = (val: 1 | 2 | 3 | 4 | 5) => {
     setSubStepLocal(val);
     onSubStepChange?.(val);
   };
@@ -84,11 +83,10 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
     !!subscription.licenseNumber && 
     !!subscription.licenseIssueDate;
   const isSubStep5Valid = () => !!subscription.priorCertificateType;
-  const isSubStep6Valid = () => true; // Payment handled in next step
 
   const goNext = () => {
-    if (subStep < 6) {
-      setSubStep((subStep + 1) as 1 | 2 | 3 | 4 | 5 | 6);
+    if (subStep < 5) {
+      setSubStep((subStep + 1) as 1 | 2 | 3 | 4 | 5);
     } else {
       onNext();
     }
@@ -96,7 +94,7 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
 
   const goBack = () => {
     if (subStep > 1) {
-      setSubStep((subStep - 1) as 1 | 2 | 3 | 4 | 5 | 6);
+      setSubStep((subStep - 1) as 1 | 2 | 3 | 4 | 5);
     }
   };
 
@@ -121,7 +119,7 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
       {SUB_STEPS.map((s) => (
         <button
           key={s.id}
-          onClick={() => s.id <= subStep && setSubStep(s.id as 1 | 2 | 3 | 4 | 5 | 6)}
+          onClick={() => s.id <= subStep && setSubStep(s.id as 1 | 2 | 3 | 4 | 5)}
           disabled={s.id > subStep}
           className={cn(
             "w-3 h-3 rounded-full transition-all",
@@ -142,7 +140,7 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Agent</h1>
-        <p className="text-muted-foreground mt-1">Étape 1/6 - Identification de l'agent</p>
+        <p className="text-muted-foreground mt-1">Étape 1/5 - Identification de l'agent</p>
       </div>
 
       <Card>
@@ -176,7 +174,7 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Localisation</h1>
-        <p className="text-muted-foreground mt-1">Étape 2/6 - Adresse géographique</p>
+        <p className="text-muted-foreground mt-1">Étape 2/5 - Adresse géographique</p>
       </div>
 
       <Card>
@@ -235,7 +233,7 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Véhicule</h1>
-        <p className="text-muted-foreground mt-1">Étape 3/6 - Identification du véhicule</p>
+        <p className="text-muted-foreground mt-1">Étape 3/5 - Identification du véhicule</p>
       </div>
 
       <Card>
@@ -307,7 +305,7 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Conducteur</h1>
-        <p className="text-muted-foreground mt-1">Étape 4/6 - Informations du conducteur</p>
+        <p className="text-muted-foreground mt-1">Étape 4/5 - Informations du conducteur</p>
       </div>
 
       <Card>
@@ -412,7 +410,7 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Documents</h1>
-        <p className="text-muted-foreground mt-1">Étape 5/6 - Justificatifs</p>
+        <p className="text-muted-foreground mt-1">Étape 5/5 - Justificatifs</p>
       </div>
 
       <Card>
@@ -522,119 +520,12 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
           Retour
         </Button>
         <Button onClick={goNext} disabled={!isSubStep5Valid()} className="gap-2">
-          Continuer vers Paiement
+          Continuer vers Signature
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
     </div>
   );
-
-  // Sub-step 6: Récapitulatif de souscription avant paiement
-  const renderSubStep6 = () => {
-    const cityLabel = cityOptions.find(c => c.value === subscription.city)?.label || subscription.city;
-    
-    const sections = [
-      {
-        icon: User,
-        title: "Agent",
-        step: 1 as const,
-        items: [
-          { label: "Code agent", value: subscription.agentCode },
-        ],
-      },
-      {
-        icon: MapPin,
-        title: "Localisation",
-        step: 2 as const,
-        items: [
-          { label: "Adresse", value: subscription.geographicAddress },
-          { label: "Ville", value: cityLabel },
-        ],
-      },
-      {
-        icon: Car,
-        title: "Véhicule",
-        step: 3 as const,
-        items: [
-          { label: "Marque", value: subscription.vehicleBrand },
-          { label: "Modèle", value: subscription.vehicleModel },
-          { label: "Immatriculation", value: subscription.vehicleRegistrationNumber },
-          { label: "N° de châssis", value: subscription.vehicleChassisNumber },
-        ],
-      },
-      {
-        icon: CreditCard,
-        title: "Conducteur",
-        step: 4 as const,
-        items: [
-          { label: "Conducteur habituel", value: subscription.isHabitualDriver ? "Oui" : "Non" },
-          { label: "Catégorie permis", value: subscription.licenseCategory ? `Catégorie ${subscription.licenseCategory}` : "" },
-          { label: "N° de permis", value: subscription.licenseNumber },
-          { label: "Date d'obtention", value: subscription.licenseIssueDate ? format(new Date(subscription.licenseIssueDate), "dd/MM/yyyy", { locale: fr }) : "" },
-        ],
-      },
-      {
-        icon: FileText,
-        title: "Documents",
-        step: 5 as const,
-        items: [
-          { label: "Lieu d'obtention permis", value: subscription.licenseIssuePlace || "Non renseigné" },
-          { label: "Carte grise", value: subscription.vehicleRegistrationDocument || "Non fournie" },
-          { label: "Certificat d'antériorité", value: subscription.priorCertificateType === "declaration" ? "Déclaration sur l'honneur" : subscription.priorCertificateType === "documents" ? "Documents justificatifs" : "" },
-        ],
-      },
-    ];
-
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Récapitulatif de souscription</h1>
-          <p className="text-muted-foreground mt-1">Étape 6/6 - Vérifiez les informations avant le paiement</p>
-        </div>
-
-        {sections.map((section) => (
-          <Card key={section.title}>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <section.icon className="h-5 w-5 text-primary" />
-                  <h3 className="font-semibold text-lg">{section.title}</h3>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSubStep(section.step)}
-                  className="gap-1.5 text-muted-foreground hover:text-primary"
-                >
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                  Modifier
-                </Button>
-              </div>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                {section.items.filter(item => item.value).map((item) => (
-                  <div key={item.label}>
-                    <span className="text-muted-foreground">{item.label}</span>
-                    <p className="font-medium">{item.value}</p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-
-        <div className="flex justify-between">
-          <Button variant="outline" onClick={goBack} className="gap-2">
-            <ChevronLeft className="h-4 w-4" />
-            Retour
-          </Button>
-          <Button onClick={onNext} className="gap-2">
-            Continuer vers Paiement
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div>
@@ -644,7 +535,6 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
       {subStep === 3 && renderSubStep3()}
       {subStep === 4 && renderSubStep4()}
       {subStep === 5 && renderSubStep5()}
-      {subStep === 6 && renderSubStep6()}
     </div>
   );
 };

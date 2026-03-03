@@ -9,6 +9,7 @@ import { RecapStep } from "./steps/RecapStep";
 import { SubscriptionFlow } from "./steps/SubscriptionFlow";
 import { MobilePaymentStep } from "./steps/MobilePaymentStep";
 import { SignatureEmissionStep } from "./steps/SignatureEmissionStep";
+import { IssuanceStep } from "./steps/IssuanceStep";
 
 import { PackObsequesSimulationStep } from "./steps/PackObsequesSimulationStep";
 import { PackObsequesSubscriptionFlow } from "./steps/PackObsequesSubscriptionFlow";
@@ -40,7 +41,7 @@ const PHASE_STEPS: Record<SalesPhase, number[]> = {
   preparation: [0, 1],     // Product Selection, Simulation (with sub-steps)
   construction: [2, 3],    // Formula Selection, Recap
   souscription: [4],       // Subscription Flow (with sub-steps)
-  finalisation: [5, 6],    // Signature & Recap, Mobile Payment & Emission
+  finalisation: [5, 6, 7], // Signature & Recap, Mobile Payment, Issuance
 };
 
 const getPhaseFromStep = (step: number): SalesPhase => {
@@ -518,7 +519,7 @@ export const GuidedSalesFlow = () => {
   };
 
   const handleEmit = () => {
-    // Final emission handled in SignatureEmissionStep
+    // Emission now handled in IssuanceStep after payment
   };
 
   const handlePlanChange = useCallback((plan: PlanTier) => {
@@ -602,11 +603,11 @@ export const GuidedSalesFlow = () => {
         );
       
       case 4:
-        // Step 4: Subscription Flow (6 sub-steps) - or Pack Obsèques specific
+        // Step 4: Subscription Flow (5 sub-steps) - or Pack Obsèques specific
         if (product === "pack_obseques") {
           return <PackObsequesSubscriptionFlow state={state} onUpdate={updatePackObsequesData} onNext={nextStep} />;
         }
-        return <SubscriptionFlow state={state} onUpdate={updateSubscription} onNext={nextStep} initialSubStep={state.subscriptionSubStep} onSubStepChange={(s) => setState(prev => ({ ...prev, subscriptionSubStep: s as 1 | 2 | 3 | 4 | 5 | 6 }))} />;
+        return <SubscriptionFlow state={state} onUpdate={updateSubscription} onNext={nextStep} initialSubStep={state.subscriptionSubStep} onSubStepChange={(s) => setState(prev => ({ ...prev, subscriptionSubStep: s as 1 | 2 | 3 | 4 | 5 }))} />;
       
       case 5:
         // Step 5: Signature & Recap global
@@ -615,14 +616,18 @@ export const GuidedSalesFlow = () => {
             state={state} 
             onUpdateBinding={updateBinding}
             onEdit={handleEdit}
-            onEmit={handleEmit}
+            onNext={nextStep}
             onEditStep={goToStep}
           />
         );
       
       case 6:
-        // Step 6: Mobile Payment & Emission
+        // Step 6: Mobile Payment
         return <MobilePaymentStep state={state} onUpdate={updateMobilePayment} onNext={nextStep} />;
+      
+      case 7:
+        // Step 7: Issuance (documents + cross-sell)
+        return <IssuanceStep state={state} onReset={resetFlow} />;
       
       default:
         return null;
@@ -639,6 +644,7 @@ export const GuidedSalesFlow = () => {
     if (state.currentStep === 3) return "Souscrire";
     if (state.currentStep === 4) return "Signature";
     if (state.currentStep === 5) return "Paiement";
+    if (state.currentStep === 6) return "Émission";
     return "Suivant";
   };
 

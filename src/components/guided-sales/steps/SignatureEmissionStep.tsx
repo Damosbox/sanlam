@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -33,7 +33,7 @@ interface SignatureEmissionStepProps {
   state: GuidedSalesState;
   onUpdateBinding: (data: Partial<GuidedSalesState["binding"]>) => void;
   onEdit: (section: "vehicle" | "driver" | "payment") => void;
-  onEmit: () => void;
+  onNext: () => void;
   onEditStep: (step: number) => void;
 }
 
@@ -145,13 +145,11 @@ export const SignatureEmissionStep = ({
   state, 
   onUpdateBinding, 
   onEdit,
-  onEmit,
+  onNext,
   onEditStep,
 }: SignatureEmissionStepProps) => {
   const { calculatedPremium, binding, needsAnalysis, subscription, coverage, productSelection, packObsequesData } = state;
   const isObseques = productSelection.selectedProduct === "pack_obseques";
-  const [isEmitting, setIsEmitting] = useState(false);
-  const [isEmitted, setIsEmitted] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const handleSign = () => {
@@ -170,16 +168,7 @@ export const SignatureEmissionStep = ({
     onUpdateBinding({ signatureCompleted: false, signatureData: undefined });
   };
 
-  const handleEmit = async () => {
-    setIsEmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsEmitting(false);
-    setIsEmitted(true);
-    onEmit();
-    toast.success("Police émise avec succès !");
-  };
-
-  const canEmit = binding.acceptTerms && binding.acceptDataSharing && binding.signatureCompleted;
+  const canProceed = binding.acceptTerms && binding.acceptDataSharing && binding.signatureCompleted;
 
   const policyPrefix = isObseques ? "OBSEQ" : "AUTO";
   const documents = isObseques
@@ -188,59 +177,6 @@ export const SignatureEmissionStep = ({
 
   const effectiveDate = needsAnalysis.effectiveDate ? new Date(needsAnalysis.effectiveDate) : null;
   const selectedPeriodicity = needsAnalysis.contractPeriodicity || "1_year";
-
-  // --- Post-emission view (unchanged) ---
-  if (isEmitted) {
-    return (
-      <div className="space-y-6">
-        <div className="text-center py-12">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 mb-6">
-            <Check className="h-10 w-10" />
-          </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Police émise avec succès !</h1>
-          <p className="text-muted-foreground mb-6">
-            Le contrat a été créé et les documents sont prêts
-          </p>
-          <Badge variant="secondary" className="text-lg px-4 py-2">
-            N° Police: {policyPrefix}-2025-{Math.floor(Math.random() * 100000)}
-          </Badge>
-        </div>
-
-        <Card>
-          <CardContent className="pt-6">
-            <h3 className="font-semibold mb-4">Documents générés</h3>
-            <div className="space-y-3">
-              {documents.map((doc) => (
-                <div key={doc} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <FileText className="h-5 w-5 text-primary" />
-                    <span className="font-medium">{doc}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="sm">
-                      <Download className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <Printer className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <Mail className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="flex justify-center">
-          <Button variant="outline" onClick={() => window.location.reload()}>
-            Nouvelle souscription
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   // --- Main view: Global Recap + Validation + Signature ---
   return (
@@ -510,31 +446,22 @@ export const SignatureEmissionStep = ({
         </CardContent>
       </Card>
 
-      {/* ===== SECTION 7: Bouton Émettre ===== */}
+      {/* ===== SECTION 7: Bouton Continuer vers Paiement ===== */}
       <div className="flex justify-center pt-4">
         <Button 
           size="lg"
-          onClick={handleEmit}
-          disabled={!canEmit || isEmitting}
+          onClick={onNext}
+          disabled={!canProceed}
           className="px-8 gap-2"
         >
-          {isEmitting ? (
-            <>
-              <span className="animate-spin">⏳</span>
-              Émission en cours...
-            </>
-          ) : (
-            <>
-              <FileText className="h-5 w-5" />
-              Émettre la police
-            </>
-          )}
+          <FileText className="h-5 w-5" />
+          Continuer vers Paiement
         </Button>
       </div>
 
-      {!canEmit && (
+      {!canProceed && (
         <p className="text-sm text-center text-muted-foreground">
-          Veuillez accepter les conditions et signer le contrat pour émettre la police
+          Veuillez accepter les conditions et signer le contrat pour continuer
         </p>
       )}
     </div>

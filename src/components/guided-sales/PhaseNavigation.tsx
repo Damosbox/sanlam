@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Check, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SalesPhase } from "./types";
+import { SalesPhase, SelectedProductType } from "./types";
 
 interface PhaseNavigationProps {
   currentPhase: SalesPhase;
@@ -9,22 +9,22 @@ interface PhaseNavigationProps {
   onPhaseClick: (phase: SalesPhase) => void;
   onPrev?: () => void;
   compact?: boolean;
-  hidden?: boolean; // Option to hide the stepper completely
+  hidden?: boolean;
+  productType?: SelectedProductType;
 }
 
-const phases: { id: SalesPhase; name: string; shortName: string }[] = [
+const defaultPhases: { id: SalesPhase; name: string; shortName: string }[] = [
   { id: "preparation", name: "Préparation", shortName: "Prépa" },
   { id: "construction", name: "Construction", shortName: "Offre" },
   { id: "souscription", name: "Souscription", shortName: "Souscrip." },
   { id: "finalisation", name: "Finalisation", shortName: "Final" },
 ];
 
-const phaseOrder: Record<SalesPhase, number> = {
-  preparation: 0,
-  construction: 1,
-  souscription: 2,
-  finalisation: 3,
-};
+const packObsequesPhases: { id: SalesPhase; name: string; shortName: string }[] = [
+  { id: "preparation", name: "Préparation", shortName: "Prépa" },
+  { id: "souscription", name: "Souscription", shortName: "Souscrip." },
+  { id: "finalisation", name: "Finalisation", shortName: "Final" },
+];
 
 export const PhaseNavigation = ({ 
   currentPhase, 
@@ -32,9 +32,11 @@ export const PhaseNavigation = ({
   onPhaseClick,
   onPrev,
   compact = false,
-  hidden = false
+  hidden = false,
+  productType
 }: PhaseNavigationProps) => {
-  const currentPhaseIndex = phaseOrder[currentPhase];
+  const phases = productType === "pack_obseques" ? packObsequesPhases : defaultPhases;
+  const currentPhaseIndex = phases.findIndex(p => p.id === currentPhase);
 
   // Hide the stepper completely when hidden prop is true
   if (hidden) {

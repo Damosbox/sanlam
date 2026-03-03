@@ -30,10 +30,11 @@ interface SimulationStepProps {
   isCalculating?: boolean;
 }
 
-// Only Essence and Gasoil per document
 const energyOptions: { value: EnergyType; label: string }[] = [
   { value: "essence", label: "Essence" },
   { value: "gasoil", label: "Gasoil" },
+  { value: "hybride", label: "Hybride" },
+  { value: "electrique", label: "Électrique" },
 ];
 
 const fiscalPowerOptions = [1, 2, 3, 4, 5, 6, 7, 8];

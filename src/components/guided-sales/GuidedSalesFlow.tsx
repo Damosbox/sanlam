@@ -12,6 +12,7 @@ import { SignatureEmissionStep } from "./steps/SignatureEmissionStep";
 import { PackObsequesSimulationStep } from "./steps/PackObsequesSimulationStep";
 import { PackObsequesSubscriptionFlow } from "./steps/PackObsequesSubscriptionFlow";
 import { PhaseNavigation } from "./PhaseNavigation";
+import { QuotationSaveDialog } from "./QuotationSaveDialog";
 import { DynamicSummaryBreadcrumb } from "./DynamicSummaryBreadcrumb";
 import { SalesAssistant } from "./SalesAssistant";
 import { MobileCoverageStickyBar } from "./MobileCoverageStickyBar";
@@ -60,6 +61,7 @@ export const GuidedSalesFlow = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
   const [draftId, setDraftId] = useState<string | null>(null);
+  const [saveAndQuitDialogOpen, setSaveAndQuitDialogOpen] = useState(false);
   const isMobile = useIsMobile();
   
   // Ref for sub-step back handler from child components
@@ -414,7 +416,7 @@ export const GuidedSalesFlow = () => {
     }
   };
 
-  const handleSaveAndQuit = async () => {
+  const handleSaveAndQuit = async (clientInfo?: { firstName: string; lastName: string; email: string }) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -432,30 +434,46 @@ export const GuidedSalesFlow = () => {
         pack_obseques: "Pack Obsèques"
       };
 
+      // Merge client info into state if provided
+      const finalState = clientInfo
+        ? {
+            ...state,
+            clientIdentification: {
+              ...state.clientIdentification,
+              firstName: clientInfo.firstName,
+              lastName: clientInfo.lastName,
+              email: clientInfo.email,
+            },
+          }
+        : state;
+
       const draftData = {
         broker_id: user.id,
-        lead_id: state.clientIdentification.linkedContactId || null,
+        lead_id: finalState.clientIdentification.linkedContactId || null,
         product_type: String(product || "auto"),
         product_name: productNames[product || "auto"] || "Assurance Auto",
-        premium_amount: state.calculatedPremium.totalAPayer || 0,
+        premium_amount: finalState.calculatedPremium.totalAPayer || 0,
         premium_frequency: "annuel",
         payment_status: "pending_payment",
         valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         coverage_details: JSON.parse(JSON.stringify({
-          planTier: state.coverage.planTier,
-          vehicleInfo: state.needsAnalysis,
+          planTier: finalState.coverage.planTier,
+          vehicleInfo: finalState.needsAnalysis,
+          clientInfo: clientInfo ? {
+            firstName: clientInfo.firstName,
+            lastName: clientInfo.lastName,
+            email: clientInfo.email,
+          } : undefined,
         })),
         is_draft: true,
-        current_step: state.currentStep,
-        draft_state: JSON.parse(JSON.stringify(state)),
+        current_step: finalState.currentStep,
+        draft_state: JSON.parse(JSON.stringify(finalState)),
       };
 
       let error;
       if (draftId) {
-        // Update existing draft
         ({ error } = await supabase.from("quotations").update(draftData).eq("id", draftId));
       } else {
-        // Create new draft
         ({ error } = await supabase.from("quotations").insert([draftData]));
       }
 
@@ -694,7 +712,7 @@ export const GuidedSalesFlow = () => {
               <div className="mt-6">
                 <Button 
                   variant="outline" 
-                  onClick={handleSaveAndQuit}
+                  onClick={() => setSaveAndQuitDialogOpen(true)}
                   className="gap-2 text-muted-foreground"
                 >
                   <Save className="h-4 w-4" />
@@ -703,6 +721,25 @@ export const GuidedSalesFlow = () => {
               </div>
             )}
           </div>
+
+          {/* Save & Quit Dialog (non-blocking) */}
+          <QuotationSaveDialog
+            open={saveAndQuitDialogOpen}
+            onOpenChange={setSaveAndQuitDialogOpen}
+            mode="save"
+            optional
+            defaultValues={{
+              lastName: state.clientIdentification.lastName || "",
+              firstName: state.clientIdentification.firstName || "",
+              email: state.clientIdentification.email || "",
+            }}
+            onConfirm={(info) => {
+              handleSaveAndQuit({ firstName: info.firstName, lastName: info.lastName, email: info.email });
+            }}
+            onDismiss={() => {
+              handleSaveAndQuit();
+            }}
+          />
 
           {/* Sales Assistant Sidebar - Desktop */}
           {showSalesAssistant && !isMobile && (

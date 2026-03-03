@@ -1,28 +1,50 @@
 
 
-## Modale d'informations client lors de "Enregistrer et quitter" (non bloquant)
+## Page Récapitulative après le choix de la formule
 
-### Objectif
-Quand le courtier clique sur "Enregistrer et quitter", la modale `QuotationSaveDialog` s'ouvre pour collecter nom/prenom/email. Mais c'est **non bloquant** : le courtier peut fermer la modale ou cliquer un bouton "Passer" et le brouillon est sauvegardé quand même (sans infos client).
+### Contexte
+
+Actuellement le flux est : Simulation (step 1) → Formules (step 2) → Souscription (step 3). L'utilisateur veut insérer une **page récapitulative** entre le choix de la formule et la souscription, qui résume toutes les informations avant de s'engager.
+
+### Approche
+
+Ajouter une nouvelle étape (step 3 = Récap) et décaler les étapes suivantes (+1). La page récap restera dans la phase "construction" et affichera un résumé complet : véhicule, formule choisie, garanties, décompte de prime, et les actions (Sauvegarder, Envoyer, Souscrire).
 
 ### Modifications
 
-**Fichier : `GuidedSalesFlow.tsx`**
+**1. Nouveau composant : `src/components/guided-sales/steps/RecapStep.tsx`**
 
-1. Ajouter un state `saveAndQuitDialogOpen` pour contrôler la modale
-2. Le bouton "Enregistrer et quitter" ouvre la modale au lieu d'appeler directement `handleSaveAndQuit`
-3. Modifier `handleSaveAndQuit` pour accepter un paramètre optionnel `clientInfo?: { firstName, lastName, email }`
-4. Si `clientInfo` est fourni, l'inclure dans `coverage_details` et/ou créer/lier un lead
-5. Si la modale est fermée sans saisie (dismiss), appeler `handleSaveAndQuit()` sans infos client — le brouillon est sauvegardé tel quel
-6. Ajouter le composant `QuotationSaveDialog` en mode "save" avec pré-remplissage depuis `state.clientIdentification`
+Page récapitulative avec sections :
+- **Véhicule** : marque, modèle, puissance fiscale, énergie, valeur vénale, usage, date de circulation
+- **Formule sélectionnée** : plan (MINI/BASIC/TOUT RISQUE), durée du contrat, date d'effet
+- **Garanties incluses** : liste des garanties selon le plan + assistance si sélectionnée
+- **Décompte de prime** : Prime Nette, Frais d'accessoires, Taxes, Prime TTC, FGA, CEDEAO, **Total à payer** (réutilise les tooltips de `QuoteSummaryCard`)
+- **Actions** : Sauvegarder, Envoyer, SOUSCRIRE (déplacés depuis `FormulaSelectionStep`)
 
-**Comportement de la modale :**
-- Bouton "Sauvegarder" → sauvegarde avec les infos client renseignées
-- Bouton "Annuler" ou fermeture (X) → sauvegarde le brouillon **sans** infos client et redirige vers le portfolio
-- Les champs ne sont PAS obligatoires (validation retirée ou rendue optionnelle pour ce mode)
+Chaque section aura un bouton "Modifier" pour revenir à l'étape concernée.
 
-**Approche technique :**
-- Réutiliser `QuotationSaveDialog` mais ajouter une prop `optional?: boolean` qui rend les champs non requis
-- Quand `optional=true`, le bouton "Annuler" déclenche aussi la sauvegarde (sans infos)
-- Le `onOpenChange(false)` (fermeture) déclenche la sauvegarde sans infos
+**2. Fichier : `GuidedSalesFlow.tsx`**
+
+- Mettre à jour `PHASE_STEPS` : `construction: [2, 3]` (formule + récap)
+- Décaler les étapes : souscription → step 4, paiement → step 5, signature → step 6
+- Mettre à jour `getPhaseFromStep`, `renderStep`, `getNextLabel`, `handleEdit`
+- Le skip pour produits Vie (pack_obseques) saute du step 1 au step 4 (souscription)
+- Importer et rendre `RecapStep` au step 3
+- Déplacer les actions Sauvegarder/Envoyer/Souscrire de `FormulaSelectionStep` vers `RecapStep`
+
+**3. Fichier : `FormulaSelectionStep.tsx`**
+
+- Supprimer le bloc "Résumé prix" et les boutons d'actions (Sauvegarder, Envoyer, Souscrire)
+- Supprimer le `QuotationSaveDialog`
+- Le bouton principal devient "Voir le récapitulatif" qui appelle `onSubscribe` (renommé `onNext`)
+- Simplifier les props (supprimer `onSaveQuote`)
+
+**4. Fichiers impactés par le décalage des numéros d'étape :**
+
+- `PhaseNavigation.tsx` : aucun changement (basé sur les phases, pas les steps)
+- `QuoteSummaryCard.tsx` / `SalesAssistant.tsx` / `MobileCoverageStickyBar.tsx` : ajuster les conditions si elles référencent des numéros d'étape
+
+### Résultat
+
+Le flux devient : Simulation → Formule → **Récap** → Souscription → Paiement → Signature. La page récap centralise le décompte de prime détaillé et les actions de devis, offrant au courtier une vue claire avant de s'engager dans la souscription.
 

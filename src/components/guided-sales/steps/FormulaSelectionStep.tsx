@@ -20,7 +20,7 @@ interface FormulaSelectionStepProps {
   state: GuidedSalesState;
   onUpdate: (data: Partial<GuidedSalesState["coverage"]>) => void;
   onNeedsUpdate: (data: Partial<GuidedSalesState["needsAnalysis"]>) => void;
-  onSaveQuote: () => void;
+  onSaveQuote: (clientInfo?: { firstName: string; lastName: string; email: string }) => void;
   onSubscribe: () => void;
 }
 
@@ -84,7 +84,7 @@ export const FormulaSelectionStep = ({
   };
 
   const handleDialogConfirm = (info: { lastName: string; firstName: string; email: string; channel?: string }) => {
-    onSaveQuote();
+    onSaveQuote({ firstName: info.firstName, lastName: info.lastName, email: info.email });
     if (info.channel) {
       toast.success("Cotation envoyée avec succès", {
         description: `Envoyée par ${info.channel} à ${info.email}`,

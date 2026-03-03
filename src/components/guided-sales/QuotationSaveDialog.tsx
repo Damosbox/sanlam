@@ -17,6 +17,7 @@ interface QuotationSaveDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: "save" | "send";
+  optional?: boolean;
   defaultValues?: { lastName?: string; firstName?: string; email?: string };
   onConfirm: (info: {
     lastName: string;
@@ -24,14 +25,17 @@ interface QuotationSaveDialogProps {
     email: string;
     channel?: string;
   }) => void;
+  onDismiss?: () => void;
 }
 
 export const QuotationSaveDialog = ({
   open,
   onOpenChange,
   mode,
+  optional = false,
   defaultValues,
   onConfirm,
+  onDismiss,
 }: QuotationSaveDialogProps) => {
   const [lastName, setLastName] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -50,6 +54,7 @@ export const QuotationSaveDialog = ({
   }, [open, defaultValues]);
 
   const validate = (): boolean => {
+    if (optional) return true;
     const newErrors: Record<string, string> = {};
     if (!lastName.trim()) newErrors.lastName = "Le nom est requis";
     else if (lastName.trim().length > 100)
@@ -81,7 +86,12 @@ export const QuotationSaveDialog = ({
   const isSave = mode === "save";
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(v) => {
+      if (!v && optional && onDismiss) {
+        onDismiss();
+      }
+      onOpenChange(v);
+    }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -179,9 +189,18 @@ export const QuotationSaveDialog = ({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
-          </Button>
+          {optional ? (
+            <Button variant="outline" onClick={() => {
+              onDismiss?.();
+              onOpenChange(false);
+            }}>
+              Passer
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Annuler
+            </Button>
+          )}
           <Button onClick={handleConfirm} className="gap-2">
             {isSave ? (
               <>

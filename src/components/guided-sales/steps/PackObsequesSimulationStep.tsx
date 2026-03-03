@@ -17,7 +17,7 @@ interface PackObsequesSimulationStepProps {
   onUpdate: (data: Partial<PackObsequesData>) => void;
   onNext: () => void;
   onCalculate: () => void;
-  onSaveQuote: () => void;
+  onSaveQuote: (clientInfo?: { firstName: string; lastName: string; email: string }) => void;
   isCalculating: boolean;
 }
 
@@ -590,7 +590,7 @@ export const PackObsequesSimulationStep = ({
                 email: data.email || "",
               }}
               onConfirm={(info) => {
-                onSaveQuote();
+                onSaveQuote({ firstName: info.firstName, lastName: info.lastName, email: info.email });
                 if (info.channel) {
                   toast.success("Cotation envoyée avec succès", {
                     description: `Envoyée par ${info.channel} à ${info.email}`,

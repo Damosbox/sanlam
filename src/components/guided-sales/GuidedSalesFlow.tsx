@@ -255,7 +255,7 @@ export const GuidedSalesFlow = () => {
     }, 1000);
   }, []);
 
-  const handleSaveQuote = useCallback(async () => {
+  const handleSaveQuote = useCallback(async (clientInfo?: { firstName: string; lastName: string; email: string }) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -296,7 +296,10 @@ export const GuidedSalesFlow = () => {
         coverage_details: JSON.parse(JSON.stringify({
           planTier: state.coverage.planTier,
           vehicleInfo: state.needsAnalysis,
-          clientInfo: state.clientIdentification,
+          clientInfo: {
+            ...state.clientIdentification,
+            ...(clientInfo ? { firstName: clientInfo.firstName, lastName: clientInfo.lastName, email: clientInfo.email } : {})
+          },
           options: state.coverage.additionalOptions,
           packObsequesData: state.packObsequesData,
         }))

@@ -561,6 +561,8 @@ export const GuidedSalesFlow = () => {
               onSaveQuote={handleSaveQuote}
               isCalculating={isCalculating}
               onRegisterBackHandler={registerBackHandler}
+              initialSubStep={state.simulationSubStep}
+              onSubStepChange={(s) => setState(prev => ({ ...prev, simulationSubStep: s as 1 | 2 | 3 | 4 | 5 }))}
             />
           );
         }
@@ -572,6 +574,8 @@ export const GuidedSalesFlow = () => {
             onNext={nextStep}
             isCalculating={isCalculating}
             onRegisterBackHandler={registerBackHandler}
+            initialSubStep={state.simulationSubStep}
+            onSubStepChange={(s) => setState(prev => ({ ...prev, simulationSubStep: s as 1 | 2 | 3 | 4 | 5 }))}
           />
         );
       
@@ -602,7 +606,7 @@ export const GuidedSalesFlow = () => {
         if (product === "pack_obseques") {
           return <PackObsequesSubscriptionFlow state={state} onUpdate={updatePackObsequesData} onNext={nextStep} />;
         }
-        return <SubscriptionFlow state={state} onUpdate={updateSubscription} onNext={nextStep} />;
+        return <SubscriptionFlow state={state} onUpdate={updateSubscription} onNext={nextStep} initialSubStep={state.subscriptionSubStep} onSubStepChange={(s) => setState(prev => ({ ...prev, subscriptionSubStep: s as 1 | 2 | 3 | 4 | 5 | 6 }))} />;
       
       case 5:
         // Step 5: Signature & Recap global

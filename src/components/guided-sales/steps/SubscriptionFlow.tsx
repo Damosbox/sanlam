@@ -30,6 +30,8 @@ interface SubscriptionFlowProps {
   state: GuidedSalesState;
   onUpdate: (data: Partial<GuidedSalesState["subscription"]>) => void;
   onNext: () => void;
+  initialSubStep?: number;
+  onSubStepChange?: (subStep: number) => void;
 }
 
 const cityOptions: { value: CityType; label: string }[] = [
@@ -54,8 +56,15 @@ const SUB_STEPS = [
   { id: 6, title: "Paiement" },
 ];
 
-export const SubscriptionFlow = ({ state, onUpdate, onNext }: SubscriptionFlowProps) => {
-  const [subStep, setSubStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
+export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSubStepChange }: SubscriptionFlowProps) => {
+  const [subStepLocal, setSubStepLocal] = useState<1 | 2 | 3 | 4 | 5 | 6>((initialSubStep ?? 1) as 1 | 2 | 3 | 4 | 5 | 6);
+
+  const setSubStep = (val: 1 | 2 | 3 | 4 | 5 | 6) => {
+    setSubStepLocal(val);
+    onSubStepChange?.(val);
+  };
+
+  const subStep = subStepLocal;
   const [showDeclarationModal, setShowDeclarationModal] = useState(false);
   const [declarationText, setDeclarationText] = useState("");
   const { subscription } = state;

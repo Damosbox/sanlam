@@ -119,9 +119,9 @@ const b2bFlows = [
       "Affichage tableau avec filtres (statut)",
       "Action: Voir détails → Modal avec infos complètes",
       "Visualisation: DamageMap + Photos + Données OCR",
-      "Action: Changer statut (Draft/InReview/Approved/Rejected)",
-      "Update table claims",
-      "Action: Contacter client → Redirect Tab Messages"
+      "Action: Changer statut (Brouillon/En examen/Approuvé/Rejeté)",
+      "Mise à jour table sinistres",
+      "Action: Contacter client → Redirection Tab Messages"
     ]
   },
   {

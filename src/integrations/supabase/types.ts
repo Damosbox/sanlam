@@ -1863,7 +1863,10 @@ export type Database = {
           broker_id: string
           coverage_details: Json | null
           created_at: string
+          current_step: number | null
+          draft_state: Json | null
           id: string
+          is_draft: boolean
           lead_id: string | null
           notes: string | null
           payment_link: string | null
@@ -1879,7 +1882,10 @@ export type Database = {
           broker_id: string
           coverage_details?: Json | null
           created_at?: string
+          current_step?: number | null
+          draft_state?: Json | null
           id?: string
+          is_draft?: boolean
           lead_id?: string | null
           notes?: string | null
           payment_link?: string | null
@@ -1895,7 +1901,10 @@ export type Database = {
           broker_id?: string
           coverage_details?: Json | null
           created_at?: string
+          current_step?: number | null
+          draft_state?: Json | null
           id?: string
+          is_draft?: boolean
           lead_id?: string | null
           notes?: string | null
           payment_link?: string | null

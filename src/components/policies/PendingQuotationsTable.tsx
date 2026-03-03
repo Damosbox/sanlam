@@ -35,7 +35,8 @@ import {
   Loader2,
   Eye,
   Edit,
-  ShoppingCart
+  ShoppingCart,
+  PlayCircle
 } from "lucide-react";
 import { format, differenceInDays, isPast } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -54,6 +55,8 @@ interface Quotation {
   payment_link: string | null;
   valid_until: string | null;
   created_at: string;
+  is_draft?: boolean;
+  current_step?: number;
   leads?: {
     first_name: string;
     last_name: string;
@@ -103,8 +106,8 @@ export const PendingQuotationsTable = () => {
           )
         `)
         .eq("broker_id", user.id)
-        .eq("payment_status", "pending_payment")
-        .order("valid_until", { ascending: true });
+        .or("payment_status.eq.pending_payment,is_draft.eq.true")
+        .order("updated_at", { ascending: false });
 
       if (error) throw error;
       return data as Quotation[];
@@ -139,7 +142,19 @@ export const PendingQuotationsTable = () => {
     );
   });
 
-  const getExpirationBadge = (validUntil: string | null, paymentStatus: string) => {
+  const getExpirationBadge = (quotation: Quotation) => {
+    const { valid_until: validUntil, payment_status: paymentStatus } = quotation;
+    
+    // Show draft badge
+    if (quotation.is_draft) {
+      return (
+        <Badge className="bg-violet-100 text-violet-700 gap-1 text-xs">
+          <Edit className="h-3 w-3" />
+          Brouillon
+        </Badge>
+      );
+    }
+
     // Show status-based badge first
     if (paymentStatus === "paid") {
       return (
@@ -199,12 +214,20 @@ export const PendingQuotationsTable = () => {
     );
   };
 
+  const handleResume = (quotation: Quotation) => {
+    navigate(`/b2b/sales?draftId=${quotation.id}`);
+  };
+
   const handleViewDetail = (quotation: Quotation) => {
     setSelectedQuotation(quotation);
     setDetailDialogOpen(true);
   };
 
   const handleModify = (quotation: Quotation) => {
+    if (quotation.is_draft) {
+      handleResume(quotation);
+      return;
+    }
     const params = new URLSearchParams();
     if (quotation.lead_id) {
       params.set("contactId", quotation.lead_id);
@@ -341,29 +364,43 @@ export const PendingQuotationsTable = () => {
                     {format(new Date(quotation.created_at), "dd MMM", { locale: fr })}
                   </TableCell>
                   <TableCell>
-                    {getExpirationBadge(quotation.valid_until, quotation.payment_status)}
+                    {getExpirationBadge(quotation)}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => handleViewDetail(quotation)}
-                        title="Consulter"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => handleModify(quotation)}
-                        disabled={quotation.payment_status === "paid"}
-                        title="Modifier"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                      {quotation.is_draft ? (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="gap-1.5 h-8"
+                          onClick={() => handleResume(quotation)}
+                        >
+                          <PlayCircle className="h-3.5 w-3.5" />
+                          Reprendre
+                        </Button>
+                      ) : (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleViewDetail(quotation)}
+                            title="Consulter"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleModify(quotation)}
+                            disabled={quotation.payment_status === "paid"}
+                            title="Modifier"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                       <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">

@@ -59,6 +59,7 @@ export const GuidedSalesFlow = () => {
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
   const [isAnimating, setIsAnimating] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(null);
   const isMobile = useIsMobile();
   
   // Ref for sub-step back handler from child components
@@ -71,6 +72,28 @@ export const GuidedSalesFlow = () => {
   // Load dynamic calc rule for current product
   const productType = state.productSelection.selectedProduct === "auto" ? "auto" : undefined;
   const { data: calcRule } = useProductCalcRule(productType);
+
+  // Restore draft on mount if draftId is in URL
+  useEffect(() => {
+    const draftIdParam = searchParams.get("draftId");
+    if (draftIdParam) {
+      (async () => {
+        const { data, error } = await supabase
+          .from("quotations")
+          .select("*")
+          .eq("id", draftIdParam)
+          .eq("is_draft", true)
+          .single();
+        
+        if (!error && data?.draft_state) {
+          const restoredState = data.draft_state as unknown as GuidedSalesState;
+          setState(restoredState);
+          setDraftId(draftIdParam);
+          toast.success("Brouillon restauré", { description: "Reprenez votre devis là où vous l'avez laissé" });
+        }
+      })();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Update phase based on current step
   useEffect(() => {
@@ -309,10 +332,19 @@ export const GuidedSalesFlow = () => {
           },
           options: state.coverage.additionalOptions,
           packObsequesData: state.packObsequesData,
-        }))
+        })),
+        is_draft: false,
+        draft_state: null,
       };
 
-      const { error } = await supabase.from("quotations").insert([quotationData]);
+      let error;
+      if (draftId) {
+        // Convert draft to finalized quotation
+        ({ error } = await supabase.from("quotations").update(quotationData).eq("id", draftId));
+        setDraftId(null);
+      } else {
+        ({ error } = await supabase.from("quotations").insert([quotationData]));
+      }
       
       if (error) {
         console.error("Error saving quote:", error);
@@ -383,8 +415,64 @@ export const GuidedSalesFlow = () => {
   };
 
   const handleSaveAndQuit = async () => {
-    await handleSaveQuote();
-    navigate("/b2b/portfolio?tab=quotations");
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Veuillez vous connecter");
+        return;
+      }
+
+      const product = state.productSelection.selectedProduct;
+      const productNames: Record<string, string> = {
+        auto: "Assurance Auto",
+        mrh: "Assurance Habitation",
+        sante: "Assurance Santé",
+        vie: "Assurance Vie",
+        molo_molo: "Molo Molo",
+        pack_obseques: "Pack Obsèques"
+      };
+
+      const draftData = {
+        broker_id: user.id,
+        lead_id: state.clientIdentification.linkedContactId || null,
+        product_type: String(product || "auto"),
+        product_name: productNames[product || "auto"] || "Assurance Auto",
+        premium_amount: state.calculatedPremium.totalAPayer || 0,
+        premium_frequency: "annuel",
+        payment_status: "pending_payment",
+        valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        coverage_details: JSON.parse(JSON.stringify({
+          planTier: state.coverage.planTier,
+          vehicleInfo: state.needsAnalysis,
+        })),
+        is_draft: true,
+        current_step: state.currentStep,
+        draft_state: JSON.parse(JSON.stringify(state)),
+      };
+
+      let error;
+      if (draftId) {
+        // Update existing draft
+        ({ error } = await supabase.from("quotations").update(draftData).eq("id", draftId));
+      } else {
+        // Create new draft
+        ({ error } = await supabase.from("quotations").insert([draftData]));
+      }
+
+      if (error) {
+        console.error("Error saving draft:", error);
+        toast.error("Erreur lors de la sauvegarde du brouillon");
+        return;
+      }
+
+      toast.success("Brouillon sauvegardé", {
+        description: "Retrouvez-le dans Polices → Cotations",
+      });
+      navigate("/b2b/policies?tab=quotations");
+    } catch (err) {
+      console.error("Unexpected error saving draft:", err);
+      toast.error("Erreur inattendue");
+    }
   };
 
   const goToStep = (step: number) => {

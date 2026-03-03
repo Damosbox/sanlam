@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,7 @@ interface SimulationStepProps {
   onCalculate: () => void;
   onNext: () => void;
   isCalculating?: boolean;
+  onRegisterBackHandler?: (handler: (() => boolean) | null) => void;
 }
 
 const energyOptions: { value: EnergyType; label: string }[] = [
@@ -72,10 +73,23 @@ export const SimulationStep = ({
   onUpdate, 
   onCalculate,
   onNext,
-  isCalculating = false 
+  isCalculating = false,
+  onRegisterBackHandler
 }: SimulationStepProps) => {
   const [subStep, setSubStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const { needsAnalysis, simulationCalculated, calculatedPremium } = state;
+
+  // Register back handler for smart navigation
+  useEffect(() => {
+    onRegisterBackHandler?.(() => {
+      if (subStep > 1) {
+        setSubStep((subStep - 1) as 1 | 2 | 3 | 4 | 5);
+        return true;
+      }
+      return false;
+    });
+    return () => onRegisterBackHandler?.(null);
+  }, [subStep, onRegisterBackHandler]);
 
   const firstCircDate = needsAnalysis.vehicleFirstCirculationDate 
     ? new Date(needsAnalysis.vehicleFirstCirculationDate) 

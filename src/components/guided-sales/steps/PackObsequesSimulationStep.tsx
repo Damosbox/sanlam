@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +19,7 @@ interface PackObsequesSimulationStepProps {
   onCalculate: () => void;
   onSaveQuote: (clientInfo?: { firstName: string; lastName: string; email: string }) => void;
   isCalculating: boolean;
+  onRegisterBackHandler?: (handler: (() => boolean) | null) => void;
 }
 
 export const PackObsequesSimulationStep = ({
@@ -27,7 +28,8 @@ export const PackObsequesSimulationStep = ({
   onNext,
   onCalculate,
   onSaveQuote,
-  isCalculating
+  isCalculating,
+  onRegisterBackHandler
 }: PackObsequesSimulationStepProps) => {
   const [subStep, setSubStep] = useState<1 | 2 | 3 | 4>(1);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -35,6 +37,22 @@ export const PackObsequesSimulationStep = ({
   
   const data = state.packObsequesData!;
   const simulationCalculated = state.simulationCalculated;
+
+  // Register back handler for smart navigation
+  useEffect(() => {
+    onRegisterBackHandler?.(() => {
+      if (subStep === 3) {
+        setSubStep(1); // Skip sub-step 2 (same as forward logic)
+        return true;
+      }
+      if (subStep > 1) {
+        setSubStep((subStep - 1) as 1 | 2 | 3 | 4);
+        return true;
+      }
+      return false;
+    });
+    return () => onRegisterBackHandler?.(null);
+  }, [subStep, onRegisterBackHandler]);
   
   // Check if family step should be shown
   const showFamilyStep = data.adhesionType !== "individuelle";

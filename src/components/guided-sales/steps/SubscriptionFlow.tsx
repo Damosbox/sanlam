@@ -520,41 +520,112 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext }: SubscriptionFlowPr
     </div>
   );
 
-  // Sub-step 6: This step just confirms and moves to MobilePaymentStep
-  const renderSubStep6 = () => (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Confirmation</h1>
-        <p className="text-muted-foreground mt-1">Étape 6/6 - Vérification finale</p>
-      </div>
+  // Sub-step 6: Récapitulatif de souscription avant paiement
+  const renderSubStep6 = () => {
+    const cityLabel = cityOptions.find(c => c.value === subscription.city)?.label || subscription.city;
+    
+    const sections = [
+      {
+        icon: User,
+        title: "Agent",
+        step: 1 as const,
+        items: [
+          { label: "Code agent", value: subscription.agentCode },
+        ],
+      },
+      {
+        icon: MapPin,
+        title: "Localisation",
+        step: 2 as const,
+        items: [
+          { label: "Adresse", value: subscription.geographicAddress },
+          { label: "Ville", value: cityLabel },
+        ],
+      },
+      {
+        icon: Car,
+        title: "Véhicule",
+        step: 3 as const,
+        items: [
+          { label: "Marque", value: subscription.vehicleBrand },
+          { label: "Modèle", value: subscription.vehicleModel },
+          { label: "Immatriculation", value: subscription.vehicleRegistrationNumber },
+          { label: "N° de châssis", value: subscription.vehicleChassisNumber },
+        ],
+      },
+      {
+        icon: CreditCard,
+        title: "Conducteur",
+        step: 4 as const,
+        items: [
+          { label: "Conducteur habituel", value: subscription.isHabitualDriver ? "Oui" : "Non" },
+          { label: "Catégorie permis", value: subscription.licenseCategory ? `Catégorie ${subscription.licenseCategory}` : "" },
+          { label: "N° de permis", value: subscription.licenseNumber },
+          { label: "Date d'obtention", value: subscription.licenseIssueDate ? format(new Date(subscription.licenseIssueDate), "dd/MM/yyyy", { locale: fr }) : "" },
+        ],
+      },
+      {
+        icon: FileText,
+        title: "Documents",
+        step: 5 as const,
+        items: [
+          { label: "Lieu d'obtention permis", value: subscription.licenseIssuePlace || "Non renseigné" },
+          { label: "Carte grise", value: subscription.vehicleRegistrationDocument || "Non fournie" },
+          { label: "Certificat d'antériorité", value: subscription.priorCertificateType === "declaration" ? "Déclaration sur l'honneur" : subscription.priorCertificateType === "documents" ? "Documents justificatifs" : "" },
+        ],
+      },
+    ];
 
-      <Card>
-        <CardContent className="pt-6">
-          <div className="text-center py-8">
-            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Car className="h-8 w-8 text-primary" />
-            </div>
-            <h3 className="font-semibold text-lg mb-2">Informations complètes</h3>
-            <p className="text-muted-foreground">
-              Toutes les informations de souscription ont été saisies. 
-              Passez à l'étape de paiement pour finaliser.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Récapitulatif de souscription</h1>
+          <p className="text-muted-foreground mt-1">Étape 6/6 - Vérifiez les informations avant le paiement</p>
+        </div>
 
-      <div className="flex justify-between">
-        <Button variant="outline" onClick={goBack} className="gap-2">
-          <ChevronLeft className="h-4 w-4" />
-          Retour
-        </Button>
-        <Button onClick={onNext} className="gap-2">
-          Continuer vers Paiement
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+        {sections.map((section) => (
+          <Card key={section.title}>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <section.icon className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold text-lg">{section.title}</h3>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSubStep(section.step)}
+                  className="gap-1.5 text-muted-foreground hover:text-primary"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  Modifier
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                {section.items.filter(item => item.value).map((item) => (
+                  <div key={item.label}>
+                    <span className="text-muted-foreground">{item.label}</span>
+                    <p className="font-medium">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+
+        <div className="flex justify-between">
+          <Button variant="outline" onClick={goBack} className="gap-2">
+            <ChevronLeft className="h-4 w-4" />
+            Retour
+          </Button>
+          <Button onClick={onNext} className="gap-2">
+            Continuer vers Paiement
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div>

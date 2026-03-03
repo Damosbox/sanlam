@@ -1,27 +1,22 @@
-import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Check, Star, Save, Send, ChevronRight } from "lucide-react";
+import { Calendar, Check, Star, ChevronRight } from "lucide-react";
 import { GuidedSalesState, PlanTier, ContractPeriodicity } from "../types";
 import { cn } from "@/lib/utils";
-import { formatFCFA } from "@/utils/formatCurrency";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { toast } from "sonner";
-import { QuotationSaveDialog } from "../QuotationSaveDialog";
 
 interface FormulaSelectionStepProps {
   state: GuidedSalesState;
   onUpdate: (data: Partial<GuidedSalesState["coverage"]>) => void;
   onNeedsUpdate: (data: Partial<GuidedSalesState["needsAnalysis"]>) => void;
-  onSaveQuote: (clientInfo?: { firstName: string; lastName: string; email: string }) => void;
-  onSubscribe: () => void;
+  onNext: () => void;
 }
 
 const plans: { tier: PlanTier; name: string; description: string }[] = [
@@ -48,21 +43,11 @@ export const FormulaSelectionStep = ({
   state, 
   onUpdate, 
   onNeedsUpdate,
-  onSaveQuote,
-  onSubscribe 
+  onNext,
 }: FormulaSelectionStepProps) => {
-  const { coverage, needsAnalysis, calculatedPremium } = state;
+  const { coverage, needsAnalysis } = state;
   const selectedPeriodicity = needsAnalysis.contractPeriodicity || "1_year";
   const effectiveDate = needsAnalysis.effectiveDate ? new Date(needsAnalysis.effectiveDate) : undefined;
-
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogMode, setDialogMode] = useState<"save" | "send">("save");
-
-  const defaultDialogValues = {
-    lastName: state.clientIdentification.lastName || "",
-    firstName: state.clientIdentification.firstName || "",
-    email: state.clientIdentification.email || "",
-  };
 
   const handlePlanSelect = (tier: PlanTier) => {
     onUpdate({ planTier: tier });
@@ -75,22 +60,6 @@ export const FormulaSelectionStep = ({
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       onNeedsUpdate({ effectiveDate: date.toISOString() });
-    }
-  };
-
-  const openDialog = (mode: "save" | "send") => {
-    setDialogMode(mode);
-    setDialogOpen(true);
-  };
-
-  const handleDialogConfirm = (info: { lastName: string; firstName: string; email: string; channel?: string }) => {
-    onSaveQuote({ firstName: info.firstName, lastName: info.lastName, email: info.email });
-    if (info.channel) {
-      toast.success("Cotation envoyée avec succès", {
-        description: `Envoyée par ${info.channel} à ${info.email}`,
-      });
-    } else {
-      toast.success("Cotation sauvegardée avec succès");
     }
   };
 
@@ -238,63 +207,18 @@ export const FormulaSelectionStep = ({
         </CardContent>
       </Card>
 
-      {/* Résumé prix */}
-      <Card className="bg-muted/50">
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Prime totale estimée</p>
-              <p className="text-3xl font-bold text-primary">
-                {formatFCFA(calculatedPremium.totalAPayer)}
-              </p>
-            </div>
-            <div className="text-right">
-              <Badge variant="secondary" className="mb-2">
-                {plans.find(p => p.tier === coverage.planTier)?.name || "BASIC"}
-              </Badge>
-              <p className="text-sm text-muted-foreground">
-                {periodicityOptions.find(p => p.id === selectedPeriodicity)?.name || "12 mois"}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Actions */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      {/* Bouton Suivant */}
+      <div className="flex justify-end">
         <Button 
-          variant="outline" 
-          onClick={() => openDialog("save")}
-          className="gap-2 flex-1"
-        >
-          <Save className="h-4 w-4" />
-          Sauvegarder
-        </Button>
-        <Button 
-          variant="outline" 
-          onClick={() => openDialog("send")}
-          className="gap-2 flex-1"
-        >
-          <Send className="h-4 w-4" />
-          Envoyer
-        </Button>
-        <Button 
-          onClick={onSubscribe}
+          onClick={onNext}
           disabled={!isValid()}
-          className="gap-2 flex-1"
+          className="gap-2"
+          size="lg"
         >
-          SOUSCRIRE
+          Voir le récapitulatif
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
-
-      <QuotationSaveDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        mode={dialogMode}
-        defaultValues={defaultDialogValues}
-        onConfirm={handleDialogConfirm}
-      />
     </div>
   );
 };

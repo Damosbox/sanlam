@@ -57,6 +57,9 @@ interface Quotation {
   created_at: string;
   is_draft?: boolean;
   current_step?: number;
+  coverage_details?: {
+    clientInfo?: { firstName?: string; lastName?: string; email?: string };
+  } | null;
   leads?: {
     first_name: string;
     last_name: string;
@@ -134,11 +137,15 @@ export const PendingQuotationsTable = () => {
   const filteredQuotations = quotations.filter((q) => {
     if (!searchQuery) return true;
     const searchLower = searchQuery.toLowerCase();
-    const fullName = `${q.leads?.first_name || ""} ${q.leads?.last_name || ""}`.toLowerCase();
+    const cdClient = q.coverage_details?.clientInfo;
+    const fullName = q.leads
+      ? `${q.leads.first_name} ${q.leads.last_name}`.toLowerCase()
+      : `${cdClient?.firstName || ""} ${cdClient?.lastName || ""}`.toLowerCase();
     return (
       fullName.includes(searchLower) ||
       q.product_name.toLowerCase().includes(searchLower) ||
-      q.product_type.toLowerCase().includes(searchLower)
+      q.product_type.toLowerCase().includes(searchLower) ||
+      (cdClient?.email || "").toLowerCase().includes(searchLower)
     );
   });
 
@@ -336,11 +343,13 @@ export const PendingQuotationsTable = () => {
                       <div className="font-medium text-sm">
                         {quotation.leads 
                           ? `${quotation.leads.first_name} ${quotation.leads.last_name}`
-                          : "Prospect inconnu"
+                          : quotation.coverage_details?.clientInfo?.lastName
+                            ? `${quotation.coverage_details.clientInfo.firstName || ""} ${quotation.coverage_details.clientInfo.lastName}`.trim()
+                            : "Prospect inconnu"
                         }
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {quotation.leads?.email || quotation.leads?.phone || "N/A"}
+                        {quotation.leads?.email || quotation.leads?.phone || quotation.coverage_details?.clientInfo?.email || "N/A"}
                       </div>
                     </div>
                   </TableCell>

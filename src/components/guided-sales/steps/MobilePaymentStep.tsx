@@ -140,7 +140,7 @@ export const MobilePaymentStep = ({ state, onUpdate, onNext }: MobilePaymentStep
       {/* Navigation */}
       <div className="flex justify-end">
         <Button onClick={onNext} disabled={!isValid()} className="gap-2">
-          Continuer vers Signature
+          Payer et émettre la police
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>

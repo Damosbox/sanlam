@@ -40,7 +40,7 @@ const PHASE_STEPS: Record<SalesPhase, number[]> = {
   preparation: [0, 1],     // Product Selection, Simulation (with sub-steps)
   construction: [2, 3],    // Formula Selection, Recap
   souscription: [4],       // Subscription Flow (with sub-steps)
-  finalisation: [5, 6],    // Mobile Payment, Signature & Emission
+  finalisation: [5, 6],    // Signature & Recap, Mobile Payment & Emission
 };
 
 const getPhaseFromStep = (step: number): SalesPhase => {
@@ -512,7 +512,7 @@ export const GuidedSalesFlow = () => {
         goToStep(4); // SubscriptionFlow
         break;
       case "payment":
-        goToStep(5); // MobilePaymentStep
+        goToStep(6); // MobilePaymentStep
         break;
     }
   };
@@ -605,11 +605,7 @@ export const GuidedSalesFlow = () => {
         return <SubscriptionFlow state={state} onUpdate={updateSubscription} onNext={nextStep} />;
       
       case 5:
-        // Step 5: Mobile Payment
-        return <MobilePaymentStep state={state} onUpdate={updateMobilePayment} onNext={nextStep} />;
-      
-      case 6:
-        // Step 6: Signature & Emission
+        // Step 5: Signature & Recap global
         return (
           <SignatureEmissionStep 
             state={state} 
@@ -619,6 +615,10 @@ export const GuidedSalesFlow = () => {
             onEditStep={goToStep}
           />
         );
+      
+      case 6:
+        // Step 6: Mobile Payment & Emission
+        return <MobilePaymentStep state={state} onUpdate={updateMobilePayment} onNext={nextStep} />;
       
       default:
         return null;
@@ -633,8 +633,8 @@ export const GuidedSalesFlow = () => {
     if (state.currentStep === 1 && state.simulationCalculated) return "Voir les offres";
     if (state.currentStep === 2) return "Récapitulatif";
     if (state.currentStep === 3) return "Souscrire";
-    if (state.currentStep === 4) return "Paiement";
-    if (state.currentStep === 5) return "Signature";
+    if (state.currentStep === 4) return "Signature";
+    if (state.currentStep === 5) return "Paiement";
     return "Suivant";
   };
 

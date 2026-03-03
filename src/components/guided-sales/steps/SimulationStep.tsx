@@ -12,15 +12,13 @@ import {
   Bike, 
   ChevronRight, 
   ChevronLeft,
-  Calculator,
-  Shield,
   Calendar
 } from "lucide-react";
 import { GuidedSalesState, QuoteType, EnergyType, GenderType, EmploymentType, ContractPeriodicity } from "../types";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { formatFCFA } from "@/utils/formatCurrency";
+
 
 interface SimulationStepProps {
   state: GuidedSalesState;
@@ -622,109 +620,78 @@ export const SimulationStep = ({
     </div>
   );
 
-  // Sub-step 5: Équipements (fields 16-17) + CALCULER button
-  const renderSubStep5 = () => (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Équipements</h1>
-        <p className="text-muted-foreground mt-1">Étape 5/5 - Options du véhicule</p>
-      </div>
+  // Sub-step 5: Équipements (fields 16-17)
+  const renderSubStep5 = () => {
+    const handleViewOffers = async () => {
+      onCalculate();
+      // Small delay to let calculation start, then navigate
+      setTimeout(() => onNext(), 100);
+    };
 
-      <Card>
-        <CardContent className="pt-6 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* 16. Toit panoramique */}
-            <div>
-              <Label className="text-sm font-medium">16. Toit panoramique ? *</Label>
-              <Select
-                value={needsAnalysis.hasPanoramicRoof === undefined ? "" : needsAnalysis.hasPanoramicRoof ? "oui" : "non"}
-                onValueChange={(v) => onUpdate({ hasPanoramicRoof: v === "oui" })}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Sélectionner" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="oui">Oui</SelectItem>
-                  <SelectItem value="non">Non</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Équipements</h1>
+        </div>
 
-            {/* 17. Protection GPS */}
-            <div>
-              <Label className="text-sm font-medium">17. Protection GPS ? *</Label>
-              <Select
-                value={needsAnalysis.hasGPSProtection === undefined ? "" : needsAnalysis.hasGPSProtection ? "oui" : "non"}
-                onValueChange={(v) => onUpdate({ hasGPSProtection: v === "oui" })}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Sélectionner" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="oui">Oui</SelectItem>
-                  <SelectItem value="non">Non</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        <Card>
+          <CardContent className="pt-6 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* 16. Toit panoramique */}
+              <div>
+                <Label className="text-sm font-medium">16. Toit panoramique ? *</Label>
+                <Select
+                  value={needsAnalysis.hasPanoramicRoof === undefined ? "" : needsAnalysis.hasPanoramicRoof ? "oui" : "non"}
+                  onValueChange={(v) => onUpdate({ hasPanoramicRoof: v === "oui" })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="oui">Oui</SelectItem>
+                    <SelectItem value="non">Non</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-      {/* Résultat simulation si calculé */}
-      {simulationCalculated && (
-        <Card className="border-primary bg-primary/5">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Shield className="h-6 w-6 text-primary" />
-              <h3 className="font-semibold text-lg">Estimation de prime</h3>
-            </div>
-            <div className="text-center py-4">
-              <p className="text-4xl font-bold text-primary">
-                {formatFCFA(calculatedPremium.totalAPayer)}
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Prime estimée
-              </p>
+              {/* 17. Protection GPS */}
+              <div>
+                <Label className="text-sm font-medium">17. Protection GPS ? *</Label>
+                <Select
+                  value={needsAnalysis.hasGPSProtection === undefined ? "" : needsAnalysis.hasGPSProtection ? "oui" : "non"}
+                  onValueChange={(v) => onUpdate({ hasGPSProtection: v === "oui" })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="oui">Oui</SelectItem>
+                    <SelectItem value="non">Non</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Bouton Calculer */}
-      <div className="flex flex-col items-center gap-4">
-        <Button 
-          onClick={onCalculate} 
-          disabled={!canCalculate || isCalculating}
-          size="lg"
-          className="gap-2 px-12"
-        >
-          <Calculator className="h-5 w-5" />
-          {isCalculating ? "Calcul en cours..." : simulationCalculated ? "Recalculer" : "CALCULER"}
-        </Button>
-
-        {!canCalculate && (
-          <p className="text-sm text-center text-muted-foreground">
-            Remplissez tous les champs obligatoires pour activer le calcul
-          </p>
-        )}
-      </div>
-
-      {/* Navigation après calcul */}
-      <div className="flex justify-between">
-        <Button variant="outline" onClick={goBack} className="gap-2">
-          <ChevronLeft className="h-4 w-4" />
-          Retour
-        </Button>
-        
-        {simulationCalculated && (
-          <Button onClick={onNext} className="gap-2">
-            Voir les offres
+        <div className="flex justify-between">
+          <Button variant="outline" onClick={goBack} className="gap-2">
+            <ChevronLeft className="h-4 w-4" />
+            Retour
+          </Button>
+          
+          <Button 
+            onClick={handleViewOffers} 
+            disabled={!canCalculate || isCalculating}
+            className="gap-2"
+          >
+            {isCalculating ? "Calcul en cours..." : "Voir les offres"}
             <ChevronRight className="h-4 w-4" />
           </Button>
-        )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div>

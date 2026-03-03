@@ -108,16 +108,22 @@ export const PackObsequesSimulationStep = ({
           <Label>1. Sélectionner une option *</Label>
           <RadioGroup
             value={data.selectedOption}
-            onValueChange={(value) => onUpdate({ selectedOption: value as "option1" | "option2" })}
+            onValueChange={(value) => {
+              const opt = value as "option1" | "option2";
+              onUpdate({ 
+                selectedOption: opt, 
+                nombreEnfants: opt === "option1" ? 0 : 4 
+              });
+            }}
             className="flex gap-4"
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="option1" id="option1" />
-              <Label htmlFor="option1" className="font-normal cursor-pointer">Option 1</Label>
+              <Label htmlFor="option1" className="font-normal cursor-pointer">Option 1 (0 à 3 enfants)</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="option2" id="option2" />
-              <Label htmlFor="option2" className="font-normal cursor-pointer">Option 2</Label>
+              <Label htmlFor="option2" className="font-normal cursor-pointer">Option 2 (4 à 6 enfants)</Label>
             </div>
           </RadioGroup>
         </div>
@@ -178,7 +184,7 @@ export const PackObsequesSimulationStep = ({
 
         {/* 5. Nombre d'enfants à charge */}
         <div className="space-y-2">
-          <Label>5. Nombre d'enfants à charge (0-3) *</Label>
+          <Label>5. Nombre d'enfants à charge ({data.selectedOption === "option2" ? "4-6" : "0-3"}) *</Label>
           <Select
             value={String(data.nombreEnfants)}
             onValueChange={(value) => onUpdate({ nombreEnfants: Number(value) })}
@@ -187,12 +193,26 @@ export const PackObsequesSimulationStep = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="0">0</SelectItem>
-              <SelectItem value="1">1</SelectItem>
-              <SelectItem value="2">2</SelectItem>
-              <SelectItem value="3">3</SelectItem>
+              {data.selectedOption === "option2" ? (
+                <>
+                  <SelectItem value="4">4</SelectItem>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="6">6</SelectItem>
+                </>
+              ) : (
+                <>
+                  <SelectItem value="0">0</SelectItem>
+                  <SelectItem value="1">1</SelectItem>
+                  <SelectItem value="2">2</SelectItem>
+                  <SelectItem value="3">3</SelectItem>
+                </>
+              )}
             </SelectContent>
           </Select>
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <Shield className="h-3 w-3" />
+            Plafond d'âge : enfants de moins de 21 ans
+          </p>
         </div>
 
         {/* 6. Nombre d'ascendants (conditional) */}
@@ -516,53 +536,80 @@ export const PackObsequesSimulationStep = ({
           </CardContent>
         </Card>
 
-        {/* Inline results after calculation - same pattern as Auto */}
-        {simulationCalculated && breakdown && (
+        {/* Inline results after calculation */}
+        {simulationCalculated && breakdown && (() => {
+          const periodicPremium = getPeriodicPremium(breakdown.primeTotale, data.periodicity);
+          const premierePrime = periodicPremium + breakdown.fraisAccessoires;
+          return (
           <div className="space-y-4">
+            {/* Section 1 — Détail sur la prime */}
             <Card className="border-primary/20 bg-primary/5">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Check className="h-5 w-5 text-primary" />
-                  Résultat de la simulation
+                  1. Détail sur la prime
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Première prime</p>
-                    <p className="text-lg font-semibold">{formatFCFA(breakdown.primeTTC)}</p>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center border-b border-primary/10 pb-2">
+                    <span className="text-sm font-semibold">Première prime</span>
+                    <span className="text-lg font-bold text-primary">{formatFCFA(premierePrime)}</span>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Prime TTC annuelle</p>
-                    <p className="text-lg font-semibold">{formatFCFA(breakdown.primeTTC)}</p>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Prime Périodique nette</span>
+                    <span className="font-medium">{formatFCFA(periodicPremium)}</span>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Prime périodique nette</p>
-                    <p className="text-lg font-semibold">{formatFCFA(getPeriodicPremium(breakdown.primeTotale, data.periodicity))}</p>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Frais d'adhésion</span>
+                    <span className="font-medium">{formatFCFA(breakdown.fraisAccessoires)}</span>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Capital assuré principal</p>
-                    <p className="text-lg font-semibold">{formatFCFA(breakdown.capitalGaranti)}</p>
-                  </div>
-                  {data.nombreAscendants > 0 && (
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Capital par ascendant</p>
-                      <p className="text-lg font-semibold">{formatFCFA(breakdown.capitalParAscendant)}</p>
-                    </div>
-                  )}
-                  {data.nombreEnfants > 0 && (
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Capital par enfant</p>
-                      <p className="text-lg font-semibold">{formatFCFA(breakdown.capitalParEnfant)}</p>
-                    </div>
-                  )}
                 </div>
               </CardContent>
             </Card>
 
+            {/* Section 2 — Détails sur les capitaux */}
             <Card>
-              <CardContent className="pt-4">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">2. Détails sur les capitaux</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Capital assuré principal</span>
+                    <span className="font-medium">{formatFCFA(breakdown.capitalGaranti - (data.nombreEnfants * breakdown.capitalParEnfant) - (data.nombreAscendants * breakdown.capitalParAscendant))}</span>
+                  </div>
+                  {data.nombreEnfants > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Capital par enfant</span>
+                      <span className="font-medium">{formatFCFA(breakdown.capitalParEnfant)}</span>
+                    </div>
+                  )}
+                  {data.nombreAscendants > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Capital par ascendant</span>
+                      <span className="font-medium">{formatFCFA(breakdown.capitalParAscendant)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between border-t pt-2 mt-2">
+                    <span className="font-semibold">Capital total garanti</span>
+                    <span className="font-bold text-primary">{formatFCFA(breakdown.capitalGaranti)}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Section 3 — Données de simulation */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">3. Données de simulation</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Option</span>
+                    <span className="font-medium">{data.selectedOption === "option1" ? "Option 1 (0-3 enfants)" : "Option 2 (4-6 enfants)"}</span>
+                  </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Formule</span>
                     <span className="font-medium uppercase">{data.formula}</span>
@@ -574,6 +621,26 @@ export const PackObsequesSimulationStep = ({
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Périodicité</span>
                     <span className="font-medium capitalize">{data.periodicity}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Nombre d'enfants</span>
+                    <span className="font-medium">{data.nombreEnfants}</span>
+                  </div>
+                  {data.nombreAscendants > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Nombre d'ascendants</span>
+                      <span className="font-medium">{data.nombreAscendants}</span>
+                    </div>
+                  )}
+                  {(data.adhesionType === "famille" || data.adhesionType === "famille_ascendant") && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Conjoint</span>
+                      <span className="font-medium">{data.addSpouse ? "Oui" : "Non"}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Date d'effet</span>
+                    <span className="font-medium">{data.effectiveDate}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Assuré</span>
@@ -630,7 +697,7 @@ export const PackObsequesSimulationStep = ({
               }}
             />
           </div>
-        )}
+        ); })()}
       </>
     );
   };

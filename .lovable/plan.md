@@ -1,40 +1,38 @@
 
 
-## Étape 6/6 — Récap global + Validation + Signature
+## Reprise de brouillon à la sous-étape exacte
 
-### Objectif
+### Problème
 
-Transformer l'étape 6 (`SignatureEmissionStep`) en un récapitulatif global qui regroupe :
-1. Les données de la **cotation** (véhicule, formule, garanties) — reprises du `RecapStep` (étape 3)
-2. Les données de la **souscription** (agent, localisation, véhicule immatriculé, conducteur, documents) — reprises du sub-step 6 de `SubscriptionFlow`
-3. Le **décompte de prime** détaillé avec tooltips
-4. Les **cases de validation légale** (CGU + partage de données)
-5. La **signature digitale** du client
-6. Le bouton **Émettre la police**
+Quand un brouillon est restauré, `setState(restoredState)` restaure correctement `currentStep` (l'étape globale) et toutes les données du formulaire. Cependant, les composants `SimulationStep`, `SubscriptionFlow` et `PackObsequesSimulationStep` utilisent un `useState(1)` local pour gérer leur sous-étape interne. Le brouillon revient donc toujours à la sous-étape 1 de l'étape courante, même si l'utilisateur avait progressé plus loin.
 
-La vue post-émission (documents générés, n° de police) reste inchangée.
+### Solution
+
+Passer la sous-étape sauvegardée depuis l'état global aux composants enfants et l'utiliser comme valeur initiale.
 
 ### Modifications
 
-**Fichier : `src/components/guided-sales/steps/SignatureEmissionStep.tsx`**
+**1. `SimulationStep.tsx`**
+- Ajouter une prop `initialSubStep?: number` 
+- Changer `useState<1|2|3|4|5>(1)` en `useState<1|2|3|4|5>(initialSubStep ?? 1)`
 
-Réécrire le contenu principal (état non-émis) pour inclure dans l'ordre :
+**2. `SubscriptionFlow.tsx`**
+- Ajouter une prop `initialSubStep?: number`
+- Changer `useState<1|2|3|4|5|6>(1)` en `useState<1|2|3|4|5|6>(initialSubStep ?? 1)`
 
-1. **Section Véhicule** (depuis `state.needsAnalysis`) : marque, modèle, puissance fiscale, énergie, valeur vénale, places, date de circulation — avec bouton "Modifier" vers step 1
-2. **Section Formule & Garanties** (depuis `state.coverage`) : badge plan, garanties incluses, durée, date d'effet — avec bouton "Modifier" vers step 2
-3. **Section Souscription** : Agent, Localisation, Véhicule immatriculé, Conducteur, Documents (depuis `state.subscription`) — avec bouton "Modifier" vers step 4
-4. **Décompte de prime** : Prime Nette, Frais, Taxes, Prime TTC, FGA, CEDEAO, Total — avec tooltips (réutiliser le pattern `PremiumLine` du `RecapStep`)
-5. **Validation légale** : 2 checkboxes (CGU + partage données) — existant, inchangé
-6. **Signature digitale** : zone de signature + bouton — existant, inchangé
-7. **Bouton Émettre** — existant, inchangé
+**3. `PackObsequesSimulationStep.tsx`**
+- Ajouter une prop `initialSubStep?: number`
+- Changer `useState<1|2|3|4>(1)` en `useState<1|2|3|4>(initialSubStep ?? 1)`
 
-**Props** : Ajouter `onEditStep: (step: number) => void` pour permettre la navigation vers les étapes antérieures (simulation, formule, souscription).
+**4. `GuidedSalesFlow.tsx`**
+- Passer `initialSubStep={state.simulationSubStep}` à `SimulationStep`
+- Passer `initialSubStep={state.subscriptionSubStep}` à `SubscriptionFlow`
+- Passer `initialSubStep` à `PackObsequesSimulationStep` si applicable
 
-**Fichier : `src/components/guided-sales/GuidedSalesFlow.tsx`**
-
-Passer `onEditStep={goToStep}` au composant `SignatureEmissionStep` en plus des props existantes.
+**5. Sauvegarde des sous-étapes** (si pas déjà fait)
+- Vérifier que `handleSaveAndQuit` sauvegarde bien `simulationSubStep` et `subscriptionSubStep` dans le state avant la sérialisation. Si les sous-étapes ne sont pas synchronisées vers l'état global, ajouter des callbacks `onSubStepChange` pour mettre à jour `state.simulationSubStep` / `state.subscriptionSubStep` à chaque changement de sous-étape dans les composants enfants.
 
 ### Résultat
 
-L'étape 6/6 devient un récapitulatif complet et final du contrat (cotation + souscription + prime), suivi des validations légales et de la signature, avant l'émission de la police.
+À la reprise d'un brouillon, l'utilisateur retrouve exactement l'écran et la sous-étape où il s'est arrêté, avec toutes les données pré-remplies.
 

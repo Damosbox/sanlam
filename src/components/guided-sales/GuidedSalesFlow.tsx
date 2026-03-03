@@ -44,7 +44,12 @@ const PHASE_STEPS: Record<SalesPhase, number[]> = {
   finalisation: [5, 6, 7], // Signature & Recap, Mobile Payment, Issuance
 };
 
-const getPhaseFromStep = (step: number): SalesPhase => {
+const getPhaseFromStep = (step: number, product?: SelectedProductType): SalesPhase => {
+  if (product === "pack_obseques") {
+    if (step <= 1) return "preparation";
+    // Step 4 = subscription (steps 2-3 are skipped)
+    return "souscription";
+  }
   if (step <= 1) return "preparation";
   if (step <= 3) return "construction";
   if (step === 4) return "souscription";
@@ -101,11 +106,11 @@ export const GuidedSalesFlow = () => {
 
   // Update phase based on current step
   useEffect(() => {
-    const phase = getPhaseFromStep(state.currentStep);
+    const phase = getPhaseFromStep(state.currentStep, state.productSelection.selectedProduct);
     if (phase !== state.currentPhase) {
       setState(prev => ({ ...prev, currentPhase: phase }));
     }
-  }, [state.currentStep, state.currentPhase]);
+  }, [state.currentStep, state.currentPhase, state.productSelection.selectedProduct]);
 
   // Animation effect
   useEffect(() => {
@@ -664,6 +669,7 @@ export const GuidedSalesFlow = () => {
               currentStep={state.currentStep}
               onPhaseClick={goToPhase}
               onPrev={state.currentStep > 0 ? prevStep : undefined}
+              productType={state.productSelection.selectedProduct}
             />
           </div>
         </div>
@@ -684,6 +690,7 @@ export const GuidedSalesFlow = () => {
                 currentStep={state.currentStep}
                 onPhaseClick={goToPhase}
                 compact
+                productType={state.productSelection.selectedProduct}
               />
             </div>
           </div>

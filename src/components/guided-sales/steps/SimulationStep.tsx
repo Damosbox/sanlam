@@ -119,7 +119,8 @@ export const SimulationStep = ({
       needsAnalysis.effectiveDate &&
       needsAnalysis.contractPeriodicity &&
       needsAnalysis.vehicleNewValue &&
-      needsAnalysis.vehicleVenalValue
+      needsAnalysis.vehicleVenalValue &&
+      needsAnalysis.vehicleVenalValue < needsAnalysis.vehicleNewValue
     );
   };
 
@@ -551,10 +552,13 @@ export const SimulationStep = ({
               <Label className="text-sm font-medium">14. Valeur à neuf *</Label>
               <div className="relative mt-1">
                 <Input
-                  type="number"
+                  type="text"
                   placeholder="10 000 000"
-                  value={needsAnalysis.vehicleNewValue || ""}
-                  onChange={(e) => onUpdate({ vehicleNewValue: parseInt(e.target.value) || 0 })}
+                  value={needsAnalysis.vehicleNewValue ? new Intl.NumberFormat('fr-FR').format(needsAnalysis.vehicleNewValue) : ""}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^0-9]/g, '');
+                    onUpdate({ vehicleNewValue: raw ? parseInt(raw) : 0 });
+                  }}
                   className="pr-16"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
@@ -568,16 +572,24 @@ export const SimulationStep = ({
               <Label className="text-sm font-medium">15. Valeur vénale *</Label>
               <div className="relative mt-1">
                 <Input
-                  type="number"
+                  type="text"
                   placeholder="7 000 000"
-                  value={needsAnalysis.vehicleVenalValue || ""}
-                  onChange={(e) => onUpdate({ vehicleVenalValue: parseInt(e.target.value) || 0 })}
-                  className="pr-16"
+                  value={needsAnalysis.vehicleVenalValue ? new Intl.NumberFormat('fr-FR').format(needsAnalysis.vehicleVenalValue) : ""}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^0-9]/g, '');
+                    onUpdate({ vehicleVenalValue: raw ? parseInt(raw) : 0 });
+                  }}
+                  className={cn("pr-16", needsAnalysis.vehicleNewValue && needsAnalysis.vehicleVenalValue && needsAnalysis.vehicleVenalValue >= needsAnalysis.vehicleNewValue && "border-destructive")}
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
                   FCFA
                 </span>
               </div>
+              {needsAnalysis.vehicleNewValue && needsAnalysis.vehicleVenalValue && needsAnalysis.vehicleVenalValue >= needsAnalysis.vehicleNewValue && (
+                <p className="text-xs text-destructive mt-1 font-medium">
+                  La valeur vénale doit être inférieure à la valeur à neuf.
+                </p>
+              )}
             </div>
           </div>
         </CardContent>

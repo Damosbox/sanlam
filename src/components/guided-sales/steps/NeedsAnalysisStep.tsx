@@ -381,10 +381,13 @@ export const NeedsAnalysisStep = ({
           </Label>
           <div className="relative">
             <Input 
-              type="number" 
-              placeholder="Valeur numérique" 
-              value={needsAnalysis.vehicleNewValue || ""} 
-              onChange={(e) => onUpdate({ vehicleNewValue: Number(e.target.value) })} 
+              type="text" 
+              placeholder="10 000 000" 
+              value={needsAnalysis.vehicleNewValue ? new Intl.NumberFormat('fr-FR').format(needsAnalysis.vehicleNewValue) : ""} 
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^0-9]/g, '');
+                onUpdate({ vehicleNewValue: raw ? Number(raw) : 0 });
+              }} 
               className="pr-14" 
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
@@ -399,16 +402,24 @@ export const NeedsAnalysisStep = ({
           </Label>
           <div className="relative">
             <Input 
-              type="number" 
-              placeholder="Valeur numérique" 
-              value={needsAnalysis.vehicleVenalValue || ""} 
-              onChange={(e) => onUpdate({ vehicleVenalValue: Number(e.target.value) })} 
-              className="pr-14" 
+              type="text" 
+              placeholder="7 000 000" 
+              value={needsAnalysis.vehicleVenalValue ? new Intl.NumberFormat('fr-FR').format(needsAnalysis.vehicleVenalValue) : ""} 
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^0-9]/g, '');
+                onUpdate({ vehicleVenalValue: raw ? Number(raw) : 0 });
+              }} 
+              className={cn("pr-14", needsAnalysis.vehicleNewValue && needsAnalysis.vehicleVenalValue && needsAnalysis.vehicleVenalValue >= needsAnalysis.vehicleNewValue && "border-destructive")} 
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
               FCFA
             </span>
           </div>
+          {needsAnalysis.vehicleNewValue && needsAnalysis.vehicleVenalValue && needsAnalysis.vehicleVenalValue >= needsAnalysis.vehicleNewValue && (
+            <p className="text-xs text-destructive font-medium">
+              La valeur vénale doit être inférieure à la valeur à neuf.
+            </p>
+          )}
         </div>
       </div>
 

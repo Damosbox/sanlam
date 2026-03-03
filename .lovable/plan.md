@@ -1,26 +1,34 @@
 
 
-## Corrections sur les champs valeur et calendrier
+## Simplification de l'étape 5 — Équipements uniquement
 
-### 3 modifications demandées
+### Contexte
 
-**1. Validation valeur neuve > valeur vénale**
-- Dans `NeedsAnalysisStep.tsx` et `SimulationStep.tsx` : ajouter un message d'erreur sous le champ "Valeur vénale" si `vehicleVenalValue >= vehicleNewValue`
-- Bloquer visuellement avec une bordure rouge et un texte d'erreur
+Actuellement, l'étape 5/5 de la simulation contient :
+1. Les champs équipements (toit panoramique, GPS)
+2. Un bouton "CALCULER" / "Recalculer"
+3. L'affichage de l'estimation de prime
 
-**2. Séparateur de milliers sur les champs monétaires**
-- Remplacer les `<Input type="number">` par des `<Input type="text">` avec formatage dynamique
-- Afficher `7 000 000` au lieu de `7000000` — formater avec `Intl.NumberFormat('fr-FR')` à l'affichage
-- Parser la valeur nettoyée (sans espaces) au `onChange` pour stocker le nombre brut dans le state
+L'utilisateur souhaite que le calcul de prime se fasse automatiquement au clic sur "Voir les offres" (passage à l'étape formules), pas dans l'étape 5.
 
-**3. Calendrier en français**
-- Dans `src/components/ui/calendar.tsx` : passer `locale={fr}` de `date-fns/locale` au composant `DayPicker` pour que les mois et jours s'affichent en français (Mars, Lundi, etc.)
+### Modifications
 
-### Fichiers modifiés
+**Fichier : `SimulationStep.tsx`**
 
-| Fichier | Action |
-|---|---|
-| `src/components/ui/calendar.tsx` | Ajouter `locale={fr}` au DayPicker |
-| `src/components/guided-sales/steps/NeedsAnalysisStep.tsx` | Formater valeurs avec séparateur + validation neuf > vénal |
-| `src/components/guided-sales/steps/SimulationStep.tsx` | Idem |
+- **Supprimer** le sous-titre "Étape 5/5 - Options du véhicule"
+- **Supprimer** le bloc d'estimation de prime (carte avec `formatFCFA`)
+- **Supprimer** le bouton "CALCULER" / "Recalculer" et le message d'aide
+- **Remplacer** par un bouton "Voir les offres" qui :
+  1. Déclenche `onCalculate()` 
+  2. Puis enchaîne vers `onNext()` une fois le calcul terminé
+- Conserver le bouton "Retour"
+
+**Fichier : `GuidedSalesFlow.tsx`**
+
+- Ajuster la logique pour que `simulationCalculated` soit mis à `true` lors du passage étape 5 → formules (le calcul se fait au moment du clic "Voir les offres")
+- S'assurer que la transition vers l'étape suivante attend la fin du calcul
+
+### Résultat
+
+L'étape 5 ne montre que les 2 champs équipements + un bouton "Voir les offres" qui calcule et navigue en une seule action.
 

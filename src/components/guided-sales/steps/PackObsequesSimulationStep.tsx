@@ -6,16 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { GuidedSalesState, PackObsequesData, PackObsequesFormula, AdhesionType, TitleType, GenderType, ViePeriodicite } from "../types";
-import { ChevronLeft, ChevronRight, Shield, Calculator, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shield, Calculator, Check, Save, Send } from "lucide-react";
 import { formatFCFA } from "@/utils/formatCurrency";
 import { calculatePackObsequesPremium, getPeriodicPremium } from "@/utils/packObsequesPremiumCalculator";
 import { toast } from "sonner";
+import { QuotationSaveDialog } from "../QuotationSaveDialog";
 
 interface PackObsequesSimulationStepProps {
   state: GuidedSalesState;
   onUpdate: (data: Partial<PackObsequesData>) => void;
   onNext: () => void;
   onCalculate: () => void;
+  onSaveQuote: () => void;
   isCalculating: boolean;
 }
 
@@ -24,9 +26,12 @@ export const PackObsequesSimulationStep = ({
   onUpdate,
   onNext,
   onCalculate,
+  onSaveQuote,
   isCalculating
 }: PackObsequesSimulationStepProps) => {
   const [subStep, setSubStep] = useState<1 | 2 | 3 | 4>(1);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<"save" | "send">("save");
   
   const data = state.packObsequesData!;
   const simulationCalculated = state.simulationCalculated;
@@ -548,6 +553,53 @@ export const PackObsequesSimulationStep = ({
                 </div>
               </CardContent>
             </Card>
+            {/* Actions: Sauvegarder / Envoyer / Souscrire */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => { setDialogMode("save"); setDialogOpen(true); }}
+                className="gap-2 flex-1"
+              >
+                <Save className="h-4 w-4" />
+                Sauvegarder
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => { setDialogMode("send"); setDialogOpen(true); }}
+                className="gap-2 flex-1"
+              >
+                <Send className="h-4 w-4" />
+                Envoyer
+              </Button>
+              <Button 
+                onClick={onNext}
+                className="gap-2 flex-1"
+              >
+                SOUSCRIRE
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <QuotationSaveDialog
+              open={dialogOpen}
+              onOpenChange={setDialogOpen}
+              mode={dialogMode}
+              defaultValues={{
+                lastName: data.lastName || "",
+                firstName: data.firstName || "",
+                email: data.email || "",
+              }}
+              onConfirm={(info) => {
+                onSaveQuote();
+                if (info.channel) {
+                  toast.success("Cotation envoyée avec succès", {
+                    description: `Envoyée par ${info.channel} à ${info.email}`,
+                  });
+                } else {
+                  toast.success("Cotation sauvegardée avec succès");
+                }
+              }}
+            />
           </div>
         )}
       </>

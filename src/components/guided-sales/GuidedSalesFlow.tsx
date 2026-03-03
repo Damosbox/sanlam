@@ -428,6 +428,7 @@ export const GuidedSalesFlow = () => {
               onUpdate={updatePackObsequesData} 
               onNext={nextStep}
               onCalculate={handlePackObsequesCalculate}
+              onSaveQuote={handleSaveQuote}
               isCalculating={isCalculating}
             />
           );

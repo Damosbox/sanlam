@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Check, X, Star, Save, ChevronRight } from "lucide-react";
+import { Calendar, Check, Star, Save, Send, ChevronRight } from "lucide-react";
 import { GuidedSalesState, PlanTier, ContractPeriodicity } from "../types";
 import { cn } from "@/lib/utils";
 import { formatFCFA } from "@/utils/formatCurrency";
@@ -13,6 +14,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
+import { QuotationSaveDialog } from "../QuotationSaveDialog";
 
 interface FormulaSelectionStepProps {
   state: GuidedSalesState;
@@ -28,7 +30,6 @@ const plans: { tier: PlanTier; name: string; description: string }[] = [
   { tier: "premium", name: "TOUT RISQUE", description: "Protection maximale" },
 ];
 
-// Garanties incluses par défaut (non modifiables)
 const includedGuarantees = [
   { id: "rc", name: "Responsabilité Civile" },
   { id: "defense", name: "Défense" },
@@ -54,6 +55,15 @@ export const FormulaSelectionStep = ({
   const selectedPeriodicity = needsAnalysis.contractPeriodicity || "1_year";
   const effectiveDate = needsAnalysis.effectiveDate ? new Date(needsAnalysis.effectiveDate) : undefined;
 
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<"save" | "send">("save");
+
+  const defaultDialogValues = {
+    lastName: state.clientIdentification.lastName || "",
+    firstName: state.clientIdentification.firstName || "",
+    email: state.clientIdentification.email || "",
+  };
+
   const handlePlanSelect = (tier: PlanTier) => {
     onUpdate({ planTier: tier });
   };
@@ -68,9 +78,20 @@ export const FormulaSelectionStep = ({
     }
   };
 
-  const handleSaveQuote = () => {
+  const openDialog = (mode: "save" | "send") => {
+    setDialogMode(mode);
+    setDialogOpen(true);
+  };
+
+  const handleDialogConfirm = (info: { lastName: string; firstName: string; email: string; channel?: string }) => {
     onSaveQuote();
-    toast.success("Devis sauvegardé avec succès");
+    if (info.channel) {
+      toast.success("Cotation envoyée avec succès", {
+        description: `Envoyée par ${info.channel} à ${info.email}`,
+      });
+    } else {
+      toast.success("Cotation sauvegardée avec succès");
+    }
   };
 
   const isValid = () => {
@@ -243,11 +264,19 @@ export const FormulaSelectionStep = ({
       <div className="flex flex-col sm:flex-row gap-3">
         <Button 
           variant="outline" 
-          onClick={handleSaveQuote}
+          onClick={() => openDialog("save")}
           className="gap-2 flex-1"
         >
           <Save className="h-4 w-4" />
-          Sauvegarder le devis
+          Sauvegarder
+        </Button>
+        <Button 
+          variant="outline" 
+          onClick={() => openDialog("send")}
+          className="gap-2 flex-1"
+        >
+          <Send className="h-4 w-4" />
+          Envoyer
         </Button>
         <Button 
           onClick={onSubscribe}
@@ -258,6 +287,14 @@ export const FormulaSelectionStep = ({
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
+
+      <QuotationSaveDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        mode={dialogMode}
+        defaultValues={defaultDialogValues}
+        onConfirm={handleDialogConfirm}
+      />
     </div>
   );
 };

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ProductSelectionStep } from "./steps/ProductSelectionStep";
 import { SimulationStep } from "./steps/SimulationStep";
 import { FormulaSelectionStep } from "./steps/FormulaSelectionStep";
+import { RecapStep } from "./steps/RecapStep";
 import { SubscriptionFlow } from "./steps/SubscriptionFlow";
 import { MobilePaymentStep } from "./steps/MobilePaymentStep";
 import { SignatureEmissionStep } from "./steps/SignatureEmissionStep";
@@ -37,15 +38,15 @@ import { useIsMobile } from "@/hooks/use-mobile";
 // Step mapping per phase
 const PHASE_STEPS: Record<SalesPhase, number[]> = {
   preparation: [0, 1],     // Product Selection, Simulation (with sub-steps)
-  construction: [2],       // Formula Selection
-  souscription: [3],       // Subscription Flow (with sub-steps)
-  finalisation: [4, 5],    // Mobile Payment, Signature & Emission
+  construction: [2, 3],    // Formula Selection, Recap
+  souscription: [4],       // Subscription Flow (with sub-steps)
+  finalisation: [5, 6],    // Mobile Payment, Signature & Emission
 };
 
 const getPhaseFromStep = (step: number): SalesPhase => {
   if (step <= 1) return "preparation";
-  if (step === 2) return "construction";
-  if (step === 3) return "souscription";
+  if (step <= 3) return "construction";
+  if (step === 4) return "souscription";
   return "finalisation";
 };
 
@@ -384,13 +385,12 @@ export const GuidedSalesFlow = () => {
     setState(prev => {
       const product = prev.productSelection.selectedProduct;
       const isLifeProduct = product === "pack_obseques";
-      // Skip FormulaSelectionStep (step 2) for life products
+      // Skip FormulaSelectionStep + Recap (steps 2-3) for life products
       if (prev.currentStep === 1 && isLifeProduct) {
-        return { ...prev, currentStep: 3 };
+        return { ...prev, currentStep: 4 };
       }
-      // For pack_obseques, step 3 is the final step (7 internal sub-steps handle everything)
-      if (prev.currentStep === 3 && isLifeProduct) {
-        // Flow completed - handled internally by PackObsequesSubscriptionFlow
+      // For pack_obseques, step 4 is the final step (7 internal sub-steps handle everything)
+      if (prev.currentStep === 4 && isLifeProduct) {
         return prev;
       }
       return { ...prev, currentStep: prev.currentStep + 1 };
@@ -407,8 +407,8 @@ export const GuidedSalesFlow = () => {
       setState(prev => {
         const product = prev.productSelection.selectedProduct;
         const isLifeProduct = product === "pack_obseques";
-        // Skip step 2 for life products (reverse of nextStep logic)
-        if (prev.currentStep === 3 && isLifeProduct) {
+        // Skip steps 2-3 for life products (reverse of nextStep logic)
+        if (prev.currentStep === 4 && isLifeProduct) {
           return { ...prev, currentStep: 1 };
         }
         return { ...prev, currentStep: prev.currentStep - 1 };
@@ -509,10 +509,10 @@ export const GuidedSalesFlow = () => {
         goToStep(1); // SimulationStep
         break;
       case "driver":
-        goToStep(3); // SubscriptionFlow
+        goToStep(4); // SubscriptionFlow
         break;
       case "payment":
-        goToStep(4); // MobilePaymentStep
+        goToStep(5); // MobilePaymentStep
         break;
     }
   };
@@ -539,7 +539,7 @@ export const GuidedSalesFlow = () => {
   // Determine if SalesAssistant should be shown
   // For pack_obseques: only show during simulation (step 1) after calculation, NOT during subscription (step 3+)
   const isPackObseques = state.productSelection.selectedProduct === "pack_obseques";
-  const showSalesAssistant = state.simulationCalculated && state.currentStep >= 1 && !(isPackObseques && state.currentStep >= 3);
+  const showSalesAssistant = state.simulationCalculated && state.currentStep >= 1 && !(isPackObseques && state.currentStep >= 4);
 
   const renderStep = () => {
     const product = state.productSelection.selectedProduct;
@@ -582,24 +582,34 @@ export const GuidedSalesFlow = () => {
             state={state} 
             onUpdate={updateCoverage}
             onNeedsUpdate={updateNeedsAnalysis}
-            onSaveQuote={handleSaveQuote}
-            onSubscribe={nextStep}
+            onNext={nextStep}
           />
         );
       
       case 3:
-        // Step 3: Subscription Flow (6 sub-steps) - or Pack Obsèques specific
+        // Step 3: Recap
+        return (
+          <RecapStep
+            state={state}
+            onSaveQuote={handleSaveQuote}
+            onSubscribe={nextStep}
+            onEditStep={goToStep}
+          />
+        );
+      
+      case 4:
+        // Step 4: Subscription Flow (6 sub-steps) - or Pack Obsèques specific
         if (product === "pack_obseques") {
           return <PackObsequesSubscriptionFlow state={state} onUpdate={updatePackObsequesData} onNext={nextStep} />;
         }
         return <SubscriptionFlow state={state} onUpdate={updateSubscription} onNext={nextStep} />;
       
-      case 4:
-        // Step 4: Mobile Payment
+      case 5:
+        // Step 5: Mobile Payment
         return <MobilePaymentStep state={state} onUpdate={updateMobilePayment} onNext={nextStep} />;
       
-      case 5:
-        // Step 5: Signature & Emission
+      case 6:
+        // Step 6: Signature & Emission
         return (
           <SignatureEmissionStep 
             state={state} 
@@ -620,9 +630,10 @@ export const GuidedSalesFlow = () => {
   // Get the next button label based on current step
   const getNextLabel = () => {
     if (state.currentStep === 1 && state.simulationCalculated) return "Voir les offres";
-    if (state.currentStep === 2) return "Souscrire";
-    if (state.currentStep === 3) return "Paiement";
-    if (state.currentStep === 4) return "Signature";
+    if (state.currentStep === 2) return "Récapitulatif";
+    if (state.currentStep === 3) return "Souscrire";
+    if (state.currentStep === 4) return "Paiement";
+    if (state.currentStep === 5) return "Signature";
     return "Suivant";
   };
 

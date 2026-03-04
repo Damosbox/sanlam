@@ -37,9 +37,9 @@ export const PackObsequesSimulationStep = ({
   initialSubStep,
   onSubStepChange
 }: PackObsequesSimulationStepProps) => {
-  const [subStepLocal, setSubStepLocal] = useState<1 | 2 | 3 | 4>((initialSubStep ?? 1) as 1 | 2 | 3 | 4);
+  const [subStepLocal, setSubStepLocal] = useState<1 | 2 | 3 | 4 | 5>((initialSubStep ?? 1) as 1 | 2 | 3 | 4 | 5);
 
-  const setSubStep = (val: 1 | 2 | 3 | 4) => {
+  const setSubStep = (val: 1 | 2 | 3 | 4 | 5) => {
     setSubStepLocal(val);
     onSubStepChange?.(val);
   };
@@ -54,12 +54,16 @@ export const PackObsequesSimulationStep = ({
   // Register back handler for smart navigation
   useEffect(() => {
     onRegisterBackHandler?.(() => {
+      if (subStep === 5) {
+        setSubStep(4);
+        return true;
+      }
       if (subStep === 3) {
-        setSubStep(1); // Skip sub-step 2 (same as forward logic)
+        setSubStep(1);
         return true;
       }
       if (subStep > 1) {
-        setSubStep((subStep - 1) as 1 | 2 | 3 | 4);
+        setSubStep((subStep - 1) as 1 | 2 | 3 | 4 | 5);
         return true;
       }
       return false;
@@ -74,16 +78,18 @@ export const PackObsequesSimulationStep = ({
   const goToNextSubStep = () => {
     if (subStep === 1) {
       setSubStep(3);
-    } else if (subStep < 4) {
-      setSubStep((subStep + 1) as 1 | 2 | 3 | 4);
+    } else if (subStep < 5) {
+      setSubStep((subStep + 1) as 1 | 2 | 3 | 4 | 5);
     }
   };
   
   const goToPrevSubStep = () => {
-    if (subStep === 3) {
+    if (subStep === 5) {
+      setSubStep(4);
+    } else if (subStep === 3) {
       setSubStep(1);
     } else if (subStep > 1) {
-      setSubStep((subStep - 1) as 1 | 2 | 3 | 4);
+      setSubStep((subStep - 1) as 1 | 2 | 3 | 4 | 5);
     }
   };
 
@@ -420,287 +426,303 @@ export const PackObsequesSimulationStep = ({
 
   // Render sub-step 4: Assuré principal (2/2) — Email, Sexe, Titre, Lieu naissance + Calculate
   const renderSubStep4 = () => {
-    const breakdown = simulationCalculated ? calculatePackObsequesPremium(data) : null;
-    
     return (
-      <>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Assuré principal (2/2)</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* 1. E-mail */}
-            <div className="space-y-2">
-              <Label>1. E-mail *</Label>
-              <Input
-                type="email"
-                value={data.email}
-                onChange={(e) => onUpdate({ email: e.target.value })}
-                placeholder="email@exemple.com"
-              />
-            </div>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Assuré principal (2/2)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* 1. E-mail */}
+          <div className="space-y-2">
+            <Label>1. E-mail *</Label>
+            <Input
+              type="email"
+              value={data.email}
+              onChange={(e) => onUpdate({ email: e.target.value })}
+              placeholder="email@exemple.com"
+            />
+          </div>
 
-            {/* 2. Sexe */}
-            <div className="space-y-2">
-              <Label>2. Sexe *</Label>
-              <Select
-                value={data.gender}
-                onValueChange={(value) => onUpdate({ gender: value as GenderType })}
+          {/* 2. Sexe */}
+          <div className="space-y-2">
+            <Label>2. Sexe *</Label>
+            <Select
+              value={data.gender}
+              onValueChange={(value) => onUpdate({ gender: value as GenderType })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="masculin">Masculin</SelectItem>
+                <SelectItem value="feminin">Féminin</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 3. Titre */}
+          <div className="space-y-2">
+            <Label>3. Titre *</Label>
+            <Select
+              value={data.title}
+              onValueChange={(value) => onUpdate({ title: value as TitleType })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="monsieur">Monsieur</SelectItem>
+                <SelectItem value="madame">Madame</SelectItem>
+                <SelectItem value="mademoiselle">Mademoiselle</SelectItem>
+                <SelectItem value="docteur">Docteur</SelectItem>
+                <SelectItem value="professeur">Professeur</SelectItem>
+                <SelectItem value="maitre">Maître</SelectItem>
+                <SelectItem value="corporation">Corporation</SelectItem>
+                <SelectItem value="entreprise">Entreprise</SelectItem>
+                <SelectItem value="etablissement">Établissement</SelectItem>
+                <SelectItem value="general">Général</SelectItem>
+                <SelectItem value="commandant">Commandant</SelectItem>
+                <SelectItem value="lieutenant">Lieutenant</SelectItem>
+                <SelectItem value="colonel">Colonel</SelectItem>
+                <SelectItem value="warrant_officer">Warrant Officer</SelectItem>
+                <SelectItem value="caporal">Caporal</SelectItem>
+                <SelectItem value="lieutenant_colonel">Lieutenant Colonel</SelectItem>
+                <SelectItem value="sergent">Sergent</SelectItem>
+                <SelectItem value="marechal">Maréchal</SelectItem>
+                <SelectItem value="monseigneur">Monseigneur</SelectItem>
+                <SelectItem value="cardinal">Cardinal</SelectItem>
+                <SelectItem value="eveque">Évêque</SelectItem>
+                <SelectItem value="pasteur">Pasteur</SelectItem>
+                <SelectItem value="camarade">Camarade</SelectItem>
+                <SelectItem value="compagnie">Compagnie</SelectItem>
+                <SelectItem value="groupe">Groupe</SelectItem>
+                <SelectItem value="president">Président</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 4. Lieu de naissance */}
+          <div className="space-y-2">
+            <Label>4. Lieu de naissance *</Label>
+            <Input
+              value={data.birthPlace}
+              onChange={(e) => onUpdate({ birthPlace: e.target.value })}
+              placeholder="Lieu de naissance"
+            />
+          </div>
+
+          <div className="flex flex-col gap-3 pt-4">
+            {!simulationCalculated && (
+              <Button 
+                onClick={handleCalculate} 
+                disabled={!isSubStep4Valid || isCalculating}
+                className="w-full gap-2"
+                size="lg"
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="masculin">Masculin</SelectItem>
-                  <SelectItem value="feminin">Féminin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* 3. Titre */}
-            <div className="space-y-2">
-              <Label>3. Titre *</Label>
-              <Select
-                value={data.title}
-                onValueChange={(value) => onUpdate({ title: value as TitleType })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="monsieur">Monsieur</SelectItem>
-                  <SelectItem value="madame">Madame</SelectItem>
-                  <SelectItem value="mademoiselle">Mademoiselle</SelectItem>
-                  <SelectItem value="docteur">Docteur</SelectItem>
-                  <SelectItem value="professeur">Professeur</SelectItem>
-                  <SelectItem value="maitre">Maître</SelectItem>
-                  <SelectItem value="corporation">Corporation</SelectItem>
-                  <SelectItem value="entreprise">Entreprise</SelectItem>
-                  <SelectItem value="etablissement">Établissement</SelectItem>
-                  <SelectItem value="general">Général</SelectItem>
-                  <SelectItem value="commandant">Commandant</SelectItem>
-                  <SelectItem value="lieutenant">Lieutenant</SelectItem>
-                  <SelectItem value="colonel">Colonel</SelectItem>
-                  <SelectItem value="warrant_officer">Warrant Officer</SelectItem>
-                  <SelectItem value="caporal">Caporal</SelectItem>
-                  <SelectItem value="lieutenant_colonel">Lieutenant Colonel</SelectItem>
-                  <SelectItem value="sergent">Sergent</SelectItem>
-                  <SelectItem value="marechal">Maréchal</SelectItem>
-                  <SelectItem value="monseigneur">Monseigneur</SelectItem>
-                  <SelectItem value="cardinal">Cardinal</SelectItem>
-                  <SelectItem value="eveque">Évêque</SelectItem>
-                  <SelectItem value="pasteur">Pasteur</SelectItem>
-                  <SelectItem value="camarade">Camarade</SelectItem>
-                  <SelectItem value="compagnie">Compagnie</SelectItem>
-                  <SelectItem value="groupe">Groupe</SelectItem>
-                  <SelectItem value="president">Président</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* 4. Lieu de naissance */}
-            <div className="space-y-2">
-              <Label>4. Lieu de naissance *</Label>
-              <Input
-                value={data.birthPlace}
-                onChange={(e) => onUpdate({ birthPlace: e.target.value })}
-                placeholder="Lieu de naissance"
-              />
-            </div>
-
-            <div className="flex flex-col gap-3 pt-4">
-              {!simulationCalculated && (
-                <Button 
-                  onClick={handleCalculate} 
-                  disabled={!isSubStep4Valid || isCalculating}
-                  className="w-full gap-2"
-                  size="lg"
-                >
-                  {isCalculating ? (
-                    <>
-                      <Calculator className="h-4 w-4 animate-spin" />
-                      Calcul en cours...
-                    </>
-                  ) : (
-                    <>
-                      <Calculator className="h-4 w-4" />
-                      Calculer la prime
-                    </>
-                  )}
-                </Button>
-              )}
-              
-              <Button variant="outline" onClick={goToPrevSubStep} className="gap-2">
-                <ChevronLeft className="h-4 w-4" />
-                Retour
+                {isCalculating ? (
+                  <>
+                    <Calculator className="h-4 w-4 animate-spin" />
+                    Calcul en cours...
+                  </>
+                ) : (
+                  <>
+                    <Calculator className="h-4 w-4" />
+                    Calculer la prime
+                  </>
+                )}
               </Button>
+            )}
+
+            {simulationCalculated && (
+              <Button 
+                onClick={() => setSubStep(5)}
+                className="w-full gap-2"
+                size="lg"
+              >
+                Voir le récapitulatif
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            )}
+            
+            <Button variant="outline" onClick={goToPrevSubStep} className="gap-2">
+              <ChevronLeft className="h-4 w-4" />
+              Retour
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  // Render sub-step 5: Récapitulatif de simulation
+  const renderSubStep5 = () => {
+    const breakdown = calculatePackObsequesPremium(data);
+    const periodicPremium = getPeriodicPremium(breakdown.primeTotale, data.periodicity);
+    const premierePrime = periodicPremium + breakdown.fraisAccessoires;
+
+    return (
+      <div className="space-y-4">
+        {/* Section 1 — Détail sur la prime */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Check className="h-5 w-5 text-primary" />
+              1. Détail sur la prime
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center border-b border-primary/10 pb-2">
+                <span className="text-sm font-semibold">Première prime</span>
+                <span className="text-lg font-bold text-primary">{formatFCFA(premierePrime)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Prime Périodique nette</span>
+                <span className="font-medium">{formatFCFA(periodicPremium)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Frais d'adhésion</span>
+                <span className="font-medium">{formatFCFA(breakdown.fraisAccessoires)}</span>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Inline results after calculation */}
-        {simulationCalculated && breakdown && (() => {
-          const periodicPremium = getPeriodicPremium(breakdown.primeTotale, data.periodicity);
-          const premierePrime = periodicPremium + breakdown.fraisAccessoires;
-          return (
-          <div className="space-y-4">
-            {/* Section 1 — Détail sur la prime */}
-            <Card className="border-primary/20 bg-primary/5">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Check className="h-5 w-5 text-primary" />
-                  1. Détail sur la prime
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center border-b border-primary/10 pb-2">
-                    <span className="text-sm font-semibold">Première prime</span>
-                    <span className="text-lg font-bold text-primary">{formatFCFA(premierePrime)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Prime Périodique nette</span>
-                    <span className="font-medium">{formatFCFA(periodicPremium)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Frais d'adhésion</span>
-                    <span className="font-medium">{formatFCFA(breakdown.fraisAccessoires)}</span>
-                  </div>
+        {/* Section 2 — Détails sur les capitaux */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">2. Détails sur les capitaux</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Capital assuré principal</span>
+                <span className="font-medium">{formatFCFA(breakdown.capitalGaranti - (data.nombreEnfants * breakdown.capitalParEnfant) - (data.nombreAscendants * breakdown.capitalParAscendant))}</span>
+              </div>
+              {data.nombreEnfants > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Capital par enfant</span>
+                  <span className="font-medium">{formatFCFA(breakdown.capitalParEnfant)}</span>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Section 2 — Détails sur les capitaux */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">2. Détails sur les capitaux</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Capital assuré principal</span>
-                    <span className="font-medium">{formatFCFA(breakdown.capitalGaranti - (data.nombreEnfants * breakdown.capitalParEnfant) - (data.nombreAscendants * breakdown.capitalParAscendant))}</span>
-                  </div>
-                  {data.nombreEnfants > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Capital par enfant</span>
-                      <span className="font-medium">{formatFCFA(breakdown.capitalParEnfant)}</span>
-                    </div>
-                  )}
-                  {data.nombreAscendants > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Capital par ascendant</span>
-                      <span className="font-medium">{formatFCFA(breakdown.capitalParAscendant)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between border-t pt-2 mt-2">
-                    <span className="font-semibold">Capital total garanti</span>
-                    <span className="font-bold text-primary">{formatFCFA(breakdown.capitalGaranti)}</span>
-                  </div>
+              )}
+              {data.nombreAscendants > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Capital par ascendant</span>
+                  <span className="font-medium">{formatFCFA(breakdown.capitalParAscendant)}</span>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Section 3 — Données de simulation */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">3. Données de simulation</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Option</span>
-                    <span className="font-medium">{data.selectedOption === "option1" ? "Option 1 (0-3 enfants)" : "Option 2 (4-6 enfants)"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Formule</span>
-                    <span className="font-medium uppercase">{data.formula}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Type d'adhésion</span>
-                    <span className="font-medium capitalize">{data.adhesionType.replace("_", " + ")}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Périodicité</span>
-                    <span className="font-medium capitalize">{data.periodicity}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Nombre d'enfants</span>
-                    <span className="font-medium">{data.nombreEnfants}</span>
-                  </div>
-                  {data.nombreAscendants > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Nombre d'ascendants</span>
-                      <span className="font-medium">{data.nombreAscendants}</span>
-                    </div>
-                  )}
-                  {(data.adhesionType === "famille" || data.adhesionType === "famille_ascendant") && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Conjoint</span>
-                      <span className="font-medium">{data.addSpouse ? "Oui" : "Non"}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Date d'effet</span>
-                    <span className="font-medium">{data.effectiveDate ? format(new Date(data.effectiveDate), "dd MMMM yyyy", { locale: fr }) : ""}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Assuré</span>
-                    <span className="font-medium">{data.firstName} {data.lastName}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            {/* Actions: Sauvegarder / Envoyer / Souscrire */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button 
-                variant="outline" 
-                onClick={() => { setDialogMode("save"); setDialogOpen(true); }}
-                className="gap-2 flex-1"
-              >
-                <Save className="h-4 w-4" />
-                Sauvegarder
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => { setDialogMode("send"); setDialogOpen(true); }}
-                className="gap-2 flex-1"
-              >
-                <Send className="h-4 w-4" />
-                Envoyer
-              </Button>
-              <Button 
-                onClick={onNext}
-                className="gap-2 flex-1"
-              >
-                SOUSCRIRE
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+              )}
+              <div className="flex justify-between border-t pt-2 mt-2">
+                <span className="font-semibold">Capital total garanti</span>
+                <span className="font-bold text-primary">{formatFCFA(breakdown.capitalGaranti)}</span>
+              </div>
             </div>
+          </CardContent>
+        </Card>
 
-            <QuotationSaveDialog
-              open={dialogOpen}
-              onOpenChange={setDialogOpen}
-              mode={dialogMode}
-              defaultValues={{
-                lastName: data.lastName || "",
-                firstName: data.firstName || "",
-                email: data.email || "",
-              }}
-              onConfirm={(info) => {
-                onSaveQuote({ firstName: info.firstName, lastName: info.lastName, email: info.email });
-                if (info.channel) {
-                  toast.success("Cotation envoyée avec succès", {
-                    description: `Envoyée par ${info.channel} à ${info.email}`,
-                  });
-                } else {
-                  toast.success("Cotation sauvegardée avec succès");
-                }
-              }}
-            />
-          </div>
-        ); })()}
-      </>
+        {/* Section 3 — Données de simulation */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">3. Données de simulation</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Option</span>
+                <span className="font-medium">{data.selectedOption === "option1" ? "Option 1 (0-3 enfants)" : "Option 2 (4-6 enfants)"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Formule</span>
+                <span className="font-medium uppercase">{data.formula}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Type d'adhésion</span>
+                <span className="font-medium capitalize">{data.adhesionType.replace("_", " + ")}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Périodicité</span>
+                <span className="font-medium capitalize">{data.periodicity}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Nombre d'enfants</span>
+                <span className="font-medium">{data.nombreEnfants}</span>
+              </div>
+              {data.nombreAscendants > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Nombre d'ascendants</span>
+                  <span className="font-medium">{data.nombreAscendants}</span>
+                </div>
+              )}
+              {(data.adhesionType === "famille" || data.adhesionType === "famille_ascendant") && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Conjoint</span>
+                  <span className="font-medium">{data.addSpouse ? "Oui" : "Non"}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Date d'effet</span>
+                <span className="font-medium">{data.effectiveDate ? format(new Date(data.effectiveDate), "dd MMMM yyyy", { locale: fr }) : ""}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Assuré</span>
+                <span className="font-medium">{data.firstName} {data.lastName}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Actions: Sauvegarder / Envoyer / Souscrire */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button 
+            variant="outline" 
+            onClick={() => { setDialogMode("save"); setDialogOpen(true); }}
+            className="gap-2 flex-1"
+          >
+            <Save className="h-4 w-4" />
+            Sauvegarder
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => { setDialogMode("send"); setDialogOpen(true); }}
+            className="gap-2 flex-1"
+          >
+            <Send className="h-4 w-4" />
+            Envoyer
+          </Button>
+          <Button 
+            onClick={onNext}
+            className="gap-2 flex-1"
+          >
+            SOUSCRIRE
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <Button variant="outline" onClick={goToPrevSubStep} className="gap-2 w-full">
+          <ChevronLeft className="h-4 w-4" />
+          Retour
+        </Button>
+
+        <QuotationSaveDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          mode={dialogMode}
+          defaultValues={{
+            lastName: data.lastName || "",
+            firstName: data.firstName || "",
+            email: data.email || "",
+          }}
+          onConfirm={(info) => {
+            onSaveQuote({ firstName: info.firstName, lastName: info.lastName, email: info.email });
+            if (info.channel) {
+              toast.success("Cotation envoyée avec succès", {
+                description: `Envoyée par ${info.channel} à ${info.email}`,
+              });
+            } else {
+              toast.success("Cotation sauvegardée avec succès");
+            }
+          }}
+        />
+      </div>
     );
   };
 
@@ -711,10 +733,11 @@ export const PackObsequesSimulationStep = ({
     if (subStep === 2) return 2;
     if (subStep === 3) return showFamilyStep ? 3 : 2;
     if (subStep === 4) return showFamilyStep ? 4 : 3;
+    if (subStep === 5) return showFamilyStep ? 5 : 4;
     return 1;
   };
 
-  const getTotalSteps = () => showFamilyStep ? 4 : 3;
+  const getTotalSteps = () => showFamilyStep ? 5 : 4;
 
   return (
     <div className="space-y-6">
@@ -746,6 +769,7 @@ export const PackObsequesSimulationStep = ({
       {subStep === 2 && renderSubStep2()}
       {subStep === 3 && renderSubStep3()}
       {subStep === 4 && renderSubStep4()}
+      {subStep === 5 && renderSubStep5()}
     </div>
   );
 };

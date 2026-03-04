@@ -1,51 +1,34 @@
 
 
-## Plan : Synchroniser le CTA de l'assistant avec le bouton du flow interne
+## Plan : Synchroniser le CTA assistant avec les boutons internes (Auto + Pack Obsèques)
 
 ### Problème
 
-Le bouton CTA dans le `SalesAssistant` (sidebar) utilise `getNextLabel()` qui ne tient compte que du `currentStep` global. Pendant la souscription Pack Obsèques (step 4 global, 7 sous-étapes internes), le sidebar affiche "Signature" alors que le flow interne affiche "Suivant" (étapes 1-6) ou "Payer" (étape 7).
+Le `getNextLabel()` ne tient pas compte des sous-étapes pour le parcours Auto. Par exemple :
+- **Step 1 (Simulation Auto)** : sous-étapes 1-4 affichent "Suivant" en interne, mais l'assistant affiche "Voir les offres" dès que `simulationCalculated` est vrai
+- **Step 4 (Souscription Auto)** : sous-étape 5 affiche "Continuer vers Signature" en interne, l'assistant affiche "Signature"
 
 ### Solution
 
-Rendre `getNextLabel()` dans `GuidedSalesFlow.tsx` sensible aux sous-étapes pour Pack Obsèques :
+Refactorer `getNextLabel()` dans `GuidedSalesFlow.tsx` pour être pleinement sensible aux sous-étapes des deux parcours :
 
-**Pour `state.currentStep === 4` (Souscription) :**
+```
+Step 1 (Simulation):
+  Auto:  sub 1-4 → "Suivant" | sub 5 → "Voir les offres"
+  Pack:  sub 1-3 → "Suivant" | sub 4 → "Calculer la prime" | sub 5 → "Souscrire"
 
-| Produit | Sous-étape | Label flow interne | Label sidebar actuel | Label corrigé |
-|---------|-----------|-------------------|---------------------|--------------|
-| Pack Obsèques | 1-6 | "Suivant" | "Signature" | "Suivant" |
-| Pack Obsèques | 7 | "Payer" | "Signature" | "Payer" |
-| Auto | 1-4 | "Suivant" | "Signature" | "Suivant" |
-| Auto | 5 | "Continuer vers Signature" | "Signature" | "Signature" |
+Step 2: "Récapitulatif" (Auto only)
+Step 3: "Souscrire" (Auto only)
 
-**Pour `state.currentStep === 1` (Simulation) :**
-- Pack Obsèques sous-étape 5 (récap) : le CTA doit dire "Souscrire" (déjà OK)
-- Auto sous-étapes 1-4 : "Suivant", sous-étape 5 : "Calculer" (à vérifier si nécessaire)
+Step 4 (Souscription):
+  Auto:  sub 1-4 → "Suivant" | sub 5 → "Continuer vers Signature"
+  Pack:  sub 1-6 → "Suivant" | sub 7 → "Payer"
 
-### Modification
-
-**Fichier : `src/components/guided-sales/GuidedSalesFlow.tsx`** — Modifier `getNextLabel()` :
-
-```typescript
-const getNextLabel = () => {
-  if (state.currentStep === 1 && state.simulationCalculated) {
-    return isPackObseques ? "Souscrire" : "Voir les offres";
-  }
-  if (state.currentStep === 4) {
-    if (isPackObseques) {
-      return state.subscriptionSubStep === 7 ? "Payer" : "Suivant";
-    }
-    return state.subscriptionSubStep === 5 ? "Signature" : "Suivant";
-  }
-  if (state.currentStep === 2) return "Récapitulatif";
-  if (state.currentStep === 3) return "Souscrire";
-  if (state.currentStep === 5) return "Paiement";
-  if (state.currentStep === 6) return "Émission";
-  return "Suivant";
-};
+Step 5: "Paiement" (Auto)
+Step 6: "Émission" (Auto)
+Default: "Suivant"
 ```
 
 ### Fichier modifié
-- `src/components/guided-sales/GuidedSalesFlow.tsx` — 1 fonction modifiée
+- `src/components/guided-sales/GuidedSalesFlow.tsx` — refactor `getNextLabel()`
 

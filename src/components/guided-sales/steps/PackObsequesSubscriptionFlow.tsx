@@ -10,12 +10,17 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { GuidedSalesState, PackObsequesData, MaritalStatusType, ProfessionType, IdentityDocType, PrelevementType, PaymentMethodObseques, BeneficiaireType, SignatureMethodType } from "../types";
 import { ChevronLeft, ChevronRight, Upload, User, FileCheck, Stethoscope, Users, CreditCard, FileText, Banknote, Check } from "lucide-react";
 import { formatFCFA } from "@/utils/formatCurrency";
+import { calculatePackObsequesPremium, getPeriodicPremium } from "@/utils/packObsequesPremiumCalculator";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 interface PackObsequesSubscriptionFlowProps {
   state: GuidedSalesState;
   onUpdate: (data: Partial<PackObsequesData>) => void;
   onNext: () => void;
+  initialSubStep?: number;
+  onSubStepChange?: (step: number) => void;
 }
 
 const NATIONALITIES = [
@@ -35,22 +40,42 @@ const COUNTRIES = [
   "Togo", "Tunisie", "Turquie"
 ];
 
+const PhoneAlert = ({ value }: { value: string }) => {
+  if (value && value.replace(/\D/g, "").length > 0 && value.replace(/\D/g, "").length < 10) {
+    return <p className="text-xs text-destructive">Le numéro doit contenir au moins 10 chiffres</p>;
+  }
+  return null;
+};
+
+const formatDateFR = (dateStr: string) => {
+  if (!dateStr) return "";
+  try {
+    return format(new Date(dateStr), "dd MMMM yyyy", { locale: fr });
+  } catch {
+    return dateStr;
+  }
+};
+
 export const PackObsequesSubscriptionFlow = ({
   state,
   onUpdate,
-  onNext
+  onNext,
+  initialSubStep,
+  onSubStepChange
 }: PackObsequesSubscriptionFlowProps) => {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStepLocal] = useState(initialSubStep || 1);
   const data = state.packObsequesData!;
+
+  const setCurrentStep = (step: number | ((prev: number) => number)) => {
+    setCurrentStepLocal(prev => {
+      const newStep = typeof step === "function" ? step(prev) : step;
+      onSubStepChange?.(newStep);
+      return newStep;
+    });
+  };
 
   const isMarried = data.maritalStatus === "marie";
   const totalSteps = 7;
-  
-  // Effective step for display (account for skipped conjoint step)
-  const getDisplayStep = () => {
-    if (!isMarried && currentStep >= 2) return currentStep; // step 2 skipped
-    return currentStep;
-  };
 
   const goNext = () => {
     if (currentStep === 1 && !isMarried) {
@@ -75,7 +100,7 @@ export const PackObsequesSubscriptionFlow = ({
   const goToStart = () => setCurrentStep(1);
 
   // ===== VALIDATION =====
-  const isStep1Valid = data.identityDocumentType && data.identityNumber && data.lastName && data.firstName && data.birthDate && data.nationality && data.profession && data.paysResidence && data.villeResidence && data.maritalStatus && data.email && data.phone;
+  const isStep1Valid = data.identityDocumentType && data.identityNumber && data.lastName && data.firstName && data.birthDate && data.nationality && data.profession && data.maritalStatus && data.email && data.phone;
   const isStep2Valid = data.conjointIdType && data.conjointIdNumber && data.conjointLastName && data.conjointFirstName && data.conjointBirthDate && data.conjointNationality && data.conjointProfession && data.conjointPaysResidence && data.conjointVilleResidence && data.conjointEmail && data.conjointPhone;
   const isStep3Valid = data.taille > 0 && data.poids > 0 && data.medicalQ1 !== undefined && data.medicalQ2 !== undefined && data.medicalQ3 !== undefined && data.medicalQ4 !== undefined && data.medicalQ5 !== undefined && data.medicalQ6 !== undefined && data.medicalQ7 !== undefined && data.medicalQ8 !== undefined && data.medicalQ9 !== undefined && data.medicalQ10 !== undefined;
   const isStep4Valid = !!data.beneficiaireType && (data.beneficiaireType === "ayant_droit" || (data.beneficiaireNom && data.beneficiairePrenom && data.beneficiaireLien));
@@ -175,7 +200,7 @@ export const PackObsequesSubscriptionFlow = ({
         </div>
 
         <div className="space-y-2">
-          <Label>Pays de résidence *</Label>
+          <Label>Pays de résidence</Label>
           <Select value={data.paysResidence} onValueChange={(v) => onUpdate({ paysResidence: v })}>
             <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
             <SelectContent>
@@ -185,7 +210,7 @@ export const PackObsequesSubscriptionFlow = ({
         </div>
 
         <div className="space-y-2">
-          <Label>Ville de résidence *</Label>
+          <Label>Ville de résidence</Label>
           <Input value={data.villeResidence} onChange={(e) => onUpdate({ villeResidence: e.target.value })} placeholder="Écrivez ici" />
         </div>
 
@@ -210,6 +235,7 @@ export const PackObsequesSubscriptionFlow = ({
         <div className="space-y-2">
           <Label>Téléphone * {data.phone && <span className="text-xs text-muted-foreground italic">(pré-rempli)</span>}</Label>
           <Input type="tel" value={data.phone} onChange={(e) => onUpdate({ phone: e.target.value })} placeholder="Écrivez ici" />
+          <PhoneAlert value={data.phone} />
         </div>
       </CardContent>
     </Card>
@@ -316,6 +342,7 @@ export const PackObsequesSubscriptionFlow = ({
         <div className="space-y-2">
           <Label>Téléphone *</Label>
           <Input type="tel" value={data.conjointPhone} onChange={(e) => onUpdate({ conjointPhone: e.target.value })} placeholder="Écrivez ici" />
+          <PhoneAlert value={data.conjointPhone} />
         </div>
       </CardContent>
     </Card>
@@ -489,13 +516,34 @@ export const PackObsequesSubscriptionFlow = ({
                 </div>
               </>
             )}
+
+            {data.typePrelevement === "solde" && (
+              <>
+                <div className="space-y-2">
+                  <Label>Matricule *</Label>
+                  <Input value={data.soldeMatricule || ""} onChange={(e) => onUpdate({ soldeMatricule: e.target.value })} placeholder="Numéro matricule" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Employeur *</Label>
+                  <Input value={data.soldeEmployeur || ""} onChange={(e) => onUpdate({ soldeEmployeur: e.target.value })} placeholder="Nom de l'employeur" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Direction / Service</Label>
+                  <Input value={data.soldeDirection || ""} onChange={(e) => onUpdate({ soldeDirection: e.target.value })} placeholder="Direction ou service" />
+                </div>
+              </>
+            )}
           </>
         )}
       </CardContent>
     </Card>
   );
 
-  // ===== STEP 6: Résumé =====
+  // ===== STEP 6: Résumé + Détail prime =====
+  const breakdown = calculatePackObsequesPremium(data);
+  const periodicPremium = getPeriodicPremium(breakdown.primeTotale, data.periodicity);
+  const premierePrime = periodicPremium + breakdown.fraisAccessoires;
+
   const renderStep6 = () => (
     <Card>
       <CardHeader className="pb-3">
@@ -505,7 +553,28 @@ export const PackObsequesSubscriptionFlow = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Accordion type="multiple" defaultValue={["assure"]} className="w-full">
+        <Accordion type="multiple" defaultValue={["prime", "assure"]} className="w-full">
+          {/* Détail de la prime */}
+          <AccordionItem value="prime">
+            <AccordionTrigger>Détail de la prime</AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between items-center border-b pb-2">
+                  <span className="font-semibold">Première prime</span>
+                  <span className="text-lg font-bold text-primary">{formatFCFA(premierePrime)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Prime Périodique nette</span>
+                  <span className="font-medium">{formatFCFA(periodicPremium)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Frais d'adhésion</span>
+                  <span className="font-medium">{formatFCFA(breakdown.fraisAccessoires)}</span>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
           <AccordionItem value="assure">
             <AccordionTrigger>Informations sur l'assuré(e) principal(e)</AccordionTrigger>
             <AccordionContent>
@@ -513,6 +582,7 @@ export const PackObsequesSubscriptionFlow = ({
                 <div className="flex justify-between"><span className="text-muted-foreground">Nom</span><span>{data.lastName} {data.firstName}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">E-mail</span><span>{data.email}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Téléphone</span><span>{data.phone}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Date de naissance</span><span>{formatDateFR(data.birthDate)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Nationalité</span><span className="capitalize">{data.nationality}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Profession</span><span className="capitalize">{data.profession?.replace(/_/g, " ")}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Situation matrimoniale</span><span className="capitalize">{data.maritalStatus}</span></div>
@@ -528,10 +598,27 @@ export const PackObsequesSubscriptionFlow = ({
                   <div className="flex justify-between"><span className="text-muted-foreground">Nom</span><span>{data.conjointLastName} {data.conjointFirstName}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">E-mail</span><span>{data.conjointEmail}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Téléphone</span><span>{data.conjointPhone}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Date de naissance</span><span>{formatDateFR(data.conjointBirthDate)}</span></div>
                 </div>
               </AccordionContent>
             </AccordionItem>
           )}
+
+          <AccordionItem value="simulation">
+            <AccordionTrigger>Données de simulation</AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Formule</span><span className="font-medium uppercase">{data.formula}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Type d'adhésion</span><span className="font-medium capitalize">{data.adhesionType.replace("_", " + ")}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Périodicité</span><span className="font-medium capitalize">{data.periodicity}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Nombre d'enfants</span><span className="font-medium">{data.nombreEnfants}</span></div>
+                {data.nombreAscendants > 0 && (
+                  <div className="flex justify-between"><span className="text-muted-foreground">Nombre d'ascendants</span><span className="font-medium">{data.nombreAscendants}</span></div>
+                )}
+                <div className="flex justify-between"><span className="text-muted-foreground">Date d'effet</span><span className="font-medium">{formatDateFR(data.effectiveDate)}</span></div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
           <AccordionItem value="medical">
             <AccordionTrigger>Questionnaire médical - Assuré principal</AccordionTrigger>
@@ -570,6 +657,13 @@ export const PackObsequesSubscriptionFlow = ({
                   <>
                     <div className="flex justify-between"><span className="text-muted-foreground">RIB</span><span>{data.rib}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Banque</span><span>{data.nomBanque}</span></div>
+                  </>
+                )}
+                {data.typePrelevement === "solde" && (
+                  <>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Matricule</span><span>{data.soldeMatricule}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Employeur</span><span>{data.soldeEmployeur}</span></div>
+                    {data.soldeDirection && <div className="flex justify-between"><span className="text-muted-foreground">Direction</span><span>{data.soldeDirection}</span></div>}
                   </>
                 )}
               </div>
@@ -619,9 +713,9 @@ export const PackObsequesSubscriptionFlow = ({
 
   // ===== STEP 7: Paiement =====
   const premiumData = state.calculatedPremium;
-  const fraisAdhesion = 2500;
+  const fraisAdhesion = breakdown.fraisAccessoires;
   const fraisOperateur = 0;
-  const montantTotal = premiumData.primeNette + fraisAdhesion + fraisOperateur;
+  const montantTotal = periodicPremium + fraisAdhesion + fraisOperateur;
 
   const paymentMethods: { id: PaymentMethodObseques; name: string; color: string }[] = [
     { id: "orange_money", name: "Orange Money", color: "bg-orange-500" },
@@ -646,7 +740,7 @@ export const PackObsequesSubscriptionFlow = ({
               <tr><th className="text-left p-3">Description</th><th className="text-right p-3">Montant</th></tr>
             </thead>
             <tbody>
-              <tr className="border-t"><td className="p-3">Prime périodique nette</td><td className="p-3 text-right">{formatFCFA(premiumData.primeNette)}</td></tr>
+              <tr className="border-t"><td className="p-3">Prime périodique nette</td><td className="p-3 text-right">{formatFCFA(periodicPremium)}</td></tr>
               <tr className="border-t"><td className="p-3">Frais d'adhésion</td><td className="p-3 text-right">{formatFCFA(fraisAdhesion)}</td></tr>
               <tr className="border-t"><td className="p-3">Frais d'opérateur</td><td className="p-3 text-right">{formatFCFA(fraisOperateur)}</td></tr>
               <tr className="border-t bg-primary/5 font-semibold"><td className="p-3">Montant total à payer</td><td className="p-3 text-right">{formatFCFA(montantTotal)}</td></tr>
@@ -657,6 +751,7 @@ export const PackObsequesSubscriptionFlow = ({
         <div className="space-y-2">
           <Label>Numéro de téléphone *</Label>
           <Input value={data.paymentPhoneNumber} onChange={(e) => onUpdate({ paymentPhoneNumber: e.target.value })} placeholder="Écrivez ici" />
+          <PhoneAlert value={data.paymentPhoneNumber} />
         </div>
 
         <div className="space-y-2">

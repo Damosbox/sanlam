@@ -47,8 +47,8 @@ const PHASE_STEPS: Record<SalesPhase, number[]> = {
 const getPhaseFromStep = (step: number, product?: SelectedProductType): SalesPhase => {
   if (product === "pack_obseques") {
     if (step <= 1) return "preparation";
-    // Step 4 = subscription (steps 2-3 are skipped)
-    return "souscription";
+    if (step === 4) return "souscription";
+    return "finalisation"; // step >= 7
   }
   if (step <= 1) return "preparation";
   if (step <= 3) return "construction";
@@ -395,9 +395,9 @@ export const GuidedSalesFlow = () => {
       if (prev.currentStep === 1 && isLifeProduct) {
         return { ...prev, currentStep: 4 };
       }
-      // For pack_obseques, step 4 is the final step (7 internal sub-steps handle everything)
+      // For pack_obseques, step 4 → step 7 (IssuanceStep) after internal subscription flow completes
       if (prev.currentStep === 4 && isLifeProduct) {
-        return prev;
+        return { ...prev, currentStep: 7 };
       }
       return { ...prev, currentStep: prev.currentStep + 1 };
     });
@@ -416,6 +416,10 @@ export const GuidedSalesFlow = () => {
         // Skip steps 2-3 for life products (reverse of nextStep logic)
         if (prev.currentStep === 4 && isLifeProduct) {
           return { ...prev, currentStep: 1 };
+        }
+        // From IssuanceStep back to subscription for pack_obseques
+        if (prev.currentStep === 7 && isLifeProduct) {
+          return { ...prev, currentStep: 4 };
         }
         return { ...prev, currentStep: prev.currentStep - 1 };
       });
@@ -543,9 +547,8 @@ export const GuidedSalesFlow = () => {
   };
 
   // Determine if SalesAssistant should be shown
-  // For pack_obseques: only show during simulation (step 1) after calculation, NOT during subscription (step 3+)
   const isPackObseques = state.productSelection.selectedProduct === "pack_obseques";
-  const showSalesAssistant = state.simulationCalculated && state.currentStep >= 1 && !(isPackObseques && state.currentStep >= 4);
+  const showSalesAssistant = state.simulationCalculated && state.currentStep >= 1;
 
   const renderStep = () => {
     const product = state.productSelection.selectedProduct;
@@ -610,7 +613,7 @@ export const GuidedSalesFlow = () => {
       case 4:
         // Step 4: Subscription Flow (5 sub-steps) - or Pack Obsèques specific
         if (product === "pack_obseques") {
-          return <PackObsequesSubscriptionFlow state={state} onUpdate={updatePackObsequesData} onNext={nextStep} />;
+          return <PackObsequesSubscriptionFlow state={state} onUpdate={updatePackObsequesData} onNext={nextStep} initialSubStep={state.subscriptionSubStep} onSubStepChange={(s) => setState(prev => ({ ...prev, subscriptionSubStep: s as 1 | 2 | 3 | 4 | 5 | 6 }))} />;
         }
         return <SubscriptionFlow state={state} onUpdate={updateSubscription} onNext={nextStep} initialSubStep={state.subscriptionSubStep} onSubStepChange={(s) => setState(prev => ({ ...prev, subscriptionSubStep: s as 1 | 2 | 3 | 4 | 5 }))} />;
       
@@ -640,7 +643,7 @@ export const GuidedSalesFlow = () => {
   };
 
   // Determine if we should show the breadcrumb
-  const showBreadcrumb = state.currentStep > 1 && state.productSelection.selectedProduct === "auto";
+  const showBreadcrumb = (state.currentStep > 1 && state.productSelection.selectedProduct === "auto") || (isPackObseques && state.currentStep >= 4 && state.simulationCalculated);
 
   // Get the next button label based on current step
   const getNextLabel = () => {

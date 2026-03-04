@@ -21,7 +21,7 @@ const defaultPhases: { id: SalesPhase; name: string; shortName: string }[] = [
 ];
 
 const packObsequesPhases: { id: SalesPhase; name: string; shortName: string }[] = [
-  { id: "preparation", name: "Préparation", shortName: "Prépa" },
+  { id: "preparation", name: "Simulation", shortName: "Simul." },
   { id: "souscription", name: "Souscription", shortName: "Souscrip." },
   { id: "finalisation", name: "Finalisation", shortName: "Final" },
 ];

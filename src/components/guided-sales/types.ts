@@ -113,6 +113,11 @@ export interface PackObsequesData {
   titulaireBanque?: string;
   ribDocumentFile?: string;
 
+  // Solde fields
+  soldeMatricule?: string;
+  soldeEmployeur?: string;
+  soldeDirection?: string;
+
   // Souscription - Étape 6/7: Résumé & Signature
   acceptCGU: boolean;
   signatureMethod: SignatureMethodType;

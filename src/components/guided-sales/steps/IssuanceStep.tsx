@@ -25,8 +25,15 @@ export const IssuanceStep = ({ state, onReset }: IssuanceStepProps) => {
   const [resendDialogOpen, setResendDialogOpen] = useState(false);
   const [selectedDocsForResend, setSelectedDocsForResend] = useState<any[]>([]);
 
+  const isPackObseques = state.productSelection?.selectedProduct === "pack_obseques";
+
   // Mock documents for the issued policy
-  const mockDocuments = [
+  const mockDocuments = isPackObseques ? [
+    { id: "doc-1", document_name: "Reçu de paiement", document_type: "facture", file_url: null },
+    { id: "doc-2", document_name: "Certificat d'adhésion", document_type: "attestation", file_url: null },
+    { id: "doc-3", document_name: "Conditions Particulières (CP)", document_type: "attestation", file_url: null },
+    { id: "doc-4", document_name: "Conditions générales", document_type: "conditions_generales", file_url: null },
+  ] : [
     { id: "doc-1", document_name: "Reçu de paiement", document_type: "facture", file_url: null },
     { id: "doc-2", document_name: "Conditions Particulières (CP)", document_type: "attestation", file_url: null },
     { id: "doc-3", document_name: "Attestation d'assurance", document_type: "attestation", file_url: null },

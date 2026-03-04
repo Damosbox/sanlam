@@ -11,6 +11,8 @@ import { formatFCFA } from "@/utils/formatCurrency";
 import { calculatePackObsequesPremium, getPeriodicPremium } from "@/utils/packObsequesPremiumCalculator";
 import { toast } from "sonner";
 import { QuotationSaveDialog } from "../QuotationSaveDialog";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 interface PackObsequesSimulationStepProps {
   state: GuidedSalesState;
@@ -640,7 +642,7 @@ export const PackObsequesSimulationStep = ({
                   )}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Date d'effet</span>
-                    <span className="font-medium">{data.effectiveDate}</span>
+                    <span className="font-medium">{data.effectiveDate ? format(new Date(data.effectiveDate), "dd MMMM yyyy", { locale: fr }) : ""}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Assuré</span>

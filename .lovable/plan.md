@@ -2,32 +2,46 @@
 
 ## Problème identifié
 
-Les champs "Information du propriétaire" (Nom, Prénom, Contact, Type d'emploi) dans l'étape 5 (Conducteur) du parcours Auto souffrent de deux bugs :
-
-1. **Aucun `onChange` handler** — les `Input` et `Select` n'ont pas de `onChange`, donc impossible de taper quoi que ce soit même quand ils ne sont pas `disabled`.
-2. **Validation bloquante** — `isSubStep5Valid()` exige `state.clientIdentification.lastName/firstName`, mais si ces données n'ont pas été remplies à l'étape d'identification, il est impossible de les saisir ici car les champs n'ont pas de handler.
+Le flux de vente guidée ne crée **jamais d'enregistrement dans la table `subscriptions`**. Il ne persiste que dans la table `quotations` (avec `payment_status: "pending_payment"`). Quand l'étape d'émission (step 7) est atteinte, aucune police n'est insérée en base. La page "Polices" interroge `subscriptions` → rien ne s'affiche.
 
 ## Solution
 
-**Fichier** : `src/components/guided-sales/steps/SubscriptionFlow.tsx`
+Créer un enregistrement `subscriptions` quand le paiement est validé (transition step 6 → step 7), et mettre à jour le statut de la quotation associée en `"paid"`.
 
-### Modifications :
+### Fichier 1 : `src/components/guided-sales/GuidedSalesFlow.tsx`
 
-1. **Ajouter des `onChange` handlers** à chaque champ propriétaire :
-   - Nom → `onChange` qui met à jour `subscription.driverName` (ou un nouveau champ `ownerLastName` dans subscription state)
-   - Prénom → idem pour `ownerFirstName`
-   - Contact → idem pour un champ phone
-   - Type d'emploi → `onValueChange` sur le Select
+**Modification de `nextStep()`** : Quand `currentStep === 6` (paiement → émission), avant de passer à l'étape 7, appeler une fonction `finalizeSubscription()` qui :
 
-   Approche : Les champs restent pré-remplis depuis `clientIdentification`/`needsAnalysis` s'ils existent, mais l'utilisateur peut les éditer. On stocke les valeurs éditées dans `subscription` (ex: `onUpdate({ driverName: e.target.value })`). On utilise un fallback : `subscription.X || clientIdentification.X || ""`.
+1. **Cherche le `product_id`** correspondant au produit sélectionné via `supabase.from("products").select("id").eq("name", productName).single()`
+2. **Insère dans `subscriptions`** avec :
+   - `user_id` : l'ID du client (lead converti ou broker lui-même comme placeholder)
+   - `product_id` : trouvé à l'étape 1
+   - `policy_number` : généré (format `POL-2024-CI-XXXXXX`)
+   - `monthly_premium` : `state.calculatedPremium.totalAPayer`
+   - `start_date` : date du paiement
+   - `end_date` : +1 an
+   - `assigned_broker_id` : l'utilisateur courant (broker)
+   - `status` : `"active"`
+   - `payment_method` : `state.mobilePayment.paymentMethod`
+   - `selected_coverages` : options/plan sélectionnés
+   - `object_identifier` : immatriculation ou identifiant objet
+3. **Met à jour la quotation** associée (si `draftId` existe) avec `payment_status: "paid"`
+4. **Stocke le `policyNumber` et `subscriptionId`** dans le state pour que `IssuanceStep` les affiche
 
-2. **Retirer le `disabled`** conditionnel — remplacer par un pré-remplissage non bloquant. Les champs sont toujours éditables, simplement pré-remplis si les données existent.
+**Même logique pour pack_obseques** (step 4 → step 7) : appeler `finalizeSubscription()` avant le saut.
 
-3. **Mettre à jour `isSubStep5Valid()`** pour vérifier les valeurs effectives (subscription fallback vers clientIdentification) au lieu de ne vérifier que `clientIdentification`.
+### Fichier 2 : `src/components/guided-sales/types.ts`
 
-4. **Ajouter les types manquants** dans `SubscriptionData` (dans `types.ts`) si nécessaire : `ownerLastName`, `ownerFirstName`, `ownerPhone`, `ownerEmploymentType`.
+Ajouter au `GuidedSalesState` :
+- `finalizedPolicyNumber?: string`
+- `finalizedSubscriptionId?: string`
 
-### Fichiers impactés :
-- `src/components/guided-sales/steps/SubscriptionFlow.tsx` — handlers + validation
-- `src/components/guided-sales/types.ts` — ajout champs owner dans `SubscriptionData` + `initialState`
+### Fichier 3 : `src/components/guided-sales/steps/IssuanceStep.tsx`
+
+Utiliser `state.finalizedPolicyNumber` au lieu de générer un numéro aléatoire local, et `state.finalizedSubscriptionId` pour le `DocumentResendDialog`.
+
+### Résumé des fichiers impactés (3)
+1. `src/components/guided-sales/GuidedSalesFlow.tsx` — logique `finalizeSubscription()` + appel dans `nextStep`
+2. `src/components/guided-sales/types.ts` — ajout champs finalized
+3. `src/components/guided-sales/steps/IssuanceStep.tsx` — utiliser les données persistées
 

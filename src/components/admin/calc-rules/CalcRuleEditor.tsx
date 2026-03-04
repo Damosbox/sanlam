@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -20,13 +20,14 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Plus, Trash2, Save, Loader2, BookOpen, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Save, Loader2, BookOpen, ChevronDown, Upload } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useToast } from "@/hooks/use-toast";
 import type {
   CalcRule, CalcRuleParameter, CalcRuleFormula, CalcRuleGuarantee,
   CalcRuleTax, CalcRuleFee, CalcRuleTableRef,
@@ -60,7 +61,27 @@ const buildInitialForm = (rule: CalcRule | null) => ({
   charges: (rule?.charges as CalcRuleCharge[]) || [],
 });
 
+// Section save button component
+function SectionSaveButton({ onClick, isSaving, disabled }: { onClick: (e: React.MouseEvent) => void; isSaving: boolean; disabled?: boolean }) {
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="h-7 px-2 text-xs ml-auto shrink-0"
+      onClick={onClick}
+      disabled={isSaving || disabled}
+    >
+      {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3 mr-1" />}
+      Enregistrer
+    </Button>
+  );
+}
+
 export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) {
+  const { toast } = useToast();
+  const csvInputRef = useRef<HTMLInputElement>(null);
+  const [csvImportTarget, setCsvImportTarget] = useState<{ tableIdx: number; type: "key_value" | "brackets" } | null>(null);
+
   const { data: catalogueVars = [] } = useQuery({
     queryKey: ["calculation-variables-active"],
     queryFn: async () => {
@@ -83,6 +104,66 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
   useEffect(() => {
     setForm(buildInitialForm(rule));
   }, [rule]);
+
+  const handleSectionSave = (e: React.MouseEvent, sectionName: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onSave(form);
+    toast({ title: `Section "${sectionName}" sauvegardée` });
+  };
+
+  // --- CSV Import ---
+  const handleCsvImport = (tableIdx: number, type: "key_value" | "brackets") => {
+    setCsvImportTarget({ tableIdx, type });
+    csvInputRef.current?.click();
+  };
+
+  const processCsvFile = (file: File) => {
+    if (!csvImportTarget) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      if (!text) return;
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      // Skip header if first line contains non-numeric values
+      const startIdx = lines.length > 1 && isNaN(parseFloat(lines[0].split(/[,;]/)[1]?.trim())) ? 1 : 0;
+      
+      if (csvImportTarget.type === "key_value") {
+        const data: Record<string, number> = {};
+        let count = 0;
+        for (let i = startIdx; i < lines.length; i++) {
+          const parts = lines[i].split(/[,;]/);
+          if (parts.length >= 2) {
+            const key = parts[0].trim();
+            const value = parseFloat(parts[1].trim());
+            if (key && !isNaN(value)) {
+              data[key] = value;
+              count++;
+            }
+          }
+        }
+        updateTableRef(csvImportTarget.tableIdx, { data });
+        toast({ title: `${count} entrées importées depuis le CSV` });
+      } else {
+        const brackets: Array<{ min: number; max: number; value: number }> = [];
+        for (let i = startIdx; i < lines.length; i++) {
+          const parts = lines[i].split(/[,;]/);
+          if (parts.length >= 3) {
+            const min = parseFloat(parts[0].trim());
+            const max = parseFloat(parts[1].trim());
+            const value = parseFloat(parts[2].trim());
+            if (!isNaN(min) && !isNaN(max) && !isNaN(value)) {
+              brackets.push({ min, max, value });
+            }
+          }
+        }
+        updateTableRef(csvImportTarget.tableIdx, { data: brackets });
+        toast({ title: `${brackets.length} tranches importées depuis le CSV` });
+      }
+      setCsvImportTarget(null);
+    };
+    reader.readAsText(file);
+  };
 
   // --- Parameter CRUD ---
   const addParameter = () => {
@@ -230,9 +311,14 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
               }}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
             </div>
           ))}
-          <Button variant="ghost" size="sm" onClick={() => {
-            updateTableRef(idx, { data: { ...data, [`cle_${entries.length + 1}`]: 0 } });
-          }}><Plus className="h-3 w-3 mr-1" /> Entrée</Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={() => {
+              updateTableRef(idx, { data: { ...data, [`cle_${entries.length + 1}`]: 0 } });
+            }}><Plus className="h-3 w-3 mr-1" /> Entrée</Button>
+            <Button variant="ghost" size="sm" onClick={() => handleCsvImport(idx, "key_value")}>
+              <Upload className="h-3 w-3 mr-1" /> Importer CSV
+            </Button>
+          </div>
         </div>
       );
     }
@@ -257,19 +343,42 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
             }}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
           </div>
         ))}
-        <Button variant="ghost" size="sm" onClick={() => {
-          updateTableRef(idx, { data: [...brackets, { min: 0, max: 0, value: 0 }] });
-        }}><Plus className="h-3 w-3 mr-1" /> Tranche</Button>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={() => {
+            updateTableRef(idx, { data: [...brackets, { min: 0, max: 0, value: 0 }] });
+          }}><Plus className="h-3 w-3 mr-1" /> Tranche</Button>
+          <Button variant="ghost" size="sm" onClick={() => handleCsvImport(idx, "brackets")}>
+            <Upload className="h-3 w-3 mr-1" /> Importer CSV
+          </Button>
+        </div>
       </div>
     );
   };
 
+  const canSave = !isSaving && !!form.name && !!form.usage_category;
+
   return (
     <div className="space-y-6 py-6">
+      {/* Hidden CSV input */}
+      <input
+        ref={csvInputRef}
+        type="file"
+        accept=".csv"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) processCsvFile(file);
+          e.target.value = "";
+        }}
+      />
+
       <Accordion type="multiple" defaultValue={["general", "parameters"]} className="space-y-2">
         {/* 1. General Info */}
         <AccordionItem value="general" className="border rounded-lg px-4">
-          <AccordionTrigger className="text-sm font-semibold">Informations générales</AccordionTrigger>
+          <AccordionTrigger className="text-sm font-semibold">
+            <span className="flex items-center gap-2 flex-1">Informations générales</span>
+            <SectionSaveButton onClick={(e) => handleSectionSave(e, "Informations générales")} isSaving={isSaving} disabled={!canSave} />
+          </AccordionTrigger>
           <AccordionContent className="space-y-4 pb-4">
             <div className="space-y-2">
               <Label>Nom *</Label>
@@ -306,10 +415,11 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
           </AccordionContent>
         </AccordionItem>
 
-        {/* 2. Parameters (enriched) */}
+        {/* 2. Parameters */}
         <AccordionItem value="parameters" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold">
-            <span className="flex items-center gap-2">Paramètres de cotation <Badge variant="secondary">{form.parameters.length}</Badge></span>
+            <span className="flex items-center gap-2 flex-1">Paramètres de cotation <Badge variant="secondary">{form.parameters.length}</Badge></span>
+            <SectionSaveButton onClick={(e) => handleSectionSave(e, "Paramètres")} isSaving={isSaving} disabled={!canSave} />
           </AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
             <p className="text-xs text-muted-foreground">Champs obligatoires affichés lors de la cotation</p>
@@ -337,7 +447,6 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
-                {/* Enriched fields - collapsible */}
                 <Collapsible>
                   <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
                     <ChevronDown className="h-3 w-3" /> Champs avancés
@@ -406,10 +515,11 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
           </AccordionContent>
         </AccordionItem>
 
-        {/* 3. Chargements (NEW) */}
+        {/* 3. Chargements */}
         <AccordionItem value="charges" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold">
-            <span className="flex items-center gap-2">Chargements <Badge variant="secondary">{form.charges.length}</Badge></span>
+            <span className="flex items-center gap-2 flex-1">Chargements <Badge variant="secondary">{form.charges.length}</Badge></span>
+            <SectionSaveButton onClick={(e) => handleSectionSave(e, "Chargements")} isSaving={isSaving} disabled={!canSave} />
           </AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
             <p className="text-xs text-muted-foreground">Chargements d'acquisition, de gestion et techniques</p>
@@ -440,10 +550,11 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
           </AccordionContent>
         </AccordionItem>
 
-        {/* 4. Formules de calcul (separated from packs) */}
+        {/* 4. Formules de calcul */}
         <AccordionItem value="formulas" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold">
-            <span className="flex items-center gap-2">Formules de calcul <Badge variant="secondary">{form.formulas.length}</Badge></span>
+            <span className="flex items-center gap-2 flex-1">Formules de calcul <Badge variant="secondary">{form.formulas.length}</Badge></span>
+            <SectionSaveButton onClick={(e) => handleSectionSave(e, "Formules")} isSaving={isSaving} disabled={!canSave} />
           </AccordionTrigger>
           <AccordionContent className="space-y-4 pb-4">
             <p className="text-xs text-muted-foreground">Expressions mathématiques (PUC, PAC, primes périodiques)</p>
@@ -499,10 +610,11 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
           </AccordionContent>
         </AccordionItem>
 
-        {/* 5. Packs commerciaux (NEW, separated from formulas) */}
+        {/* 5. Packs commerciaux */}
         <AccordionItem value="packages" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold">
-            <span className="flex items-center gap-2">Packs commerciaux <Badge variant="secondary">{form.packages.length}</Badge></span>
+            <span className="flex items-center gap-2 flex-1">Packs commerciaux <Badge variant="secondary">{form.packages.length}</Badge></span>
+            <SectionSaveButton onClick={(e) => handleSectionSave(e, "Packs")} isSaving={isSaving} disabled={!canSave} />
           </AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
             <p className="text-xs text-muted-foreground">Formules commerciales (Bronze, Argent, Or) avec leurs configurations</p>
@@ -541,10 +653,11 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
           </AccordionContent>
         </AccordionItem>
 
-        {/* 6. Options (NEW) */}
+        {/* 6. Options */}
         <AccordionItem value="options" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold">
-            <span className="flex items-center gap-2">Options <Badge variant="secondary">{form.options.length}</Badge></span>
+            <span className="flex items-center gap-2 flex-1">Options <Badge variant="secondary">{form.options.length}</Badge></span>
+            <SectionSaveButton onClick={(e) => handleSectionSave(e, "Options")} isSaving={isSaving} disabled={!canSave} />
           </AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
             <p className="text-xs text-muted-foreground">Configurations paramétrables (ex: nombre d'enfants, niveaux de couverture)</p>
@@ -579,7 +692,10 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
 
         {/* 7. Base Formula */}
         <AccordionItem value="base_formula" className="border rounded-lg px-4">
-          <AccordionTrigger className="text-sm font-semibold">Formule de base</AccordionTrigger>
+          <AccordionTrigger className="text-sm font-semibold">
+            <span className="flex items-center gap-2 flex-1">Formule de base</span>
+            <SectionSaveButton onClick={(e) => handleSectionSave(e, "Formule de base")} isSaving={isSaving} disabled={!canSave} />
+          </AccordionTrigger>
           <AccordionContent className="pb-4">
             <Textarea
               value={form.base_formula}
@@ -597,7 +713,8 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
         {/* 8. Tables de référence */}
         <AccordionItem value="tables_ref" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold">
-            <span className="flex items-center gap-2">Tables de référence <Badge variant="secondary">{form.tables_ref.length}</Badge></span>
+            <span className="flex items-center gap-2 flex-1">Tables de référence <Badge variant="secondary">{form.tables_ref.length}</Badge></span>
+            <SectionSaveButton onClick={(e) => handleSectionSave(e, "Tables de référence")} isSaving={isSaving} disabled={!canSave} />
           </AccordionTrigger>
           <AccordionContent className="space-y-4 pb-4">
             <p className="text-xs text-muted-foreground">Barèmes et tables utilisés dans les formules via LOOKUP() et BRACKET()</p>
@@ -631,7 +748,8 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
         {/* 9. Taxes */}
         <AccordionItem value="taxes" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold">
-            <span className="flex items-center gap-2">Taxes <Badge variant="secondary">{form.taxes.length}</Badge></span>
+            <span className="flex items-center gap-2 flex-1">Taxes <Badge variant="secondary">{form.taxes.length}</Badge></span>
+            <SectionSaveButton onClick={(e) => handleSectionSave(e, "Taxes")} isSaving={isSaving} disabled={!canSave} />
           </AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
             {form.taxes.map((t, idx) => (
@@ -652,7 +770,8 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
         {/* 10. Fees */}
         <AccordionItem value="fees" className="border rounded-lg px-4">
           <AccordionTrigger className="text-sm font-semibold">
-            <span className="flex items-center gap-2">Frais <Badge variant="secondary">{form.fees.length}</Badge></span>
+            <span className="flex items-center gap-2 flex-1">Frais <Badge variant="secondary">{form.fees.length}</Badge></span>
+            <SectionSaveButton onClick={(e) => handleSectionSave(e, "Frais")} isSaving={isSaving} disabled={!canSave} />
           </AccordionTrigger>
           <AccordionContent className="space-y-3 pb-4">
             {form.fees.map((fe, idx) => (

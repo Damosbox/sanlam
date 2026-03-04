@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,12 +8,13 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { GuidedSalesState, PackObsequesData, MaritalStatusType, ProfessionType, IdentityDocType, PrelevementType, PaymentMethodObseques, BeneficiaireType, SignatureMethodType } from "../types";
-import { ChevronLeft, ChevronRight, Upload, User, FileCheck, Stethoscope, Users, CreditCard, FileText, Banknote, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, Upload, User, FileCheck, Stethoscope, Users, CreditCard, FileText, Banknote, Check, Loader2, ScanLine } from "lucide-react";
 import { formatFCFA } from "@/utils/formatCurrency";
 import { calculatePackObsequesPremium, getPeriodicPremium } from "@/utils/packObsequesPremiumCalculator";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PackObsequesSubscriptionFlowProps {
   state: GuidedSalesState;
@@ -56,6 +57,27 @@ const formatDateFR = (dateStr: string) => {
   }
 };
 
+const MIN_AGE = 18;
+
+const getMaxBirthDate = () => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - MIN_AGE);
+  return d.toISOString().split("T")[0];
+};
+
+const AgeAlert = ({ value }: { value: string }) => {
+  if (!value) return null;
+  const birth = new Date(value);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  if (age < MIN_AGE) {
+    return <p className="text-xs text-destructive">L'assuré doit avoir au moins {MIN_AGE} ans</p>;
+  }
+  return null;
+};
+
 export const PackObsequesSubscriptionFlow = ({
   state,
   onUpdate,
@@ -64,6 +86,9 @@ export const PackObsequesSubscriptionFlow = ({
   onSubStepChange
 }: PackObsequesSubscriptionFlowProps) => {
   const [currentStep, setCurrentStepLocal] = useState(initialSubStep || 1);
+  const [isOCRProcessing, setIsOCRProcessing] = useState<"step1" | "step2" | null>(null);
+  const fileInputStep1Ref = useRef<HTMLInputElement>(null);
+  const fileInputStep2Ref = useRef<HTMLInputElement>(null);
   const data = state.packObsequesData!;
 
   const setCurrentStep = (step: number | ((prev: number) => number)) => {
@@ -99,9 +124,86 @@ export const PackObsequesSubscriptionFlow = ({
 
   const goToStart = () => setCurrentStep(1);
 
+  const handleOCRUpload = async (event: React.ChangeEvent<HTMLInputElement>, target: "step1" | "step2") => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setIsOCRProcessing(target);
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data: result, error } = await supabase.functions.invoke("ocr-identity", {
+        body: { imageBase64: base64 },
+      });
+      if (error) throw error;
+
+      if (result?.extracted) {
+        const ext = result.extracted;
+        const filledFields: string[] = [];
+
+        if (target === "step1") {
+          const updates: Partial<PackObsequesData> = {};
+          if (ext.lastName) { updates.lastName = ext.lastName; filledFields.push("Nom"); }
+          if (ext.firstName) { updates.firstName = ext.firstName; filledFields.push("Prénom"); }
+          if (ext.documentNumber) { updates.identityNumber = ext.documentNumber; filledFields.push("N° pièce"); }
+          if (ext.documentType) {
+            const typeMap: Record<string, string> = { "CNI": "cni", "Passeport": "passeport", "Permis de conduire": "permis", "Carte consulaire": "carte_sejour" };
+            const mapped = typeMap[ext.documentType] || "cni";
+            updates.identityDocumentType = mapped;
+            filledFields.push("Type pièce");
+          }
+          if (ext.birthDate) { updates.birthDate = ext.birthDate; filledFields.push("Date naissance"); }
+          onUpdate(updates);
+        } else {
+          const updates: Partial<PackObsequesData> = {};
+          if (ext.lastName) { updates.conjointLastName = ext.lastName; filledFields.push("Nom"); }
+          if (ext.firstName) { updates.conjointFirstName = ext.firstName; filledFields.push("Prénom"); }
+          if (ext.documentNumber) { updates.conjointIdNumber = ext.documentNumber; filledFields.push("N° pièce"); }
+          if (ext.documentType) {
+            const typeMap: Record<string, string> = { "CNI": "cni", "Passeport": "passeport", "Permis de conduire": "permis", "Carte consulaire": "carte_sejour" };
+            const mapped = typeMap[ext.documentType] || "cni";
+            updates.conjointIdType = mapped;
+            filledFields.push("Type pièce");
+          }
+          if (ext.birthDate) { updates.conjointBirthDate = ext.birthDate; filledFields.push("Date naissance"); }
+          onUpdate(updates);
+        }
+
+        if (filledFields.length > 0) {
+          toast.success(`Pièce analysée ! Champs pré-remplis : ${filledFields.join(", ")}`, { duration: 5000 });
+        } else {
+          toast.warning("L'analyse n'a pas pu extraire de données.");
+        }
+      } else {
+        toast.warning("Impossible d'extraire les données du document.");
+      }
+    } catch (err) {
+      console.error("OCR error:", err);
+      toast.error("Erreur lors de l'analyse du document");
+    } finally {
+      setIsOCRProcessing(null);
+      if (target === "step1" && fileInputStep1Ref.current) fileInputStep1Ref.current.value = "";
+      if (target === "step2" && fileInputStep2Ref.current) fileInputStep2Ref.current.value = "";
+    }
+  };
+
   // ===== VALIDATION =====
-  const isStep1Valid = data.identityDocumentType && data.identityNumber && data.lastName && data.firstName && data.birthDate && data.nationality && data.profession && data.maritalStatus && data.email && data.phone;
-  const isStep2Valid = data.conjointIdType && data.conjointIdNumber && data.conjointLastName && data.conjointFirstName && data.conjointBirthDate && data.conjointNationality && data.conjointProfession && data.conjointPaysResidence && data.conjointVilleResidence && data.conjointEmail && data.conjointPhone;
+  const isAgeValid = (dateStr: string) => {
+    if (!dateStr) return false;
+    const birth = new Date(dateStr);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    return age >= MIN_AGE;
+  };
+
+  const isStep1Valid = data.identityDocumentType && data.identityNumber && data.lastName && data.firstName && data.birthDate && isAgeValid(data.birthDate) && data.nationality && data.profession && data.maritalStatus && data.email && data.phone;
+  const isStep2Valid = data.conjointIdType && data.conjointIdNumber && data.conjointLastName && data.conjointFirstName && data.conjointBirthDate && isAgeValid(data.conjointBirthDate) && data.conjointNationality && data.conjointProfession && data.conjointPaysResidence && data.conjointVilleResidence && data.conjointEmail && data.conjointPhone;
   const isStep3Valid = data.taille > 0 && data.poids > 0 && data.medicalQ1 !== undefined && data.medicalQ2 !== undefined && data.medicalQ3 !== undefined && data.medicalQ4 !== undefined && data.medicalQ5 !== undefined && data.medicalQ6 !== undefined && data.medicalQ7 !== undefined && data.medicalQ8 !== undefined && data.medicalQ9 !== undefined && data.medicalQ10 !== undefined;
   const isStep4Valid = !!data.beneficiaireType && (data.beneficiaireType === "ayant_droit" || (data.beneficiaireNom && data.beneficiairePrenom && data.beneficiaireLien));
   const isStep5Valid = data.prelevementAuto === false || (data.prelevementAuto === true && data.typePrelevement && (data.typePrelevement !== "banque" || (data.rib && data.nomBanque && data.titulaireBanque)));
@@ -151,11 +253,32 @@ export const PackObsequesSubscriptionFlow = ({
         </div>
 
         <div className="space-y-2">
-          <Label>Téléchargez les documents (pièce d'identité)</Label>
-          <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-            <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Téléchargez ici...</p>
-          </div>
+          <Label>Scanner la pièce d'identité (OCR)</Label>
+          <input
+            ref={fileInputStep1Ref}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleOCRUpload(e, "step1")}
+            disabled={isOCRProcessing !== null}
+          />
+          {isOCRProcessing === "step1" ? (
+            <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <div>
+                <p className="text-sm font-medium">Analyse en cours...</p>
+                <p className="text-xs text-muted-foreground">Extraction des données d'identité</p>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
+              onClick={() => fileInputStep1Ref.current?.click()}
+            >
+              <ScanLine className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Scannez la pièce pour pré-remplir les champs</p>
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -170,7 +293,8 @@ export const PackObsequesSubscriptionFlow = ({
 
         <div className="space-y-2">
           <Label>Date de naissance * {data.birthDate && <span className="text-xs text-muted-foreground italic">(pré-rempli)</span>}</Label>
-          <Input type="date" value={data.birthDate} onChange={(e) => onUpdate({ birthDate: e.target.value })} />
+          <Input type="date" value={data.birthDate} max={getMaxBirthDate()} onChange={(e) => onUpdate({ birthDate: e.target.value })} />
+          <AgeAlert value={data.birthDate} />
         </div>
 
         <div className="space-y-2">
@@ -271,11 +395,32 @@ export const PackObsequesSubscriptionFlow = ({
         </div>
 
         <div className="space-y-2">
-          <Label>Téléchargez les documents (pièce d'identité conjoint)</Label>
-          <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-            <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Téléchargez ici...</p>
-          </div>
+          <Label>Scanner la pièce d'identité conjoint (OCR)</Label>
+          <input
+            ref={fileInputStep2Ref}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleOCRUpload(e, "step2")}
+            disabled={isOCRProcessing !== null}
+          />
+          {isOCRProcessing === "step2" ? (
+            <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <div>
+                <p className="text-sm font-medium">Analyse en cours...</p>
+                <p className="text-xs text-muted-foreground">Extraction des données d'identité du conjoint</p>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
+              onClick={() => fileInputStep2Ref.current?.click()}
+            >
+              <ScanLine className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Scannez la pièce pour pré-remplir les champs</p>
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -290,7 +435,8 @@ export const PackObsequesSubscriptionFlow = ({
 
         <div className="space-y-2">
           <Label>Date de naissance *</Label>
-          <Input type="date" value={data.conjointBirthDate} onChange={(e) => onUpdate({ conjointBirthDate: e.target.value })} />
+          <Input type="date" value={data.conjointBirthDate} max={getMaxBirthDate()} onChange={(e) => onUpdate({ conjointBirthDate: e.target.value })} />
+          <AgeAlert value={data.conjointBirthDate} />
         </div>
 
         <div className="space-y-2">

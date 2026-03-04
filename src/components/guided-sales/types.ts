@@ -298,7 +298,7 @@ export interface GuidedSalesState {
   currentPhase: SalesPhase;
   // Sub-step navigation
   simulationSubStep: 1 | 2 | 3 | 4 | 5;
-  subscriptionSubStep: 1 | 2 | 3 | 4 | 5 | 6;
+  subscriptionSubStep: 1 | 2 | 3 | 4 | 5 | 6 | 7;
   // Dynamic calc engine
   dynamicParameters?: Record<string, unknown>;
   calcRuleId?: string;

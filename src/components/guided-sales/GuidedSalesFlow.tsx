@@ -656,9 +656,14 @@ export const GuidedSalesFlow = () => {
     if (state.currentStep === 1 && state.simulationCalculated) {
       return isPackObseques ? "Souscrire" : "Voir les offres";
     }
+    if (state.currentStep === 4) {
+      if (isPackObseques) {
+        return state.subscriptionSubStep === 7 ? "Payer" : "Suivant";
+      }
+      return state.subscriptionSubStep === 5 ? "Signature" : "Suivant";
+    }
     if (state.currentStep === 2) return "Récapitulatif";
     if (state.currentStep === 3) return "Souscrire";
-    if (state.currentStep === 4) return "Signature";
     if (state.currentStep === 5) return "Paiement";
     if (state.currentStep === 6) return "Émission";
     return "Suivant";

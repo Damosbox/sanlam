@@ -81,7 +81,9 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
   const isSubStep4Valid = () => 
     !!subscription.licenseCategory && 
     !!subscription.licenseNumber && 
-    !!subscription.licenseIssueDate;
+    !!subscription.licenseIssueDate &&
+    !!(state.clientIdentification?.lastName) &&
+    !!(state.clientIdentification?.firstName);
   const isSubStep5Valid = () => !!subscription.priorCertificateType;
 
   const goNext = () => {
@@ -300,6 +302,32 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
     </div>
   );
 
+  const periodicityLabels: Record<string, string> = {
+    "1_month": "1 mois",
+    "3_months": "3 mois",
+    "6_months": "6 mois",
+    "1_year": "1 an",
+  };
+
+  const employmentOptions: { value: string; label: string }[] = [
+    { value: "fonctionnaire", label: "Fonctionnaire" },
+    { value: "salarie", label: "Salarié" },
+    { value: "exploitant_agricole", label: "Exploitant agricole" },
+    { value: "artisan", label: "Artisan" },
+    { value: "religieux", label: "Religieux" },
+    { value: "retraite", label: "Retraité" },
+    { value: "sans_profession", label: "Sans profession" },
+    { value: "agent_commercial", label: "Agent commercial" },
+    { value: "autres", label: "Autres" },
+  ];
+
+  const ownerLastName = state.clientIdentification?.lastName || "";
+  const ownerFirstName = state.clientIdentification?.firstName || "";
+  const ownerPhone = state.clientIdentification?.phone || "";
+  const ownerEmployment = state.needsAnalysis?.employmentType || "";
+  const ownerEffectiveDate = state.needsAnalysis?.effectiveDate || "";
+  const ownerPeriodicity = state.needsAnalysis?.contractPeriodicity || "";
+
   // Sub-step 4: Conducteur
   const renderSubStep4 = () => (
     <div className="space-y-6">
@@ -308,6 +336,90 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
         <p className="text-muted-foreground mt-1">Étape 4/5 - Informations du conducteur</p>
       </div>
 
+      {/* Information du propriétaire */}
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <User className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold">Information du propriétaire</h3>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm font-medium">Nom du propriétaire *</Label>
+              <Input
+                value={ownerLastName}
+                disabled={!!state.clientIdentification?.lastName}
+                className={cn("mt-1", !!state.clientIdentification?.lastName && "bg-muted")}
+                placeholder="Nom"
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium">Prénom du propriétaire *</Label>
+              <Input
+                value={ownerFirstName}
+                disabled={!!state.clientIdentification?.firstName}
+                className={cn("mt-1", !!state.clientIdentification?.firstName && "bg-muted")}
+                placeholder="Prénom"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm font-medium">Contact téléphonique *</Label>
+              <Input
+                type="tel"
+                value={ownerPhone}
+                disabled={!!state.clientIdentification?.phone}
+                className={cn("mt-1", !!state.clientIdentification?.phone && "bg-muted")}
+                placeholder="+225 XX XX XX XX"
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium">Type d'emploi *</Label>
+              <Select
+                value={ownerEmployment}
+                disabled={!!state.needsAnalysis?.employmentType}
+              >
+                <SelectTrigger className={cn("mt-1", !!state.needsAnalysis?.employmentType && "bg-muted")}>
+                  <SelectValue placeholder="Sélectionner" />
+                </SelectTrigger>
+                <SelectContent>
+                  {employmentOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm font-medium">Date d'effet</Label>
+              <Input
+                value={ownerEffectiveDate ? format(new Date(ownerEffectiveDate), "dd/MM/yyyy", { locale: fr }) : ""}
+                disabled
+                className="mt-1 bg-muted"
+                placeholder="—"
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium">Durée du contrat</Label>
+              <Input
+                value={ownerPeriodicity ? periodicityLabels[ownerPeriodicity] || ownerPeriodicity : ""}
+                disabled
+                className="mt-1 bg-muted"
+                placeholder="—"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Permis de conduire */}
       <Card>
         <CardContent className="pt-6 space-y-4">
           <div className="flex items-center gap-2 mb-2">

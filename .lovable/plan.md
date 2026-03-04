@@ -1,25 +1,42 @@
 
 
-## Plan : Séparer le récap de simulation en une étape distincte
+## Fix : Navigation phase intelligente pour Pack Obsèques
 
-Actuellement, le formulaire "Assuré principal (2/2)" et le récap (détail prime + capitaux + données + boutons) sont dans la même sous-étape 4. L'utilisateur demande que le récap soit sur une page séparée.
+### Problème
 
-### Modification unique : `PackObsequesSimulationStep.tsx`
+`goToPhase("preparation")` appelle `getFirstStepOfPhase("preparation")` qui retourne `0` (sélection produit) via `PHASE_STEPS`. Quand l'utilisateur clique sur "Simulation" dans le stepper, il est renvoyé à l'écran de choix de produit au lieu de la simulation (step 1).
 
-**Changement** : Transformer le flow de 4 sous-étapes en 5 sous-étapes.
+### Solution
 
-1. **Sous-étape 4** (Assuré 2/2) : Garder uniquement le formulaire (email, sexe, titre, lieu de naissance) + bouton "Calculer la prime". Après calcul, afficher un bouton "Voir le récapitulatif" qui avance vers la sous-étape 5.
+Modifier `goToPhase` dans `GuidedSalesFlow.tsx` pour être product-aware :
+- Pour Pack Obsèques, la phase "preparation" (renommée "Simulation") doit naviguer vers step `1`, pas step `0`
+- Step `0` est la sélection produit, qui ne devrait jamais être une cible de navigation une fois qu'on a avancé
 
-2. **Nouvelle sous-étape 5** (Récapitulatif) : Déplacer les 3 sections (Détail prime, Capitaux, Données de simulation) + les 3 boutons d'action (Sauvegarder, Envoyer, Souscrire) dans un `renderSubStep5()` dédié.
+**`GuidedSalesFlow.tsx`** — Modifier `goToPhase` :
 
-3. **Ajuster la navigation** :
-   - Type du `subStep` : `1 | 2 | 3 | 4 | 5`
-   - `goToNextSubStep()` : step 4 → step 5
-   - `goToPrevSubStep()` : step 5 → step 4
-   - Back handler : gérer step 5
-   - `getCurrentStepNumber()` et `getTotalSteps()` : ajouter le step 5
-   - Rendre `subStep === 5 && renderSubStep5()` dans le JSX
+```typescript
+const goToPhase = (phase: SalesPhase) => {
+  const isPackObseques = state.productSelection.selectedProduct === "pack_obseques";
+  let targetStep = getFirstStepOfPhase(phase);
+  
+  // Pour Pack Obsèques, "preparation" = Simulation = step 1, pas step 0
+  if (isPackObseques && phase === "preparation" && targetStep === 0) {
+    targetStep = 1;
+  }
+  
+  if (targetStep <= state.currentStep) {
+    setDirection("backward");
+    setState(prev => ({
+      ...prev,
+      currentStep: targetStep,
+      currentPhase: phase
+    }));
+  }
+};
+```
+
+Même logique à appliquer pour Auto : si l'utilisateur est déjà au-delà de step 0, cliquer "Préparation" devrait revenir à step 1 (simulation) plutôt que step 0. On peut généraliser : `if (targetStep === 0 && state.currentStep > 0) targetStep = 1`.
 
 ### Fichier modifié
-- `src/components/guided-sales/steps/PackObsequesSimulationStep.tsx`
+- `src/components/guided-sales/GuidedSalesFlow.tsx` — 1 fonction modifiée
 

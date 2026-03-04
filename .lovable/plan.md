@@ -1,31 +1,36 @@
 
 
-## Plan : Ajouter les informations du propriétaire dans la sous-étape Conducteur
+## Plan : OCR carte grise pour pré-remplir les informations véhicule
 
-### Contexte
+### Approche
 
-La sous-étape 4 "Conducteur" ne contient actuellement que les infos permis (conducteur habituel, catégorie, numéro, date d'obtention). Il faut ajouter une section "Information du propriétaire" au-dessus, comme dans la maquette de référence, avec : Nom, Prénom, Contact téléphonique, Type d'emploi, Date d'effet et Durée du contrat.
+Ajouter un upload OCR de la carte grise dans la **sous-étape 5 (Documents)**, à côté du bouton "Télécharger" existant pour la carte grise. Quand l'utilisateur uploade une image de carte grise, on appelle une edge function qui extrait via AI : marque, modèle, immatriculation, châssis, et on pré-remplit automatiquement les champs de la sous-étape 3 (Véhicule).
+
+L'utilisateur peut aussi revenir modifier manuellement si l'OCR n'est pas parfait.
 
 ### Modifications
 
-**Fichier : `src/components/guided-sales/steps/SubscriptionFlow.tsx`**
+**1. Nouvelle edge function : `supabase/functions/ocr-vehicle-registration/index.ts`**
+- Prompt spécifique carte grise africaine (extraction : marque, modèle, numéro immatriculation, numéro châssis, date 1ère mise en circulation)
+- Utilise Lovable AI Gateway (Gemini Flash) avec tool calling pour retourner des données structurées
+- Même pattern que `ocr-identity`
 
-- Ajouter une section "Information du propriétaire" en haut de `renderSubStep4()`, avant la section "Permis de conduire"
-- Champs en grille 2 colonnes :
-  - **Nom du propriétaire** : Input pré-rempli depuis `state.clientIdentification.lastName`
-  - **Prénom du propriétaire** : Input pré-rempli depuis `state.clientIdentification.firstName`
-  - **Contact téléphonique** : Input tel pré-rempli depuis `state.clientIdentification.phone`
-  - **Type d'emploi** : Select avec les options existantes (fonctionnaire, salarié, etc.) — stocké dans `subscription.driverName` ou un champ dédié via `state.needsAnalysis.employmentType`
-  - **Date d'effet** : Pré-rempli depuis `state.needsAnalysis.effectiveDate` (lecture seule, déjà saisi en simulation)
-  - **Durée du contrat** : Pré-rempli depuis `state.needsAnalysis.contractPeriodicity` (lecture seule)
-- Ces champs sont en lecture seule s'ils ont déjà été renseignés lors des étapes précédentes (identification client, simulation), sinon éditables
-- Mettre à jour `isSubStep4Valid()` pour inclure le nom du conducteur comme requis
-- Mettre à jour les props pour accepter aussi les updates de `clientIdentification` et `needsAnalysis` si besoin, ou simplement afficher les données existantes en lecture seule
+**2. `supabase/config.toml`**
+- Ajouter `[functions.ocr-vehicle-registration]` avec `verify_jwt = true`
 
-**Fichier : `src/components/guided-sales/GuidedSalesFlow.tsx`**
+**3. `src/components/guided-sales/steps/SubscriptionFlow.tsx`**
+- Sous-étape 5 (Documents) : remplacer le bouton fake "Télécharger" de la carte grise par un vrai `<input type="file" accept="image/*">` 
+- Ajouter état `isOCRProcessing` + appel `supabase.functions.invoke("ocr-vehicle-registration")`
+- Sur succès OCR, appeler `onUpdate()` avec `vehicleBrand`, `vehicleModel`, `vehicleRegistrationNumber`, `vehicleChassisNumber` extraits
+- Toast de succès listant les champs pré-remplis
+- Indicateur de chargement pendant l'OCR (spinner + texte "Analyse en cours...")
 
-- Passer `state` complet au `SubscriptionFlow` (déjà le cas) pour accéder aux données d'identification et simulation
+**4. Réordonner les sous-étapes** pour que Documents vienne **avant** Véhicule :
+- 1: Agent → 2: Localisation → 3: **Documents** → 4: **Véhicule** (pré-rempli) → 5: Conducteur
+- Ainsi l'OCR carte grise alimente directement les champs véhicule à l'étape suivante
 
-### Fichiers modifiés (1)
-- `src/components/guided-sales/steps/SubscriptionFlow.tsx`
+### Fichiers modifiés (3)
+- `supabase/functions/ocr-vehicle-registration/index.ts` (nouveau)
+- `supabase/config.toml` (ajout config)
+- `src/components/guided-sales/steps/SubscriptionFlow.tsx` (OCR + réordonnement)
 

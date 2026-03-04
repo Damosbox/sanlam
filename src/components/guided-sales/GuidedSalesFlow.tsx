@@ -432,7 +432,7 @@ export const GuidedSalesFlow = () => {
     }
   };
 
-  const handleSaveAndQuit = async (clientInfo?: { firstName: string; lastName: string; email: string }) => {
+  const handleSaveAndQuit = async (clientInfo?: { firstName: string; lastName: string; email: string; gender?: string; birthDate?: string; phone?: string; employmentType?: string }) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -459,6 +459,12 @@ export const GuidedSalesFlow = () => {
               firstName: clientInfo.firstName,
               lastName: clientInfo.lastName,
               email: clientInfo.email,
+              ...(clientInfo.phone ? { phone: clientInfo.phone } : {}),
+            },
+            needsAnalysis: {
+              ...state.needsAnalysis,
+              ...(clientInfo.gender ? { gender: clientInfo.gender } : {}),
+              ...(clientInfo.employmentType ? { employmentType: clientInfo.employmentType } : {}),
             },
           }
         : state;
@@ -786,9 +792,21 @@ export const GuidedSalesFlow = () => {
               lastName: state.clientIdentification.lastName || "",
               firstName: state.clientIdentification.firstName || "",
               email: state.clientIdentification.email || "",
+              gender: state.needsAnalysis.gender || "",
+              birthDate: "",
+              phone: state.clientIdentification.phone || "",
+              employmentType: state.needsAnalysis.employmentType || "",
             }}
             onConfirm={(info) => {
-              handleSaveAndQuit({ firstName: info.firstName, lastName: info.lastName, email: info.email });
+              handleSaveAndQuit({
+                firstName: info.firstName,
+                lastName: info.lastName,
+                email: info.email,
+                gender: info.gender,
+                birthDate: info.birthDate,
+                phone: info.phone,
+                employmentType: info.employmentType,
+              });
             }}
             onDismiss={() => {
               handleSaveAndQuit();

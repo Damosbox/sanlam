@@ -119,11 +119,7 @@ export const SimulationStep = ({
   };
 
   const isSubStep2Valid = () => {
-    return (
-      needsAnalysis.hasAccident36Months !== undefined &&
-      needsAnalysis.gender &&
-      needsAnalysis.employmentType
-    );
+    return needsAnalysis.hasAccident36Months !== undefined;
   };
 
   const isSubStep3Valid = () => {
@@ -335,45 +331,6 @@ export const SimulationStep = ({
               </SelectContent>
             </Select>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* 6. Sexe */}
-            <div>
-              <Label className="text-sm font-medium">6. Sexe *</Label>
-              <Select
-                value={needsAnalysis.gender || ""}
-                onValueChange={(v) => onUpdate({ gender: v as GenderType })}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Sélectionner" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="feminin">Féminin</SelectItem>
-                  <SelectItem value="masculin">Masculin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* 7. Type d'emploi */}
-            <div>
-              <Label className="text-sm font-medium">7. Type d'emploi *</Label>
-              <Select
-                value={needsAnalysis.employmentType || ""}
-                onValueChange={(v) => onUpdate({ employmentType: v as EmploymentType })}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Sélectionner" />
-                </SelectTrigger>
-                <SelectContent>
-                  {employmentOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
         </CardContent>
       </Card>
 
@@ -401,9 +358,9 @@ export const SimulationStep = ({
       <Card>
         <CardContent className="pt-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* 8. Énergie */}
+            {/* 6. Énergie */}
             <div>
-              <Label className="text-sm font-medium">8. Énergie *</Label>
+              <Label className="text-sm font-medium">6. Énergie *</Label>
               <Select
                 value={needsAnalysis.vehicleEnergy || ""}
                 onValueChange={(v) => onUpdate({ vehicleEnergy: v as EnergyType })}
@@ -421,9 +378,9 @@ export const SimulationStep = ({
               </Select>
             </div>
 
-            {/* 9. Puissance fiscale */}
+            {/* 7. Puissance fiscale */}
             <div>
-              <Label className="text-sm font-medium">9. Puissance fiscale (CV) *</Label>
+              <Label className="text-sm font-medium">7. Puissance fiscale (CV) *</Label>
               <Select
                 value={needsAnalysis.vehicleFiscalPower?.toString() || ""}
                 onValueChange={(v) => onUpdate({ vehicleFiscalPower: parseInt(v) })}
@@ -443,9 +400,9 @@ export const SimulationStep = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* 10. Date 1ère circulation */}
+            {/* 8. Date 1ère circulation */}
             <div>
-              <Label className="text-sm font-medium">10. Date de 1ère mise en circulation *</Label>
+              <Label className="text-sm font-medium">8. Date de 1ère mise en circulation *</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -471,9 +428,9 @@ export const SimulationStep = ({
               </Popover>
             </div>
 
-            {/* 11. Nombre de places */}
+            {/* 9. Nombre de places */}
             <div>
-              <Label className="text-sm font-medium">11. Nombre de places *</Label>
+              <Label className="text-sm font-medium">9. Nombre de places *</Label>
               <Select
                 value={needsAnalysis.vehicleSeats?.toString() || ""}
                 onValueChange={(v) => onUpdate({ vehicleSeats: parseInt(v) })}
@@ -518,9 +475,9 @@ export const SimulationStep = ({
       <Card>
         <CardContent className="pt-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* 12. Date d'effet */}
+            {/* 10. Date d'effet */}
             <div>
-              <Label className="text-sm font-medium">12. Date d'effet *</Label>
+              <Label className="text-sm font-medium">10. Date d'effet *</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -546,9 +503,9 @@ export const SimulationStep = ({
               </Popover>
             </div>
 
-            {/* 13. Durée du contrat */}
+            {/* 11. Durée du contrat */}
             <div>
-              <Label className="text-sm font-medium">13. Durée du contrat *</Label>
+              <Label className="text-sm font-medium">11. Durée du contrat *</Label>
               <Select
                 value={needsAnalysis.contractPeriodicity || ""}
                 onValueChange={(v) => onUpdate({ contractPeriodicity: v as ContractPeriodicity })}
@@ -568,9 +525,9 @@ export const SimulationStep = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* 14. Valeur à neuf */}
+            {/* 12. Valeur à neuf */}
             <div>
-              <Label className="text-sm font-medium">14. Valeur à neuf *</Label>
+              <Label className="text-sm font-medium">12. Valeur à neuf *</Label>
               <div className="relative mt-1">
                 <Input
                   type="text"
@@ -588,9 +545,9 @@ export const SimulationStep = ({
               </div>
             </div>
 
-            {/* 15. Valeur vénale */}
+            {/* 13. Valeur vénale */}
             <div>
-              <Label className="text-sm font-medium">15. Valeur vénale *</Label>
+              <Label className="text-sm font-medium">13. Valeur vénale *</Label>
               <div className="relative mt-1">
                 <Input
                   type="text"
@@ -629,7 +586,7 @@ export const SimulationStep = ({
     </div>
   );
 
-  // Sub-step 5: Équipements (fields 16-17)
+  // Sub-step 5: Équipements (fields 14-15)
   const renderSubStep5 = () => {
     const handleViewOffers = async () => {
       onCalculate();
@@ -646,9 +603,9 @@ export const SimulationStep = ({
         <Card>
           <CardContent className="pt-6 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* 16. Toit panoramique */}
+              {/* 14. Toit panoramique */}
               <div>
-                <Label className="text-sm font-medium">16. Toit panoramique ? *</Label>
+                <Label className="text-sm font-medium">14. Toit panoramique ? *</Label>
                 <Select
                   value={needsAnalysis.hasPanoramicRoof === undefined ? "" : needsAnalysis.hasPanoramicRoof ? "oui" : "non"}
                   onValueChange={(v) => onUpdate({ hasPanoramicRoof: v === "oui" })}
@@ -663,9 +620,9 @@ export const SimulationStep = ({
                 </Select>
               </div>
 
-              {/* 17. Protection GPS */}
+              {/* 15. Protection GPS */}
               <div>
-                <Label className="text-sm font-medium">17. Protection GPS ? *</Label>
+                <Label className="text-sm font-medium">15. Protection GPS ? *</Label>
                 <Select
                   value={needsAnalysis.hasGPSProtection === undefined ? "" : needsAnalysis.hasGPSProtection ? "oui" : "non"}
                   onValueChange={(v) => onUpdate({ hasGPSProtection: v === "oui" })}

@@ -1,59 +1,33 @@
 
 
-## Plan : Améliorations du moteur de calcul, import CSV et documents
+## Problème identifié
 
-### 1. Sauvegarde par section dans le CalcRuleEditor
+Les champs "Information du propriétaire" (Nom, Prénom, Contact, Type d'emploi) dans l'étape 5 (Conducteur) du parcours Auto souffrent de deux bugs :
 
-**Probleme actuel** : Un seul bouton "Enregistrer" en bas de page. L'utilisateur doit scroller tout en bas pour sauvegarder.
+1. **Aucun `onChange` handler** — les `Input` et `Select` n'ont pas de `onChange`, donc impossible de taper quoi que ce soit même quand ils ne sont pas `disabled`.
+2. **Validation bloquante** — `isSubStep5Valid()` exige `state.clientIdentification.lastName/firstName`, mais si ces données n'ont pas été remplies à l'étape d'identification, il est impossible de les saisir ici car les champs n'ont pas de handler.
 
-**Solution** : Ajouter un bouton "Enregistrer" dans chaque section d'accordion du `CalcRuleEditor`. Chaque bouton sauvegarde la règle entiere (car c'est un seul enregistrement JSON), mais le feedback est contextuel.
+## Solution
 
-**Fichiers modifiés :**
-- `src/components/admin/calc-rules/CalcRuleEditor.tsx` : Modifier le composant pour accepter un `ruleId` optionnel et gérer la sauvegarde interne via `useMutation`. Ajouter un bouton compact `<Save>` dans le header de chaque `AccordionTrigger`. Quand on clique, on sauvegarde tout le formulaire et on affiche un toast "Section sauvegardée".
-- `src/pages/admin/CalcRulesPage.tsx` : Adapter l'interface pour que le `CalcRuleEditor` puisse sauvegarder directement (passer `queryClient` ou déléguer la mutation).
+**Fichier** : `src/components/guided-sales/steps/SubscriptionFlow.tsx`
 
-**Approche technique** : Le `CalcRuleEditor` reçoit toujours `onSave`, mais on ajoute un bouton save par accordion header. Chaque bouton appelle `onSave(form)` directement. Le bouton global en bas est conservé.
+### Modifications :
 
-### 2. Import CSV pour les tables de référence
+1. **Ajouter des `onChange` handlers** à chaque champ propriétaire :
+   - Nom → `onChange` qui met à jour `subscription.driverName` (ou un nouveau champ `ownerLastName` dans subscription state)
+   - Prénom → idem pour `ownerFirstName`
+   - Contact → idem pour un champ phone
+   - Type d'emploi → `onValueChange` sur le Select
 
-**Probleme actuel** : Les tables de référence (key_value et brackets) sont saisies manuellement ligne par ligne.
+   Approche : Les champs restent pré-remplis depuis `clientIdentification`/`needsAnalysis` s'ils existent, mais l'utilisateur peut les éditer. On stocke les valeurs éditées dans `subscription` (ex: `onUpdate({ driverName: e.target.value })`). On utilise un fallback : `subscription.X || clientIdentification.X || ""`.
 
-**Solution** : Ajouter un bouton "Importer CSV" à côté de "Ajouter une table" dans la section Tables de référence.
+2. **Retirer le `disabled`** conditionnel — remplacer par un pré-remplissage non bloquant. Les champs sont toujours éditables, simplement pré-remplis si les données existent.
 
-**Fichier modifié :** `src/components/admin/calc-rules/CalcRuleEditor.tsx`
+3. **Mettre à jour `isSubStep5Valid()`** pour vérifier les valeurs effectives (subscription fallback vers clientIdentification) au lieu de ne vérifier que `clientIdentification`.
 
-**Logique :**
-- Bouton `📥 Importer CSV` avec `<input type="file" accept=".csv">`
-- Pour `key_value` : CSV à 2 colonnes (clé, valeur) → parsé en `Record<string, number>`
-- Pour `brackets` : CSV à 3 colonnes (min, max, valeur) → parsé en `Array<{min, max, value}>`
-- Utilise la lib native `FileReader` + split par lignes/virgules (pas de dépendance)
-- Preview du nombre de lignes importées avant confirmation
-- Toast de succès avec le nombre d'entrées importées
+4. **Ajouter les types manquants** dans `SubscriptionData` (dans `types.ts`) si nécessaire : `ownerLastName`, `ownerFirstName`, `ownerPhone`, `ownerEmploymentType`.
 
-### 3. Upload de fichiers dans DocumentsTab
-
-**Probleme actuel** : Le DocumentsTab configure des templates (nom, type, variables) mais ne permet pas d'uploader les fichiers PDF/Word réels.
-
-**Solution** : Ajouter un champ d'upload dans le dialog de création/édition de document. Le fichier est uploadé dans le bucket `product-images` (ou un nouveau bucket si nécessaire) et l'URL est stockée dans le template.
-
-**Fichiers modifiés :**
-- `src/components/admin/products/tabs/DocumentsTab.tsx` : Ajouter un `<input type="file">` dans le dialog. Upload vers le storage bucket. Stocker `file_url` et `file_name` dans le `DocumentTemplate` interface.
-- Pas de migration DB nécessaire : les templates sont stockés en JSONB dans la colonne `document_templates` de `products`.
-
-**Interface enrichie :**
-```typescript
-interface DocumentTemplate {
-  id: string;
-  name: string;
-  type: string;
-  variables: string[];
-  file_url?: string;    // nouveau
-  file_name?: string;   // nouveau
-}
-```
-
-### Fichiers impactés (3)
-1. `src/components/admin/calc-rules/CalcRuleEditor.tsx` — boutons save par section + import CSV tables
-2. `src/pages/admin/CalcRulesPage.tsx` — adaptation mineure de l'interface
-3. `src/components/admin/products/tabs/DocumentsTab.tsx` — upload fichiers templates
+### Fichiers impactés :
+- `src/components/guided-sales/steps/SubscriptionFlow.tsx` — handlers + validation
+- `src/components/guided-sales/types.ts` — ajout champs owner dans `SubscriptionData` + `initialState`
 

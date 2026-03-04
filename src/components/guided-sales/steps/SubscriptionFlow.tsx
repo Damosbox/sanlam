@@ -141,8 +141,8 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
     !!subscription.licenseCategory && 
     !!subscription.licenseNumber && 
     !!subscription.licenseIssueDate &&
-    !!(state.clientIdentification?.lastName) &&
-    !!(state.clientIdentification?.firstName);
+    !!(subscription.ownerLastName || state.clientIdentification?.lastName) &&
+    !!(subscription.ownerFirstName || state.clientIdentification?.firstName);
 
   const goNext = () => {
     if (subStep < 5) {
@@ -682,10 +682,10 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
     </div>
   );
 
-  const ownerLastName = state.clientIdentification?.lastName || "";
-  const ownerFirstName = state.clientIdentification?.firstName || "";
-  const ownerPhone = state.clientIdentification?.phone || "";
-  const ownerEmployment = state.needsAnalysis?.employmentType || "";
+  const ownerLastName = subscription.ownerLastName || state.clientIdentification?.lastName || "";
+  const ownerFirstName = subscription.ownerFirstName || state.clientIdentification?.firstName || "";
+  const ownerPhone = subscription.ownerPhone || state.clientIdentification?.phone || "";
+  const ownerEmployment = subscription.ownerEmploymentType || state.needsAnalysis?.employmentType || "";
   const ownerEffectiveDate = state.needsAnalysis?.effectiveDate || "";
   const ownerPeriodicity = state.needsAnalysis?.contractPeriodicity || "";
 
@@ -710,8 +710,8 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
               <Label className="text-sm font-medium">Nom du propriétaire *</Label>
               <Input
                 value={ownerLastName}
-                disabled={!!state.clientIdentification?.lastName}
-                className={cn("mt-1", !!state.clientIdentification?.lastName && "bg-muted")}
+                onChange={(e) => onUpdate({ ownerLastName: e.target.value })}
+                className="mt-1"
                 placeholder="Nom"
               />
             </div>
@@ -719,8 +719,8 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
               <Label className="text-sm font-medium">Prénom du propriétaire *</Label>
               <Input
                 value={ownerFirstName}
-                disabled={!!state.clientIdentification?.firstName}
-                className={cn("mt-1", !!state.clientIdentification?.firstName && "bg-muted")}
+                onChange={(e) => onUpdate({ ownerFirstName: e.target.value })}
+                className="mt-1"
                 placeholder="Prénom"
               />
             </div>
@@ -732,8 +732,8 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
               <Input
                 type="tel"
                 value={ownerPhone}
-                disabled={!!state.clientIdentification?.phone}
-                className={cn("mt-1", !!state.clientIdentification?.phone && "bg-muted")}
+                onChange={(e) => onUpdate({ ownerPhone: e.target.value })}
+                className="mt-1"
                 placeholder="+225 XX XX XX XX"
               />
             </div>
@@ -741,9 +741,9 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
               <Label className="text-sm font-medium">Type d'emploi *</Label>
               <Select
                 value={ownerEmployment}
-                disabled={!!state.needsAnalysis?.employmentType}
+                onValueChange={(v) => onUpdate({ ownerEmploymentType: v })}
               >
-                <SelectTrigger className={cn("mt-1", !!state.needsAnalysis?.employmentType && "bg-muted")}>
+                <SelectTrigger className="mt-1">
                   <SelectValue placeholder="Sélectionner" />
                 </SelectTrigger>
                 <SelectContent>

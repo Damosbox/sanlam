@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,13 +18,16 @@ import {
   CreditCard,
   FileText,
   Upload,
-  Calendar
+  Calendar,
+  Loader2,
+  CheckCircle2
 } from "lucide-react";
 import { GuidedSalesState, CityType, LicenseCategory, PriorCertificateType } from "../types";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SubscriptionFlowProps {
   state: GuidedSalesState;
@@ -47,16 +50,41 @@ const cityOptions: { value: CityType; label: string }[] = [
 
 const licenseCategories: LicenseCategory[] = ["A", "B", "C", "D", "E", "AB", "ABCD", "ABCDE"];
 
+// Reordered: Documents (3) before Véhicule (4)
 const SUB_STEPS = [
   { id: 1, title: "Agent" },
   { id: 2, title: "Localisation" },
-  { id: 3, title: "Véhicule" },
-  { id: 4, title: "Conducteur" },
-  { id: 5, title: "Documents" },
+  { id: 3, title: "Documents" },
+  { id: 4, title: "Véhicule" },
+  { id: 5, title: "Conducteur" },
+];
+
+const periodicityLabels: Record<string, string> = {
+  "1_month": "1 mois",
+  "3_months": "3 mois",
+  "6_months": "6 mois",
+  "1_year": "1 an",
+};
+
+const employmentOptions: { value: string; label: string }[] = [
+  { value: "fonctionnaire", label: "Fonctionnaire" },
+  { value: "salarie", label: "Salarié" },
+  { value: "exploitant_agricole", label: "Exploitant agricole" },
+  { value: "artisan", label: "Artisan" },
+  { value: "religieux", label: "Religieux" },
+  { value: "retraite", label: "Retraité" },
+  { value: "sans_profession", label: "Sans profession" },
+  { value: "agent_commercial", label: "Agent commercial" },
+  { value: "autres", label: "Autres" },
 ];
 
 export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSubStepChange }: SubscriptionFlowProps) => {
   const [subStepLocal, setSubStepLocal] = useState<1 | 2 | 3 | 4 | 5>((initialSubStep ?? 1) as 1 | 2 | 3 | 4 | 5);
+  const [showDeclarationModal, setShowDeclarationModal] = useState(false);
+  const [declarationText, setDeclarationText] = useState("");
+  const [isOCRProcessing, setIsOCRProcessing] = useState(false);
+  const [ocrSuccess, setOcrSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const setSubStep = (val: 1 | 2 | 3 | 4 | 5) => {
     setSubStepLocal(val);
@@ -64,8 +92,6 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
   };
 
   const subStep = subStepLocal;
-  const [showDeclarationModal, setShowDeclarationModal] = useState(false);
-  const [declarationText, setDeclarationText] = useState("");
   const { subscription } = state;
 
   const licenseDate = subscription.licenseIssueDate ? new Date(subscription.licenseIssueDate) : undefined;
@@ -73,18 +99,18 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
   // Sub-step validations
   const isSubStep1Valid = () => !!subscription.agentCode;
   const isSubStep2Valid = () => !!subscription.geographicAddress && !!subscription.city;
-  const isSubStep3Valid = () => 
+  const isSubStep3Valid = () => !!subscription.priorCertificateType;
+  const isSubStep4Valid = () => 
     !!subscription.vehicleBrand && 
     !!subscription.vehicleModel && 
     !!subscription.vehicleRegistrationNumber && 
     !!subscription.vehicleChassisNumber;
-  const isSubStep4Valid = () => 
+  const isSubStep5Valid = () => 
     !!subscription.licenseCategory && 
     !!subscription.licenseNumber && 
     !!subscription.licenseIssueDate &&
     !!(state.clientIdentification?.lastName) &&
     !!(state.clientIdentification?.firstName);
-  const isSubStep5Valid = () => !!subscription.priorCertificateType;
 
   const goNext = () => {
     if (subStep < 5) {
@@ -104,6 +130,63 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
     const fileName = "document.pdf";
     onUpdate({ [field]: fileName });
     toast.success("Document téléchargé avec succès");
+  };
+
+  const handleCarteGriseUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsOCRProcessing(true);
+    setOcrSuccess(false);
+
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data, error } = await supabase.functions.invoke("ocr-vehicle-registration", {
+        body: { imageBase64: base64 },
+      });
+
+      if (error) throw error;
+
+      if (data?.extracted) {
+        const ext = data.extracted;
+        const updates: Partial<GuidedSalesState["subscription"]> = {
+          vehicleRegistrationDocument: file.name,
+        };
+
+        const filledFields: string[] = [];
+        if (ext.vehicleBrand) { updates.vehicleBrand = ext.vehicleBrand; filledFields.push("Marque"); }
+        if (ext.vehicleModel) { updates.vehicleModel = ext.vehicleModel; filledFields.push("Modèle"); }
+        if (ext.registrationNumber) { updates.vehicleRegistrationNumber = ext.registrationNumber; filledFields.push("Immatriculation"); }
+        if (ext.chassisNumber) { updates.vehicleChassisNumber = ext.chassisNumber; filledFields.push("Châssis"); }
+
+        onUpdate(updates);
+        setOcrSuccess(true);
+
+        if (filledFields.length > 0) {
+          toast.success(`Carte grise analysée ! Champs pré-remplis : ${filledFields.join(", ")}`, {
+            duration: 5000,
+          });
+        } else {
+          toast.warning("L'analyse n'a pas pu extraire de données. Vérifiez la qualité de l'image.");
+        }
+      } else {
+        onUpdate({ vehicleRegistrationDocument: file.name });
+        toast.warning("Impossible d'extraire les données. Le document a été enregistré.");
+      }
+    } catch (err) {
+      console.error("OCR error:", err);
+      toast.error("Erreur lors de l'analyse de la carte grise");
+      onUpdate({ vehicleRegistrationDocument: file.name });
+    } finally {
+      setIsOCRProcessing(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   const handleDeclarationSave = () => {
@@ -230,12 +313,176 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
     </div>
   );
 
-  // Sub-step 3: Véhicule
+  // Sub-step 3: Documents (moved before Véhicule for OCR pre-fill)
   const renderSubStep3 = () => (
     <div className="space-y-6">
       <div>
+        <h1 className="text-2xl font-bold text-foreground">Documents</h1>
+        <p className="text-muted-foreground mt-1">Étape 3/5 - Justificatifs</p>
+      </div>
+
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <FileText className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold">Documents requis</h3>
+          </div>
+          
+          <div>
+            <Label className="text-sm font-medium">1. Lieu d'obtention du permis</Label>
+            <Select
+              value={subscription.licenseIssuePlace || ""}
+              onValueChange={(v) => onUpdate({ licenseIssuePlace: v })}
+            >
+              <SelectTrigger className="mt-1 max-w-xs">
+                <SelectValue placeholder="Sélectionner" />
+              </SelectTrigger>
+              <SelectContent>
+                {cityOptions.map((city) => (
+                  <SelectItem key={city.value} value={city.label}>
+                    {city.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Carte grise with OCR */}
+          <div>
+            <Label className="text-sm font-medium">2. Carte grise (OCR automatique)</Label>
+            <p className="text-xs text-muted-foreground mt-1 mb-2">
+              Uploadez une photo de la carte grise pour pré-remplir automatiquement les informations du véhicule
+            </p>
+            <div className="mt-1">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleCarteGriseUpload}
+                disabled={isOCRProcessing}
+              />
+              {subscription.vehicleRegistrationDocument ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 p-3 bg-muted rounded-lg max-w-md">
+                    {ocrSuccess ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+                    ) : (
+                      <FileText className="h-4 w-4 text-primary shrink-0" />
+                    )}
+                    <span className="text-sm truncate">{subscription.vehicleRegistrationDocument}</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isOCRProcessing}
+                  >
+                    <Upload className="h-4 w-4" />
+                    Remplacer
+                  </Button>
+                </div>
+              ) : isOCRProcessing ? (
+                <div className="flex items-center gap-3 p-4 bg-muted rounded-lg max-w-md">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <div>
+                    <p className="text-sm font-medium">Analyse en cours...</p>
+                    <p className="text-xs text-muted-foreground">Extraction des données du véhicule</p>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="h-4 w-4" />
+                  Scanner la carte grise
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-sm font-medium">3. Certificat d'antériorité *</Label>
+            <Select
+              value={subscription.priorCertificateType || ""}
+              onValueChange={(v) => {
+                onUpdate({ priorCertificateType: v as PriorCertificateType });
+                if (v === "declaration") {
+                  setShowDeclarationModal(true);
+                }
+              }}
+            >
+              <SelectTrigger className="mt-1 max-w-xs">
+                <SelectValue placeholder="Sélectionner" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="documents">Documents justificatifs</SelectItem>
+                <SelectItem value="declaration">Déclaration sur l'honneur</SelectItem>
+              </SelectContent>
+            </Select>
+            {subscription.priorCertificateType === "declaration" && subscription.declarationText && (
+              <p className="text-xs text-muted-foreground mt-2">
+                ✓ Déclaration enregistrée
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Declaration Modal */}
+      <Dialog open={showDeclarationModal} onOpenChange={setShowDeclarationModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Déclaration sur l'honneur</DialogTitle>
+            <DialogDescription>
+              Veuillez saisir votre déclaration concernant l'antériorité d'assurance
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            placeholder="Je soussigné(e) déclare sur l'honneur que..."
+            value={declarationText}
+            onChange={(e) => setDeclarationText(e.target.value)}
+            rows={5}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeclarationModal(false)}>
+              Annuler
+            </Button>
+            <Button onClick={handleDeclarationSave} disabled={!declarationText.trim()}>
+              Enregistrer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <div className="flex justify-between">
+        <Button variant="outline" onClick={goBack} className="gap-2">
+          <ChevronLeft className="h-4 w-4" />
+          Retour
+        </Button>
+        <Button onClick={goNext} disabled={!isSubStep3Valid()} className="gap-2">
+          Suivant
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+
+  // Sub-step 4: Véhicule (now after Documents, may be pre-filled by OCR)
+  const renderSubStep4 = () => (
+    <div className="space-y-6">
+      <div>
         <h1 className="text-2xl font-bold text-foreground">Véhicule</h1>
-        <p className="text-muted-foreground mt-1">Étape 3/5 - Identification du véhicule</p>
+        <p className="text-muted-foreground mt-1">Étape 4/5 - Identification du véhicule</p>
+        {ocrSuccess && (
+          <p className="text-sm text-green-600 mt-1 flex items-center gap-1">
+            <CheckCircle2 className="h-4 w-4" />
+            Champs pré-remplis par l'analyse de la carte grise
+          </p>
+        )}
       </div>
 
       <Card>
@@ -294,32 +541,13 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
           <ChevronLeft className="h-4 w-4" />
           Retour
         </Button>
-        <Button onClick={goNext} disabled={!isSubStep3Valid()} className="gap-2">
+        <Button onClick={goNext} disabled={!isSubStep4Valid()} className="gap-2">
           Suivant
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
     </div>
   );
-
-  const periodicityLabels: Record<string, string> = {
-    "1_month": "1 mois",
-    "3_months": "3 mois",
-    "6_months": "6 mois",
-    "1_year": "1 an",
-  };
-
-  const employmentOptions: { value: string; label: string }[] = [
-    { value: "fonctionnaire", label: "Fonctionnaire" },
-    { value: "salarie", label: "Salarié" },
-    { value: "exploitant_agricole", label: "Exploitant agricole" },
-    { value: "artisan", label: "Artisan" },
-    { value: "religieux", label: "Religieux" },
-    { value: "retraite", label: "Retraité" },
-    { value: "sans_profession", label: "Sans profession" },
-    { value: "agent_commercial", label: "Agent commercial" },
-    { value: "autres", label: "Autres" },
-  ];
 
   const ownerLastName = state.clientIdentification?.lastName || "";
   const ownerFirstName = state.clientIdentification?.firstName || "";
@@ -328,12 +556,12 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
   const ownerEffectiveDate = state.needsAnalysis?.effectiveDate || "";
   const ownerPeriodicity = state.needsAnalysis?.contractPeriodicity || "";
 
-  // Sub-step 4: Conducteur
-  const renderSubStep4 = () => (
+  // Sub-step 5: Conducteur
+  const renderSubStep5 = () => (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Conducteur</h1>
-        <p className="text-muted-foreground mt-1">Étape 4/5 - Informations du conducteur</p>
+        <p className="text-muted-foreground mt-1">Étape 5/5 - Informations du conducteur</p>
       </div>
 
       {/* Information du propriétaire */}
@@ -503,128 +731,6 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
           </div>
         </CardContent>
       </Card>
-
-      <div className="flex justify-between">
-        <Button variant="outline" onClick={goBack} className="gap-2">
-          <ChevronLeft className="h-4 w-4" />
-          Retour
-        </Button>
-        <Button onClick={goNext} disabled={!isSubStep4Valid()} className="gap-2">
-          Suivant
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
-  );
-
-  // Sub-step 5: Documents
-  const renderSubStep5 = () => (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Documents</h1>
-        <p className="text-muted-foreground mt-1">Étape 5/5 - Justificatifs</p>
-      </div>
-
-      <Card>
-        <CardContent className="pt-6 space-y-4">
-          <div className="flex items-center gap-2 mb-2">
-            <FileText className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold">Documents requis</h3>
-          </div>
-          
-          <div>
-            <Label className="text-sm font-medium">1. Lieu d'obtention du permis</Label>
-            <Select
-              value={subscription.licenseIssuePlace || ""}
-              onValueChange={(v) => onUpdate({ licenseIssuePlace: v })}
-            >
-              <SelectTrigger className="mt-1 max-w-xs">
-                <SelectValue placeholder="Sélectionner" />
-              </SelectTrigger>
-              <SelectContent>
-                {cityOptions.map((city) => (
-                  <SelectItem key={city.value} value={city.label}>
-                    {city.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label className="text-sm font-medium">2. Carte grise</Label>
-            <div className="mt-1">
-              {subscription.vehicleRegistrationDocument ? (
-                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg max-w-xs">
-                  <FileText className="h-4 w-4 text-primary" />
-                  <span className="text-sm">{subscription.vehicleRegistrationDocument}</span>
-                </div>
-              ) : (
-                <Button
-                  variant="outline"
-                  className="gap-2"
-                  onClick={() => handleFileUpload("vehicleRegistrationDocument")}
-                >
-                  <Upload className="h-4 w-4" />
-                  Télécharger
-                </Button>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <Label className="text-sm font-medium">3. Certificat d'antériorité *</Label>
-            <Select
-              value={subscription.priorCertificateType || ""}
-              onValueChange={(v) => {
-                onUpdate({ priorCertificateType: v as PriorCertificateType });
-                if (v === "declaration") {
-                  setShowDeclarationModal(true);
-                }
-              }}
-            >
-              <SelectTrigger className="mt-1 max-w-xs">
-                <SelectValue placeholder="Sélectionner" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="documents">Documents justificatifs</SelectItem>
-                <SelectItem value="declaration">Déclaration sur l'honneur</SelectItem>
-              </SelectContent>
-            </Select>
-            {subscription.priorCertificateType === "declaration" && subscription.declarationText && (
-              <p className="text-xs text-muted-foreground mt-2">
-                ✓ Déclaration enregistrée
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Declaration Modal */}
-      <Dialog open={showDeclarationModal} onOpenChange={setShowDeclarationModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Déclaration sur l'honneur</DialogTitle>
-            <DialogDescription>
-              Veuillez saisir votre déclaration concernant l'antériorité d'assurance
-            </DialogDescription>
-          </DialogHeader>
-          <Textarea
-            placeholder="Je soussigné(e) déclare sur l'honneur que..."
-            value={declarationText}
-            onChange={(e) => setDeclarationText(e.target.value)}
-            rows={5}
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeclarationModal(false)}>
-              Annuler
-            </Button>
-            <Button onClick={handleDeclarationSave} disabled={!declarationText.trim()}>
-              Enregistrer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <div className="flex justify-between">
         <Button variant="outline" onClick={goBack} className="gap-2">

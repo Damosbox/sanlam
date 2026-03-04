@@ -11,6 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Save, Send } from "lucide-react";
 
 interface QuotationSaveDialogProps {
@@ -18,15 +25,39 @@ interface QuotationSaveDialogProps {
   onOpenChange: (open: boolean) => void;
   mode: "save" | "send";
   optional?: boolean;
-  defaultValues?: { lastName?: string; firstName?: string; email?: string };
+  defaultValues?: {
+    lastName?: string;
+    firstName?: string;
+    email?: string;
+    gender?: string;
+    birthDate?: string;
+    phone?: string;
+    employmentType?: string;
+  };
   onConfirm: (info: {
     lastName: string;
     firstName: string;
     email: string;
+    gender?: string;
+    birthDate?: string;
+    phone?: string;
+    employmentType?: string;
     channel?: string;
   }) => void;
   onDismiss?: () => void;
 }
+
+const employmentOptions = [
+  { value: "fonctionnaire", label: "Fonctionnaire" },
+  { value: "salarie", label: "Salarié" },
+  { value: "exploitant_agricole", label: "Exploitant agricole" },
+  { value: "artisan", label: "Artisan" },
+  { value: "religieux", label: "Religieux" },
+  { value: "retraite", label: "Retraité" },
+  { value: "sans_profession", label: "Sans profession" },
+  { value: "agent_commercial", label: "Agent commercial" },
+  { value: "autres", label: "Autres" },
+];
 
 export const QuotationSaveDialog = ({
   open,
@@ -39,7 +70,11 @@ export const QuotationSaveDialog = ({
 }: QuotationSaveDialogProps) => {
   const [lastName, setLastName] = useState("");
   const [firstName, setFirstName] = useState("");
+  const [gender, setGender] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [employmentType, setEmploymentType] = useState("");
   const [channel, setChannel] = useState("email");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -47,7 +82,11 @@ export const QuotationSaveDialog = ({
     if (open) {
       setLastName(defaultValues?.lastName || "");
       setFirstName(defaultValues?.firstName || "");
+      setGender(defaultValues?.gender || "");
+      setBirthDate(defaultValues?.birthDate || "");
+      setPhone(defaultValues?.phone || "");
       setEmail(defaultValues?.email || "");
+      setEmploymentType(defaultValues?.employmentType || "");
       setChannel("email");
       setErrors({});
     }
@@ -78,6 +117,10 @@ export const QuotationSaveDialog = ({
       lastName: lastName.trim(),
       firstName: firstName.trim(),
       email: email.trim(),
+      ...(gender ? { gender } : {}),
+      ...(birthDate ? { birthDate } : {}),
+      ...(phone.trim() ? { phone: phone.trim() } : {}),
+      ...(employmentType ? { employmentType } : {}),
       ...(mode === "send" ? { channel } : {}),
     });
     onOpenChange(false);
@@ -92,7 +135,7 @@ export const QuotationSaveDialog = ({
       }
       onOpenChange(v);
     }}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {isSave ? (
@@ -110,34 +153,88 @@ export const QuotationSaveDialog = ({
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          {/* Nom */}
-          <div className="space-y-1.5">
-            <Label htmlFor="qs-lastName">Nom *</Label>
-            <Input
-              id="qs-lastName"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              placeholder="Nom de famille"
-              maxLength={100}
-            />
-            {errors.lastName && (
-              <p className="text-sm text-destructive">{errors.lastName}</p>
-            )}
+          {/* Nom & Prénom */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="qs-lastName">Nom *</Label>
+              <Input
+                id="qs-lastName"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Nom de famille"
+                maxLength={100}
+              />
+              {errors.lastName && (
+                <p className="text-sm text-destructive">{errors.lastName}</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="qs-firstName">Prénom *</Label>
+              <Input
+                id="qs-firstName"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="Prénom"
+                maxLength={100}
+              />
+              {errors.firstName && (
+                <p className="text-sm text-destructive">{errors.firstName}</p>
+              )}
+            </div>
           </div>
 
-          {/* Prénom */}
-          <div className="space-y-1.5">
-            <Label htmlFor="qs-firstName">Prénom *</Label>
-            <Input
-              id="qs-firstName"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              placeholder="Prénom"
-              maxLength={100}
-            />
-            {errors.firstName && (
-              <p className="text-sm text-destructive">{errors.firstName}</p>
-            )}
+          {/* Sexe & Date de naissance */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Sexe</Label>
+              <Select value={gender} onValueChange={setGender}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="masculin">Masculin</SelectItem>
+                  <SelectItem value="feminin">Féminin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="qs-birthDate">Date de naissance</Label>
+              <Input
+                id="qs-birthDate"
+                type="date"
+                value={birthDate}
+                onChange={(e) => setBirthDate(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Téléphone & Type d'emploi */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="qs-phone">Numéro de téléphone</Label>
+              <Input
+                id="qs-phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+225 XX XX XX XX"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Type d'emploi</Label>
+              <Select value={employmentType} onValueChange={setEmploymentType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner" />
+                </SelectTrigger>
+                <SelectContent>
+                  {employmentOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Email */}

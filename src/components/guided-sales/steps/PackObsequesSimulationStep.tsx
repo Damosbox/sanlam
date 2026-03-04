@@ -101,7 +101,25 @@ export const PackObsequesSimulationStep = ({
   const isSubStep1Valid = data.selectedOption && data.formula && data.adhesionType && data.periodicity && data.effectiveDate;
   const isSubStep2Valid = data.adhesionType === "individuelle" || 
     (data.nombreEnfants >= 0 && (data.adhesionType === "famille" || data.nombreAscendants >= 0));
-  const isSubStep3Valid = data.lastName && data.firstName && data.phone && data.birthDate;
+  const isPhoneValid = (phone: string) => {
+    const digits = phone.replace(/\D/g, "");
+    return digits.length >= 10 && digits.length <= 15;
+  };
+  const isAgeValid = (dateStr: string) => {
+    if (!dateStr) return false;
+    const birth = new Date(dateStr);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    return age >= 18;
+  };
+  const getMaxBirthDate = () => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 18);
+    return d.toISOString().split("T")[0];
+  };
+  const isSubStep3Valid = data.lastName && data.firstName && data.phone && isPhoneValid(data.phone) && data.birthDate && isAgeValid(data.birthDate);
   const isSubStep4Valid = data.email && data.gender && data.title && data.birthPlace;
 
   // Render sub-step 1: Option, Formule & Type
@@ -397,7 +415,11 @@ export const PackObsequesSimulationStep = ({
             value={data.phone}
             onChange={(e) => onUpdate({ phone: e.target.value })}
             placeholder="+225 00 00 00 00 00"
+            maxLength={20}
           />
+          {data.phone && !isPhoneValid(data.phone) && (
+            <p className="text-xs text-destructive">Le numéro doit contenir entre 10 et 15 chiffres</p>
+          )}
         </div>
 
         {/* 4. Date de naissance */}
@@ -406,8 +428,12 @@ export const PackObsequesSimulationStep = ({
           <Input
             type="date"
             value={data.birthDate}
+            max={getMaxBirthDate()}
             onChange={(e) => onUpdate({ birthDate: e.target.value })}
           />
+          {data.birthDate && !isAgeValid(data.birthDate) && (
+            <p className="text-xs text-destructive">L'assuré doit avoir au moins 18 ans</p>
+          )}
         </div>
 
         <div className="flex justify-between pt-4">

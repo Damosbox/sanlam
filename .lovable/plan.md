@@ -1,36 +1,59 @@
 
 
-## Plan : OCR carte grise pour pré-remplir les informations véhicule
+## Plan : Améliorations du moteur de calcul, import CSV et documents
 
-### Approche
+### 1. Sauvegarde par section dans le CalcRuleEditor
 
-Ajouter un upload OCR de la carte grise dans la **sous-étape 5 (Documents)**, à côté du bouton "Télécharger" existant pour la carte grise. Quand l'utilisateur uploade une image de carte grise, on appelle une edge function qui extrait via AI : marque, modèle, immatriculation, châssis, et on pré-remplit automatiquement les champs de la sous-étape 3 (Véhicule).
+**Probleme actuel** : Un seul bouton "Enregistrer" en bas de page. L'utilisateur doit scroller tout en bas pour sauvegarder.
 
-L'utilisateur peut aussi revenir modifier manuellement si l'OCR n'est pas parfait.
+**Solution** : Ajouter un bouton "Enregistrer" dans chaque section d'accordion du `CalcRuleEditor`. Chaque bouton sauvegarde la règle entiere (car c'est un seul enregistrement JSON), mais le feedback est contextuel.
 
-### Modifications
+**Fichiers modifiés :**
+- `src/components/admin/calc-rules/CalcRuleEditor.tsx` : Modifier le composant pour accepter un `ruleId` optionnel et gérer la sauvegarde interne via `useMutation`. Ajouter un bouton compact `<Save>` dans le header de chaque `AccordionTrigger`. Quand on clique, on sauvegarde tout le formulaire et on affiche un toast "Section sauvegardée".
+- `src/pages/admin/CalcRulesPage.tsx` : Adapter l'interface pour que le `CalcRuleEditor` puisse sauvegarder directement (passer `queryClient` ou déléguer la mutation).
 
-**1. Nouvelle edge function : `supabase/functions/ocr-vehicle-registration/index.ts`**
-- Prompt spécifique carte grise africaine (extraction : marque, modèle, numéro immatriculation, numéro châssis, date 1ère mise en circulation)
-- Utilise Lovable AI Gateway (Gemini Flash) avec tool calling pour retourner des données structurées
-- Même pattern que `ocr-identity`
+**Approche technique** : Le `CalcRuleEditor` reçoit toujours `onSave`, mais on ajoute un bouton save par accordion header. Chaque bouton appelle `onSave(form)` directement. Le bouton global en bas est conservé.
 
-**2. `supabase/config.toml`**
-- Ajouter `[functions.ocr-vehicle-registration]` avec `verify_jwt = true`
+### 2. Import CSV pour les tables de référence
 
-**3. `src/components/guided-sales/steps/SubscriptionFlow.tsx`**
-- Sous-étape 5 (Documents) : remplacer le bouton fake "Télécharger" de la carte grise par un vrai `<input type="file" accept="image/*">` 
-- Ajouter état `isOCRProcessing` + appel `supabase.functions.invoke("ocr-vehicle-registration")`
-- Sur succès OCR, appeler `onUpdate()` avec `vehicleBrand`, `vehicleModel`, `vehicleRegistrationNumber`, `vehicleChassisNumber` extraits
-- Toast de succès listant les champs pré-remplis
-- Indicateur de chargement pendant l'OCR (spinner + texte "Analyse en cours...")
+**Probleme actuel** : Les tables de référence (key_value et brackets) sont saisies manuellement ligne par ligne.
 
-**4. Réordonner les sous-étapes** pour que Documents vienne **avant** Véhicule :
-- 1: Agent → 2: Localisation → 3: **Documents** → 4: **Véhicule** (pré-rempli) → 5: Conducteur
-- Ainsi l'OCR carte grise alimente directement les champs véhicule à l'étape suivante
+**Solution** : Ajouter un bouton "Importer CSV" à côté de "Ajouter une table" dans la section Tables de référence.
 
-### Fichiers modifiés (3)
-- `supabase/functions/ocr-vehicle-registration/index.ts` (nouveau)
-- `supabase/config.toml` (ajout config)
-- `src/components/guided-sales/steps/SubscriptionFlow.tsx` (OCR + réordonnement)
+**Fichier modifié :** `src/components/admin/calc-rules/CalcRuleEditor.tsx`
+
+**Logique :**
+- Bouton `📥 Importer CSV` avec `<input type="file" accept=".csv">`
+- Pour `key_value` : CSV à 2 colonnes (clé, valeur) → parsé en `Record<string, number>`
+- Pour `brackets` : CSV à 3 colonnes (min, max, valeur) → parsé en `Array<{min, max, value}>`
+- Utilise la lib native `FileReader` + split par lignes/virgules (pas de dépendance)
+- Preview du nombre de lignes importées avant confirmation
+- Toast de succès avec le nombre d'entrées importées
+
+### 3. Upload de fichiers dans DocumentsTab
+
+**Probleme actuel** : Le DocumentsTab configure des templates (nom, type, variables) mais ne permet pas d'uploader les fichiers PDF/Word réels.
+
+**Solution** : Ajouter un champ d'upload dans le dialog de création/édition de document. Le fichier est uploadé dans le bucket `product-images` (ou un nouveau bucket si nécessaire) et l'URL est stockée dans le template.
+
+**Fichiers modifiés :**
+- `src/components/admin/products/tabs/DocumentsTab.tsx` : Ajouter un `<input type="file">` dans le dialog. Upload vers le storage bucket. Stocker `file_url` et `file_name` dans le `DocumentTemplate` interface.
+- Pas de migration DB nécessaire : les templates sont stockés en JSONB dans la colonne `document_templates` de `products`.
+
+**Interface enrichie :**
+```typescript
+interface DocumentTemplate {
+  id: string;
+  name: string;
+  type: string;
+  variables: string[];
+  file_url?: string;    // nouveau
+  file_name?: string;   // nouveau
+}
+```
+
+### Fichiers impactés (3)
+1. `src/components/admin/calc-rules/CalcRuleEditor.tsx` — boutons save par section + import CSV tables
+2. `src/pages/admin/CalcRulesPage.tsx` — adaptation mineure de l'interface
+3. `src/components/admin/products/tabs/DocumentsTab.tsx` — upload fichiers templates
 

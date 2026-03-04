@@ -252,6 +252,11 @@ export interface SubscriptionData {
   licenseNumber: string;
   licenseIssueDate: string;
   licenseIssuePlace: string;
+  // Owner info (editable fallback from clientIdentification)
+  ownerLastName: string;
+  ownerFirstName: string;
+  ownerPhone: string;
+  ownerEmploymentType: string;
   // Documents
   vehicleRegistrationDocument?: string;
   priorCertificateType: PriorCertificateType;
@@ -388,6 +393,10 @@ export const initialState: GuidedSalesState = {
     licenseNumber: "",
     licenseIssueDate: "",
     licenseIssuePlace: "",
+    ownerLastName: "",
+    ownerFirstName: "",
+    ownerPhone: "",
+    ownerEmploymentType: "",
     priorCertificateType: "declaration",
   },
   mobilePayment: {

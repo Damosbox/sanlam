@@ -72,9 +72,13 @@ const getFranchiseCoefficient = (franchise: number): number => {
 
 // Plan tiers - options incluses
 const PLAN_COVERAGES: Record<PlanTier, string[]> = {
-  basic: [],
-  standard: ["vol", "incendie", "brisGlaces"],
-  premium: ["vol", "incendie", "dommages", "brisGlaces", "tiersCollision"],
+  mini: [],
+  basic: ["recours_anticipe"],
+  medium: ["recours_anticipe", "incendie", "vol_accessoires", "brisGlaces"],
+  medium_plus: ["recours_anticipe", "incendie", "vol", "vol_accessoires", "brisGlaces"],
+  evolution: ["recours_anticipe", "incendie", "vol", "vol_accessoires", "brisGlaces", "dommages"],
+  evolution_plus: ["recours_anticipe", "incendie", "vol", "vol_accessoires", "brisGlaces", "tiersCollision"],
+  supreme: ["recours_anticipe", "incendie", "vol", "vol_accessoires", "brisGlaces", "dommages"],
 };
 
 // Constantes fiscales CIMA

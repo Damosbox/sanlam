@@ -117,15 +117,15 @@ const evaluateUnderwritingRules = (state: GuidedSalesState): UnderwritingRule[] 
   }
 
   // Règle 5: Plan Premium avec véhicule ancien (> 10 ans)
-  if (coverage.planTier === "premium" && needsAnalysis.vehicleFirstCirculationDate) {
+  if (["evolution", "evolution_plus", "supreme"].includes(coverage.planTier) && needsAnalysis.vehicleFirstCirculationDate) {
     const circDate = new Date(needsAnalysis.vehicleFirstCirculationDate);
     const vehicleAge = new Date().getFullYear() - circDate.getFullYear();
     if (vehicleAge > 10) {
       rules.push({
         id: "premium_old_vehicle",
-        label: "Plan Premium / Âge Véhicule",
+        label: "Plan haut de gamme / Âge Véhicule",
         status: "yellow",
-        message: `Véhicule de ${vehicleAge} ans avec plan Premium. Expertise préalable recommandée.`,
+        message: `Véhicule de ${vehicleAge} ans avec plan ${coverage.planTier.toUpperCase()}. Expertise préalable recommandée.`,
         requiresDocument: true
       });
     }

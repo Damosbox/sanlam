@@ -85,7 +85,7 @@ const generateRecommendation = (state: GuidedSalesState): AIRecommendation | nul
   }
   
   // Recommandation si le véhicule est ancien et le plan est premium
-  if (needsAnalysis.vehicleFirstCirculationDate && coverage.planTier === "premium") {
+  if (needsAnalysis.vehicleFirstCirculationDate && ["evolution", "evolution_plus", "supreme"].includes(coverage.planTier)) {
     const vehicleYear = new Date(needsAnalysis.vehicleFirstCirculationDate).getFullYear();
     const currentYear = new Date().getFullYear();
     const vehicleAge = currentYear - vehicleYear;
@@ -93,15 +93,15 @@ const generateRecommendation = (state: GuidedSalesState): AIRecommendation | nul
     if (vehicleAge > 7) {
       return {
         id: "downgrade_plan",
-        text: `Votre véhicule a ${vehicleAge} ans. Le plan "Standard" offrirait une couverture suffisante avec une économie de 28%.`,
+        text: `Votre véhicule a ${vehicleAge} ans. Le pack "MEDIUM+" offrirait une couverture suffisante avec une économie de 28%.`,
         savingsPercent: 28,
-        action: "downgrade_to_standard",
+        action: "downgrade_to_medium_plus",
       };
     }
   }
 
   // Recommandation si pas d'assistance sélectionnée
-  if (!coverage.assistanceLevel && coverage.planTier !== "basic") {
+  if (!coverage.assistanceLevel && coverage.planTier !== "mini") {
     return {
       id: "add_assistance",
       text: `Ajoutez l'option "Assistance Avantage" pour seulement 15 000 FCFA/an et bénéficiez d'un dépannage 24h/24.`,

@@ -20,9 +20,13 @@ interface RecapStepProps {
 }
 
 const planNames: Record<PlanTier, string> = {
-  basic: "MINI",
-  standard: "BASIC",
-  premium: "TOUT RISQUE",
+  mini: "MINI",
+  basic: "BASIC",
+  medium: "MEDIUM",
+  medium_plus: "MEDIUM+",
+  evolution: "EVOLUTION",
+  evolution_plus: "EVOLUTION+",
+  supreme: "SUPRÊME",
 };
 
 const periodicityLabels: Record<ContractPeriodicity, string> = {
@@ -50,9 +54,13 @@ const tooltips = {
 };
 
 const guaranteesByPlan: Record<PlanTier, string[]> = {
-  basic: ["Responsabilité Civile", "Défense", "Recours", "Individuelle Conducteur"],
-  standard: ["Responsabilité Civile", "Défense", "Recours", "Individuelle Conducteur", "Vol", "Incendie"],
-  premium: ["Responsabilité Civile", "Défense", "Recours", "Individuelle Conducteur", "Vol", "Incendie", "Bris de Glace", "Dommages Collision", "Tous Risques"],
+  mini: ["RC", "Recours Tiers Incendie", "Défense Recours", "IC/IPT"],
+  basic: ["RC", "Recours Tiers Incendie", "Défense Recours", "IC/IPT", "Avance sur recours"],
+  medium: ["RC", "Défense Recours", "IC/IPT", "Avance sur recours", "Incendie", "Vol accessoires", "Bris de glaces"],
+  medium_plus: ["RC", "Défense Recours", "IC/IPT", "Avance sur recours", "Incendie", "Vol", "Vol à main armée", "Vol accessoires", "Bris de glaces"],
+  evolution: ["RC", "Défense Recours", "IC/IPT", "Avance sur recours", "Incendie", "Vol", "Vol accessoires", "Bris de glaces", "Tierce complète plafonnée"],
+  evolution_plus: ["RC", "Défense Recours", "IC/IPT", "Avance sur recours", "Incendie", "Vol", "Vol accessoires", "Bris de glaces", "Tierce collision plafonnée"],
+  supreme: ["RC", "Défense Recours", "IC/IPT", "Avance sur recours (gratuit)", "Incendie", "Vol", "Vol accessoires", "Bris de glaces (gratuit)", "Tierce complète non plafonnée"],
 };
 
 interface PremiumLineProps {

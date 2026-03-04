@@ -20,9 +20,13 @@ interface FormulaSelectionStepProps {
 }
 
 const plans: { tier: PlanTier; name: string; description: string }[] = [
-  { tier: "basic", name: "MINI", description: "Couverture essentielle" },
-  { tier: "standard", name: "BASIC", description: "Protection équilibrée" },
-  { tier: "premium", name: "TOUT RISQUE", description: "Protection maximale" },
+  { tier: "mini", name: "MINI", description: "RC essentielle" },
+  { tier: "basic", name: "BASIC", description: "+ Avance recours" },
+  { tier: "medium", name: "MEDIUM", description: "Incendie + Bris glaces" },
+  { tier: "medium_plus", name: "MEDIUM+", description: "+ Vol complet" },
+  { tier: "evolution", name: "EVOLUTION", description: "Tierce complète plafonnée" },
+  { tier: "evolution_plus", name: "EVOLUTION+", description: "Tierce collision plafonnée" },
+  { tier: "supreme", name: "SUPRÊME", description: "Protection maximale" },
 ];
 
 const includedGuarantees = [
@@ -77,10 +81,10 @@ export const FormulaSelectionStep = ({
       </div>
 
       {/* Sélection de la formule */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {plans.map((plan) => {
           const isSelected = coverage.planTier === plan.tier;
-          const isRecommended = plan.tier === "standard";
+          const isRecommended = plan.tier === "medium_plus";
           
           return (
             <Card

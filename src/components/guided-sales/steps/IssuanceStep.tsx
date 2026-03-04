@@ -14,7 +14,7 @@ interface IssuanceStepProps {
 }
 
 export const IssuanceStep = ({ state, onReset }: IssuanceStepProps) => {
-  const policyNumber = "POL-2024-CI-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+  const policyNumber = state.finalizedPolicyNumber || ("POL-2024-CI-" + Math.random().toString(36).substring(2, 8).toUpperCase());
   
   // Upsell modal state
   const [showUpsellModal, setShowUpsellModal] = useState(false);
@@ -87,7 +87,7 @@ export const IssuanceStep = ({ state, onReset }: IssuanceStepProps) => {
         clientEmail={state.binding?.clientEmail || state.clientIdentification?.email}
         clientPhone={state.binding?.clientPhone || state.clientIdentification?.phone}
         policyNumber={policyNumber}
-        subscriptionId="mock-subscription-id"
+        subscriptionId={state.finalizedSubscriptionId || "mock-subscription-id"}
       />
 
       {/* Upsell Modal */}

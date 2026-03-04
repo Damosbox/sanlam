@@ -300,6 +300,8 @@ export interface IssuanceData {
 
 export interface GuidedSalesState {
   currentStep: number;
+  finalizedPolicyNumber?: string;
+  finalizedSubscriptionId?: string;
   currentPhase: SalesPhase;
   // Sub-step navigation
   simulationSubStep: 1 | 2 | 3 | 4 | 5;

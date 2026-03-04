@@ -392,11 +392,105 @@ export const GuidedSalesFlow = () => {
     }
   };
 
-  const nextStep = () => {
+  const finalizeSubscription = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Veuillez vous connecter");
+        return false;
+      }
+
+      const product = state.productSelection.selectedProduct;
+      const productNameMap: Record<string, string> = {
+        auto: "Assurance auto",
+        pack_obseques: "Pack-obseque",
+      };
+
+      // Find product_id
+      const { data: productData } = await supabase
+        .from("products")
+        .select("id")
+        .ilike("name", `%${productNameMap[product || "auto"] || "auto"}%`)
+        .limit(1)
+        .single();
+
+      if (!productData) {
+        console.warn("Product not found, using fallback");
+      }
+
+      const policyNumber = `POL-${new Date().getFullYear()}-CI-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      const startDate = new Date().toISOString();
+      const endDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+
+      const subscriptionPayload = {
+        user_id: user.id,
+        product_id: productData?.id || "00000000-0000-0000-0000-000000000000",
+        policy_number: policyNumber,
+        monthly_premium: state.calculatedPremium.totalAPayer || 0,
+        start_date: startDate,
+        end_date: endDate,
+        status: "active" as const,
+        assigned_broker_id: user.id,
+        payment_method: product === "pack_obseques" 
+          ? (state.packObsequesData?.selectedPaymentMethod || "wave")
+          : state.mobilePayment.paymentMethod,
+        selected_coverages: JSON.parse(JSON.stringify({
+          planTier: state.coverage.planTier,
+          options: state.coverage.additionalOptions,
+          clientInfo: state.clientIdentification,
+          packObsequesData: state.packObsequesData,
+        })),
+        object_identifier: state.subscription.vehicleRegistrationNumber || null,
+      };
+
+      const { data: sub, error } = await supabase
+        .from("subscriptions")
+        .insert([subscriptionPayload])
+        .select("id, policy_number")
+        .single();
+
+      if (error) {
+        console.error("Error creating subscription:", error);
+        toast.error("Erreur lors de la création de la police");
+        return false;
+      }
+
+      // Update quotation if exists
+      if (draftId) {
+        await supabase.from("quotations").update({ payment_status: "paid" }).eq("id", draftId);
+      }
+
+      setState(prev => ({
+        ...prev,
+        finalizedPolicyNumber: sub.policy_number,
+        finalizedSubscriptionId: sub.id,
+      }));
+
+      return true;
+    } catch (err) {
+      console.error("Error finalizing subscription:", err);
+      toast.error("Erreur lors de la finalisation");
+      return false;
+    }
+  };
+
+  const nextStep = async () => {
     setDirection("forward");
+    
+    const product = state.productSelection.selectedProduct;
+    const isLifeProduct = product === "pack_obseques";
+    
+    // Finalize subscription when transitioning to issuance
+    const isTransitionToIssuance = 
+      (state.currentStep === 6 && !isLifeProduct) || 
+      (state.currentStep === 4 && isLifeProduct);
+    
+    if (isTransitionToIssuance) {
+      const success = await finalizeSubscription();
+      if (!success) return;
+    }
+
     setState(prev => {
-      const product = prev.productSelection.selectedProduct;
-      const isLifeProduct = product === "pack_obseques";
       // Skip FormulaSelectionStep + Recap (steps 2-3) for life products
       if (prev.currentStep === 1 && isLifeProduct) {
         return { ...prev, currentStep: 4 };

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { 
   ChevronRight, 
   ChevronLeft,
@@ -20,7 +21,8 @@ import {
   Upload,
   Calendar,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  Search
 } from "lucide-react";
 import { GuidedSalesState, CityType, LicenseCategory, PriorCertificateType } from "../types";
 import { cn } from "@/lib/utils";
@@ -28,6 +30,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { VEHICLES, getUniqueBrands } from "@/data/vehicles";
 
 interface SubscriptionFlowProps {
   state: GuidedSalesState;
@@ -37,15 +40,15 @@ interface SubscriptionFlowProps {
   onSubStepChange?: (subStep: number) => void;
 }
 
-const cityOptions: { value: CityType; label: string }[] = [
-  { value: "abidjan", label: "Abidjan" },
-  { value: "bouake", label: "Bouaké" },
-  { value: "yamoussoukro", label: "Yamoussoukro" },
-  { value: "korhogo", label: "Korhogo" },
-  { value: "daloa", label: "Daloa" },
-  { value: "san_pedro", label: "San Pedro" },
-  { value: "man", label: "Man" },
-  { value: "gagnoa", label: "Gagnoa" },
+const cityOptions: { value: CityType; label: string; quartiers: string[] }[] = [
+  { value: "abidjan", label: "Abidjan", quartiers: ["Cocody", "Plateau", "Marcory", "Treichville", "Adjamé", "Abobo", "Yopougon", "Koumassi", "Port-Bouët", "Attécoubé", "Bingerville", "Songon", "Anyama", "Riviera", "Angré", "Deux Plateaux", "Williamsville", "Faya", "Niangon", "Banco", "Vridi", "Zone 4", "Blockhauss"] },
+  { value: "bouake", label: "Bouaké", quartiers: ["Commerce", "Koko", "Dar-es-Salam", "Air France", "Belleville", "N'Gattakro", "Ahougnansou", "Sokoura", "Kennedy", "Nimbo"] },
+  { value: "yamoussoukro", label: "Yamoussoukro", quartiers: ["Habitat", "Kokrenou", "Morofé", "Dioulakro", "N'Zuéssy", "Millionnaire", "Assabou", "Sopim"] },
+  { value: "korhogo", label: "Korhogo", quartiers: ["Banaforo", "Cocody", "Kassirimé", "Koko", "Petit Paris", "Sinistré", "Teguéré"] },
+  { value: "daloa", label: "Daloa", quartiers: ["Commerce", "Lobia", "Tazibouo", "Huberson", "Orly", "Soleil", "Marais", "Kennedy"] },
+  { value: "san_pedro", label: "San Pedro", quartiers: ["Bardot", "Cité", "Lac", "Séwéké", "Bardo", "Zimbabwe"] },
+  { value: "man", label: "Man", quartiers: ["Commerce", "Domoraud", "Grand Gbapleu", "Libreville", "Kôblen", "Lycée"] },
+  { value: "gagnoa", label: "Gagnoa", quartiers: ["Dioulabougou", "Commerce", "Plateau", "Garahio", "Bettié", "Sicogie"] },
 ];
 
 const licenseCategories: LicenseCategory[] = ["A", "B", "C", "D", "E", "AB", "ABCD", "ABCDE"];
@@ -85,6 +88,35 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
   const [isOCRProcessing, setIsOCRProcessing] = useState(false);
   const [ocrSuccess, setOcrSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [addressSearch, setAddressSearch] = useState("");
+  const [showAddressSuggestions, setShowAddressSuggestions] = useState(false);
+  const [brandSearch, setBrandSearch] = useState("");
+  const [modelSearch, setModelSearch] = useState("");
+  const [showBrandSuggestions, setShowBrandSuggestions] = useState(false);
+  const [showModelSuggestions, setShowModelSuggestions] = useState(false);
+
+  // Vehicle brand/model suggestions
+  const brands = useMemo(() => getUniqueBrands(), []);
+  const filteredBrands = useMemo(() => {
+    if (!brandSearch) return brands.slice(0, 15);
+    return brands.filter(b => b.toLowerCase().includes(brandSearch.toLowerCase())).slice(0, 15);
+  }, [brandSearch, brands]);
+  
+  const filteredModels = useMemo(() => {
+    if (!state.subscription.vehicleBrand) return [];
+    const models = VEHICLES.filter(v => v.brand === state.subscription.vehicleBrand);
+    if (!modelSearch) return models.slice(0, 20);
+    return models.filter(v => v.model.toLowerCase().includes(modelSearch.toLowerCase())).slice(0, 20);
+  }, [state.subscription.vehicleBrand, modelSearch]);
+
+  // Address suggestions based on selected city
+  const addressSuggestions = useMemo(() => {
+    const selectedCity = cityOptions.find(c => c.value === state.subscription.city);
+    if (!selectedCity) return [];
+    const quartiers = selectedCity.quartiers;
+    if (!addressSearch) return quartiers.slice(0, 10);
+    return quartiers.filter(q => q.toLowerCase().includes(addressSearch.toLowerCase())).slice(0, 10);
+  }, [state.subscription.city, addressSearch]);
 
   const setSubStep = (val: 1 | 2 | 3 | 4 | 5) => {
     setSubStepLocal(val);
@@ -270,20 +302,13 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
           </div>
           
           <div>
-            <Label className="text-sm font-medium">1. Adresse géographique *</Label>
-            <Input
-              placeholder="Rue, quartier, commune..."
-              value={subscription.geographicAddress}
-              onChange={(e) => onUpdate({ geographicAddress: e.target.value })}
-              className="mt-1"
-            />
-          </div>
-
-          <div>
-            <Label className="text-sm font-medium">2. Ville *</Label>
+            <Label className="text-sm font-medium">1. Ville *</Label>
             <Select
               value={subscription.city}
-              onValueChange={(v) => onUpdate({ city: v as CityType })}
+              onValueChange={(v) => {
+                onUpdate({ city: v as CityType });
+                setAddressSearch("");
+              }}
             >
               <SelectTrigger className="mt-1 max-w-xs">
                 <SelectValue placeholder="Sélectionner" />
@@ -296,6 +321,46 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="relative">
+            <Label className="text-sm font-medium">2. Adresse géographique *</Label>
+            <div className="relative mt-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={subscription.city ? "Tapez un quartier ou une adresse..." : "Sélectionnez d'abord une ville"}
+                value={subscription.geographicAddress}
+                onChange={(e) => {
+                  onUpdate({ geographicAddress: e.target.value });
+                  setAddressSearch(e.target.value);
+                  setShowAddressSuggestions(true);
+                }}
+                onFocus={() => setShowAddressSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowAddressSuggestions(false), 200)}
+                className="pl-9"
+                disabled={!subscription.city}
+              />
+            </div>
+            {showAddressSuggestions && subscription.city && addressSuggestions.length > 0 && (
+              <div className="absolute z-50 mt-1 w-full bg-popover border rounded-md shadow-md max-h-48 overflow-y-auto">
+                {addressSuggestions.map((quartier) => (
+                  <button
+                    key={quartier}
+                    type="button"
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      const selectedCity = cityOptions.find(c => c.value === subscription.city);
+                      onUpdate({ geographicAddress: `${quartier}, ${selectedCity?.label || ""}` });
+                      setShowAddressSuggestions(false);
+                    }}
+                  >
+                    <span className="font-medium">{quartier}</span>
+                    <span className="text-muted-foreground ml-1">— {cityOptions.find(c => c.value === subscription.city)?.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -493,23 +558,91 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
+            <div className="relative">
               <Label className="text-sm font-medium">1. Marque *</Label>
-              <Input
-                placeholder="Ex: Toyota"
-                value={subscription.vehicleBrand}
-                onChange={(e) => onUpdate({ vehicleBrand: e.target.value })}
-                className="mt-1"
-              />
+              <div className="relative mt-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher une marque..."
+                  value={subscription.vehicleBrand || brandSearch}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setBrandSearch(val);
+                    onUpdate({ vehicleBrand: val, vehicleModel: "" });
+                    setShowBrandSuggestions(true);
+                    setModelSearch("");
+                  }}
+                  onFocus={() => setShowBrandSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowBrandSuggestions(false), 200)}
+                  className="pl-9"
+                />
+              </div>
+              {showBrandSuggestions && filteredBrands.length > 0 && (
+                <div className="absolute z-50 mt-1 w-full bg-popover border rounded-md shadow-md max-h-48 overflow-y-auto">
+                  {filteredBrands.map((brand) => (
+                    <button
+                      key={brand}
+                      type="button"
+                      className={cn(
+                        "w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors",
+                        subscription.vehicleBrand === brand && "bg-accent font-medium"
+                      )}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        onUpdate({ vehicleBrand: brand, vehicleModel: "" });
+                        setBrandSearch("");
+                        setShowBrandSuggestions(false);
+                      }}
+                    >
+                      {brand}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-            <div>
+            <div className="relative">
               <Label className="text-sm font-medium">2. Modèle *</Label>
-              <Input
-                placeholder="Ex: Corolla"
-                value={subscription.vehicleModel}
-                onChange={(e) => onUpdate({ vehicleModel: e.target.value })}
-                className="mt-1"
-              />
+              <div className="relative mt-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={subscription.vehicleBrand ? "Rechercher un modèle..." : "Sélectionnez d'abord une marque"}
+                  value={subscription.vehicleModel || modelSearch}
+                  onChange={(e) => {
+                    setModelSearch(e.target.value);
+                    onUpdate({ vehicleModel: e.target.value });
+                    setShowModelSuggestions(true);
+                  }}
+                  onFocus={() => setShowModelSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowModelSuggestions(false), 200)}
+                  className="pl-9"
+                  disabled={!subscription.vehicleBrand}
+                />
+              </div>
+              {showModelSuggestions && filteredModels.length > 0 && (
+                <div className="absolute z-50 mt-1 w-full bg-popover border rounded-md shadow-md max-h-48 overflow-y-auto">
+                  {filteredModels.map((v) => (
+                    <button
+                      key={`${v.brand}-${v.model}`}
+                      type="button"
+                      className={cn(
+                        "w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors",
+                        subscription.vehicleModel === v.model && "bg-accent font-medium"
+                      )}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        onUpdate({ vehicleModel: v.model });
+                        setModelSearch("");
+                        setShowModelSuggestions(false);
+                      }}
+                    >
+                      <span>{v.model}</span>
+                      <span className="text-xs text-muted-foreground ml-2">
+                        ({v.startYear} - {v.endYear || "aujourd'hui"})
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

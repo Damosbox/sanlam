@@ -653,14 +653,23 @@ export const GuidedSalesFlow = () => {
 
   // Get the next button label based on current step
   const getNextLabel = () => {
-    if (state.currentStep === 1 && state.simulationCalculated) {
-      return isPackObseques ? "Souscrire" : "Voir les offres";
+    // Step 1: Simulation
+    if (state.currentStep === 1) {
+      if (isPackObseques) {
+        if (state.simulationSubStep < 4) return "Suivant";
+        if (state.simulationSubStep === 4) return "Calculer la prime";
+        return "Souscrire"; // sub 5
+      }
+      // Auto
+      if (state.simulationSubStep === 5) return "Voir les offres";
+      return "Suivant";
     }
+    // Step 4: Souscription
     if (state.currentStep === 4) {
       if (isPackObseques) {
         return state.subscriptionSubStep === 7 ? "Payer" : "Suivant";
       }
-      return state.subscriptionSubStep === 5 ? "Signature" : "Suivant";
+      return state.subscriptionSubStep === 5 ? "Continuer vers Signature" : "Suivant";
     }
     if (state.currentStep === 2) return "Récapitulatif";
     if (state.currentStep === 3) return "Souscrire";

@@ -1,41 +1,50 @@
 
 
-## Fix : Navigation phase intelligente pour Pack Obsèques
+## Plan : Synchroniser le CTA de l'assistant avec le bouton du flow interne
 
 ### Problème
 
-`goToPhase("preparation")` appelle `getFirstStepOfPhase("preparation")` qui retourne `0` (sélection produit) via `PHASE_STEPS`. Quand l'utilisateur clique sur "Simulation" dans le stepper, il est renvoyé à l'écran de choix de produit au lieu de la simulation (step 1).
+Le bouton CTA dans le `SalesAssistant` (sidebar) utilise `getNextLabel()` qui ne tient compte que du `currentStep` global. Pendant la souscription Pack Obsèques (step 4 global, 7 sous-étapes internes), le sidebar affiche "Signature" alors que le flow interne affiche "Suivant" (étapes 1-6) ou "Payer" (étape 7).
 
 ### Solution
 
-Modifier `goToPhase` dans `GuidedSalesFlow.tsx` pour être product-aware :
-- Pour Pack Obsèques, la phase "preparation" (renommée "Simulation") doit naviguer vers step `1`, pas step `0`
-- Step `0` est la sélection produit, qui ne devrait jamais être une cible de navigation une fois qu'on a avancé
+Rendre `getNextLabel()` dans `GuidedSalesFlow.tsx` sensible aux sous-étapes pour Pack Obsèques :
 
-**`GuidedSalesFlow.tsx`** — Modifier `goToPhase` :
+**Pour `state.currentStep === 4` (Souscription) :**
+
+| Produit | Sous-étape | Label flow interne | Label sidebar actuel | Label corrigé |
+|---------|-----------|-------------------|---------------------|--------------|
+| Pack Obsèques | 1-6 | "Suivant" | "Signature" | "Suivant" |
+| Pack Obsèques | 7 | "Payer" | "Signature" | "Payer" |
+| Auto | 1-4 | "Suivant" | "Signature" | "Suivant" |
+| Auto | 5 | "Continuer vers Signature" | "Signature" | "Signature" |
+
+**Pour `state.currentStep === 1` (Simulation) :**
+- Pack Obsèques sous-étape 5 (récap) : le CTA doit dire "Souscrire" (déjà OK)
+- Auto sous-étapes 1-4 : "Suivant", sous-étape 5 : "Calculer" (à vérifier si nécessaire)
+
+### Modification
+
+**Fichier : `src/components/guided-sales/GuidedSalesFlow.tsx`** — Modifier `getNextLabel()` :
 
 ```typescript
-const goToPhase = (phase: SalesPhase) => {
-  const isPackObseques = state.productSelection.selectedProduct === "pack_obseques";
-  let targetStep = getFirstStepOfPhase(phase);
-  
-  // Pour Pack Obsèques, "preparation" = Simulation = step 1, pas step 0
-  if (isPackObseques && phase === "preparation" && targetStep === 0) {
-    targetStep = 1;
+const getNextLabel = () => {
+  if (state.currentStep === 1 && state.simulationCalculated) {
+    return isPackObseques ? "Souscrire" : "Voir les offres";
   }
-  
-  if (targetStep <= state.currentStep) {
-    setDirection("backward");
-    setState(prev => ({
-      ...prev,
-      currentStep: targetStep,
-      currentPhase: phase
-    }));
+  if (state.currentStep === 4) {
+    if (isPackObseques) {
+      return state.subscriptionSubStep === 7 ? "Payer" : "Suivant";
+    }
+    return state.subscriptionSubStep === 5 ? "Signature" : "Suivant";
   }
+  if (state.currentStep === 2) return "Récapitulatif";
+  if (state.currentStep === 3) return "Souscrire";
+  if (state.currentStep === 5) return "Paiement";
+  if (state.currentStep === 6) return "Émission";
+  return "Suivant";
 };
 ```
-
-Même logique à appliquer pour Auto : si l'utilisateur est déjà au-delà de step 0, cliquer "Préparation" devrait revenir à step 1 (simulation) plutôt que step 0. On peut généraliser : `if (targetStep === 0 && state.currentStep > 0) targetStep = 1`.
 
 ### Fichier modifié
 - `src/components/guided-sales/GuidedSalesFlow.tsx` — 1 fonction modifiée

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Trash2, FileText } from "lucide-react";
+import { useState, useRef } from "react";
+import { Plus, Trash2, FileText, Upload, Download, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { ProductFormData } from "../ProductForm";
 
 interface DocumentsTabProps {
@@ -70,12 +72,17 @@ interface DocumentTemplate {
   name: string;
   type: string;
   variables: string[];
+  file_url?: string;
+  file_name?: string;
 }
 
 export function DocumentsTab({ formData, updateField }: DocumentsTabProps) {
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDoc, setEditingDoc] = useState<DocumentTemplate | null>(null);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [newDoc, setNewDoc] = useState<Partial<DocumentTemplate>>({
     name: "",
     type: "conditions_generales",
@@ -83,6 +90,33 @@ export function DocumentsTab({ formData, updateField }: DocumentsTabProps) {
   });
 
   const documents = (formData.document_templates || []) as DocumentTemplate[];
+
+  const handleFileUpload = async (file: File) => {
+    setIsUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const filePath = `documents/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("product-images")
+        .upload(filePath, file);
+      if (error) throw error;
+
+      const { data: urlData } = supabase.storage
+        .from("product-images")
+        .getPublicUrl(filePath);
+
+      setNewDoc((d) => ({
+        ...d,
+        file_url: urlData.publicUrl,
+        file_name: file.name,
+      }));
+      toast({ title: "Fichier uploadé avec succès" });
+    } catch {
+      toast({ title: "Erreur lors de l'upload", variant: "destructive" });
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleSaveDocument = () => {
     if (!newDoc.name) return;
@@ -92,6 +126,8 @@ export function DocumentsTab({ formData, updateField }: DocumentsTabProps) {
       name: newDoc.name,
       type: newDoc.type || "autre",
       variables: newDoc.variables || [],
+      file_url: newDoc.file_url,
+      file_name: newDoc.file_name,
     };
 
     let updatedDocs: DocumentTemplate[];
@@ -133,6 +169,18 @@ export function DocumentsTab({ formData, updateField }: DocumentsTabProps) {
 
   return (
     <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.doc,.docx,.xls,.xlsx"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFileUpload(file);
+          e.target.value = "";
+        }}
+      />
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -168,9 +216,26 @@ export function DocumentsTab({ formData, updateField }: DocumentsTabProps) {
                       <p className="text-sm text-muted-foreground">
                         {documentTypes.find((t) => t.value === doc.type)?.label || doc.type}
                       </p>
+                      {doc.file_name && (
+                        <p className="text-xs text-primary flex items-center gap-1 mt-0.5">
+                          <Upload className="h-3 w-3" /> {doc.file_name}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {doc.file_url && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(doc.file_url, "_blank");
+                        }}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Badge variant="secondary">{doc.variables?.length || 0} variables</Badge>
                     <Button
                       variant="ghost"
@@ -225,6 +290,45 @@ export function DocumentsTab({ formData, updateField }: DocumentsTabProps) {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* File upload */}
+            <div className="space-y-2">
+              <Label>Fichier template (PDF, Word, Excel)</Label>
+              {newDoc.file_name ? (
+                <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/30">
+                  <FileText className="h-4 w-4 text-primary shrink-0" />
+                  <span className="text-sm truncate flex-1">{newDoc.file_name}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setNewDoc({ ...newDoc, file_url: undefined, file_name: undefined })}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Remplacer
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                >
+                  {isUploading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4 mr-2" />
+                  )}
+                  {isUploading ? "Upload en cours..." : "Choisir un fichier"}
+                </Button>
+              )}
             </div>
 
             <div className="space-y-2">

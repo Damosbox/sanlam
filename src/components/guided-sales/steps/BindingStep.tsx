@@ -225,7 +225,7 @@ export const BindingStep = ({
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Produit</span>
-              <span className="font-medium">Assurance Auto - {state.coverage?.planTier || "Standard"}</span>
+              <span className="font-medium">Assurance Auto - {state.coverage?.planTier?.toUpperCase() || "MINI"}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Garanties</span>

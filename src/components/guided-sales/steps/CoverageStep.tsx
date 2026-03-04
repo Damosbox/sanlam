@@ -1,13 +1,12 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Check, X, Star, Calendar } from "lucide-react";
 import { GuidedSalesState, PlanTier, ContractPeriodicity, SelectedProductType } from "../types";
 import { cn } from "@/lib/utils";
 import { formatFCFA } from "@/utils/formatCurrency";
+import { Label } from "@/components/ui/label";
 import { MobileCoverageStickyBar } from "../MobileCoverageStickyBar";
 
 interface CoverageStepProps {
@@ -18,113 +17,144 @@ interface CoverageStepProps {
   onNext: () => void;
 }
 
-// Garanties incluses par défaut pour Auto (non modifiables)
-const AUTO_INCLUDED_GUARANTEES = [
-  { id: "rc", name: "Responsabilité Civile", included: true },
-  { id: "defense_recours", name: "Défense/Recours", included: true },
-  { id: "recours_tiers_incendie", name: "Recours des Tiers Incendie", included: true },
-  { id: "individuel_conducteur", name: "Individuel Conducteur", included: true },
+// 7 packs Auto selon le tarificateur CSV
+const AUTO_PLANS: { tier: PlanTier; name: string; description: string; assistance: string; assistancePrice: number; coverages: { name: string; included: boolean }[] }[] = [
+  {
+    tier: "mini", name: "MINI", description: "Couverture essentielle", assistance: "Avantage", assistancePrice: 0,
+    coverages: [
+      { name: "Responsabilité Civile", included: true },
+      { name: "Recours Tiers Incendie", included: true },
+      { name: "Défense Recours", included: true },
+      { name: "IC / IPT", included: true },
+      { name: "Avance sur recours", included: false },
+      { name: "Incendie", included: false },
+      { name: "Vol", included: false },
+      { name: "Tierce", included: false },
+    ],
+  },
+  {
+    tier: "basic", name: "BASIC", description: "RC + Avance recours", assistance: "Avantage", assistancePrice: 0,
+    coverages: [
+      { name: "Responsabilité Civile", included: true },
+      { name: "Recours Tiers Incendie", included: true },
+      { name: "Défense Recours", included: true },
+      { name: "IC / IPT", included: true },
+      { name: "Avance sur recours", included: true },
+      { name: "Incendie", included: false },
+      { name: "Vol", included: false },
+      { name: "Tierce", included: false },
+    ],
+  },
+  {
+    tier: "medium", name: "MEDIUM", description: "Incendie + Bris de glaces", assistance: "Confort", assistancePrice: 38000,
+    coverages: [
+      { name: "Responsabilité Civile", included: true },
+      { name: "Recours Tiers Incendie", included: true },
+      { name: "Défense Recours", included: true },
+      { name: "IC / IPT", included: true },
+      { name: "Avance sur recours", included: true },
+      { name: "Incendie", included: true },
+      { name: "Vol accessoires", included: true },
+      { name: "Bris de glaces", included: true },
+      { name: "Vol", included: false },
+      { name: "Tierce", included: false },
+    ],
+  },
+  {
+    tier: "medium_plus", name: "MEDIUM+", description: "Vol + Vol à main armée", assistance: "Confort", assistancePrice: 38000,
+    coverages: [
+      { name: "Responsabilité Civile", included: true },
+      { name: "Recours Tiers Incendie", included: true },
+      { name: "Défense Recours", included: true },
+      { name: "IC / IPT", included: true },
+      { name: "Avance sur recours", included: true },
+      { name: "Incendie", included: true },
+      { name: "Vol", included: true },
+      { name: "Vol à main armée", included: true },
+      { name: "Vol accessoires", included: true },
+      { name: "Bris de glaces", included: true },
+      { name: "Tierce", included: false },
+    ],
+  },
+  {
+    tier: "evolution", name: "EVOLUTION", description: "Tierce complète plafonnée", assistance: "Relax", assistancePrice: 55000,
+    coverages: [
+      { name: "Responsabilité Civile", included: true },
+      { name: "Recours Tiers Incendie", included: true },
+      { name: "Défense Recours", included: true },
+      { name: "IC / IPT", included: true },
+      { name: "Avance sur recours", included: true },
+      { name: "Incendie", included: true },
+      { name: "Vol", included: true },
+      { name: "Vol accessoires", included: true },
+      { name: "Bris de glaces", included: true },
+      { name: "Tierce complète plafonnée", included: true },
+    ],
+  },
+  {
+    tier: "evolution_plus", name: "EVOLUTION+", description: "Tierce collision plafonnée", assistance: "Relax", assistancePrice: 55000,
+    coverages: [
+      { name: "Responsabilité Civile", included: true },
+      { name: "Recours Tiers Incendie", included: true },
+      { name: "Défense Recours", included: true },
+      { name: "IC / IPT", included: true },
+      { name: "Avance sur recours", included: true },
+      { name: "Incendie", included: true },
+      { name: "Vol", included: true },
+      { name: "Vol accessoires", included: true },
+      { name: "Bris de glaces", included: true },
+      { name: "Tierce collision plafonnée", included: true },
+    ],
+  },
+  {
+    tier: "supreme", name: "SUPRÊME", description: "Protection maximale", assistance: "Relax", assistancePrice: 55000,
+    coverages: [
+      { name: "Responsabilité Civile", included: true },
+      { name: "Recours Tiers Incendie", included: true },
+      { name: "Défense Recours", included: true },
+      { name: "IC / IPT", included: true },
+      { name: "Avance sur recours (gratuit)", included: true },
+      { name: "Incendie", included: true },
+      { name: "Vol", included: true },
+      { name: "Vol accessoires", included: true },
+      { name: "Bris de glaces (gratuit)", included: true },
+      { name: "Tierce complète (non plafonnée)", included: true },
+    ],
+  },
 ];
 
-// Configuration des plans par type de produit
-const productPlansConfig: Record<SelectedProductType, {
-  plans: { tier: PlanTier; name: string; price: number; coverages: { name: string; included: boolean }[] }[];
-  assistanceOptions?: { id: string; name: string; description: string; price: number }[];
-  additionalOptions: { id: string; name: string; description: string; price: number }[];
-}> = {
-  auto: {
-    plans: [
-      {
-        tier: "basic",
-        name: "MINI",
-        price: 236000,
-        coverages: [
-          { name: "Responsabilité Civile", included: true },
-          { name: "Défense/Recours", included: true },
-          { name: "Recours des Tiers Incendie", included: true },
-          { name: "Individuel Conducteur", included: true },
-          { name: "Vol & Incendie", included: false },
-          { name: "Dommages Tous Accidents", included: false },
-        ],
-      },
-      {
-        tier: "standard",
-        name: "BASIC",
-        price: 295000,
-        coverages: [
-          { name: "Responsabilité Civile", included: true },
-          { name: "Défense/Recours", included: true },
-          { name: "Recours des Tiers Incendie", included: true },
-          { name: "Individuel Conducteur", included: true },
-          { name: "Vol & Incendie", included: true },
-          { name: "Dommages Tous Accidents", included: false },
-        ],
-      },
-      {
-        tier: "premium",
-        name: "MEDIUM+",
-        price: 413000,
-        coverages: [
-          { name: "Responsabilité Civile", included: true },
-          { name: "Défense/Recours", included: true },
-          { name: "Recours des Tiers Incendie", included: true },
-          { name: "Individuel Conducteur", included: true },
-          { name: "Vol & Incendie", included: true },
-          { name: "Dommages Tous Accidents", included: true },
-        ],
-      },
-    ],
-    // Assistance limitée à Avantage uniquement
-    assistanceOptions: [
-      { id: "avantage", name: "Avantage", description: "Assistance de base incluse", price: 0 },
-    ],
-    additionalOptions: [],
-  },
-  pack_obseques: {
-    plans: [
-      {
-        tier: "basic",
-        name: "Essentiel",
-        price: 15000,
-        coverages: [
-          { name: "Capital obsèques assuré", included: true },
-          { name: "Rapatriement du corps", included: true },
-          { name: "Conjoint couvert", included: false },
-          { name: "Enfants couverts", included: false },
-          { name: "Ascendants couverts", included: false },
-        ],
-      },
-      {
-        tier: "standard",
-        name: "Famille",
-        price: 25000,
-        coverages: [
-          { name: "Capital obsèques assuré", included: true },
-          { name: "Rapatriement du corps", included: true },
-          { name: "Conjoint couvert", included: true },
-          { name: "Enfants couverts", included: true },
-          { name: "Ascendants couverts", included: false },
-        ],
-      },
-      {
-        tier: "premium",
-        name: "Élargi",
-        price: 40000,
-        coverages: [
-          { name: "Capital obsèques assuré", included: true },
-          { name: "Rapatriement du corps", included: true },
-          { name: "Conjoint couvert", included: true },
-          { name: "Enfants couverts", included: true },
-          { name: "Ascendants couverts", included: true },
-        ],
-      },
-    ],
-    additionalOptions: [
-      { id: "ceremonie", name: "Frais de Cérémonie", description: "Prise en charge des frais funéraires", price: 10000 },
-      { id: "soutien_famille", name: "Soutien Familial", description: "Accompagnement psychologique", price: 5000 },
+const OBSEQUES_PLANS: { tier: PlanTier; name: string; description: string; price: number; coverages: { name: string; included: boolean }[] }[] = [
+  {
+    tier: "mini", name: "Essentiel", description: "Couverture individuelle", price: 15000,
+    coverages: [
+      { name: "Capital obsèques assuré", included: true },
+      { name: "Rapatriement du corps", included: true },
+      { name: "Conjoint couvert", included: false },
+      { name: "Enfants couverts", included: false },
+      { name: "Ascendants couverts", included: false },
     ],
   },
-};
+  {
+    tier: "basic", name: "Famille", description: "Couverture familiale", price: 25000,
+    coverages: [
+      { name: "Capital obsèques assuré", included: true },
+      { name: "Rapatriement du corps", included: true },
+      { name: "Conjoint couvert", included: true },
+      { name: "Enfants couverts", included: true },
+      { name: "Ascendants couverts", included: false },
+    ],
+  },
+  {
+    tier: "medium", name: "Élargi", description: "Couverture étendue", price: 40000,
+    coverages: [
+      { name: "Capital obsèques assuré", included: true },
+      { name: "Rapatriement du corps", included: true },
+      { name: "Conjoint couvert", included: true },
+      { name: "Enfants couverts", included: true },
+      { name: "Ascendants couverts", included: true },
+    ],
+  },
+];
 
 const periodicityOptions: { id: ContractPeriodicity; name: string; months: number; discount: number }[] = [
   { id: "1_month", name: "1 mois", months: 1, discount: 0 },
@@ -133,81 +163,43 @@ const periodicityOptions: { id: ContractPeriodicity; name: string; months: numbe
   { id: "1_year", name: "12 mois", months: 12, discount: 0.10 },
 ];
 
-// Determine recommended plan based on product type and context
 const getRecommendedPlan = (productType: SelectedProductType, state: GuidedSalesState): PlanTier => {
-  switch (productType) {
-    case "auto": {
-      const vehicleDate = state.needsAnalysis.vehicleFirstCirculationDate;
-      if (!vehicleDate) return "standard";
-      const vehicleYear = new Date(vehicleDate).getFullYear();
-      const currentYear = new Date().getFullYear();
-      const vehicleAge = currentYear - vehicleYear;
-      if (vehicleAge <= 3) return "premium";
-      if (vehicleAge <= 7) return "standard";
-      return "basic";
-    }
-    case "pack_obseques": {
-      return "basic";
-    }
-    default:
-      return "standard";
+  if (productType === "auto") {
+    const vehicleDate = state.needsAnalysis.vehicleFirstCirculationDate;
+    if (!vehicleDate) return "medium_plus";
+    const vehicleAge = new Date().getFullYear() - new Date(vehicleDate).getFullYear();
+    if (vehicleAge <= 3) return "evolution";
+    if (vehicleAge <= 7) return "medium_plus";
+    return "basic";
   }
+  return "mini";
 };
 
 export const CoverageStep = ({ state, onUpdate, onNeedsUpdate, onPremiumUpdate, onNext }: CoverageStepProps) => {
   const { coverage, needsAnalysis } = state;
   const productType = state.productSelection.selectedProduct || "auto";
-  
-  // Récupérer la configuration du produit
-  const productConfig = productPlansConfig[productType] || productPlansConfig.auto;
-  const { plans, assistanceOptions, additionalOptions } = productConfig;
-  
-  const selectedPlan = plans.find(p => p.tier === coverage.planTier) || plans[1];
+  const isAuto = productType === "auto";
+
+  const plans = isAuto ? AUTO_PLANS : OBSEQUES_PLANS;
   const selectedPeriodicity = needsAnalysis.contractPeriodicity || "1_year";
-  
-  // Get recommended plan based on product type and context
   const recommendedPlan = getRecommendedPlan(productType, state);
 
-  // Calculate price based on periodicity
-  const calculatePeriodicityPrice = (annualPrice: number, periodicity: ContractPeriodicity) => {
-    const option = periodicityOptions.find(p => p.id === periodicity);
-    if (!option) return annualPrice;
-    const monthlyPrice = annualPrice / 12;
-    const basePrice = monthlyPrice * option.months;
-    const discount = basePrice * option.discount;
-    return Math.round(basePrice - discount);
-  };
-
-  const calculateTotal = (planPrice: number, options: string[], assistanceId?: string, periodicity: ContractPeriodicity = "1_year") => {
-    const optionsTotal = options.reduce((sum, optId) => {
-      const opt = additionalOptions.find(o => o.id === optId);
-      return sum + (opt?.price || 0);
-    }, 0);
-    const assistancePrice = assistanceOptions?.find(a => a.id === assistanceId)?.price || 0;
-    const annualTotal = planPrice + optionsTotal + assistancePrice;
-    return calculatePeriodicityPrice(annualTotal, periodicity);
+  const handlePlanSelect = (tier: PlanTier) => {
+    // For auto, set assistance level based on pack
+    if (isAuto) {
+      const autoPlan = AUTO_PLANS.find(p => p.tier === tier);
+      if (autoPlan) {
+        onUpdate({ planTier: tier, assistanceLevel: autoPlan.assistance.toLowerCase() });
+        return;
+      }
+    }
+    onUpdate({ planTier: tier });
   };
 
   const handlePeriodicityChange = (periodicity: ContractPeriodicity) => {
     onNeedsUpdate({ contractPeriodicity: periodicity });
   };
 
-  const handlePlanSelect = (tier: PlanTier) => {
-    onUpdate({ planTier: tier });
-  };
-
-  const handleOptionToggle = (optionId: string, checked: boolean) => {
-    const newOptions = checked
-      ? [...coverage.additionalOptions, optionId]
-      : coverage.additionalOptions.filter(id => id !== optionId);
-    onUpdate({ additionalOptions: newOptions });
-  };
-
-  const handleAssistanceChange = (assistanceId: string) => {
-    onUpdate({ assistanceLevel: assistanceId });
-  };
-
-  // Get label for periodicity
   const getPeriodicityLabel = (periodicity: ContractPeriodicity) => {
     const option = periodicityOptions.find(p => p.id === periodicity);
     if (!option) return "/an";
@@ -217,25 +209,18 @@ export const CoverageStep = ({ state, onUpdate, onNeedsUpdate, onPremiumUpdate, 
     return "/an";
   };
 
-  // Titre dynamique selon le produit
-  const getProductTitle = () => {
-    switch (productType) {
-      case "auto": return "Niveaux de Couverture Auto";
-      case "pack_obseques": return "Niveaux de Couverture Pack Obsèques";
-      default: return "Niveaux de Couverture";
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">{getProductTitle()}</h1>
+        <h1 className="text-2xl font-bold text-foreground">
+          {isAuto ? "Packs Auto" : "Niveaux de Couverture Pack Obsèques"}
+        </h1>
         <p className="text-muted-foreground mt-1">
-          Choisissez le pack adapté aux besoins de protection.
+          {isAuto ? "7 formules selon le tarificateur — l'assistance est incluse dans chaque pack." : "Choisissez le pack adapté aux besoins de protection."}
         </p>
       </div>
 
-      {/* Periodicity Selection */}
+      {/* Periodicity */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center gap-2 mb-4">
@@ -249,11 +234,7 @@ export const CoverageStep = ({ state, onUpdate, onNeedsUpdate, onPremiumUpdate, 
           >
             {periodicityOptions.map((option) => (
               <div key={option.id}>
-                <RadioGroupItem
-                  value={option.id}
-                  id={`periodicity-${option.id}`}
-                  className="peer sr-only"
-                />
+                <RadioGroupItem value={option.id} id={`periodicity-${option.id}`} className="peer sr-only" />
                 <Label
                   htmlFor={`periodicity-${option.id}`}
                   className={cn(
@@ -276,12 +257,15 @@ export const CoverageStep = ({ state, onUpdate, onNeedsUpdate, onPremiumUpdate, 
       </Card>
 
       {/* Plan Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className={cn(
+        "grid grid-cols-1 gap-4",
+        isAuto ? "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "sm:grid-cols-3"
+      )}>
         {plans.map((plan) => {
           const isRecommended = plan.tier === recommendedPlan;
           const isSelected = coverage.planTier === plan.tier;
-          const periodicPrice = calculatePeriodicityPrice(plan.price, selectedPeriodicity);
-          
+          const autoPlan = isAuto ? AUTO_PLANS.find(p => p.tier === plan.tier) : null;
+
           return (
             <Card
               key={plan.tier}
@@ -292,7 +276,6 @@ export const CoverageStep = ({ state, onUpdate, onNeedsUpdate, onPremiumUpdate, 
               )}
               onClick={() => handlePlanSelect(plan.tier)}
             >
-              {/* Recommended Badge */}
               {isRecommended && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
                   <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white gap-1">
@@ -301,96 +284,53 @@ export const CoverageStep = ({ state, onUpdate, onNeedsUpdate, onPremiumUpdate, 
                   </Badge>
                 </div>
               )}
-              
-              {/* Selected Checkmark */}
               {isSelected && (
                 <div className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-primary flex items-center justify-center z-10">
                   <Check className="h-4 w-4 text-primary-foreground" />
                 </div>
               )}
-              
-              <CardContent className={cn("pt-6 space-y-4", isRecommended && "pt-8")}>
-                <h3 className={cn(
-                  "text-lg font-semibold",
-                  isSelected && "text-primary",
-                  isRecommended && !isSelected && "text-emerald-600"
-                )}>
-                  {plan.name}
-                </h3>
-                
-                <div className="space-y-2">
+              <CardContent className={cn("pt-6 space-y-3", isRecommended && "pt-8")}>
+                <div>
+                  <h3 className={cn("text-lg font-semibold", isSelected && "text-primary", isRecommended && !isSelected && "text-emerald-600")}>
+                    {plan.name}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">{plan.description}</p>
+                </div>
+
+                <div className="space-y-1.5">
                   {plan.coverages.map((cov) => (
-                    <div key={cov.name} className="flex items-center gap-2 text-sm">
+                    <div key={cov.name} className="flex items-center gap-1.5 text-xs">
                       {cov.included ? (
-                        <Check className="h-4 w-4 text-emerald-500 shrink-0" />
+                        <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                       ) : (
-                        <X className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+                        <X className="h-3.5 w-3.5 text-muted-foreground/30 shrink-0" />
                       )}
-                      <span className={cn(!cov.included && "text-muted-foreground/60")}>
-                        {cov.name}
-                      </span>
+                      <span className={cn(!cov.included && "text-muted-foreground/50")}>{cov.name}</span>
                     </div>
                   ))}
                 </div>
 
-                <div className="pt-4 border-t">
-                  <span className="text-xl font-bold">{formatFCFA(periodicPrice)}</span>
-                  <span className="text-muted-foreground text-sm">{getPeriodicityLabel(selectedPeriodicity)}</span>
-                </div>
+                {autoPlan && (
+                  <div className="pt-2 border-t">
+                    <Badge variant="outline" className="text-xs">
+                      Assistance {autoPlan.assistance}
+                      {autoPlan.assistancePrice > 0 && ` (${formatFCFA(autoPlan.assistancePrice)})`}
+                    </Badge>
+                  </div>
+                )}
               </CardContent>
             </Card>
           );
         })}
       </div>
 
-      {/* Assistance Block - Only for Auto */}
-      {assistanceOptions && assistanceOptions.length > 0 && (
-        <Card>
-          <CardContent className="pt-6">
-            <h3 className="font-semibold mb-4">
-              {productType === "auto" ? "Assistance Auto" : "Options d'Assistance"}
-            </h3>
-            <RadioGroup
-              value={coverage.assistanceLevel || ""}
-              onValueChange={handleAssistanceChange}
-              className="grid grid-cols-2 sm:grid-cols-4 gap-3"
-            >
-              {assistanceOptions.map((option) => (
-                <div key={option.id}>
-                  <RadioGroupItem
-                    value={option.id}
-                    id={option.id}
-                    className="peer sr-only"
-                  />
-                  <Label
-                    htmlFor={option.id}
-                    className={cn(
-                      "flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 cursor-pointer transition-all",
-                      "hover:bg-accent hover:text-accent-foreground",
-                      "peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5"
-                    )}
-                  >
-                    <span className="font-medium">{option.name}</span>
-                    <span className="text-xs text-muted-foreground text-center mt-1">{option.description}</span>
-                    <span className="text-sm font-semibold text-primary mt-2">
-                      {option.price === 0 ? "Gratuit" : `+${formatFCFA(option.price)}`}
-                    </span>
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Desktop Next Button - Hidden on mobile */}
+      {/* Desktop Next Button */}
       <div className="hidden sm:flex justify-end pt-4 pb-4">
         <Button onClick={onNext} size="lg">
           Passer à la vérification
         </Button>
       </div>
 
-      {/* Mobile Sticky Bar */}
       <MobileCoverageStickyBar
         state={state}
         onNext={onNext}

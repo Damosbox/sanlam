@@ -72,7 +72,7 @@ export function BrokerAIChatWidget() {
           productType: "auto",
           productName: "Assurance Sanlam",
           premium: 0,
-          planTier: "standard",
+          planTier: "mini",
           clientName: "le client",
           pageContext,
         },

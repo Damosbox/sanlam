@@ -653,7 +653,9 @@ export const GuidedSalesFlow = () => {
 
   // Get the next button label based on current step
   const getNextLabel = () => {
-    if (state.currentStep === 1 && state.simulationCalculated) return "Voir les offres";
+    if (state.currentStep === 1 && state.simulationCalculated) {
+      return isPackObseques ? "Souscrire" : "Voir les offres";
+    }
     if (state.currentStep === 2) return "Récapitulatif";
     if (state.currentStep === 3) return "Souscrire";
     if (state.currentStep === 4) return "Signature";

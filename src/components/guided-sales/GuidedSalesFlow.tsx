@@ -375,7 +375,13 @@ export const GuidedSalesFlow = () => {
   }, [state, navigate]);
 
   const goToPhase = (phase: SalesPhase) => {
-    const targetStep = getFirstStepOfPhase(phase);
+    let targetStep = getFirstStepOfPhase(phase);
+    
+    // Step 0 is product selection — once past it, never navigate back to it
+    if (targetStep === 0 && state.currentStep > 0) {
+      targetStep = 1;
+    }
+    
     if (targetStep <= state.currentStep) {
       setDirection(targetStep < state.currentStep ? "backward" : "forward");
       setState(prev => ({

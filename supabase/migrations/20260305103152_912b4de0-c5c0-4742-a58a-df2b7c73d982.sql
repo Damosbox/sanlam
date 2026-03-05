@@ -1,0 +1,1 @@
+ALTER TABLE public.products ADD COLUMN product_code text UNIQUE;

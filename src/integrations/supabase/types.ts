@@ -1736,6 +1736,7 @@ export type Database = {
           optional_products: string[] | null
           payment_methods: Json | null
           periodicity: string[] | null
+          product_code: string | null
           product_type: string | null
           questionnaires: Json | null
           subscription_form_id: string | null
@@ -1768,6 +1769,7 @@ export type Database = {
           optional_products?: string[] | null
           payment_methods?: Json | null
           periodicity?: string[] | null
+          product_code?: string | null
           product_type?: string | null
           questionnaires?: Json | null
           subscription_form_id?: string | null
@@ -1800,6 +1802,7 @@ export type Database = {
           optional_products?: string[] | null
           payment_methods?: Json | null
           periodicity?: string[] | null
+          product_code?: string | null
           product_type?: string | null
           questionnaires?: Json | null
           subscription_form_id?: string | null

@@ -69,6 +69,7 @@ const PaymentMethodsSchema = z.object({
 // Schéma principal pour ProductFormData
 export const ProductFormSchema = z.object({
   productId: z.string().optional(),
+  product_code: z.string().optional().default(""),
   name: z
     .string()
     .min(1, "Le nom du produit est requis")

@@ -36,6 +36,7 @@ interface ProductFormProps {
 
 export interface ProductFormData {
   productId?: string;
+  product_code: string;
   name: string;
   description: string;
   category: string;
@@ -66,6 +67,7 @@ export interface ProductFormData {
 
 const defaultFormData: ProductFormData = {
   productId: undefined,
+  product_code: "",
   name: "",
   description: "",
   category: "non-vie",
@@ -132,6 +134,7 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
     if (product) {
       return {
         productId: product.id,
+        product_code: product.product_code || "",
         name: product.name || "",
         description: product.description || "",
         category: product.category || "non-vie",
@@ -206,6 +209,7 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
     mutationFn: async (data: ProductFormData) => {
       const payload = {
         name: data.name,
+        product_code: data.product_code || null,
         description: data.description,
         category: data.category,
         product_type: data.product_type,

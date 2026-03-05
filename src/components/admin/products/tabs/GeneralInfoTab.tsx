@@ -159,6 +159,29 @@ export function GeneralInfoTab({ formData, updateField, errors = {} }: GeneralIn
             </div>
 
             <div className="space-y-2">
+              <div className="flex items-center gap-1.5">
+                <Label htmlFor="product_code">Code produit</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-[220px] text-xs">Identifiant unique interne utilisé pour référencer ce produit dans les systèmes.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Input
+                id="product_code"
+                value={formData.product_code}
+                onChange={(e) => updateField("product_code", e.target.value)}
+                placeholder="Ex: AUTO-ESS-001"
+              />
+              {fieldError("product_code")}
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"

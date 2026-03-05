@@ -33,6 +33,7 @@ import {
   Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CameraUploadButton } from "@/components/ui/CameraUploadButton";
 
 interface ClientOption {
   id: string;
@@ -453,18 +454,24 @@ export default function ClaimNewPage() {
                     accept="image/*,.pdf"
                     onChange={handleFileChange}
                   />
-                  <label
-                    htmlFor="documents"
-                    className="flex flex-col items-center gap-2 cursor-pointer"
-                  >
+                  <div className="flex flex-col items-center gap-2">
                     <Upload className="h-8 w-8 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">
-                      Cliquez pour ajouter des photos ou documents
-                    </span>
-                    <span className="text-xs text-muted-foreground">
                       Max 5 fichiers (JPG, PNG, PDF)
                     </span>
-                  </label>
+                    <CameraUploadButton
+                      id="claim-documents"
+                      accept="image/*,.pdf"
+                      onFileSelected={(file) => {
+                        if (documents.length < 5) {
+                          setDocuments(prev => [...prev, file]);
+                        }
+                      }}
+                      uploadLabel="Uploader"
+                      cameraLabel="Photo"
+                      variant="compact"
+                    />
+                  </div>
                 </div>
 
                 {documents.length > 0 && (

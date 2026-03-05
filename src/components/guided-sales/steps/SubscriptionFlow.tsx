@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   Search
 } from "lucide-react";
+import { CameraUploadButton } from "@/components/ui/CameraUploadButton";
 import { GuidedSalesState, CityType, LicenseCategory, PriorCertificateType } from "../types";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -457,14 +458,18 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
                   </div>
                 </div>
               ) : (
-                <Button
-                  variant="outline"
-                  className="gap-2"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="h-4 w-4" />
-                  Scanner la carte grise
-                </Button>
+                <CameraUploadButton
+                  id="carte-grise-ocr"
+                  onFileSelected={(file) => {
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    const fakeEvent = { target: { files: dt.files } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                    handleCarteGriseUpload(fakeEvent);
+                  }}
+                  disabled={isOCRProcessing}
+                  uploadLabel="Uploader"
+                  cameraLabel="Scanner"
+                />
               )}
             </div>
           </div>

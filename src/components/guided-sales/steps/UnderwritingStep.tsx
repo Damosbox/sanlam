@@ -1,7 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle2, AlertTriangle, XCircle, Shield, Upload } from "lucide-react";
+import { CheckCircle2, AlertTriangle, XCircle, Shield } from "lucide-react";
+import { CameraUploadButton } from "@/components/ui/CameraUploadButton";
 import { GuidedSalesState } from "../types";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -210,12 +211,15 @@ export const UnderwritingStep = ({
               <AlertDescription className={getDescStyles(rule.status)}>
                 {rule.message}
                 
-                {rule.requiresDocument && !uploadedDocs[rule.id] && <div className="mt-3 flex items-center gap-2">
-                    <Label htmlFor={`doc-${rule.id}`} className="sr-only">
-                      Télécharger justificatif
-                    </Label>
-                    <Input id={`doc-${rule.id}`} type="file" className="max-w-xs text-xs h-8" onChange={() => handleDocumentUpload(rule.id)} />
-                    <Upload className="h-4 w-4 text-muted-foreground" />
+                {rule.requiresDocument && !uploadedDocs[rule.id] && <div className="mt-3">
+                    <CameraUploadButton
+                      id={`doc-${rule.id}`}
+                      accept="image/*,.pdf"
+                      onFileSelected={() => handleDocumentUpload(rule.id)}
+                      uploadLabel="Uploader"
+                      cameraLabel="Scanner"
+                      variant="compact"
+                    />
                   </div>}
                 
                 {rule.requiresDocument && uploadedDocs[rule.id] && <div className="mt-2 flex items-center gap-2 text-emerald-600">

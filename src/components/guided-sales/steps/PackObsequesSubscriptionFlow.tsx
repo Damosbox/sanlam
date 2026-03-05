@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { GuidedSalesState, PackObsequesData, MaritalStatusType, ProfessionType, IdentityDocType, PrelevementType, PaymentMethodObseques, BeneficiaireType, SignatureMethodType } from "../types";
 import { ChevronLeft, ChevronRight, Upload, User, FileCheck, Stethoscope, Users, CreditCard, FileText, Banknote, Check, Loader2, ScanLine } from "lucide-react";
+import { CameraUploadButton } from "@/components/ui/CameraUploadButton";
 import { formatFCFA } from "@/utils/formatCurrency";
 import { calculatePackObsequesPremium, getPeriodicPremium } from "@/utils/packObsequesPremiumCalculator";
 import { toast } from "sonner";
@@ -271,12 +272,20 @@ export const PackObsequesSubscriptionFlow = ({
               </div>
             </div>
           ) : (
-            <div
-              className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
-              onClick={() => fileInputStep1Ref.current?.click()}
-            >
-              <ScanLine className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+            <div className="space-y-2">
               <p className="text-sm text-muted-foreground">Scannez la pièce pour pré-remplir les champs</p>
+              <CameraUploadButton
+                id="ocr-identity-step1"
+                onFileSelected={(file) => {
+                  const dt = new DataTransfer();
+                  dt.items.add(file);
+                  const fakeEvent = { target: { files: dt.files } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                  handleOCRUpload(fakeEvent, "step1");
+                }}
+                disabled={isOCRProcessing !== null}
+                uploadLabel="Uploader"
+                cameraLabel="Scanner"
+              />
             </div>
           )}
         </div>
@@ -413,12 +422,20 @@ export const PackObsequesSubscriptionFlow = ({
               </div>
             </div>
           ) : (
-            <div
-              className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
-              onClick={() => fileInputStep2Ref.current?.click()}
-            >
-              <ScanLine className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+            <div className="space-y-2">
               <p className="text-sm text-muted-foreground">Scannez la pièce pour pré-remplir les champs</p>
+              <CameraUploadButton
+                id="ocr-identity-step2"
+                onFileSelected={(file) => {
+                  const dt = new DataTransfer();
+                  dt.items.add(file);
+                  const fakeEvent = { target: { files: dt.files } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                  handleOCRUpload(fakeEvent, "step2");
+                }}
+                disabled={isOCRProcessing !== null}
+                uploadLabel="Uploader"
+                cameraLabel="Scanner"
+              />
             </div>
           )}
         </div>

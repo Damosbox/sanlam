@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, User, Loader2, UserPlus, Pencil, ChevronDown, ChevronUp, FileImage, Camera } from "lucide-react";
+import { Search, User, Loader2, UserPlus, Pencil, ChevronDown, ChevronUp, FileImage } from "lucide-react";
+import { CameraUploadButton } from "@/components/ui/CameraUploadButton";
 import { useToast } from "@/hooks/use-toast";
 import { GuidedSalesState } from "../types";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -455,28 +456,19 @@ export const ClientIdentificationStep = ({ state, onUpdate, onNext }: ClientIden
                         CNI, Passeport ou Permis de conduire
                       </p>
                     </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      hidden
-                      ref={fileInputRef}
-                      onChange={handleOCRUpload}
-                    />
-                    <Button
-                      variant="outline"
-                      onClick={() => fileInputRef.current?.click()}
+                    <CameraUploadButton
+                      id="client-id-ocr"
+                      onFileSelected={(file) => {
+                        const dt = new DataTransfer();
+                        dt.items.add(file);
+                        const fakeEvent = { target: { files: dt.files } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                        handleOCRUpload(fakeEvent);
+                      }}
                       disabled={isProcessingOCR}
-                    >
-                      {isProcessingOCR ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Camera className="mr-2 h-4 w-4" />
-                          Scanner
-                        </>
-                      )}
-                    </Button>
+                      uploadLabel="Uploader"
+                      cameraLabel="Scanner"
+                      variant="compact"
+                    />
                   </div>
                 </CardContent>
               </Card>

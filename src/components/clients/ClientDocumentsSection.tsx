@@ -19,6 +19,7 @@ import {
   Calendar,
   AlertTriangle
 } from "lucide-react";
+import { CameraUploadButton } from "@/components/ui/CameraUploadButton";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -191,11 +192,13 @@ export const ClientDocumentsSection = ({ clientId }: ClientDocumentsSectionProps
 
             <div>
               <Label className="text-xs">Fichier</Label>
-              <Input
-                type="file"
-                className="h-9 text-sm"
-                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+              <CameraUploadButton
+                id="client-doc-upload"
                 accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                onFileSelected={(file) => setSelectedFile(file)}
+                uploadLabel="Fichier"
+                cameraLabel="Scanner"
+                variant="compact"
               />
             </div>
 

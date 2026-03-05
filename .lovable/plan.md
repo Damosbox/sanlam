@@ -1,47 +1,31 @@
 
 
-## Problème identifié
+## Ajouter un champ "Code produit" dans les informations générales
 
-Le flux de vente guidée ne crée **jamais d'enregistrement dans la table `subscriptions`**. Il ne persiste que dans la table `quotations` (avec `payment_status: "pending_payment"`). Quand l'étape d'émission (step 7) est atteinte, aucune police n'est insérée en base. La page "Polices" interroge `subscriptions` → rien ne s'affiche.
+### Contexte
+La table `products` et le formulaire de création/édition ne disposent pas d'un champ "Code produit". Il faut l'ajouter en base et dans l'UI.
 
-## Solution
+### 1. Migration DB
+Ajouter une colonne `product_code` (text, nullable, unique) à la table `products`.
 
-Créer un enregistrement `subscriptions` quand le paiement est validé (transition step 6 → step 7), et mettre à jour le statut de la quotation associée en `"paid"`.
+```sql
+ALTER TABLE public.products ADD COLUMN product_code text UNIQUE;
+```
 
-### Fichier 1 : `src/components/guided-sales/GuidedSalesFlow.tsx`
+### 2. `src/components/admin/products/ProductForm.tsx`
+- Ajouter `product_code: string` à l'interface `ProductFormData` et au `defaultFormData` (valeur par défaut `""`)
+- Initialiser depuis `product.product_code` quand le produit existe
+- Inclure `product_code` dans le payload de sauvegarde
 
-**Modification de `nextStep()`** : Quand `currentStep === 6` (paiement → émission), avant de passer à l'étape 7, appeler une fonction `finalizeSubscription()` qui :
+### 3. `src/components/admin/products/tabs/GeneralInfoTab.tsx`
+- Ajouter un champ `Input` "Code produit" juste après le champ "Nom du produit", avec placeholder `"Ex: AUTO-ESS-001"` et un tooltip expliquant que c'est un identifiant unique interne.
 
-1. **Cherche le `product_id`** correspondant au produit sélectionné via `supabase.from("products").select("id").eq("name", productName).single()`
-2. **Insère dans `subscriptions`** avec :
-   - `user_id` : l'ID du client (lead converti ou broker lui-même comme placeholder)
-   - `product_id` : trouvé à l'étape 1
-   - `policy_number` : généré (format `POL-2024-CI-XXXXXX`)
-   - `monthly_premium` : `state.calculatedPremium.totalAPayer`
-   - `start_date` : date du paiement
-   - `end_date` : +1 an
-   - `assigned_broker_id` : l'utilisateur courant (broker)
-   - `status` : `"active"`
-   - `payment_method` : `state.mobilePayment.paymentMethod`
-   - `selected_coverages` : options/plan sélectionnés
-   - `object_identifier` : immatriculation ou identifiant objet
-3. **Met à jour la quotation** associée (si `draftId` existe) avec `payment_status: "paid"`
-4. **Stocke le `policyNumber` et `subscriptionId`** dans le state pour que `IssuanceStep` les affiche
+### 4. `src/schemas/product.ts`
+- Ajouter `product_code: z.string().optional().default("")` au `ProductFormSchema`.
 
-**Même logique pour pack_obseques** (step 4 → step 7) : appeler `finalizeSubscription()` avant le saut.
-
-### Fichier 2 : `src/components/guided-sales/types.ts`
-
-Ajouter au `GuidedSalesState` :
-- `finalizedPolicyNumber?: string`
-- `finalizedSubscriptionId?: string`
-
-### Fichier 3 : `src/components/guided-sales/steps/IssuanceStep.tsx`
-
-Utiliser `state.finalizedPolicyNumber` au lieu de générer un numéro aléatoire local, et `state.finalizedSubscriptionId` pour le `DocumentResendDialog`.
-
-### Résumé des fichiers impactés (3)
-1. `src/components/guided-sales/GuidedSalesFlow.tsx` — logique `finalizeSubscription()` + appel dans `nextStep`
-2. `src/components/guided-sales/types.ts` — ajout champs finalized
-3. `src/components/guided-sales/steps/IssuanceStep.tsx` — utiliser les données persistées
+### Fichiers impactés (4)
+1. Migration SQL — nouvelle colonne
+2. `ProductForm.tsx` — interface + payload
+3. `GeneralInfoTab.tsx` — champ UI
+4. `product.ts` (schema) — validation zod
 

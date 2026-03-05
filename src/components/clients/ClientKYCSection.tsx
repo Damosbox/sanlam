@@ -282,6 +282,7 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
         ref={fileInputRef}
         type="file"
         accept="image/*"
+        capture="environment"
         className="hidden"
         onChange={handleOCRUpload}
       />

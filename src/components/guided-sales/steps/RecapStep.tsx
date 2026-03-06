@@ -21,12 +21,12 @@ interface RecapStepProps {
 }
 
 const planNames: Record<PlanTier, string> = {
-  mini: "MINI",
-  basic: "BASIC",
-  medium: "MEDIUM",
-  medium_plus: "MEDIUM+",
-  evolution: "EVOLUTION",
-  evolution_plus: "EVOLUTION+",
+  mini: "TIERS SIMPLE",
+  basic: "TIERS SIMPLE AMÉLIORÉ",
+  medium: "TIERS COMPLET",
+  medium_plus: "TIERS COMPLET",
+  evolution: "TIERS RISQUES",
+  evolution_plus: "TIERCE COLLISION",
   supreme: "SUPRÊME",
 };
 

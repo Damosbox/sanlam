@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Car, Shield, Calendar, HelpCircle, Save, Send, ChevronRight, Pencil } from "lucide-react";
 import { GuidedSalesState, PlanTier, ContractPeriodicity } from "../types";
 import { formatFCFA, formatFCFADecimal } from "@/utils/formatCurrency";
+import { DiscountSelector, applyDiscounts } from "../DiscountSelector";
 import { QuotationSaveDialog } from "../QuotationSaveDialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -108,6 +109,17 @@ export const RecapStep = ({ state, onSaveQuote, onSubscribe, onEditStep }: Recap
   const { needsAnalysis, coverage, calculatedPremium } = state;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<"save" | "send">("save");
+  const [bns, setBns] = useState(0);
+  const [commercial, setCommercial] = useState(0);
+
+  const adjustedPremium = useMemo(() => {
+    const discountedNette = applyDiscounts(calculatedPremium.primeNette, bns, commercial);
+    const totalDiscount = calculatedPremium.primeNette - discountedNette;
+    const taxes = Math.round(discountedNette * 0.145);
+    const primeTTC = discountedNette + calculatedPremium.fraisAccessoires + taxes;
+    const totalAPayer = primeTTC + calculatedPremium.fga + calculatedPremium.cedeao;
+    return { discountedNette, totalDiscount, taxes, primeTTC, totalAPayer };
+  }, [calculatedPremium, bns, commercial]);
 
   const defaultDialogValues = {
     lastName: state.clientIdentification.lastName || "",
@@ -245,21 +257,44 @@ export const RecapStep = ({ state, onSaveQuote, onSubscribe, onEditStep }: Recap
         </CardContent>
       </Card>
 
+      {/* Réductions */}
+      <DiscountSelector bns={bns} commercial={commercial} onBnsChange={setBns} onCommercialChange={setCommercial} />
+
       {/* Décompte de prime */}
       <Card className="border-primary/20">
         <CardContent className="pt-6">
           <h3 className="font-semibold text-lg mb-4">Décompte de prime</h3>
           
           <div className="space-y-2 text-sm">
-            <PremiumLine label="Prime Nette" value={formatFCFADecimal(calculatedPremium.primeNette)} tooltip={tooltips.primeNette} />
+            <PremiumLine label="Prime Nette (avant réductions)" value={formatFCFADecimal(calculatedPremium.primeNette)} tooltip={tooltips.primeNette} />
+            {(bns > 0 || commercial > 0) && (
+              <>
+                {bns > 0 && (
+                  <div className="flex justify-between items-center text-green-600">
+                    <span className="text-sm">BNS (-{bns}%)</span>
+                    <span className="text-sm">-{formatFCFADecimal(calculatedPremium.primeNette * bns / 100)}</span>
+                  </div>
+                )}
+                {commercial > 0 && (
+                  <div className="flex justify-between items-center text-green-600">
+                    <span className="text-sm">Réduction commerciale (-{commercial}%)</span>
+                    <span className="text-sm">-{formatFCFADecimal(adjustedPremium.totalDiscount - (bns > 0 ? calculatedPremium.primeNette * bns / 100 : 0))}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center font-medium border-t border-dashed pt-1">
+                  <span className="text-sm">Prime Nette après réductions</span>
+                  <span className="text-sm">{formatFCFADecimal(adjustedPremium.discountedNette)}</span>
+                </div>
+              </>
+            )}
             <PremiumLine label="Frais d'accessoires" value={formatFCFADecimal(calculatedPremium.fraisAccessoires)} tooltip={tooltips.fraisAccessoires} />
-            <PremiumLine label="Taxes (14,5%)" value={formatFCFADecimal(calculatedPremium.taxes)} tooltip={tooltips.taxes} />
+            <PremiumLine label="Taxes (14,5%)" value={formatFCFADecimal(adjustedPremium.taxes)} tooltip={tooltips.taxes} />
           </div>
 
           <Separator className="my-3" />
 
           <div className="space-y-2 text-sm">
-            <PremiumLine label="Prime TTC" value={formatFCFADecimal(calculatedPremium.primeTTC)} tooltip={tooltips.primeTTC} isBold />
+            <PremiumLine label="Prime TTC" value={formatFCFADecimal(adjustedPremium.primeTTC)} tooltip={tooltips.primeTTC} isBold />
             <PremiumLine label="FGA" value={formatFCFADecimal(calculatedPremium.fga)} tooltip={tooltips.fga} />
             <PremiumLine label="Carte Brune CEDEAO" value={formatFCFADecimal(calculatedPremium.cedeao)} tooltip={tooltips.cedeao} />
           </div>
@@ -280,7 +315,7 @@ export const RecapStep = ({ state, onSaveQuote, onSubscribe, onEditStep }: Recap
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <span className="text-2xl font-bold text-primary">{formatFCFA(calculatedPremium.totalAPayer)}</span>
+            <span className="text-2xl font-bold text-primary">{formatFCFA(adjustedPremium.totalAPayer)}</span>
           </div>
         </CardContent>
       </Card>

@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { QuotationSaveDialog } from "../QuotationSaveDialog";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { DiscountSelector, applyDiscounts } from "../DiscountSelector";
 
 interface PackObsequesSimulationStepProps {
   state: GuidedSalesState;
@@ -47,6 +48,8 @@ export const PackObsequesSimulationStep = ({
   const subStep = subStepLocal;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<"save" | "send">("save");
+  const [bns, setBns] = useState(0);
+  const [commercial, setCommercial] = useState(0);
   
   const data = state.packObsequesData!;
   const simulationCalculated = state.simulationCalculated;
@@ -584,10 +587,15 @@ export const PackObsequesSimulationStep = ({
   const renderSubStep5 = () => {
     const breakdown = calculatePackObsequesPremium(data);
     const periodicPremium = getPeriodicPremium(breakdown.primeTotale, data.periodicity);
-    const premierePrime = periodicPremium + breakdown.fraisAccessoires;
+    const discountedPeriodic = applyDiscounts(periodicPremium, bns, commercial);
+    const totalDiscount = periodicPremium - discountedPeriodic;
+    const premierePrime = discountedPeriodic + breakdown.fraisAccessoires;
 
     return (
       <div className="space-y-4">
+        {/* Réductions */}
+        <DiscountSelector bns={bns} commercial={commercial} onBnsChange={setBns} onCommercialChange={setCommercial} />
+
         {/* Section 1 — Détail sur la prime */}
         <Card className="border-primary/20 bg-primary/5">
           <CardHeader className="pb-3">
@@ -603,9 +611,29 @@ export const PackObsequesSimulationStep = ({
                 <span className="text-lg font-bold text-primary">{formatFCFA(premierePrime)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Prime Périodique nette</span>
+                <span className="text-muted-foreground">Prime Périodique nette{(bns > 0 || commercial > 0) ? " (avant réductions)" : ""}</span>
                 <span className="font-medium">{formatFCFA(periodicPremium)}</span>
               </div>
+              {(bns > 0 || commercial > 0) && (
+                <>
+                  {bns > 0 && (
+                    <div className="flex justify-between text-sm text-green-600">
+                      <span>BNS (-{bns}%)</span>
+                      <span>-{formatFCFA(Math.round(periodicPremium * bns / 100))}</span>
+                    </div>
+                  )}
+                  {commercial > 0 && (
+                    <div className="flex justify-between text-sm text-green-600">
+                      <span>Réduction commerciale (-{commercial}%)</span>
+                      <span>-{formatFCFA(totalDiscount - (bns > 0 ? Math.round(periodicPremium * bns / 100) : 0))}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm font-medium border-t border-dashed pt-1">
+                    <span>Prime Périodique après réductions</span>
+                    <span>{formatFCFA(discountedPeriodic)}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Frais d'adhésion</span>
                 <span className="font-medium">{formatFCFA(breakdown.fraisAccessoires)}</span>

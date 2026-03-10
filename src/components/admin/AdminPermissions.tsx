@@ -20,12 +20,14 @@ interface RolePermission {
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrateur",
+  compliance: "Conformité",
   broker: "Courtier",
   customer: "Client",
 };
 
 const ROLE_COLORS: Record<string, string> = {
   admin: "bg-red-500",
+  compliance: "bg-purple-500",
   broker: "bg-blue-500",
   customer: "bg-green-500",
 };

@@ -47,7 +47,7 @@ export const AdminPermissions = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
 
-  const roles: Array<"admin" | "broker" | "customer"> = ["admin", "broker", "customer"];
+  const roles: Array<"admin" | "compliance" | "broker" | "customer"> = ["admin", "compliance", "broker", "customer"];
 
   useEffect(() => {
     fetchData();

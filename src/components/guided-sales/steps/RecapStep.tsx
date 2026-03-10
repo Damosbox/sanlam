@@ -272,7 +272,7 @@ export const RecapStep = ({ state, onSaveQuote, onSubscribe, onEditStep }: Recap
                 {bns > 0 && (
                   <div className="flex justify-between items-center text-green-600">
                     <span className="text-sm">BNS (-{bns}%)</span>
-                    <span className="text-sm">-{formatFCFADecimal(calculatedPremium.primeNette * bns / 100)}</span>
+                    <span className="text-sm">-{formatFCFA(calculatedPremium.primeNette * bns / 100)}</span>
                   </div>
                 )}
                 {commercial > 0 && (

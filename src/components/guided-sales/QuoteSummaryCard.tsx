@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ArrowRight, CheckCircle2, HelpCircle, Lightbulb } from "lucide-react";
 import { GuidedSalesState, ProductType } from "./types";
 import { useEffect, useState, useMemo } from "react";
-import { formatFCFA, formatFCFADecimal } from "@/utils/formatCurrency";
+import { formatFCFA } from "@/utils/formatCurrency";
 import { toast } from "@/hooks/use-toast";
 
 interface QuoteSummaryCardProps {

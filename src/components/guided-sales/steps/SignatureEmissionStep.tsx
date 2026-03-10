@@ -219,6 +219,15 @@ export const SignatureEmissionStep = ({
   // --- Main view: Global Recap + Validation + Signature ---
   return (
     <div className="space-y-6">
+      {/* Screening blocked alert */}
+      {screeningBlocked && (
+        <Alert variant="destructive">
+          <AlertDescription className="font-medium">
+            SanlamAllianz reviendra vers le client afin de compléter la transaction ou mettre à jour des informations sur sa fiche.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div>
         <h1 className="text-2xl font-bold text-foreground">Récapitulatif global & Signature</h1>
         <p className="text-muted-foreground mt-1">

@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Car, Shield, Calendar, HelpCircle, Save, Send, ChevronRight, Pencil } from "lucide-react";
 import { GuidedSalesState, PlanTier, ContractPeriodicity } from "../types";
-import { formatFCFA, formatFCFADecimal } from "@/utils/formatCurrency";
+import { formatFCFA } from "@/utils/formatCurrency";
 import { DiscountSelector, applyDiscounts } from "../DiscountSelector";
 import { QuotationSaveDialog } from "../QuotationSaveDialog";
 import { toast } from "sonner";
@@ -266,37 +266,37 @@ export const RecapStep = ({ state, onSaveQuote, onSubscribe, onEditStep }: Recap
           <h3 className="font-semibold text-lg mb-4">Décompte de prime</h3>
           
           <div className="space-y-2 text-sm">
-            <PremiumLine label="Prime Nette (avant réductions)" value={formatFCFADecimal(calculatedPremium.primeNette)} tooltip={tooltips.primeNette} />
+            <PremiumLine label="Prime Nette (avant réductions)" value={formatFCFA(calculatedPremium.primeNette)} tooltip={tooltips.primeNette} />
             {(bns > 0 || commercial > 0) && (
               <>
                 {bns > 0 && (
                   <div className="flex justify-between items-center text-green-600">
                     <span className="text-sm">BNS (-{bns}%)</span>
-                    <span className="text-sm">-{formatFCFADecimal(calculatedPremium.primeNette * bns / 100)}</span>
+                    <span className="text-sm">-{formatFCFA(calculatedPremium.primeNette * bns / 100)}</span>
                   </div>
                 )}
                 {commercial > 0 && (
                   <div className="flex justify-between items-center text-green-600">
                     <span className="text-sm">Réduction commerciale (-{commercial}%)</span>
-                    <span className="text-sm">-{formatFCFADecimal(adjustedPremium.totalDiscount - (bns > 0 ? calculatedPremium.primeNette * bns / 100 : 0))}</span>
+                    <span className="text-sm">-{formatFCFA(adjustedPremium.totalDiscount - (bns > 0 ? calculatedPremium.primeNette * bns / 100 : 0))}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center font-medium border-t border-dashed pt-1">
                   <span className="text-sm">Prime Nette après réductions</span>
-                  <span className="text-sm">{formatFCFADecimal(adjustedPremium.discountedNette)}</span>
+                  <span className="text-sm">{formatFCFA(adjustedPremium.discountedNette)}</span>
                 </div>
               </>
             )}
-            <PremiumLine label="Frais d'accessoires" value={formatFCFADecimal(calculatedPremium.fraisAccessoires)} tooltip={tooltips.fraisAccessoires} />
-            <PremiumLine label="Taxes (14,5%)" value={formatFCFADecimal(adjustedPremium.taxes)} tooltip={tooltips.taxes} />
+            <PremiumLine label="Frais d'accessoires" value={formatFCFA(calculatedPremium.fraisAccessoires)} tooltip={tooltips.fraisAccessoires} />
+            <PremiumLine label="Taxes (14,5%)" value={formatFCFA(adjustedPremium.taxes)} tooltip={tooltips.taxes} />
           </div>
 
           <Separator className="my-3" />
 
           <div className="space-y-2 text-sm">
-            <PremiumLine label="Prime TTC" value={formatFCFADecimal(adjustedPremium.primeTTC)} tooltip={tooltips.primeTTC} isBold />
-            <PremiumLine label="FGA" value={formatFCFADecimal(calculatedPremium.fga)} tooltip={tooltips.fga} />
-            <PremiumLine label="Carte Brune CEDEAO" value={formatFCFADecimal(calculatedPremium.cedeao)} tooltip={tooltips.cedeao} />
+            <PremiumLine label="Prime TTC" value={formatFCFA(adjustedPremium.primeTTC)} tooltip={tooltips.primeTTC} isBold />
+            <PremiumLine label="FGA" value={formatFCFA(calculatedPremium.fga)} tooltip={tooltips.fga} />
+            <PremiumLine label="Carte Brune CEDEAO" value={formatFCFA(calculatedPremium.cedeao)} tooltip={tooltips.cedeao} />
           </div>
 
           <Separator className="my-3" />

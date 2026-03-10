@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ArrowRight, CheckCircle2, HelpCircle, Lightbulb } from "lucide-react";
 import { GuidedSalesState, ProductType } from "./types";
 import { useEffect, useState, useMemo } from "react";
-import { formatFCFA, formatFCFADecimal } from "@/utils/formatCurrency";
+import { formatFCFA } from "@/utils/formatCurrency";
 import { toast } from "@/hooks/use-toast";
 
 interface QuoteSummaryCardProps {
@@ -201,17 +201,17 @@ export const QuoteSummaryCard = ({ state, onNext, nextLabel, disabled, onApplySu
         <div className="space-y-2 text-sm">
           <PremiumLine 
             label="Prime Nette" 
-            value={formatFCFADecimal(premium.primeNette)} 
+            value={formatFCFA(premium.primeNette)} 
             tooltip={tooltips.primeNette} 
           />
           <PremiumLine 
             label="Frais d'accessoires" 
-            value={formatFCFADecimal(premium.fraisAccessoires)} 
+            value={formatFCFA(premium.fraisAccessoires)} 
             tooltip={tooltips.fraisAccessoires} 
           />
           <PremiumLine 
             label="Taxes (14,5%)" 
-            value={formatFCFADecimal(premium.taxes)} 
+            value={formatFCFA(premium.taxes)} 
             tooltip={tooltips.taxes} 
           />
         </div>
@@ -221,18 +221,18 @@ export const QuoteSummaryCard = ({ state, onNext, nextLabel, disabled, onApplySu
         <div className="space-y-2 text-sm">
           <PremiumLine 
             label="Prime TTC" 
-            value={formatFCFADecimal(premium.primeTTC)} 
+            value={formatFCFA(premium.primeTTC)} 
             tooltip={tooltips.primeTTC}
             isBold 
           />
           <PremiumLine 
             label="FGA" 
-            value={formatFCFADecimal(premium.fga)} 
+            value={formatFCFA(premium.fga)} 
             tooltip={tooltips.fga} 
           />
           <PremiumLine 
             label="Carte Brune CEDEAO" 
-            value={formatFCFADecimal(premium.cedeao)} 
+            value={formatFCFA(premium.cedeao)} 
             tooltip={tooltips.cedeao} 
           />
         </div>

@@ -26,7 +26,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { GuidedSalesState, PlanTier, ContractPeriodicity } from "../types";
-import { formatFCFA, formatFCFADecimal } from "@/utils/formatCurrency";
+import { formatFCFA } from "@/utils/formatCurrency";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";

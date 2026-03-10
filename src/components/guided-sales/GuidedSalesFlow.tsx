@@ -789,10 +789,9 @@ export const GuidedSalesFlow = () => {
     if (state.currentStep === 1) {
       if (isPackObseques) {
         if (state.simulationSubStep < 4) return "Suivant";
-        if (state.simulationSubStep === 4) {
-          return state.simulationCalculated ? "Voir le récapitulatif" : "Calculer la prime";
-        }
-        return "Souscrire"; // sub 5
+        if (state.simulationSubStep === 4) return "Voir le récapitulatif";
+        // sub 5: recap
+        return state.simulationCalculated ? "Souscrire" : "Calculer la prime";
       }
       // Auto
       if (state.simulationSubStep === 5) return "Voir les offres";

@@ -541,23 +541,14 @@ export const PackObsequesSimulationStep = ({
           </div>
 
           <div className="flex flex-col gap-3 pt-4">
-            {!simulationCalculated && (
-              <Button 
-                onClick={handleCalculate} 
-                disabled={!isSubStep4Valid || isCalculating}
-                className="w-full gap-2"
-                size="lg"
-              >
-                {isCalculating ? (
-                  <>
-                    <Calculator className="h-4 w-4 animate-spin" />
-                    Calcul en cours...
-                  </>
-                ) : (
-                  <>
-                    <Calculator className="h-4 w-4" />
-                    Calculer la prime
-                  </>
+            <Button 
+              onClick={() => setSubStep(5)}
+              disabled={!isSubStep4Valid}
+              className="w-full gap-2"
+              size="lg"
+            >
+              Voir le récapitulatif
+              <ChevronRight className="h-4 w-4" />
                 )}
               </Button>
             )}

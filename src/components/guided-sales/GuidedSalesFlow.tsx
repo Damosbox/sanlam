@@ -405,14 +405,23 @@ export const GuidedSalesFlow = () => {
       const contactType = state.clientIdentification.linkedContactType;
       
       if (contactId) {
-        const tableName = contactType === "prospect" ? "lead_kyc_compliance" : "client_kyc_compliance";
-        const idField = contactType === "prospect" ? "lead_id" : "client_id";
+        let screeningBlocked = false;
         
-        const { data: kycData } = await supabase
-          .from(tableName)
-          .select("screening_blocked")
-          .eq(idField, contactId)
-          .maybeSingle();
+        if (contactType === "prospect") {
+          const { data: kycResult } = await supabase
+            .from("lead_kyc_compliance")
+            .select("screening_blocked")
+            .eq("lead_id", contactId)
+            .maybeSingle();
+          screeningBlocked = kycResult?.screening_blocked || false;
+        } else {
+          const { data: kycResult } = await supabase
+            .from("client_kyc_compliance")
+            .select("screening_blocked")
+            .eq("client_id", contactId)
+            .maybeSingle();
+          screeningBlocked = kycResult?.screening_blocked || false;
+        }
 
         if (kycData?.screening_blocked) {
           toast.error("Souscription bloquée", {

@@ -266,7 +266,7 @@ export const RecapStep = ({ state, onSaveQuote, onSubscribe, onEditStep }: Recap
           <h3 className="font-semibold text-lg mb-4">Décompte de prime</h3>
           
           <div className="space-y-2 text-sm">
-            <PremiumLine label="Prime Nette (avant réductions)" value={formatFCFADecimal(calculatedPremium.primeNette)} tooltip={tooltips.primeNette} />
+            <PremiumLine label="Prime Nette (avant réductions)" value={formatFCFA(calculatedPremium.primeNette)} tooltip={tooltips.primeNette} />
             {(bns > 0 || commercial > 0) && (
               <>
                 {bns > 0 && (

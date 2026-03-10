@@ -283,7 +283,7 @@ export const RecapStep = ({ state, onSaveQuote, onSubscribe, onEditStep }: Recap
                 )}
                 <div className="flex justify-between items-center font-medium border-t border-dashed pt-1">
                   <span className="text-sm">Prime Nette après réductions</span>
-                  <span className="text-sm">{formatFCFADecimal(adjustedPremium.discountedNette)}</span>
+                  <span className="text-sm">{formatFCFA(adjustedPremium.discountedNette)}</span>
                 </div>
               </>
             )}

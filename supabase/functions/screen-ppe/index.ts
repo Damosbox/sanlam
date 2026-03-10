@@ -16,17 +16,15 @@ interface ScreeningRequest {
 }
 
 interface ScreeningResult {
-  // PPE Results
   isPPE: boolean;
   ppePosition?: string;
   ppeCountry?: string;
   ppeRelationship?: string;
-  // AML Results  
   amlRiskLevel: 'low' | 'medium' | 'high';
   amlFlags: string[];
-  // Meta
   source: string;
   reference: string;
+  screeningBlocked: boolean;
 }
 
 // Simulated PPE database for demo purposes
@@ -58,7 +56,6 @@ function performScreening(firstName: string, lastName: string, nationality?: str
   const fullName = `${firstName} ${lastName}`;
   const reference = `LCB-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
   
-  // PPE Check
   let isPPE = false;
   let ppePosition: string | undefined;
   let ppeCountry: string | undefined;
@@ -74,18 +71,15 @@ function performScreening(firstName: string, lastName: string, nationality?: str
     }
   }
 
-  // AML Check
   const amlFlags: string[] = [];
   let riskScore = 0;
 
-  // Base risk from nationality (simulated)
   const highRiskCountries = ['russia', 'iran', 'north korea', 'syria'];
   if (nationality && highRiskCountries.some(c => nationality.toLowerCase().includes(c))) {
     amlFlags.push("Pays à risque élevé");
     riskScore += 2;
   }
 
-  // Check name against sanctions patterns (simulated)
   for (const factor of amlRiskFactors) {
     if (factor.pattern.test(fullName)) {
       amlFlags.push(factor.flag);
@@ -93,13 +87,11 @@ function performScreening(firstName: string, lastName: string, nationality?: str
     }
   }
 
-  // PPE increases AML risk
   if (isPPE) {
     amlFlags.push("Personne Politiquement Exposée");
     riskScore += 1;
   }
 
-  // Determine risk level
   let amlRiskLevel: 'low' | 'medium' | 'high';
   if (riskScore >= 2) {
     amlRiskLevel = 'high';
@@ -109,6 +101,9 @@ function performScreening(firstName: string, lastName: string, nationality?: str
     amlRiskLevel = 'low';
   }
 
+  // Blocking logic: PPE or high AML risk
+  const screeningBlocked = isPPE || amlRiskLevel === 'high';
+
   return {
     isPPE,
     ppePosition,
@@ -117,7 +112,8 @@ function performScreening(firstName: string, lastName: string, nationality?: str
     amlRiskLevel,
     amlFlags,
     source: "LCB-FT Screening Service (Simulation)",
-    reference
+    reference,
+    screeningBlocked
   };
 }
 
@@ -156,9 +152,8 @@ serve(async (req) => {
     // Perform the unified screening (PPE + AML)
     const result = performScreening(firstName, lastName, nationality);
 
-    // Update the database with results
+    // Update the database with full results (stored for compliance officers)
     const updateData = {
-      // PPE data
       is_ppe: result.isPPE,
       ppe_position: result.ppePosition || null,
       ppe_country: result.ppeCountry || null,
@@ -167,13 +162,13 @@ serve(async (req) => {
       ppe_screening_date: new Date().toISOString(),
       ppe_screening_source: result.source,
       ppe_screening_reference: result.reference,
-      // AML data - automatically set from screening
       aml_verified: true,
       aml_verified_at: new Date().toISOString(),
       aml_risk_level: result.amlRiskLevel,
       aml_notes: result.amlFlags.length > 0 
         ? `Flags détectés: ${result.amlFlags.join(', ')}`
         : 'Aucun flag détecté',
+      screening_blocked: result.screeningBlocked,
       updated_at: new Date().toISOString()
     };
 
@@ -198,21 +193,13 @@ serve(async (req) => {
         });
     }
 
+    // Return ONLY the blocking status — no detailed PPE/AML data
     return new Response(
       JSON.stringify({
         success: true,
         result: {
-          // PPE
-          isPPE: result.isPPE,
-          ppePosition: result.ppePosition,
-          ppeCountry: result.ppeCountry,
-          ppeRelationship: result.ppeRelationship,
-          // AML
-          amlRiskLevel: result.amlRiskLevel,
-          amlFlags: result.amlFlags,
-          // Meta
+          screeningBlocked: result.screeningBlocked,
           screeningDate: new Date().toISOString(),
-          source: result.source,
           reference: result.reference
         }
       }),

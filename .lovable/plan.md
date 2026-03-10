@@ -1,77 +1,76 @@
 
 
-## Plan : Screening LCB-FT — Déclenchement automatique, visibilité restreinte, blocage parcours
+## Ajouter l'accès caméra temps réel sur tous les points d'upload des deux parcours
 
-### Règles métier à implémenter
+### Contexte
+Actuellement, la plupart des `<input type="file">` n'ont pas l'attribut `capture`, ce qui empêche l'ouverture directe de la caméra sur mobile. Seul `ClientIdentificationStep` a `capture="environment"`. De plus, il manque un bouton explicite "Prendre une photo" à côté du bouton "Uploader" pour offrir le choix entre galerie et caméra.
 
-1. **Déclenchement automatique** : le screening se lance automatiquement après un KYC valide (OCR CNI réussi ou sauvegarde KYC avec identité vérifiée + document valide)
-2. **Déclenchement à la demande** : seul le rôle "Conformité" (nouveau rôle `app_role`) peut déclencher un screening manuellement pour n'importe quel client
-3. **Visibilité restreinte** : l'agent/courtier ne voit **jamais** les résultats détaillés (PPE, AML, flags). Il voit uniquement un feu tricolore (Vert/Orange/Rouge)
-4. **Blocage parcours** : si screening positif (PPE ou risque élevé), le parcours de vente est bloqué avec le message : *"SanlamAllianz reviendra vers le client afin de compléter la transaction ou mettre à jour des informations sur sa fiche"*
+### Approche
+Créer un composant réutilisable `CameraUploadButton` qui affiche deux options (upload fichier + capture caméra) et l'intégrer dans tous les points d'upload des deux parcours.
 
-### Changements techniques
+### 1. Nouveau composant : `src/components/ui/CameraUploadButton.tsx`
 
-#### A. Nouveau rôle `compliance` (migration SQL)
+Un composant qui encapsule :
+- Un `<input type="file" accept="image/*">` pour l'upload classique (galerie)
+- Un `<input type="file" accept="image/*" capture="environment">` pour la caméra directe
+- Deux boutons côte à côte : "Uploader un fichier" (Upload icon) et "Prendre une photo" (Camera icon)
+- Props : `onFileSelected(file: File)`, `disabled?`, `accept?`, `label?`, `id: string`
 
-```sql
-ALTER TYPE public.app_role ADD VALUE 'compliance';
-```
+### 2. Fichiers à modifier (parcours Auto)
 
-Ajouter des permissions `kyc.view_results`, `kyc.trigger_screening` dans la table `permissions` et les associer aux rôles `compliance` et `admin`.
+| Fichier | Point d'upload | Modification |
+|---------|---------------|-------------|
+| `SubscriptionFlow.tsx` | Carte grise OCR (ligne ~422) | Ajouter `capture="environment"` + bouton caméra séparé |
+| `SubscriptionFlow.tsx` | Documents justificatifs (permis, assurance, etc.) | Ajouter bouton caméra |
+| `UnderwritingStep.tsx` | Justificatifs underwriting (ligne ~217) | Ajouter `accept="image/*"` + `capture` |
+| `BindingStep.tsx` | Scan reçu cash (ligne ~448) | Ajouter `capture="environment"` |
+| `ClaimOCRUploader.tsx` | Upload constat/carte grise (ligne ~100) | Ajouter `capture="environment"` + bouton caméra |
+| `DamageForm.tsx` | Photo zone dommage (ligne ~127) | Ajouter `capture="environment"` + bouton caméra |
 
-#### B. Modifier `screen-ppe` edge function
+### 3. Fichiers à modifier (parcours Pack Obsèques / Vie)
 
-- Après le screening, écrire un champ `screening_blocked: true/false` dans `client_kyc_compliance` / `lead_kyc_compliance` (nouveau champ `screening_blocked boolean DEFAULT false`)
-- Le screening est bloquant si `isPPE === true` OU `amlRiskLevel === 'high'`
-- Retourner uniquement le statut bloquant/non-bloquant dans la réponse (pas les détails PPE/AML) — les détails restent en DB, accessibles uniquement aux rôles autorisés
+| Fichier | Point d'upload | Modification |
+|---------|---------------|-------------|
+| `PackObsequesSubscriptionFlow.tsx` | OCR identité step 1 (ligne ~257) | Ajouter `capture="environment"` |
+| `PackObsequesSubscriptionFlow.tsx` | OCR identité step 2 (ligne ~399) | Ajouter `capture="environment"` |
+| `ClientIdentificationStep.tsx` | OCR identité (déjà `capture`) | Ajouter bouton "Uploader depuis galerie" en complément |
 
-#### C. Modifier `ClientKYCSection` et `LeadKYCSection`
-
-- **Supprimer** l'affichage des résultats détaillés PPE/AML pour les courtiers (lignes 431-498 de ClientKYCSection, équivalent dans LeadKYCSection)
-- **Supprimer** le bouton "Lancer le screening" manuel pour les courtiers
-- Afficher uniquement un badge feu tricolore :
-  - 🟢 Vert : screening OK, pas de blocage
-  - 🟠 Orange : screening en cours ou non effectué
-  - 🔴 Rouge : screening bloquant + message "SanlamAllianz reviendra vers le client..."
-- Ajouter un `PermissionGate permission="kyc.view_results"` autour des résultats détaillés → visible uniquement pour compliance/admin
-
-#### D. Déclenchement automatique après OCR/sauvegarde KYC
-
-Dans `ClientKYCSection.saveMutation.onSuccess` et `LeadKYCSection.saveMutation.onSuccess` : si `identity_verified === true` et document valide (numéro + type renseignés), appeler automatiquement `screen-ppe` en background.
-
-Dans `ClientIdentificationStep.handleOCRUpload` : après OCR réussi, upsert dans `client_kyc_compliance` / `lead_kyc_compliance` puis déclencher le screening automatiquement.
-
-#### E. Blocage du parcours de vente guidée
-
-Dans `GuidedSalesFlow.finalizeSubscription()` (ligne ~488) et dans `SignatureEmissionStep` : 
-- Vérifier `screening_blocked` depuis la table KYC du contact lié
-- Si bloqué, afficher une alerte non contournable avec le message SanlamAllianz et empêcher la progression
-
-#### F. Migration DB
-
-```sql
--- Nouveau champ sur les tables KYC
-ALTER TABLE client_kyc_compliance ADD COLUMN screening_blocked boolean DEFAULT false;
-ALTER TABLE lead_kyc_compliance ADD COLUMN screening_blocked boolean DEFAULT false;
-
--- Nouveau rôle
-ALTER TYPE public.app_role ADD VALUE 'compliance';
-
--- Permissions KYC
-INSERT INTO permissions (name, description, category) VALUES
-  ('kyc.view_results', 'Voir les résultats détaillés du screening LCB-FT', 'compliance'),
-  ('kyc.trigger_screening', 'Déclencher un screening LCB-FT manuellement', 'compliance');
-```
-
-### Fichiers impactés
+### 4. Fichiers complémentaires (sinistres broker + KYC)
 
 | Fichier | Modification |
 |---------|-------------|
-| Migration SQL | Champs `screening_blocked`, rôle `compliance`, permissions |
-| `supabase/functions/screen-ppe/index.ts` | Calcul `screening_blocked`, réponse sans détails |
-| `src/components/clients/ClientKYCSection.tsx` | Feu tricolore, screening auto, masquer détails |
-| `src/components/leads/LeadKYCSection.tsx` | Idem |
-| `src/components/guided-sales/steps/ClientIdentificationStep.tsx` | Upsert KYC + screening auto après OCR |
-| `src/components/guided-sales/GuidedSalesFlow.tsx` | Vérif `screening_blocked` avant finalisation |
-| `src/components/guided-sales/steps/SignatureEmissionStep.tsx` | Afficher alerte si bloqué |
+| `ClaimNewPage.tsx` (broker) | Ajouter `capture="environment"` + bouton caméra |
+| `ClientKYCSection.tsx` | Ajouter `capture="environment"` (déjà accept image) |
+| `LeadKYCSection.tsx` | Ajouter `capture="environment"` |
+| `ClientDocumentsSection.tsx` | Ajouter `capture="environment"` + `accept="image/*"` |
+
+### Détail technique du composant `CameraUploadButton`
+
+```text
+┌─────────────────────────────────┐
+│  [📁 Uploader]  [📷 Scanner]   │
+│     (galerie)    (caméra)       │
+│  <input hidden>  <input hidden  │
+│                   capture>      │
+└─────────────────────────────────┘
+```
+
+- Le bouton "Scanner" utilise `<input capture="environment">` qui ouvre la caméra native sur mobile
+- Le bouton "Uploader" ouvre le sélecteur de fichiers classique
+- Sur desktop, les deux ouvrent le même dialogue fichier (comportement natif du navigateur)
+- Le composant passe le fichier sélectionné via `onFileSelected(file)`
+
+### Fichiers impactés (total : ~12)
+1. **Nouveau** : `src/components/ui/CameraUploadButton.tsx`
+2. `src/components/guided-sales/steps/SubscriptionFlow.tsx`
+3. `src/components/guided-sales/steps/PackObsequesSubscriptionFlow.tsx`
+4. `src/components/guided-sales/steps/ClientIdentificationStep.tsx`
+5. `src/components/guided-sales/steps/BindingStep.tsx`
+6. `src/components/guided-sales/steps/UnderwritingStep.tsx`
+7. `src/components/ClaimOCRUploader.tsx`
+8. `src/components/DamageForm.tsx`
+9. `src/pages/broker/ClaimNewPage.tsx`
+10. `src/components/clients/ClientKYCSection.tsx`
+11. `src/components/leads/LeadKYCSection.tsx`
+12. `src/components/clients/ClientDocumentsSection.tsx`
 

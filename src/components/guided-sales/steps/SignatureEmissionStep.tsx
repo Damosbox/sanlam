@@ -1,10 +1,13 @@
 import { useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   FileText, 
@@ -156,9 +159,36 @@ export const SignatureEmissionStep = ({
   onNext,
   onEditStep,
 }: SignatureEmissionStepProps) => {
-  const { calculatedPremium, binding, needsAnalysis, subscription, coverage, productSelection, packObsequesData } = state;
+  const { calculatedPremium, binding, needsAnalysis, subscription, coverage, productSelection, packObsequesData, clientIdentification } = state;
   const isObseques = productSelection.selectedProduct === "pack_obseques";
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Check screening_blocked status
+  const contactId = clientIdentification.linkedContactId;
+  const contactType = clientIdentification.linkedContactType;
+  
+  const { data: screeningBlocked } = useQuery({
+    queryKey: ["screening-blocked", contactId, contactType],
+    queryFn: async () => {
+      if (!contactId) return false;
+      if (contactType === "prospect") {
+        const { data } = await supabase
+          .from("lead_kyc_compliance")
+          .select("screening_blocked")
+          .eq("lead_id", contactId)
+          .maybeSingle();
+        return data?.screening_blocked || false;
+      } else {
+        const { data } = await supabase
+          .from("client_kyc_compliance")
+          .select("screening_blocked")
+          .eq("client_id", contactId)
+          .maybeSingle();
+        return data?.screening_blocked || false;
+      }
+    },
+    enabled: !!contactId,
+  });
 
   const handleSign = () => {
     onUpdateBinding({ signatureCompleted: true, signatureData: "signature-data-mock" });
@@ -176,7 +206,7 @@ export const SignatureEmissionStep = ({
     onUpdateBinding({ signatureCompleted: false, signatureData: undefined });
   };
 
-  const canProceed = binding.acceptTerms && binding.acceptDataSharing && binding.signatureCompleted;
+  const canProceed = binding.acceptTerms && binding.acceptDataSharing && binding.signatureCompleted && !screeningBlocked;
 
   const policyPrefix = isObseques ? "OBSEQ" : "AUTO";
   const documents = isObseques
@@ -189,6 +219,15 @@ export const SignatureEmissionStep = ({
   // --- Main view: Global Recap + Validation + Signature ---
   return (
     <div className="space-y-6">
+      {/* Screening blocked alert */}
+      {screeningBlocked && (
+        <Alert variant="destructive">
+          <AlertDescription className="font-medium">
+            SanlamAllianz reviendra vers le client afin de compléter la transaction ou mettre à jour des informations sur sa fiche.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div>
         <h1 className="text-2xl font-bold text-foreground">Récapitulatif global & Signature</h1>
         <p className="text-muted-foreground mt-1">

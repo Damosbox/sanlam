@@ -20,12 +20,14 @@ interface RolePermission {
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrateur",
+  compliance: "Conformité",
   broker: "Courtier",
   customer: "Client",
 };
 
 const ROLE_COLORS: Record<string, string> = {
   admin: "bg-red-500",
+  compliance: "bg-purple-500",
   broker: "bg-blue-500",
   customer: "bg-green-500",
 };
@@ -47,7 +49,7 @@ export const AdminPermissions = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
 
-  const roles: Array<"admin" | "broker" | "customer"> = ["admin", "broker", "customer"];
+  const roles: Array<"admin" | "compliance" | "broker" | "customer"> = ["admin", "compliance", "broker", "customer"];
 
   useEffect(() => {
     fetchData();
@@ -79,7 +81,7 @@ export const AdminPermissions = () => {
     );
   };
 
-  const togglePermission = async (role: "admin" | "broker" | "customer", permissionId: string) => {
+  const togglePermission = async (role: "admin" | "compliance" | "broker" | "customer", permissionId: string) => {
     const key = `${role}-${permissionId}`;
     setUpdating(key);
 

@@ -400,6 +400,38 @@ export const GuidedSalesFlow = () => {
         return false;
       }
 
+      // Check screening_blocked before finalizing
+      const contactId = state.clientIdentification.linkedContactId;
+      const contactType = state.clientIdentification.linkedContactType;
+      
+      if (contactId) {
+        let screeningBlocked = false;
+        
+        if (contactType === "prospect") {
+          const { data: kycResult } = await supabase
+            .from("lead_kyc_compliance")
+            .select("screening_blocked")
+            .eq("lead_id", contactId)
+            .maybeSingle();
+          screeningBlocked = kycResult?.screening_blocked || false;
+        } else {
+          const { data: kycResult } = await supabase
+            .from("client_kyc_compliance")
+            .select("screening_blocked")
+            .eq("client_id", contactId)
+            .maybeSingle();
+          screeningBlocked = kycResult?.screening_blocked || false;
+        }
+
+        if (screeningBlocked) {
+          toast.error("Souscription bloquée", {
+            description: "SanlamAllianz reviendra vers le client afin de compléter la transaction ou mettre à jour des informations sur sa fiche.",
+            duration: 10000,
+          });
+          return false;
+        }
+      }
+
       const product = state.productSelection.selectedProduct;
       const productNameMap: Record<string, string> = {
         auto: "Assurance auto",

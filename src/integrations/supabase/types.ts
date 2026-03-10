@@ -574,6 +574,7 @@ export type Database = {
           ppe_screening_reference: string | null
           ppe_screening_source: string | null
           ppe_screening_status: string | null
+          screening_blocked: boolean | null
           updated_at: string
         }
         Insert: {
@@ -596,6 +597,7 @@ export type Database = {
           ppe_screening_reference?: string | null
           ppe_screening_source?: string | null
           ppe_screening_status?: string | null
+          screening_blocked?: boolean | null
           updated_at?: string
         }
         Update: {
@@ -618,6 +620,7 @@ export type Database = {
           ppe_screening_reference?: string | null
           ppe_screening_source?: string | null
           ppe_screening_status?: string | null
+          screening_blocked?: boolean | null
           updated_at?: string
         }
         Relationships: []
@@ -1073,6 +1076,7 @@ export type Database = {
           ppe_screening_reference: string | null
           ppe_screening_source: string | null
           ppe_screening_status: string | null
+          screening_blocked: boolean | null
           updated_at: string
         }
         Insert: {
@@ -1095,6 +1099,7 @@ export type Database = {
           ppe_screening_reference?: string | null
           ppe_screening_source?: string | null
           ppe_screening_status?: string | null
+          screening_blocked?: boolean | null
           updated_at?: string
         }
         Update: {
@@ -1117,6 +1122,7 @@ export type Database = {
           ppe_screening_reference?: string | null
           ppe_screening_source?: string | null
           ppe_screening_status?: string | null
+          screening_blocked?: boolean | null
           updated_at?: string
         }
         Relationships: [
@@ -2443,7 +2449,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "broker" | "customer"
+      app_role: "admin" | "broker" | "customer" | "compliance"
       claim_status:
         | "Draft"
         | "Submitted"
@@ -2624,7 +2630,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "broker", "customer"],
+      app_role: ["admin", "broker", "customer", "compliance"],
       claim_status: [
         "Draft",
         "Submitted",

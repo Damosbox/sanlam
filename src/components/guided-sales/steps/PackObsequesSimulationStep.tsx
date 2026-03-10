@@ -541,37 +541,15 @@ export const PackObsequesSimulationStep = ({
           </div>
 
           <div className="flex flex-col gap-3 pt-4">
-            {!simulationCalculated && (
-              <Button 
-                onClick={handleCalculate} 
-                disabled={!isSubStep4Valid || isCalculating}
-                className="w-full gap-2"
-                size="lg"
-              >
-                {isCalculating ? (
-                  <>
-                    <Calculator className="h-4 w-4 animate-spin" />
-                    Calcul en cours...
-                  </>
-                ) : (
-                  <>
-                    <Calculator className="h-4 w-4" />
-                    Calculer la prime
-                  </>
-                )}
-              </Button>
-            )}
-
-            {simulationCalculated && (
-              <Button 
-                onClick={() => setSubStep(5)}
-                className="w-full gap-2"
-                size="lg"
-              >
-                Voir le récapitulatif
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            )}
+            <Button 
+              onClick={() => setSubStep(5)}
+              disabled={!isSubStep4Valid}
+              className="w-full gap-2"
+              size="lg"
+            >
+              Voir le récapitulatif
+              <ChevronRight className="h-4 w-4" />
+            </Button>
             
             <Button variant="outline" onClick={goToPrevSubStep} className="gap-2">
               <ChevronLeft className="h-4 w-4" />
@@ -593,59 +571,10 @@ export const PackObsequesSimulationStep = ({
 
     return (
       <div className="space-y-4">
-        {/* Réductions */}
-        <DiscountSelector bns={bns} commercial={commercial} onBnsChange={setBns} onCommercialChange={setCommercial} />
-
-        {/* Section 1 — Détail sur la prime */}
-        <Card className="border-primary/20 bg-primary/5">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Check className="h-5 w-5 text-primary" />
-              1. Détail sur la prime
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center border-b border-primary/10 pb-2">
-                <span className="text-sm font-semibold">Première prime</span>
-                <span className="text-lg font-bold text-primary">{formatFCFA(premierePrime)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Prime Périodique nette{(bns > 0 || commercial > 0) ? " (avant réductions)" : ""}</span>
-                <span className="font-medium">{formatFCFA(periodicPremium)}</span>
-              </div>
-              {(bns > 0 || commercial > 0) && (
-                <>
-                  {bns > 0 && (
-                    <div className="flex justify-between text-sm text-green-600">
-                      <span>BNS (-{bns}%)</span>
-                      <span>-{formatFCFA(Math.round(periodicPremium * bns / 100))}</span>
-                    </div>
-                  )}
-                  {commercial > 0 && (
-                    <div className="flex justify-between text-sm text-green-600">
-                      <span>Réduction commerciale (-{commercial}%)</span>
-                      <span>-{formatFCFA(totalDiscount - (bns > 0 ? Math.round(periodicPremium * bns / 100) : 0))}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-sm font-medium border-t border-dashed pt-1">
-                    <span>Prime Périodique après réductions</span>
-                    <span>{formatFCFA(discountedPeriodic)}</span>
-                  </div>
-                </>
-              )}
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Frais d'adhésion</span>
-                <span className="font-medium">{formatFCFA(breakdown.fraisAccessoires)}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Section 2 — Détails sur les capitaux */}
+        {/* Section — Détails sur les capitaux (always visible) */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">2. Détails sur les capitaux</CardTitle>
+            <CardTitle className="text-lg">{simulationCalculated ? "2." : "1."} Détails sur les capitaux</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm">
@@ -673,10 +602,10 @@ export const PackObsequesSimulationStep = ({
           </CardContent>
         </Card>
 
-        {/* Section 3 — Données de simulation */}
+        {/* Section — Données de simulation (always visible) */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">3. Données de simulation</CardTitle>
+            <CardTitle className="text-lg">{simulationCalculated ? "3." : "2."} Données de simulation</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm">
@@ -724,32 +653,106 @@ export const PackObsequesSimulationStep = ({
           </CardContent>
         </Card>
 
-        {/* Actions: Sauvegarder / Envoyer / Souscrire */}
-        <div className="flex flex-col sm:flex-row gap-3">
+        {/* Calculer la prime button (before calculation) */}
+        {!simulationCalculated && (
           <Button 
-            variant="outline" 
-            onClick={() => { setDialogMode("save"); setDialogOpen(true); }}
-            className="gap-2 flex-1"
+            onClick={handleCalculate} 
+            disabled={isCalculating}
+            className="w-full gap-2"
+            size="lg"
           >
-            <Save className="h-4 w-4" />
-            Sauvegarder
+            {isCalculating ? (
+              <>
+                <Calculator className="h-4 w-4 animate-spin" />
+                Calcul en cours...
+              </>
+            ) : (
+              <>
+                <Calculator className="h-4 w-4" />
+                Calculer la prime
+              </>
+            )}
           </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => { setDialogMode("send"); setDialogOpen(true); }}
-            className="gap-2 flex-1"
-          >
-            <Send className="h-4 w-4" />
-            Envoyer
-          </Button>
-          <Button 
-            onClick={onNext}
-            className="gap-2 flex-1"
-          >
-            SOUSCRIRE
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+        )}
+
+        {/* Section — Détail sur la prime (only after calculation) */}
+        {simulationCalculated && (
+          <>
+            <DiscountSelector bns={bns} commercial={commercial} onBnsChange={setBns} onCommercialChange={setCommercial} />
+
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Check className="h-5 w-5 text-primary" />
+                  1. Détail sur la prime
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center border-b border-primary/10 pb-2">
+                    <span className="text-sm font-semibold">Première prime</span>
+                    <span className="text-lg font-bold text-primary">{formatFCFA(premierePrime)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Prime Périodique nette{(bns > 0 || commercial > 0) ? " (avant réductions)" : ""}</span>
+                    <span className="font-medium">{formatFCFA(periodicPremium)}</span>
+                  </div>
+                  {(bns > 0 || commercial > 0) && (
+                    <>
+                      {bns > 0 && (
+                        <div className="flex justify-between text-sm text-emerald-600">
+                          <span>BNS (-{bns}%)</span>
+                          <span>-{formatFCFA(Math.round(periodicPremium * bns / 100))}</span>
+                        </div>
+                      )}
+                      {commercial > 0 && (
+                        <div className="flex justify-between text-sm text-emerald-600">
+                          <span>Réduction commerciale (-{commercial}%)</span>
+                          <span>-{formatFCFA(totalDiscount - (bns > 0 ? Math.round(periodicPremium * bns / 100) : 0))}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-sm font-medium border-t border-dashed pt-1">
+                        <span>Prime Périodique après réductions</span>
+                        <span>{formatFCFA(discountedPeriodic)}</span>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Frais d'adhésion</span>
+                    <span className="font-medium">{formatFCFA(breakdown.fraisAccessoires)}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Actions: Sauvegarder / Envoyer / Souscrire */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => { setDialogMode("save"); setDialogOpen(true); }}
+                className="gap-2 flex-1"
+              >
+                <Save className="h-4 w-4" />
+                Sauvegarder
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => { setDialogMode("send"); setDialogOpen(true); }}
+                className="gap-2 flex-1"
+              >
+                <Send className="h-4 w-4" />
+                Envoyer
+              </Button>
+              <Button 
+                onClick={onNext}
+                className="gap-2 flex-1"
+              >
+                SOUSCRIRE
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </>
+        )}
 
         <Button variant="outline" onClick={goToPrevSubStep} className="gap-2 w-full">
           <ChevronLeft className="h-4 w-4" />

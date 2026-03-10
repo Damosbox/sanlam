@@ -201,17 +201,17 @@ export const QuoteSummaryCard = ({ state, onNext, nextLabel, disabled, onApplySu
         <div className="space-y-2 text-sm">
           <PremiumLine 
             label="Prime Nette" 
-            value={formatFCFADecimal(premium.primeNette)} 
+            value={formatFCFA(premium.primeNette)} 
             tooltip={tooltips.primeNette} 
           />
           <PremiumLine 
             label="Frais d'accessoires" 
-            value={formatFCFADecimal(premium.fraisAccessoires)} 
+            value={formatFCFA(premium.fraisAccessoires)} 
             tooltip={tooltips.fraisAccessoires} 
           />
           <PremiumLine 
             label="Taxes (14,5%)" 
-            value={formatFCFADecimal(premium.taxes)} 
+            value={formatFCFA(premium.taxes)} 
             tooltip={tooltips.taxes} 
           />
         </div>

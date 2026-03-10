@@ -563,9 +563,7 @@ export const PackObsequesSimulationStep = ({
   const renderSubStep5 = () => {
     const breakdown = calculatePackObsequesPremium(data);
     const periodicPremium = getPeriodicPremium(breakdown.primeTotale, data.periodicity);
-    const discountedPeriodic = applyDiscounts(periodicPremium, bns, commercial);
-    const totalDiscount = periodicPremium - discountedPeriodic;
-    const premierePrime = discountedPeriodic + breakdown.fraisAccessoires;
+    const premierePrime = periodicPremium + breakdown.fraisAccessoires;
 
     return (
       <div className="space-y-4">

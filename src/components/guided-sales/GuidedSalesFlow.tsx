@@ -423,7 +423,7 @@ export const GuidedSalesFlow = () => {
           screeningBlocked = kycResult?.screening_blocked || false;
         }
 
-        if (kycData?.screening_blocked) {
+        if (screeningBlocked) {
           toast.error("Souscription bloquée", {
             description: "SanlamAllianz reviendra vers le client afin de compléter la transaction ou mettre à jour des informations sur sa fiche.",
             duration: 10000,

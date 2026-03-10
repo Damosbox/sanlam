@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Car, Shield, Calendar, HelpCircle, Save, Send, ChevronRight, Pencil } from "lucide-react";
 import { GuidedSalesState, PlanTier, ContractPeriodicity } from "../types";
-import { formatFCFA, formatFCFADecimal } from "@/utils/formatCurrency";
+import { formatFCFA } from "@/utils/formatCurrency";
 import { DiscountSelector, applyDiscounts } from "../DiscountSelector";
 import { QuotationSaveDialog } from "../QuotationSaveDialog";
 import { toast } from "sonner";

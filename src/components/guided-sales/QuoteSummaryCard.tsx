@@ -221,18 +221,18 @@ export const QuoteSummaryCard = ({ state, onNext, nextLabel, disabled, onApplySu
         <div className="space-y-2 text-sm">
           <PremiumLine 
             label="Prime TTC" 
-            value={formatFCFADecimal(premium.primeTTC)} 
+            value={formatFCFA(premium.primeTTC)} 
             tooltip={tooltips.primeTTC}
             isBold 
           />
           <PremiumLine 
             label="FGA" 
-            value={formatFCFADecimal(premium.fga)} 
+            value={formatFCFA(premium.fga)} 
             tooltip={tooltips.fga} 
           />
           <PremiumLine 
             label="Carte Brune CEDEAO" 
-            value={formatFCFADecimal(premium.cedeao)} 
+            value={formatFCFA(premium.cedeao)} 
             tooltip={tooltips.cedeao} 
           />
         </div>

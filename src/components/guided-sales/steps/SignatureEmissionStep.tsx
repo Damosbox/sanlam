@@ -383,9 +383,9 @@ export const SignatureEmissionStep = ({
           <Separator className="my-3" />
 
           <div className="space-y-2 text-sm">
-            <PremiumLine label="Prime TTC" value={formatFCFADecimal(calculatedPremium.primeTTC)} tooltip={tooltips.primeTTC} isBold />
-            <PremiumLine label="FGA" value={formatFCFADecimal(calculatedPremium.fga)} tooltip={tooltips.fga} />
-            <PremiumLine label="Carte Brune CEDEAO" value={formatFCFADecimal(calculatedPremium.cedeao)} tooltip={tooltips.cedeao} />
+            <PremiumLine label="Prime TTC" value={formatFCFA(calculatedPremium.primeTTC)} tooltip={tooltips.primeTTC} isBold />
+            <PremiumLine label="FGA" value={formatFCFA(calculatedPremium.fga)} tooltip={tooltips.fga} />
+            <PremiumLine label="Carte Brune CEDEAO" value={formatFCFA(calculatedPremium.cedeao)} tooltip={tooltips.cedeao} />
           </div>
 
           <Separator className="my-3" />

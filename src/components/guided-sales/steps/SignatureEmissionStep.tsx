@@ -375,9 +375,9 @@ export const SignatureEmissionStep = ({
           <h3 className="font-semibold text-lg mb-4">Décompte de prime</h3>
           
           <div className="space-y-2 text-sm">
-            <PremiumLine label="Prime Nette" value={formatFCFADecimal(calculatedPremium.primeNette)} tooltip={tooltips.primeNette} />
-            <PremiumLine label="Frais d'accessoires" value={formatFCFADecimal(calculatedPremium.fraisAccessoires)} tooltip={tooltips.fraisAccessoires} />
-            <PremiumLine label="Taxes (14,5%)" value={formatFCFADecimal(calculatedPremium.taxes)} tooltip={tooltips.taxes} />
+            <PremiumLine label="Prime Nette" value={formatFCFA(calculatedPremium.primeNette)} tooltip={tooltips.primeNette} />
+            <PremiumLine label="Frais d'accessoires" value={formatFCFA(calculatedPremium.fraisAccessoires)} tooltip={tooltips.fraisAccessoires} />
+            <PremiumLine label="Taxes (14,5%)" value={formatFCFA(calculatedPremium.taxes)} tooltip={tooltips.taxes} />
           </div>
 
           <Separator className="my-3" />

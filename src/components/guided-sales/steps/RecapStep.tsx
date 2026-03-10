@@ -278,7 +278,7 @@ export const RecapStep = ({ state, onSaveQuote, onSubscribe, onEditStep }: Recap
                 {commercial > 0 && (
                   <div className="flex justify-between items-center text-green-600">
                     <span className="text-sm">Réduction commerciale (-{commercial}%)</span>
-                    <span className="text-sm">-{formatFCFADecimal(adjustedPremium.totalDiscount - (bns > 0 ? calculatedPremium.primeNette * bns / 100 : 0))}</span>
+                    <span className="text-sm">-{formatFCFA(adjustedPremium.totalDiscount - (bns > 0 ? calculatedPremium.primeNette * bns / 100 : 0))}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center font-medium border-t border-dashed pt-1">

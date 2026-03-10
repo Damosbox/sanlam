@@ -549,20 +549,7 @@ export const PackObsequesSimulationStep = ({
             >
               Voir le récapitulatif
               <ChevronRight className="h-4 w-4" />
-                )}
-              </Button>
-            )}
-
-            {simulationCalculated && (
-              <Button 
-                onClick={() => setSubStep(5)}
-                className="w-full gap-2"
-                size="lg"
-              >
-                Voir le récapitulatif
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            )}
+            </Button>
             
             <Button variant="outline" onClick={goToPrevSubStep} className="gap-2">
               <ChevronLeft className="h-4 w-4" />

@@ -674,8 +674,6 @@ export const PackObsequesSimulationStep = ({
         {/* Section — Détail sur la prime (only after calculation) */}
         {simulationCalculated && (
           <>
-            <DiscountSelector bns={bns} commercial={commercial} onBnsChange={setBns} onCommercialChange={setCommercial} />
-
             <Card className="border-primary/20 bg-primary/5">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -690,29 +688,9 @@ export const PackObsequesSimulationStep = ({
                     <span className="text-lg font-bold text-primary">{formatFCFA(premierePrime)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Prime Périodique nette{(bns > 0 || commercial > 0) ? " (avant réductions)" : ""}</span>
+                    <span className="text-muted-foreground">Prime Périodique nette</span>
                     <span className="font-medium">{formatFCFA(periodicPremium)}</span>
                   </div>
-                  {(bns > 0 || commercial > 0) && (
-                    <>
-                      {bns > 0 && (
-                        <div className="flex justify-between text-sm text-emerald-600">
-                          <span>BNS (-{bns}%)</span>
-                          <span>-{formatFCFA(Math.round(periodicPremium * bns / 100))}</span>
-                        </div>
-                      )}
-                      {commercial > 0 && (
-                        <div className="flex justify-between text-sm text-emerald-600">
-                          <span>Réduction commerciale (-{commercial}%)</span>
-                          <span>-{formatFCFA(totalDiscount - (bns > 0 ? Math.round(periodicPremium * bns / 100) : 0))}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between text-sm font-medium border-t border-dashed pt-1">
-                        <span>Prime Périodique après réductions</span>
-                        <span>{formatFCFA(discountedPeriodic)}</span>
-                      </div>
-                    </>
-                  )}
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Frais d'adhésion</span>
                     <span className="font-medium">{formatFCFA(breakdown.fraisAccessoires)}</span>

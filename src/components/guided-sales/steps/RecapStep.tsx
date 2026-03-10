@@ -287,8 +287,8 @@ export const RecapStep = ({ state, onSaveQuote, onSubscribe, onEditStep }: Recap
                 </div>
               </>
             )}
-            <PremiumLine label="Frais d'accessoires" value={formatFCFADecimal(calculatedPremium.fraisAccessoires)} tooltip={tooltips.fraisAccessoires} />
-            <PremiumLine label="Taxes (14,5%)" value={formatFCFADecimal(adjustedPremium.taxes)} tooltip={tooltips.taxes} />
+            <PremiumLine label="Frais d'accessoires" value={formatFCFA(calculatedPremium.fraisAccessoires)} tooltip={tooltips.fraisAccessoires} />
+            <PremiumLine label="Taxes (14,5%)" value={formatFCFA(adjustedPremium.taxes)} tooltip={tooltips.taxes} />
           </div>
 
           <Separator className="my-3" />

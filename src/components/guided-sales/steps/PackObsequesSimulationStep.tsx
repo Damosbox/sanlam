@@ -48,8 +48,6 @@ export const PackObsequesSimulationStep = ({
   const subStep = subStepLocal;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<"save" | "send">("save");
-  const [bns, setBns] = useState(0);
-  const [commercial, setCommercial] = useState(0);
   
   const data = state.packObsequesData!;
   const simulationCalculated = state.simulationCalculated;

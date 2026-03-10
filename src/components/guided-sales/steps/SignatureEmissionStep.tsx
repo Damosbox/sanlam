@@ -159,9 +159,36 @@ export const SignatureEmissionStep = ({
   onNext,
   onEditStep,
 }: SignatureEmissionStepProps) => {
-  const { calculatedPremium, binding, needsAnalysis, subscription, coverage, productSelection, packObsequesData } = state;
+  const { calculatedPremium, binding, needsAnalysis, subscription, coverage, productSelection, packObsequesData, clientIdentification } = state;
   const isObseques = productSelection.selectedProduct === "pack_obseques";
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Check screening_blocked status
+  const contactId = clientIdentification.linkedContactId;
+  const contactType = clientIdentification.linkedContactType;
+  
+  const { data: screeningBlocked } = useQuery({
+    queryKey: ["screening-blocked", contactId, contactType],
+    queryFn: async () => {
+      if (!contactId) return false;
+      if (contactType === "prospect") {
+        const { data } = await supabase
+          .from("lead_kyc_compliance")
+          .select("screening_blocked")
+          .eq("lead_id", contactId)
+          .maybeSingle();
+        return data?.screening_blocked || false;
+      } else {
+        const { data } = await supabase
+          .from("client_kyc_compliance")
+          .select("screening_blocked")
+          .eq("client_id", contactId)
+          .maybeSingle();
+        return data?.screening_blocked || false;
+      }
+    },
+    enabled: !!contactId,
+  });
 
   const handleSign = () => {
     onUpdateBinding({ signatureCompleted: true, signatureData: "signature-data-mock" });
@@ -179,7 +206,7 @@ export const SignatureEmissionStep = ({
     onUpdateBinding({ signatureCompleted: false, signatureData: undefined });
   };
 
-  const canProceed = binding.acceptTerms && binding.acceptDataSharing && binding.signatureCompleted;
+  const canProceed = binding.acceptTerms && binding.acceptDataSharing && binding.signatureCompleted && !screeningBlocked;
 
   const policyPrefix = isObseques ? "OBSEQ" : "AUTO";
   const documents = isObseques

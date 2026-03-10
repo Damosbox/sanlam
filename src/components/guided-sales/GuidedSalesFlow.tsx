@@ -813,6 +813,11 @@ export const GuidedSalesFlow = () => {
 
   // Handle next button from SalesAssistant
   const handleSalesAssistantNext = () => {
+    // Pack Obsèques sub-step 5: trigger calculation instead of navigating
+    if (isPackObseques && state.currentStep === 1 && state.simulationSubStep === 5 && !state.simulationCalculated) {
+      handlePackObsequesCalculate();
+      return;
+    }
     nextStep();
   };
 

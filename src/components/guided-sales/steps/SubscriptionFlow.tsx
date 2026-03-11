@@ -288,7 +288,7 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
     }
   };
 
-
+  const handleDeclarationSave = () => {
     onUpdate({ 
       priorCertificateType: "declaration",
       declarationText 

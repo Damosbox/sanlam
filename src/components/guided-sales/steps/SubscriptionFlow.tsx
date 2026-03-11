@@ -817,6 +817,53 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
       {/* Information du propriétaire */}
       <Card>
         <CardContent className="pt-6 space-y-4">
+          {/* Identity OCR - FIRST BLOCK (if not already done in sub-step 3) */}
+          {!identityOCRDone ? (
+            <div className="space-y-2">
+              <Label className="font-medium">📄 Pièce d'identité du propriétaire</Label>
+              {isIdentityOCRProcessing ? (
+                <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <div>
+                    <p className="text-sm font-medium">Analyse en cours...</p>
+                    <p className="text-xs text-muted-foreground">Extraction des données d'identité</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Scannez la pièce d'identité pour pré-remplir les champs</p>
+                  <CameraUploadButton
+                    id="identity-ocr-sub5"
+                    onFileSelected={handleIdentityOCRUpload}
+                    disabled={isIdentityOCRProcessing}
+                    uploadLabel="Uploader"
+                    cameraLabel="Scanner"
+                  />
+                </div>
+              )}
+              {screeningStatus === "processing" && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Vérification de conformité...
+                </div>
+              )}
+              {screeningStatus === "blocked" && (
+                <Alert variant="destructive">
+                  <ShieldAlert className="h-4 w-4" />
+                  <AlertTitle>Souscription impossible</AlertTitle>
+                  <AlertDescription>
+                    Un contrôle de conformité empêche la poursuite de cette souscription. Contactez votre responsable.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          ) : screeningStatus === "ok" ? (
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <ShieldCheck className="h-3 w-3 mr-1" />
+              Conformité validée
+            </Badge>
+          ) : null}
+
           <div className="flex items-center gap-2 mb-2">
             <User className="h-5 w-5 text-primary" />
             <h3 className="font-semibold">Information du propriétaire</h3>

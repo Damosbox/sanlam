@@ -362,12 +362,18 @@ export const PendingQuotationsTable = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="font-medium text-sm">
-                      {formatFCFA(quotation.premium_amount)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {frequencyLabels[quotation.premium_frequency] || quotation.premium_frequency}
-                    </div>
+                    {quotation.premium_amount > 0 ? (
+                      <>
+                        <div className="font-medium text-sm">
+                          {formatFCFA(quotation.premium_amount)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {frequencyLabels[quotation.premium_frequency] || quotation.premium_frequency}
+                        </div>
+                      </>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-sm">
                     {format(new Date(quotation.created_at), "dd MMM", { locale: fr })}

@@ -149,11 +149,13 @@ export const PackObsequesSubscriptionFlow = ({
       if (result?.extracted) {
         const ext = result.extracted;
         const filledFields: string[] = [];
+        let extractedFirstName = "";
+        let extractedLastName = "";
 
         if (target === "step1") {
           const updates: Partial<PackObsequesData> = {};
-          if (ext.lastName) { updates.lastName = ext.lastName; filledFields.push("Nom"); }
-          if (ext.firstName) { updates.firstName = ext.firstName; filledFields.push("Prénom"); }
+          if (ext.lastName) { updates.lastName = ext.lastName; extractedLastName = ext.lastName; filledFields.push("Nom"); }
+          if (ext.firstName) { updates.firstName = ext.firstName; extractedFirstName = ext.firstName; filledFields.push("Prénom"); }
           if (ext.documentNumber) { updates.identityNumber = ext.documentNumber; filledFields.push("N° pièce"); }
           if (ext.documentType) {
             const typeMap: Record<string, string> = { "CNI": "cni", "Passeport": "passeport", "Permis de conduire": "permis", "Carte consulaire": "carte_sejour" };
@@ -165,8 +167,8 @@ export const PackObsequesSubscriptionFlow = ({
           onUpdate(updates);
         } else {
           const updates: Partial<PackObsequesData> = {};
-          if (ext.lastName) { updates.conjointLastName = ext.lastName; filledFields.push("Nom"); }
-          if (ext.firstName) { updates.conjointFirstName = ext.firstName; filledFields.push("Prénom"); }
+          if (ext.lastName) { updates.conjointLastName = ext.lastName; extractedLastName = ext.lastName; filledFields.push("Nom"); }
+          if (ext.firstName) { updates.conjointFirstName = ext.firstName; extractedFirstName = ext.firstName; filledFields.push("Prénom"); }
           if (ext.documentNumber) { updates.conjointIdNumber = ext.documentNumber; filledFields.push("N° pièce"); }
           if (ext.documentType) {
             const typeMap: Record<string, string> = { "CNI": "cni", "Passeport": "passeport", "Permis de conduire": "permis", "Carte consulaire": "carte_sejour" };
@@ -182,6 +184,28 @@ export const PackObsequesSubscriptionFlow = ({
           toast.success(`Pièce analysée ! Champs pré-remplis : ${filledFields.join(", ")}`, { duration: 5000 });
         } else {
           toast.warning("L'analyse n'a pas pu extraire de données.");
+        }
+
+        // Chain LCB-FT screening automatically
+        if (extractedFirstName && extractedLastName) {
+          const setScreening = target === "step1" ? setScreeningStep1 : setScreeningStep2;
+          setScreening("processing");
+          try {
+            const { data: screening, error: screenErr } = await supabase.functions.invoke("screen-ppe", {
+              body: {
+                clientId: "guided-sales-temp",
+                entityType: "lead",
+                firstName: extractedFirstName,
+                lastName: extractedLastName,
+                nationality: target === "step1" ? data.nationality : data.conjointNationality,
+              },
+            });
+            if (screenErr) throw screenErr;
+            setScreening(screening?.result?.screeningBlocked ? "blocked" : "ok");
+          } catch (screenError) {
+            console.error("Screening error:", screenError);
+            setScreening("ok"); // fail-open for demo
+          }
         }
       } else {
         toast.warning("Impossible d'extraire les données du document.");

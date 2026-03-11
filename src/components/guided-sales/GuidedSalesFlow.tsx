@@ -775,7 +775,7 @@ export const GuidedSalesFlow = () => {
       
       case 7:
         // Step 7: Issuance (documents + cross-sell)
-        return <IssuanceStep state={state} onReset={resetFlow} />;
+        return <IssuanceStep state={state} onReset={resetFlow} upsellAccepted={upsellAccepted} />;
       
       default:
         return null;

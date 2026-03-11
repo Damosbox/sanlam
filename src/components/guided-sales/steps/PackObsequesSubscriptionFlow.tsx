@@ -262,27 +262,9 @@ export const PackObsequesSubscriptionFlow = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* OCR Scanner - FIRST BLOCK */}
         <div className="space-y-2">
-          <Label>Type de pièce d'identité *</Label>
-          <Select value={data.identityDocumentType} onValueChange={(v) => onUpdate({ identityDocumentType: v })}>
-            <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="attestation_identite">Attestation d'identité</SelectItem>
-              <SelectItem value="cni">CNI</SelectItem>
-              <SelectItem value="passeport">Passeport</SelectItem>
-              <SelectItem value="permis">Permis de conduire</SelectItem>
-              <SelectItem value="carte_sejour">Carte de séjour</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Numéro d'identification *</Label>
-          <Input value={data.identityNumber} onChange={(e) => onUpdate({ identityNumber: e.target.value })} placeholder="Écrivez ici" />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Scanner la pièce d'identité (OCR)</Label>
+          <Label className="font-medium">📄 Scanner une pièce d'identité</Label>
           <input
             ref={fileInputStep1Ref}
             type="file"
@@ -301,7 +283,7 @@ export const PackObsequesSubscriptionFlow = ({
             </div>
           ) : (
             <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Scannez la pièce pour pré-remplir les champs</p>
+              <p className="text-sm text-muted-foreground">Scannez la pièce pour pré-remplir les champs ci-dessous</p>
               <CameraUploadButton
                 id="ocr-identity-step1"
                 onFileSelected={(file) => {
@@ -316,6 +298,47 @@ export const PackObsequesSubscriptionFlow = ({
               />
             </div>
           )}
+          {/* Screening status */}
+          {screeningStep1 === "processing" && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Vérification de conformité...
+            </div>
+          )}
+          {screeningStep1 === "ok" && (
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <ShieldCheck className="h-3 w-3 mr-1" />
+              Conformité validée
+            </Badge>
+          )}
+          {screeningStep1 === "blocked" && (
+            <Alert variant="destructive">
+              <ShieldAlert className="h-4 w-4" />
+              <AlertTitle>Souscription impossible</AlertTitle>
+              <AlertDescription>
+                Un contrôle de conformité empêche la poursuite de cette souscription. Contactez votre responsable.
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label>Type de pièce d'identité *</Label>
+          <Select value={data.identityDocumentType} onValueChange={(v) => onUpdate({ identityDocumentType: v })}>
+            <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="attestation_identite">Attestation d'identité</SelectItem>
+              <SelectItem value="cni">CNI</SelectItem>
+              <SelectItem value="passeport">Passeport</SelectItem>
+              <SelectItem value="permis">Permis de conduire</SelectItem>
+              <SelectItem value="carte_sejour">Carte de séjour</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Numéro d'identification *</Label>
+          <Input value={data.identityNumber} onChange={(e) => onUpdate({ identityNumber: e.target.value })} placeholder="Écrivez ici" />
         </div>
 
         <div className="space-y-2">

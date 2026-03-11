@@ -452,9 +452,55 @@ export const PackObsequesSimulationStep = ({
         <CardTitle className="text-lg">Assuré principal (1/2)</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* OCR Scanner - FIRST BLOCK */}
+        <div className="space-y-2">
+          <Label className="font-medium">📄 Scanner une pièce d'identité</Label>
+          {isOCRProcessing ? (
+            <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <div>
+                <p className="text-sm font-medium">Analyse en cours...</p>
+                <p className="text-xs text-muted-foreground">Extraction des données d'identité</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Scannez la pièce pour pré-remplir les champs ci-dessous</p>
+              <CameraUploadButton
+                id="ocr-simulation-step3"
+                onFileSelected={handleSimOCRUpload}
+                disabled={isOCRProcessing}
+                uploadLabel="Uploader"
+                cameraLabel="Scanner"
+              />
+            </div>
+          )}
+          {screeningStatus === "processing" && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Vérification de conformité...
+            </div>
+          )}
+          {screeningStatus === "ok" && (
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <ShieldCheck className="h-3 w-3 mr-1" />
+              Conformité validée
+            </Badge>
+          )}
+          {screeningStatus === "blocked" && (
+            <Alert variant="destructive">
+              <ShieldAlert className="h-4 w-4" />
+              <AlertTitle>Souscription impossible</AlertTitle>
+              <AlertDescription>
+                Un contrôle de conformité empêche la poursuite. Contactez votre responsable.
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+
         {/* 1. Nom */}
         <div className="space-y-2">
-          <Label>1. Nom *</Label>
+          <Label>1. Nom * {data.lastName && <span className="text-xs text-muted-foreground italic">(pré-rempli)</span>}</Label>
           <Input
             value={data.lastName}
             onChange={(e) => onUpdate({ lastName: e.target.value })}

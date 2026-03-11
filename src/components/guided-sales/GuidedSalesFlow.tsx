@@ -602,7 +602,7 @@ export const GuidedSalesFlow = () => {
         lead_id: finalState.clientIdentification.linkedContactId || null,
         product_type: String(product || "auto"),
         product_name: productNames[product || "auto"] || "Assurance Auto",
-        premium_amount: finalState.calculatedPremium.totalAPayer || 0,
+        premium_amount: finalState.simulationCalculated ? (finalState.calculatedPremium.totalAPayer || 0) : 0,
         premium_frequency: "annuel",
         payment_status: "pending_payment",
         valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),

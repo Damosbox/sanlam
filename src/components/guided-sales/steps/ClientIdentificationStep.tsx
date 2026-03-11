@@ -280,6 +280,57 @@ export const ClientIdentificationStep = ({ state, onUpdate, onNext }: ClientIden
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Identity OCR Scanner - FIRST BLOCK */}
+          <div className="space-y-2 pb-3 border-b">
+            <Label className="font-medium">📄 Scanner une pièce d'identité</Label>
+            {isProcessingOCR ? (
+              <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <div>
+                  <p className="text-sm font-medium">Analyse en cours...</p>
+                  <p className="text-xs text-muted-foreground">Extraction des données d'identité</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">CNI, Passeport ou Permis — pré-remplit les champs automatiquement</p>
+                <CameraUploadButton
+                  id="client-id-ocr-top"
+                  onFileSelected={(file) => {
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    const fakeEvent = { target: { files: dt.files } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                    handleOCRUpload(fakeEvent);
+                  }}
+                  disabled={isProcessingOCR}
+                  uploadLabel="Uploader"
+                  cameraLabel="Scanner"
+                />
+              </div>
+            )}
+            {screeningStatus === "processing" && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Vérification de conformité...
+              </div>
+            )}
+            {screeningStatus === "ok" && (
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                <ShieldCheck className="h-3 w-3 mr-1" />
+                Conformité validée
+              </Badge>
+            )}
+            {screeningStatus === "blocked" && (
+              <Alert variant="destructive">
+                <ShieldAlert className="h-4 w-4" />
+                <AlertTitle>Souscription impossible</AlertTitle>
+                <AlertDescription>
+                  Un contrôle de conformité empêche la poursuite de cette souscription. Contactez votre responsable.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+
           {/* Search Bar and New Contact Button - Always visible when no linked contact and form not expanded with data */}
           {!isLinked && !hasManualData && !isFormExpanded && (
             <div className="flex gap-3">

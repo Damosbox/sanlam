@@ -947,16 +947,24 @@ export const GuidedSalesFlow = () => {
             }}
           />
 
-          {/* Sales Assistant Sidebar - Desktop */}
+          {/* Sales Assistant Sidebar - Desktop (or Upsell at step 7) */}
           {showSalesAssistant && !isMobile && (
             <div className="hidden lg:block lg:w-[35%] shrink-0">
-              <SalesAssistant
-                state={state}
-                onNext={handleSalesAssistantNext}
-                nextLabel={getNextLabel()}
-                disabled={state.currentStep === 1 && !state.simulationCalculated}
-                onPlanChange={handlePlanChange}
-              />
+              {state.currentStep === 7 ? (
+                <UpsellSidebar
+                  state={state}
+                  onAccept={(id) => setUpsellAccepted(true)}
+                  accepted={upsellAccepted}
+                />
+              ) : (
+                <SalesAssistant
+                  state={state}
+                  onNext={handleSalesAssistantNext}
+                  nextLabel={getNextLabel()}
+                  disabled={state.currentStep === 1 && !state.simulationCalculated}
+                  onPlanChange={handlePlanChange}
+                />
+              )}
             </div>
           )}
         </div>

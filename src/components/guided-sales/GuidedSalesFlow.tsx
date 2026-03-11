@@ -10,6 +10,7 @@ import { SubscriptionFlow } from "./steps/SubscriptionFlow";
 import { MobilePaymentStep } from "./steps/MobilePaymentStep";
 import { SignatureEmissionStep } from "./steps/SignatureEmissionStep";
 import { IssuanceStep } from "./steps/IssuanceStep";
+import { UpsellSidebar } from "./steps/UpsellSidebar";
 
 import { PackObsequesSimulationStep } from "./steps/PackObsequesSimulationStep";
 import { PackObsequesSubscriptionFlow } from "./steps/PackObsequesSubscriptionFlow";
@@ -69,6 +70,7 @@ export const GuidedSalesFlow = () => {
   const [isCalculating, setIsCalculating] = useState(false);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [saveAndQuitDialogOpen, setSaveAndQuitDialogOpen] = useState(false);
+  const [upsellAccepted, setUpsellAccepted] = useState(false);
   const isMobile = useIsMobile();
   
   // Ref for sub-step back handler from child components
@@ -773,7 +775,7 @@ export const GuidedSalesFlow = () => {
       
       case 7:
         // Step 7: Issuance (documents + cross-sell)
-        return <IssuanceStep state={state} onReset={resetFlow} />;
+        return <IssuanceStep state={state} onReset={resetFlow} upsellAccepted={upsellAccepted} />;
       
       default:
         return null;
@@ -945,23 +947,31 @@ export const GuidedSalesFlow = () => {
             }}
           />
 
-          {/* Sales Assistant Sidebar - Desktop */}
+          {/* Sales Assistant Sidebar - Desktop (or Upsell at step 7) */}
           {showSalesAssistant && !isMobile && (
             <div className="hidden lg:block lg:w-[35%] shrink-0">
-              <SalesAssistant
-                state={state}
-                onNext={handleSalesAssistantNext}
-                nextLabel={getNextLabel()}
-                disabled={state.currentStep === 1 && !state.simulationCalculated}
-                onPlanChange={handlePlanChange}
-              />
+              {state.currentStep === 7 ? (
+                <UpsellSidebar
+                  state={state}
+                  onAccept={(id) => setUpsellAccepted(true)}
+                  accepted={upsellAccepted}
+                />
+              ) : (
+                <SalesAssistant
+                  state={state}
+                  onNext={handleSalesAssistantNext}
+                  nextLabel={getNextLabel()}
+                  disabled={state.currentStep === 1 && !state.simulationCalculated}
+                  onPlanChange={handlePlanChange}
+                />
+              )}
             </div>
           )}
         </div>
       </main>
 
-      {/* Mobile Sticky Bar with Sales Assistant */}
-      {showSalesAssistant && isMobile && (
+      {/* Mobile Sticky Bar with Sales Assistant (or Upsell at step 7) */}
+      {showSalesAssistant && isMobile && state.currentStep !== 7 && (
         <MobileCoverageStickyBar
           state={state}
           onNext={handleSalesAssistantNext}
@@ -969,6 +979,15 @@ export const GuidedSalesFlow = () => {
           disabled={state.currentStep === 1 && !state.simulationCalculated}
           onPlanChange={handlePlanChange}
         />
+      )}
+      {isMobile && state.currentStep === 7 && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t z-20">
+          <UpsellSidebar
+            state={state}
+            onAccept={(id) => setUpsellAccepted(true)}
+            accepted={upsellAccepted}
+          />
+        </div>
       )}
     </div>
   );

@@ -126,8 +126,65 @@ export const PackObsequesSimulationStep = ({
     d.setFullYear(d.getFullYear() - 18);
     return d.toISOString().split("T")[0];
   };
-  const isSubStep3Valid = data.lastName && data.firstName && data.phone && isPhoneValid(data.phone) && data.birthDate && isAgeValid(data.birthDate);
+  const isSubStep3Valid = data.lastName && data.firstName && data.phone && isPhoneValid(data.phone) && data.birthDate && isAgeValid(data.birthDate) && screeningStatus !== "blocked";
   const isSubStep4Valid = data.email && data.gender && data.title && data.birthPlace;
+
+  const handleSimOCRUpload = async (file: File) => {
+    setIsOCRProcessing(true);
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data: result, error } = await supabase.functions.invoke("ocr-identity", {
+        body: { imageBase64: base64 },
+      });
+      if (error) throw error;
+
+      if (result?.extracted) {
+        const ext = result.extracted;
+        const updates: Partial<PackObsequesData> = {};
+        const filledFields: string[] = [];
+        if (ext.lastName) { updates.lastName = ext.lastName; filledFields.push("Nom"); }
+        if (ext.firstName) { updates.firstName = ext.firstName; filledFields.push("Prénom"); }
+        if (ext.birthDate) { updates.birthDate = ext.birthDate; filledFields.push("Date naissance"); }
+        onUpdate(updates);
+
+        if (filledFields.length > 0) {
+          toast.success(`Pièce analysée ! Champs pré-remplis : ${filledFields.join(", ")}`, { duration: 5000 });
+        }
+
+        // Chain LCB-FT screening
+        if (ext.firstName && ext.lastName) {
+          setScreeningStatus("processing");
+          try {
+            const { data: screening, error: screenErr } = await supabase.functions.invoke("screen-ppe", {
+              body: {
+                clientId: "guided-sales-temp",
+                entityType: "lead",
+                firstName: ext.firstName,
+                lastName: ext.lastName,
+              },
+            });
+            if (screenErr) throw screenErr;
+            setScreeningStatus(screening?.result?.screeningBlocked ? "blocked" : "ok");
+          } catch {
+            setScreeningStatus("ok");
+          }
+        }
+      } else {
+        toast.warning("Impossible d'extraire les données du document.");
+      }
+    } catch (err) {
+      console.error("OCR error:", err);
+      toast.error("Erreur lors de l'analyse du document");
+    } finally {
+      setIsOCRProcessing(false);
+    }
+  };
 
   // Render sub-step 1: Option, Formule & Type
   const renderSubStep1 = () => (

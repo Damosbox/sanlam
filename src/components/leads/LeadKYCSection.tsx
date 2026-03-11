@@ -208,7 +208,7 @@ export const LeadKYCSection = ({ leadId }: LeadKYCSectionProps) => {
           identity_document_type: docTypeMap[extracted.documentType] || "other",
           identity_document_number: extracted.documentNumber || prev.identity_document_number,
           identity_expiry_date: extracted.expiryDate || prev.identity_expiry_date,
-          identity_verified: true,
+          // Ne PAS auto-activer identity_verified — réservé compliance
         }));
 
         toast({ 
@@ -368,14 +368,26 @@ export const LeadKYCSection = ({ leadId }: LeadKYCSectionProps) => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <Label htmlFor="identity_verified" className="text-sm">Document vérifié</Label>
-              <Switch
-                id="identity_verified"
-                checked={formData.identity_verified}
-                onCheckedChange={(checked) => updateField("identity_verified", checked)}
-              />
-            </div>
+            <PermissionGate 
+              permission="kyc.trigger_screening"
+              fallback={
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">Document vérifié</Label>
+                  <Badge className={formData.identity_verified ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"}>
+                    {formData.identity_verified ? "Oui" : "Non"}
+                  </Badge>
+                </div>
+              }
+            >
+              <div className="flex items-center justify-between">
+                <Label htmlFor="identity_verified" className="text-sm">Document vérifié</Label>
+                <Switch
+                  id="identity_verified"
+                  checked={formData.identity_verified}
+                  onCheckedChange={(checked) => updateField("identity_verified", checked)}
+                />
+              </div>
+            </PermissionGate>
           </AccordionContent>
         </AccordionItem>
 

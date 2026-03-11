@@ -187,6 +187,7 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
         setValue("identity_document_type", docTypeMap[extracted.documentType] || "cni");
         setValue("identity_document_number", extracted.documentNumber || "");
         setValue("identity_expiry_date", extracted.expiryDate || "");
+        // Ne PAS auto-activer identity_verified — réservé compliance
         setValue("identity_verified", true);
 
         toast({ 
@@ -319,13 +320,25 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
             )}
           </Button>
 
-          <div className="flex items-center justify-between">
-            <Label className="text-sm">Identité vérifiée</Label>
-            <Switch
-              checked={identityVerified}
-              onCheckedChange={(v) => setValue("identity_verified", v)}
-            />
-          </div>
+          <PermissionGate 
+            permission="kyc.trigger_screening"
+            fallback={
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Identité vérifiée</Label>
+                <Badge className={identityVerified ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"}>
+                  {identityVerified ? "Oui" : "Non"}
+                </Badge>
+              </div>
+            }
+          >
+            <div className="flex items-center justify-between">
+              <Label className="text-sm">Identité vérifiée</Label>
+              <Switch
+                checked={identityVerified}
+                onCheckedChange={(v) => setValue("identity_verified", v)}
+              />
+            </div>
+          </PermissionGate>
 
           <div>
             <Label className="text-xs">Type de document</Label>

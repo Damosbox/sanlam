@@ -38,6 +38,7 @@ export const ClientIdentificationStep = ({ state, onUpdate, onNext }: ClientIden
   const [isFormExpanded, setIsFormExpanded] = useState(false);
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [isProcessingOCR, setIsProcessingOCR] = useState(false);
+  const [screeningStatus, setScreeningStatus] = useState<"idle" | "processing" | "ok" | "blocked">("idle");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const data = state.clientIdentification;

@@ -22,8 +22,12 @@ import {
   Calendar,
   Loader2,
   CheckCircle2,
-  Search
+  Search,
+  ShieldCheck,
+  ShieldAlert
 } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { CameraUploadButton } from "@/components/ui/CameraUploadButton";
 import { GuidedSalesState, CityType, LicenseCategory, PriorCertificateType } from "../types";
 import { cn } from "@/lib/utils";

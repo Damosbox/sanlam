@@ -210,6 +210,28 @@ export const ClientIdentificationStep = ({ state, onUpdate, onNext }: ClientIden
           title: "Données extraites",
           description: "Les informations ont été préremplies depuis la pièce d'identité",
         });
+
+        // Chain LCB-FT screening
+        const fn = extracted.firstName || data.firstName;
+        const ln = extracted.lastName || data.lastName;
+        if (fn && ln) {
+          setScreeningStatus("processing");
+          try {
+            const { data: screening, error: screenErr } = await supabase.functions.invoke("screen-ppe", {
+              body: {
+                clientId: "guided-sales-temp",
+                entityType: "lead",
+                firstName: fn,
+                lastName: ln,
+              },
+            });
+            if (screenErr) throw screenErr;
+            setScreeningStatus(screening?.result?.screeningBlocked ? "blocked" : "ok");
+          } catch (screenError) {
+            console.error("Screening error:", screenError);
+            setScreeningStatus("ok");
+          }
+        }
       } else {
         toast({
           title: "OCR incomplet",

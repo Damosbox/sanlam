@@ -257,7 +257,7 @@ export const ClientIdentificationStep = ({ state, onUpdate, onNext }: ClientIden
 
   const isLinked = !!data.linkedContactId;
   const hasManualData = !isLinked && (data.firstName || data.lastName || data.phone || data.email);
-  const canProceed = data.firstName && data.lastName && data.phone && isPhoneVerified;
+  const canProceed = data.firstName && data.lastName && data.phone && isPhoneVerified && screeningStatus !== "blocked";
 
   return (
     <div className="space-y-6">

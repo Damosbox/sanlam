@@ -510,7 +510,7 @@ export const PackObsequesSimulationStep = ({
 
         {/* 2. Prénom */}
         <div className="space-y-2">
-          <Label>2. Prénom *</Label>
+          <Label>2. Prénom * {data.firstName && <span className="text-xs text-muted-foreground italic">(pré-rempli)</span>}</Label>
           <Input
             value={data.firstName}
             onChange={(e) => onUpdate({ firstName: e.target.value })}

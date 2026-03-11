@@ -1,25 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, FileText, Share2, FolderOpen, ArrowLeft, Send, Download } from "lucide-react";
 import { GuidedSalesState } from "../types";
 import { toast } from "sonner";
-import { UpsellModal } from "./UpsellModal";
 import { DocumentResendDialog } from "@/components/policies/DocumentResendDialog";
 
 interface IssuanceStepProps {
   state: GuidedSalesState;
   onReset: () => void;
+  upsellAccepted?: boolean;
 }
 
-export const IssuanceStep = ({ state, onReset }: IssuanceStepProps) => {
+export const IssuanceStep = ({ state, onReset, upsellAccepted }: IssuanceStepProps) => {
   const policyNumber = state.finalizedPolicyNumber || ("POL-2024-CI-" + Math.random().toString(36).substring(2, 8).toUpperCase());
-  
-  // Upsell modal state
-  const [showUpsellModal, setShowUpsellModal] = useState(false);
-  const [upsellAccepted, setUpsellAccepted] = useState(false);
-  
   
   // Document resend dialog state
   const [resendDialogOpen, setResendDialogOpen] = useState(false);

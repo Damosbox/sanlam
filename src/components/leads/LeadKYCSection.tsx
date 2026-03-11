@@ -343,6 +343,8 @@ export const LeadKYCSection = ({ leadId }: LeadKYCSectionProps) => {
                 <SelectContent>
                   <SelectItem value="cni">Carte Nationale d'Identité</SelectItem>
                   <SelectItem value="passport">Passeport</SelectItem>
+                  <SelectItem value="carte_consulaire">Carte consulaire</SelectItem>
+                  <SelectItem value="carte_sejour">Carte de séjour</SelectItem>
                   <SelectItem value="permit">Permis de conduire</SelectItem>
                   <SelectItem value="other">Autre</SelectItem>
                 </SelectContent>

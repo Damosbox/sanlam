@@ -187,8 +187,7 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
         setValue("identity_document_type", docTypeMap[extracted.documentType] || "cni");
         setValue("identity_document_number", extracted.documentNumber || "");
         setValue("identity_expiry_date", extracted.expiryDate || "");
-        // Ne PAS auto-activer identity_verified — réservé compliance
-        setValue("identity_verified", true);
+        // Ne PAS auto-activer identity_verified — réservé compliance uniquement
 
         toast({ 
           title: "Document analysé",
@@ -354,6 +353,8 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
                 <SelectItem value="passport">Passeport</SelectItem>
                 <SelectItem value="carte_consulaire">Carte consulaire</SelectItem>
                 <SelectItem value="carte_sejour">Carte de séjour</SelectItem>
+                <SelectItem value="permit">Permis de conduire</SelectItem>
+                <SelectItem value="other">Autre</SelectItem>
               </SelectContent>
             </Select>
           </div>

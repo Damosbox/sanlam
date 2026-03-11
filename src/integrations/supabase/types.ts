@@ -432,6 +432,7 @@ export type Database = {
           gender: string | null
           has_drivers_license: boolean | null
           id: string
+          loyalty_program_interest: boolean | null
           marital_status: string | null
           monthly_income_range: string | null
           postal_code: string | null
@@ -441,6 +442,7 @@ export type Database = {
           property_owner: boolean | null
           property_type: string | null
           referral_source: string | null
+          socio_professional_category: string | null
           updated_at: string | null
           vehicle_count: number | null
         }
@@ -460,6 +462,7 @@ export type Database = {
           gender?: string | null
           has_drivers_license?: boolean | null
           id?: string
+          loyalty_program_interest?: boolean | null
           marital_status?: string | null
           monthly_income_range?: string | null
           postal_code?: string | null
@@ -469,6 +472,7 @@ export type Database = {
           property_owner?: boolean | null
           property_type?: string | null
           referral_source?: string | null
+          socio_professional_category?: string | null
           updated_at?: string | null
           vehicle_count?: number | null
         }
@@ -488,6 +492,7 @@ export type Database = {
           gender?: string | null
           has_drivers_license?: boolean | null
           id?: string
+          loyalty_program_interest?: boolean | null
           marital_status?: string | null
           monthly_income_range?: string | null
           postal_code?: string | null
@@ -497,6 +502,7 @@ export type Database = {
           property_owner?: boolean | null
           property_type?: string | null
           referral_source?: string | null
+          socio_professional_category?: string | null
           updated_at?: string | null
           vehicle_count?: number | null
         }

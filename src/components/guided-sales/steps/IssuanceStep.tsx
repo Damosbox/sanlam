@@ -35,26 +35,6 @@ export const IssuanceStep = ({ state, onReset, upsellAccepted }: IssuanceStepPro
     { id: "doc-4", document_name: "Conditions générales", document_type: "conditions_generales", file_url: null },
   ];
 
-  // Show upsell modal automatically after a short delay (simulating post-payment webhook)
-  useEffect(() => {
-    if (!upsellAccepted) {
-      const timer = setTimeout(() => {
-        setShowUpsellModal(true);
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [upsellAccepted]);
-
-  const handleUpsellClose = () => {
-    setShowUpsellModal(false);
-  };
-
-  const handleUpsellAccept = (offerId: string) => {
-    setShowUpsellModal(false);
-    setUpsellAccepted(true);
-    // Here you would typically send the upsell acceptance to your backend
-    console.log("Upsell accepted:", offerId);
-  };
 
 
   const handleResendAll = () => {

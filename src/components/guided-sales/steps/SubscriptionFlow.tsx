@@ -139,7 +139,7 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
   // Sub-step validations
   const isSubStep1Valid = () => !!subscription.agentCode;
   const isSubStep2Valid = () => !!subscription.geographicAddress && !!subscription.city;
-  const isSubStep3Valid = () => !!subscription.priorCertificateType;
+  const isSubStep3Valid = () => !!subscription.priorCertificateType && screeningStatus !== "blocked";
   const isSubStep4Valid = () => 
     !!subscription.vehicleBrand && 
     !!subscription.vehicleModel && 

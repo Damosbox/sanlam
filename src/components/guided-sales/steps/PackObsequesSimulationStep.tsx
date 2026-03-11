@@ -3,16 +3,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { GuidedSalesState, PackObsequesData, PackObsequesFormula, AdhesionType, TitleType, GenderType, ViePeriodicite } from "../types";
-import { ChevronLeft, ChevronRight, Shield, Calculator, Check, Save, Send } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shield, Calculator, Check, Save, Send, Loader2, ShieldCheck, ShieldAlert } from "lucide-react";
+import { CameraUploadButton } from "@/components/ui/CameraUploadButton";
 import { formatFCFA } from "@/utils/formatCurrency";
 import { calculatePackObsequesPremium, getPeriodicPremium } from "@/utils/packObsequesPremiumCalculator";
 import { toast } from "sonner";
 import { QuotationSaveDialog } from "../QuotationSaveDialog";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
 
 
 interface PackObsequesSimulationStepProps {
@@ -48,6 +52,8 @@ export const PackObsequesSimulationStep = ({
   const subStep = subStepLocal;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<"save" | "send">("save");
+  const [isOCRProcessing, setIsOCRProcessing] = useState(false);
+  const [screeningStatus, setScreeningStatus] = useState<"idle" | "processing" | "ok" | "blocked">("idle");
   
   const data = state.packObsequesData!;
   const simulationCalculated = state.simulationCalculated;
@@ -120,8 +126,65 @@ export const PackObsequesSimulationStep = ({
     d.setFullYear(d.getFullYear() - 18);
     return d.toISOString().split("T")[0];
   };
-  const isSubStep3Valid = data.lastName && data.firstName && data.phone && isPhoneValid(data.phone) && data.birthDate && isAgeValid(data.birthDate);
+  const isSubStep3Valid = data.lastName && data.firstName && data.phone && isPhoneValid(data.phone) && data.birthDate && isAgeValid(data.birthDate) && screeningStatus !== "blocked";
   const isSubStep4Valid = data.email && data.gender && data.title && data.birthPlace;
+
+  const handleSimOCRUpload = async (file: File) => {
+    setIsOCRProcessing(true);
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data: result, error } = await supabase.functions.invoke("ocr-identity", {
+        body: { imageBase64: base64 },
+      });
+      if (error) throw error;
+
+      if (result?.extracted) {
+        const ext = result.extracted;
+        const updates: Partial<PackObsequesData> = {};
+        const filledFields: string[] = [];
+        if (ext.lastName) { updates.lastName = ext.lastName; filledFields.push("Nom"); }
+        if (ext.firstName) { updates.firstName = ext.firstName; filledFields.push("Prénom"); }
+        if (ext.birthDate) { updates.birthDate = ext.birthDate; filledFields.push("Date naissance"); }
+        onUpdate(updates);
+
+        if (filledFields.length > 0) {
+          toast.success(`Pièce analysée ! Champs pré-remplis : ${filledFields.join(", ")}`, { duration: 5000 });
+        }
+
+        // Chain LCB-FT screening
+        if (ext.firstName && ext.lastName) {
+          setScreeningStatus("processing");
+          try {
+            const { data: screening, error: screenErr } = await supabase.functions.invoke("screen-ppe", {
+              body: {
+                clientId: "guided-sales-temp",
+                entityType: "lead",
+                firstName: ext.firstName,
+                lastName: ext.lastName,
+              },
+            });
+            if (screenErr) throw screenErr;
+            setScreeningStatus(screening?.result?.screeningBlocked ? "blocked" : "ok");
+          } catch {
+            setScreeningStatus("ok");
+          }
+        }
+      } else {
+        toast.warning("Impossible d'extraire les données du document.");
+      }
+    } catch (err) {
+      console.error("OCR error:", err);
+      toast.error("Erreur lors de l'analyse du document");
+    } finally {
+      setIsOCRProcessing(false);
+    }
+  };
 
   // Render sub-step 1: Option, Formule & Type
   const renderSubStep1 = () => (
@@ -389,9 +452,55 @@ export const PackObsequesSimulationStep = ({
         <CardTitle className="text-lg">Assuré principal (1/2)</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* OCR Scanner - FIRST BLOCK */}
+        <div className="space-y-2">
+          <Label className="font-medium">📄 Scanner une pièce d'identité</Label>
+          {isOCRProcessing ? (
+            <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <div>
+                <p className="text-sm font-medium">Analyse en cours...</p>
+                <p className="text-xs text-muted-foreground">Extraction des données d'identité</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Scannez la pièce pour pré-remplir les champs ci-dessous</p>
+              <CameraUploadButton
+                id="ocr-simulation-step3"
+                onFileSelected={handleSimOCRUpload}
+                disabled={isOCRProcessing}
+                uploadLabel="Uploader"
+                cameraLabel="Scanner"
+              />
+            </div>
+          )}
+          {screeningStatus === "processing" && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Vérification de conformité...
+            </div>
+          )}
+          {screeningStatus === "ok" && (
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <ShieldCheck className="h-3 w-3 mr-1" />
+              Conformité validée
+            </Badge>
+          )}
+          {screeningStatus === "blocked" && (
+            <Alert variant="destructive">
+              <ShieldAlert className="h-4 w-4" />
+              <AlertTitle>Souscription impossible</AlertTitle>
+              <AlertDescription>
+                Un contrôle de conformité empêche la poursuite. Contactez votre responsable.
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+
         {/* 1. Nom */}
         <div className="space-y-2">
-          <Label>1. Nom *</Label>
+          <Label>1. Nom * {data.lastName && <span className="text-xs text-muted-foreground italic">(pré-rempli)</span>}</Label>
           <Input
             value={data.lastName}
             onChange={(e) => onUpdate({ lastName: e.target.value })}
@@ -401,7 +510,7 @@ export const PackObsequesSimulationStep = ({
 
         {/* 2. Prénom */}
         <div className="space-y-2">
-          <Label>2. Prénom *</Label>
+          <Label>2. Prénom * {data.firstName && <span className="text-xs text-muted-foreground italic">(pré-rempli)</span>}</Label>
           <Input
             value={data.firstName}
             onChange={(e) => onUpdate({ firstName: e.target.value })}

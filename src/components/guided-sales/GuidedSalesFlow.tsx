@@ -970,8 +970,8 @@ export const GuidedSalesFlow = () => {
         </div>
       </main>
 
-      {/* Mobile Sticky Bar with Sales Assistant */}
-      {showSalesAssistant && isMobile && (
+      {/* Mobile Sticky Bar with Sales Assistant (or Upsell at step 7) */}
+      {showSalesAssistant && isMobile && state.currentStep !== 7 && (
         <MobileCoverageStickyBar
           state={state}
           onNext={handleSalesAssistantNext}
@@ -979,6 +979,15 @@ export const GuidedSalesFlow = () => {
           disabled={state.currentStep === 1 && !state.simulationCalculated}
           onPlanChange={handlePlanChange}
         />
+      )}
+      {isMobile && state.currentStep === 7 && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t z-20">
+          <UpsellSidebar
+            state={state}
+            onAccept={(id) => setUpsellAccepted(true)}
+            accepted={upsellAccepted}
+          />
+        </div>
       )}
     </div>
   );

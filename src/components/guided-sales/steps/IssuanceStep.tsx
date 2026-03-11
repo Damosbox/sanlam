@@ -65,14 +65,6 @@ export const IssuanceStep = ({ state, onReset, upsellAccepted }: IssuanceStepPro
         subscriptionId={state.finalizedSubscriptionId || "mock-subscription-id"}
       />
 
-      {/* Upsell Modal */}
-      <UpsellModal
-        open={showUpsellModal}
-        onClose={handleUpsellClose}
-        onAccept={handleUpsellAccept}
-        state={state}
-      />
-
       <div className="text-center">
         <div className="h-16 w-16 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center mb-4">
           <CheckCircle2 className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />

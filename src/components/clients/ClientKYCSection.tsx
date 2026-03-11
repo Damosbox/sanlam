@@ -187,8 +187,7 @@ export const ClientKYCSection = ({ clientId }: ClientKYCSectionProps) => {
         setValue("identity_document_type", docTypeMap[extracted.documentType] || "cni");
         setValue("identity_document_number", extracted.documentNumber || "");
         setValue("identity_expiry_date", extracted.expiryDate || "");
-        // Ne PAS auto-activer identity_verified — réservé compliance
-        setValue("identity_verified", true);
+        // Ne PAS auto-activer identity_verified — réservé compliance uniquement
 
         toast({ 
           title: "Document analysé",

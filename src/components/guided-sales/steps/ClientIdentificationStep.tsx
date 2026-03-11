@@ -520,33 +520,7 @@ export const ClientIdentificationStep = ({ state, onUpdate, onNext }: ClientIden
                 </div>
               )}
 
-              {/* ID Document OCR Scanner */}
-              <Card className="border-dashed">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <FileImage className="h-8 w-8 text-muted-foreground flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="font-medium">Scanner une pièce d'identité</p>
-                      <p className="text-sm text-muted-foreground">
-                        CNI, Passeport ou Permis de conduire
-                      </p>
-                    </div>
-                    <CameraUploadButton
-                      id="client-id-ocr"
-                      onFileSelected={(file) => {
-                        const dt = new DataTransfer();
-                        dt.items.add(file);
-                        const fakeEvent = { target: { files: dt.files } } as unknown as React.ChangeEvent<HTMLInputElement>;
-                        handleOCRUpload(fakeEvent);
-                      }}
-                      disabled={isProcessingOCR}
-                      uploadLabel="Uploader"
-                      cameraLabel="Scanner"
-                      variant="compact"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">

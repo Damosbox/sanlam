@@ -52,6 +52,8 @@ export const PackObsequesSimulationStep = ({
   const subStep = subStepLocal;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<"save" | "send">("save");
+  const [isOCRProcessing, setIsOCRProcessing] = useState(false);
+  const [screeningStatus, setScreeningStatus] = useState<"idle" | "processing" | "ok" | "blocked">("idle");
   
   const data = state.packObsequesData!;
   const simulationCalculated = state.simulationCalculated;

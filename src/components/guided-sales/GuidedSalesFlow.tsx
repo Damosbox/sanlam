@@ -70,6 +70,7 @@ export const GuidedSalesFlow = () => {
   const [isCalculating, setIsCalculating] = useState(false);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [saveAndQuitDialogOpen, setSaveAndQuitDialogOpen] = useState(false);
+  const [upsellAccepted, setUpsellAccepted] = useState(false);
   const isMobile = useIsMobile();
   
   // Ref for sub-step back handler from child components

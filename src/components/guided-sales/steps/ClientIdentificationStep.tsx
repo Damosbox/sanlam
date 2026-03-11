@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, User, Loader2, UserPlus, Pencil, ChevronDown, ChevronUp, FileImage } from "lucide-react";
+import { Search, User, Loader2, UserPlus, Pencil, ChevronDown, ChevronUp, FileImage, ShieldCheck, ShieldAlert } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { CameraUploadButton } from "@/components/ui/CameraUploadButton";
 import { useToast } from "@/hooks/use-toast";
 import { GuidedSalesState } from "../types";
@@ -37,6 +38,7 @@ export const ClientIdentificationStep = ({ state, onUpdate, onNext }: ClientIden
   const [isFormExpanded, setIsFormExpanded] = useState(false);
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [isProcessingOCR, setIsProcessingOCR] = useState(false);
+  const [screeningStatus, setScreeningStatus] = useState<"idle" | "processing" | "ok" | "blocked">("idle");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const data = state.clientIdentification;
@@ -208,6 +210,28 @@ export const ClientIdentificationStep = ({ state, onUpdate, onNext }: ClientIden
           title: "Données extraites",
           description: "Les informations ont été préremplies depuis la pièce d'identité",
         });
+
+        // Chain LCB-FT screening
+        const fn = extracted.firstName || data.firstName;
+        const ln = extracted.lastName || data.lastName;
+        if (fn && ln) {
+          setScreeningStatus("processing");
+          try {
+            const { data: screening, error: screenErr } = await supabase.functions.invoke("screen-ppe", {
+              body: {
+                clientId: "guided-sales-temp",
+                entityType: "lead",
+                firstName: fn,
+                lastName: ln,
+              },
+            });
+            if (screenErr) throw screenErr;
+            setScreeningStatus(screening?.result?.screeningBlocked ? "blocked" : "ok");
+          } catch (screenError) {
+            console.error("Screening error:", screenError);
+            setScreeningStatus("ok");
+          }
+        }
       } else {
         toast({
           title: "OCR incomplet",
@@ -233,7 +257,7 @@ export const ClientIdentificationStep = ({ state, onUpdate, onNext }: ClientIden
 
   const isLinked = !!data.linkedContactId;
   const hasManualData = !isLinked && (data.firstName || data.lastName || data.phone || data.email);
-  const canProceed = data.firstName && data.lastName && data.phone && isPhoneVerified;
+  const canProceed = data.firstName && data.lastName && data.phone && isPhoneVerified && screeningStatus !== "blocked";
 
   return (
     <div className="space-y-6">
@@ -256,6 +280,57 @@ export const ClientIdentificationStep = ({ state, onUpdate, onNext }: ClientIden
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Identity OCR Scanner - FIRST BLOCK */}
+          <div className="space-y-2 pb-3 border-b">
+            <Label className="font-medium">📄 Scanner une pièce d'identité</Label>
+            {isProcessingOCR ? (
+              <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <div>
+                  <p className="text-sm font-medium">Analyse en cours...</p>
+                  <p className="text-xs text-muted-foreground">Extraction des données d'identité</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">CNI, Passeport ou Permis — pré-remplit les champs automatiquement</p>
+                <CameraUploadButton
+                  id="client-id-ocr-top"
+                  onFileSelected={(file) => {
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    const fakeEvent = { target: { files: dt.files } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                    handleOCRUpload(fakeEvent);
+                  }}
+                  disabled={isProcessingOCR}
+                  uploadLabel="Uploader"
+                  cameraLabel="Scanner"
+                />
+              </div>
+            )}
+            {screeningStatus === "processing" && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Vérification de conformité...
+              </div>
+            )}
+            {screeningStatus === "ok" && (
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                <ShieldCheck className="h-3 w-3 mr-1" />
+                Conformité validée
+              </Badge>
+            )}
+            {screeningStatus === "blocked" && (
+              <Alert variant="destructive">
+                <ShieldAlert className="h-4 w-4" />
+                <AlertTitle>Souscription impossible</AlertTitle>
+                <AlertDescription>
+                  Un contrôle de conformité empêche la poursuite de cette souscription. Contactez votre responsable.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+
           {/* Search Bar and New Contact Button - Always visible when no linked contact and form not expanded with data */}
           {!isLinked && !hasManualData && !isFormExpanded && (
             <div className="flex gap-3">
@@ -445,33 +520,7 @@ export const ClientIdentificationStep = ({ state, onUpdate, onNext }: ClientIden
                 </div>
               )}
 
-              {/* ID Document OCR Scanner */}
-              <Card className="border-dashed">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <FileImage className="h-8 w-8 text-muted-foreground flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="font-medium">Scanner une pièce d'identité</p>
-                      <p className="text-sm text-muted-foreground">
-                        CNI, Passeport ou Permis de conduire
-                      </p>
-                    </div>
-                    <CameraUploadButton
-                      id="client-id-ocr"
-                      onFileSelected={(file) => {
-                        const dt = new DataTransfer();
-                        dt.items.add(file);
-                        const fakeEvent = { target: { files: dt.files } } as unknown as React.ChangeEvent<HTMLInputElement>;
-                        handleOCRUpload(fakeEvent);
-                      }}
-                      disabled={isProcessingOCR}
-                      uploadLabel="Uploader"
-                      cameraLabel="Scanner"
-                      variant="compact"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">

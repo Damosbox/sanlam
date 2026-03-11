@@ -22,8 +22,12 @@ import {
   Calendar,
   Loader2,
   CheckCircle2,
-  Search
+  Search,
+  ShieldCheck,
+  ShieldAlert
 } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { CameraUploadButton } from "@/components/ui/CameraUploadButton";
 import { GuidedSalesState, CityType, LicenseCategory, PriorCertificateType } from "../types";
 import { cn } from "@/lib/utils";
@@ -88,6 +92,9 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
   const [declarationText, setDeclarationText] = useState("");
   const [isOCRProcessing, setIsOCRProcessing] = useState(false);
   const [ocrSuccess, setOcrSuccess] = useState(false);
+  const [isIdentityOCRProcessing, setIsIdentityOCRProcessing] = useState(false);
+  const [identityOCRDone, setIdentityOCRDone] = useState(false);
+  const [screeningStatus, setScreeningStatus] = useState<"idle" | "processing" | "ok" | "blocked">("idle");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [addressSearch, setAddressSearch] = useState("");
   const [showAddressSuggestions, setShowAddressSuggestions] = useState(false);
@@ -132,7 +139,7 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
   // Sub-step validations
   const isSubStep1Valid = () => !!subscription.agentCode;
   const isSubStep2Valid = () => !!subscription.geographicAddress && !!subscription.city;
-  const isSubStep3Valid = () => !!subscription.priorCertificateType;
+  const isSubStep3Valid = () => !!subscription.priorCertificateType && screeningStatus !== "blocked";
   const isSubStep4Valid = () => 
     !!subscription.vehicleBrand && 
     !!subscription.vehicleModel && 
@@ -219,6 +226,65 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
     } finally {
       setIsOCRProcessing(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+  const handleIdentityOCRUpload = async (file: File) => {
+    setIsIdentityOCRProcessing(true);
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data, error } = await supabase.functions.invoke("ocr-identity", {
+        body: { imageBase64: base64 },
+      });
+
+      if (error) throw error;
+
+      if (data?.extracted) {
+        const ext = data.extracted;
+        const updates: Partial<GuidedSalesState["subscription"]> = {};
+        const filledFields: string[] = [];
+
+        if (ext.lastName) { updates.ownerLastName = ext.lastName; filledFields.push("Nom"); }
+        if (ext.firstName) { updates.ownerFirstName = ext.firstName; filledFields.push("Prénom"); }
+        onUpdate(updates);
+        setIdentityOCRDone(true);
+
+        if (filledFields.length > 0) {
+          toast.success(`Pièce analysée ! Champs pré-remplis : ${filledFields.join(", ")}`, { duration: 5000 });
+        }
+
+        // Chain LCB-FT screening
+        if (ext.firstName && ext.lastName) {
+          setScreeningStatus("processing");
+          try {
+            const { data: screening, error: screenErr } = await supabase.functions.invoke("screen-ppe", {
+              body: {
+                clientId: "guided-sales-temp",
+                entityType: "lead",
+                firstName: ext.firstName,
+                lastName: ext.lastName,
+              },
+            });
+            if (screenErr) throw screenErr;
+            setScreeningStatus(screening?.result?.screeningBlocked ? "blocked" : "ok");
+          } catch (screenError) {
+            console.error("Screening error:", screenError);
+            setScreeningStatus("ok");
+          }
+        }
+      } else {
+        toast.warning("Impossible d'extraire les données du document.");
+      }
+    } catch (err) {
+      console.error("OCR Identity error:", err);
+      toast.error("Erreur lors de l'analyse de la pièce d'identité");
+    } finally {
+      setIsIdentityOCRProcessing(false);
     }
   };
 
@@ -388,7 +454,53 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
       </div>
 
       <Card>
-        <CardContent className="pt-6 space-y-4">
+      <CardContent className="pt-6 space-y-4">
+          {/* Identity OCR - FIRST BLOCK */}
+          <div className="space-y-2">
+            <Label className="font-medium">📄 Pièce d'identité du propriétaire</Label>
+            {isIdentityOCRProcessing ? (
+              <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <div>
+                  <p className="text-sm font-medium">Analyse en cours...</p>
+                  <p className="text-xs text-muted-foreground">Extraction des données d'identité</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Scannez la pièce d'identité pour pré-remplir les informations du propriétaire</p>
+                <CameraUploadButton
+                  id="identity-ocr-sub3"
+                  onFileSelected={handleIdentityOCRUpload}
+                  disabled={isIdentityOCRProcessing}
+                  uploadLabel="Uploader"
+                  cameraLabel="Scanner"
+                />
+              </div>
+            )}
+            {screeningStatus === "processing" && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Vérification de conformité...
+              </div>
+            )}
+            {screeningStatus === "ok" && (
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                <ShieldCheck className="h-3 w-3 mr-1" />
+                Conformité validée
+              </Badge>
+            )}
+            {screeningStatus === "blocked" && (
+              <Alert variant="destructive">
+                <ShieldAlert className="h-4 w-4" />
+                <AlertTitle>Souscription impossible</AlertTitle>
+                <AlertDescription>
+                  Un contrôle de conformité empêche la poursuite de cette souscription. Contactez votre responsable.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+
           <div className="flex items-center gap-2 mb-2">
             <FileText className="h-5 w-5 text-primary" />
             <h3 className="font-semibold">Documents requis</h3>
@@ -705,6 +817,53 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
       {/* Information du propriétaire */}
       <Card>
         <CardContent className="pt-6 space-y-4">
+          {/* Identity OCR - FIRST BLOCK (if not already done in sub-step 3) */}
+          {!identityOCRDone ? (
+            <div className="space-y-2">
+              <Label className="font-medium">📄 Pièce d'identité du propriétaire</Label>
+              {isIdentityOCRProcessing ? (
+                <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <div>
+                    <p className="text-sm font-medium">Analyse en cours...</p>
+                    <p className="text-xs text-muted-foreground">Extraction des données d'identité</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Scannez la pièce d'identité pour pré-remplir les champs</p>
+                  <CameraUploadButton
+                    id="identity-ocr-sub5"
+                    onFileSelected={handleIdentityOCRUpload}
+                    disabled={isIdentityOCRProcessing}
+                    uploadLabel="Uploader"
+                    cameraLabel="Scanner"
+                  />
+                </div>
+              )}
+              {screeningStatus === "processing" && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Vérification de conformité...
+                </div>
+              )}
+              {screeningStatus === "blocked" && (
+                <Alert variant="destructive">
+                  <ShieldAlert className="h-4 w-4" />
+                  <AlertTitle>Souscription impossible</AlertTitle>
+                  <AlertDescription>
+                    Un contrôle de conformité empêche la poursuite de cette souscription. Contactez votre responsable.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          ) : screeningStatus === "ok" ? (
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <ShieldCheck className="h-3 w-3 mr-1" />
+              Conformité validée
+            </Badge>
+          ) : null}
+
           <div className="flex items-center gap-2 mb-2">
             <User className="h-5 w-5 text-primary" />
             <h3 className="font-semibold">Information du propriétaire</h3>

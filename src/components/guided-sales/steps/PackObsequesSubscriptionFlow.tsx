@@ -8,7 +8,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { GuidedSalesState, PackObsequesData, MaritalStatusType, ProfessionType, IdentityDocType, PrelevementType, PaymentMethodObseques, BeneficiaireType, SignatureMethodType } from "../types";
-import { ChevronLeft, ChevronRight, Upload, User, FileCheck, Stethoscope, Users, CreditCard, FileText, Banknote, Check, Loader2, ScanLine } from "lucide-react";
+import { ChevronLeft, ChevronRight, Upload, User, FileCheck, Stethoscope, Users, CreditCard, FileText, Banknote, Check, Loader2, ScanLine, ShieldCheck, ShieldAlert } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { CameraUploadButton } from "@/components/ui/CameraUploadButton";
 import { formatFCFA } from "@/utils/formatCurrency";
 import { calculatePackObsequesPremium, getPeriodicPremium } from "@/utils/packObsequesPremiumCalculator";
@@ -88,6 +90,8 @@ export const PackObsequesSubscriptionFlow = ({
 }: PackObsequesSubscriptionFlowProps) => {
   const [currentStep, setCurrentStepLocal] = useState(initialSubStep || 1);
   const [isOCRProcessing, setIsOCRProcessing] = useState<"step1" | "step2" | null>(null);
+  const [screeningStep1, setScreeningStep1] = useState<"idle" | "processing" | "ok" | "blocked">("idle");
+  const [screeningStep2, setScreeningStep2] = useState<"idle" | "processing" | "ok" | "blocked">("idle");
   const fileInputStep1Ref = useRef<HTMLInputElement>(null);
   const fileInputStep2Ref = useRef<HTMLInputElement>(null);
   const data = state.packObsequesData!;
@@ -145,11 +149,13 @@ export const PackObsequesSubscriptionFlow = ({
       if (result?.extracted) {
         const ext = result.extracted;
         const filledFields: string[] = [];
+        let extractedFirstName = "";
+        let extractedLastName = "";
 
         if (target === "step1") {
           const updates: Partial<PackObsequesData> = {};
-          if (ext.lastName) { updates.lastName = ext.lastName; filledFields.push("Nom"); }
-          if (ext.firstName) { updates.firstName = ext.firstName; filledFields.push("Prénom"); }
+          if (ext.lastName) { updates.lastName = ext.lastName; extractedLastName = ext.lastName; filledFields.push("Nom"); }
+          if (ext.firstName) { updates.firstName = ext.firstName; extractedFirstName = ext.firstName; filledFields.push("Prénom"); }
           if (ext.documentNumber) { updates.identityNumber = ext.documentNumber; filledFields.push("N° pièce"); }
           if (ext.documentType) {
             const typeMap: Record<string, string> = { "CNI": "cni", "Passeport": "passeport", "Permis de conduire": "permis", "Carte consulaire": "carte_sejour" };
@@ -161,8 +167,8 @@ export const PackObsequesSubscriptionFlow = ({
           onUpdate(updates);
         } else {
           const updates: Partial<PackObsequesData> = {};
-          if (ext.lastName) { updates.conjointLastName = ext.lastName; filledFields.push("Nom"); }
-          if (ext.firstName) { updates.conjointFirstName = ext.firstName; filledFields.push("Prénom"); }
+          if (ext.lastName) { updates.conjointLastName = ext.lastName; extractedLastName = ext.lastName; filledFields.push("Nom"); }
+          if (ext.firstName) { updates.conjointFirstName = ext.firstName; extractedFirstName = ext.firstName; filledFields.push("Prénom"); }
           if (ext.documentNumber) { updates.conjointIdNumber = ext.documentNumber; filledFields.push("N° pièce"); }
           if (ext.documentType) {
             const typeMap: Record<string, string> = { "CNI": "cni", "Passeport": "passeport", "Permis de conduire": "permis", "Carte consulaire": "carte_sejour" };
@@ -178,6 +184,28 @@ export const PackObsequesSubscriptionFlow = ({
           toast.success(`Pièce analysée ! Champs pré-remplis : ${filledFields.join(", ")}`, { duration: 5000 });
         } else {
           toast.warning("L'analyse n'a pas pu extraire de données.");
+        }
+
+        // Chain LCB-FT screening automatically
+        if (extractedFirstName && extractedLastName) {
+          const setScreening = target === "step1" ? setScreeningStep1 : setScreeningStep2;
+          setScreening("processing");
+          try {
+            const { data: screening, error: screenErr } = await supabase.functions.invoke("screen-ppe", {
+              body: {
+                clientId: "guided-sales-temp",
+                entityType: "lead",
+                firstName: extractedFirstName,
+                lastName: extractedLastName,
+                nationality: target === "step1" ? data.nationality : data.conjointNationality,
+              },
+            });
+            if (screenErr) throw screenErr;
+            setScreening(screening?.result?.screeningBlocked ? "blocked" : "ok");
+          } catch (screenError) {
+            console.error("Screening error:", screenError);
+            setScreening("ok"); // fail-open for demo
+          }
         }
       } else {
         toast.warning("Impossible d'extraire les données du document.");
@@ -203,8 +231,8 @@ export const PackObsequesSubscriptionFlow = ({
     return age >= MIN_AGE;
   };
 
-  const isStep1Valid = data.identityDocumentType && data.identityNumber && data.lastName && data.firstName && data.birthDate && isAgeValid(data.birthDate) && data.nationality && data.profession && data.maritalStatus && data.email && data.phone;
-  const isStep2Valid = data.conjointIdType && data.conjointIdNumber && data.conjointLastName && data.conjointFirstName && data.conjointBirthDate && isAgeValid(data.conjointBirthDate) && data.conjointNationality && data.conjointProfession && data.conjointPaysResidence && data.conjointVilleResidence && data.conjointEmail && data.conjointPhone;
+  const isStep1Valid = data.identityDocumentType && data.identityNumber && data.lastName && data.firstName && data.birthDate && isAgeValid(data.birthDate) && data.nationality && data.profession && data.maritalStatus && data.email && data.phone && screeningStep1 !== "blocked";
+  const isStep2Valid = data.conjointIdType && data.conjointIdNumber && data.conjointLastName && data.conjointFirstName && data.conjointBirthDate && isAgeValid(data.conjointBirthDate) && data.conjointNationality && data.conjointProfession && data.conjointPaysResidence && data.conjointVilleResidence && data.conjointEmail && data.conjointPhone && screeningStep2 !== "blocked";
   const isStep3Valid = data.taille > 0 && data.poids > 0 && data.medicalQ1 !== undefined && data.medicalQ2 !== undefined && data.medicalQ3 !== undefined && data.medicalQ4 !== undefined && data.medicalQ5 !== undefined && data.medicalQ6 !== undefined && data.medicalQ7 !== undefined && data.medicalQ8 !== undefined && data.medicalQ9 !== undefined && data.medicalQ10 !== undefined;
   const isStep4Valid = !!data.beneficiaireType && (data.beneficiaireType === "ayant_droit" || (data.beneficiaireNom && data.beneficiairePrenom && data.beneficiaireLien));
   const isStep5Valid = data.prelevementAuto === false || (data.prelevementAuto === true && data.typePrelevement && (data.typePrelevement !== "banque" || (data.rib && data.nomBanque && data.titulaireBanque)));
@@ -234,27 +262,9 @@ export const PackObsequesSubscriptionFlow = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* OCR Scanner - FIRST BLOCK */}
         <div className="space-y-2">
-          <Label>Type de pièce d'identité *</Label>
-          <Select value={data.identityDocumentType} onValueChange={(v) => onUpdate({ identityDocumentType: v })}>
-            <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="attestation_identite">Attestation d'identité</SelectItem>
-              <SelectItem value="cni">CNI</SelectItem>
-              <SelectItem value="passeport">Passeport</SelectItem>
-              <SelectItem value="permis">Permis de conduire</SelectItem>
-              <SelectItem value="carte_sejour">Carte de séjour</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Numéro d'identification *</Label>
-          <Input value={data.identityNumber} onChange={(e) => onUpdate({ identityNumber: e.target.value })} placeholder="Écrivez ici" />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Scanner la pièce d'identité (OCR)</Label>
+          <Label className="font-medium">📄 Scanner une pièce d'identité</Label>
           <input
             ref={fileInputStep1Ref}
             type="file"
@@ -273,7 +283,7 @@ export const PackObsequesSubscriptionFlow = ({
             </div>
           ) : (
             <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Scannez la pièce pour pré-remplir les champs</p>
+              <p className="text-sm text-muted-foreground">Scannez la pièce pour pré-remplir les champs ci-dessous</p>
               <CameraUploadButton
                 id="ocr-identity-step1"
                 onFileSelected={(file) => {
@@ -288,6 +298,47 @@ export const PackObsequesSubscriptionFlow = ({
               />
             </div>
           )}
+          {/* Screening status */}
+          {screeningStep1 === "processing" && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Vérification de conformité...
+            </div>
+          )}
+          {screeningStep1 === "ok" && (
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <ShieldCheck className="h-3 w-3 mr-1" />
+              Conformité validée
+            </Badge>
+          )}
+          {screeningStep1 === "blocked" && (
+            <Alert variant="destructive">
+              <ShieldAlert className="h-4 w-4" />
+              <AlertTitle>Souscription impossible</AlertTitle>
+              <AlertDescription>
+                Un contrôle de conformité empêche la poursuite de cette souscription. Contactez votre responsable.
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label>Type de pièce d'identité *</Label>
+          <Select value={data.identityDocumentType} onValueChange={(v) => onUpdate({ identityDocumentType: v })}>
+            <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="attestation_identite">Attestation d'identité</SelectItem>
+              <SelectItem value="cni">CNI</SelectItem>
+              <SelectItem value="passeport">Passeport</SelectItem>
+              <SelectItem value="permis">Permis de conduire</SelectItem>
+              <SelectItem value="carte_sejour">Carte de séjour</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Numéro d'identification *</Label>
+          <Input value={data.identityNumber} onChange={(e) => onUpdate({ identityNumber: e.target.value })} placeholder="Écrivez ici" />
         </div>
 
         <div className="space-y-2">
@@ -384,27 +435,9 @@ export const PackObsequesSubscriptionFlow = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* OCR Scanner - FIRST BLOCK */}
         <div className="space-y-2">
-          <Label>Type de pièce d'identité *</Label>
-          <Select value={data.conjointIdType} onValueChange={(v) => onUpdate({ conjointIdType: v })}>
-            <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="attestation_identite">Attestation d'identité</SelectItem>
-              <SelectItem value="cni">CNI</SelectItem>
-              <SelectItem value="passeport">Passeport</SelectItem>
-              <SelectItem value="permis">Permis de conduire</SelectItem>
-              <SelectItem value="carte_sejour">Carte de séjour</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Numéro d'identification *</Label>
-          <Input value={data.conjointIdNumber} onChange={(e) => onUpdate({ conjointIdNumber: e.target.value })} placeholder="Écrivez ici" />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Scanner la pièce d'identité conjoint (OCR)</Label>
+          <Label className="font-medium">📄 Scanner la pièce d'identité du conjoint</Label>
           <input
             ref={fileInputStep2Ref}
             type="file"
@@ -423,7 +456,7 @@ export const PackObsequesSubscriptionFlow = ({
             </div>
           ) : (
             <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Scannez la pièce pour pré-remplir les champs</p>
+              <p className="text-sm text-muted-foreground">Scannez la pièce pour pré-remplir les champs ci-dessous</p>
               <CameraUploadButton
                 id="ocr-identity-step2"
                 onFileSelected={(file) => {
@@ -438,6 +471,47 @@ export const PackObsequesSubscriptionFlow = ({
               />
             </div>
           )}
+          {/* Screening status */}
+          {screeningStep2 === "processing" && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Vérification de conformité...
+            </div>
+          )}
+          {screeningStep2 === "ok" && (
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <ShieldCheck className="h-3 w-3 mr-1" />
+              Conformité validée
+            </Badge>
+          )}
+          {screeningStep2 === "blocked" && (
+            <Alert variant="destructive">
+              <ShieldAlert className="h-4 w-4" />
+              <AlertTitle>Souscription impossible</AlertTitle>
+              <AlertDescription>
+                Un contrôle de conformité empêche la poursuite de cette souscription. Contactez votre responsable.
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label>Type de pièce d'identité *</Label>
+          <Select value={data.conjointIdType} onValueChange={(v) => onUpdate({ conjointIdType: v })}>
+            <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="attestation_identite">Attestation d'identité</SelectItem>
+              <SelectItem value="cni">CNI</SelectItem>
+              <SelectItem value="passeport">Passeport</SelectItem>
+              <SelectItem value="permis">Permis de conduire</SelectItem>
+              <SelectItem value="carte_sejour">Carte de séjour</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Numéro d'identification *</Label>
+          <Input value={data.conjointIdNumber} onChange={(e) => onUpdate({ conjointIdNumber: e.target.value })} placeholder="Écrivez ici" />
         </div>
 
         <div className="space-y-2">

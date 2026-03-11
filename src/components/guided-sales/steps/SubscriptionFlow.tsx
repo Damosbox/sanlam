@@ -228,8 +228,67 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
+  const handleIdentityOCRUpload = async (file: File) => {
+    setIsIdentityOCRProcessing(true);
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
 
-  const handleDeclarationSave = () => {
+      const { data, error } = await supabase.functions.invoke("ocr-identity", {
+        body: { imageBase64: base64 },
+      });
+
+      if (error) throw error;
+
+      if (data?.extracted) {
+        const ext = data.extracted;
+        const updates: Partial<GuidedSalesState["subscription"]> = {};
+        const filledFields: string[] = [];
+
+        if (ext.lastName) { updates.ownerLastName = ext.lastName; filledFields.push("Nom"); }
+        if (ext.firstName) { updates.ownerFirstName = ext.firstName; filledFields.push("Prénom"); }
+        onUpdate(updates);
+        setIdentityOCRDone(true);
+
+        if (filledFields.length > 0) {
+          toast.success(`Pièce analysée ! Champs pré-remplis : ${filledFields.join(", ")}`, { duration: 5000 });
+        }
+
+        // Chain LCB-FT screening
+        if (ext.firstName && ext.lastName) {
+          setScreeningStatus("processing");
+          try {
+            const { data: screening, error: screenErr } = await supabase.functions.invoke("screen-ppe", {
+              body: {
+                clientId: "guided-sales-temp",
+                entityType: "lead",
+                firstName: ext.firstName,
+                lastName: ext.lastName,
+              },
+            });
+            if (screenErr) throw screenErr;
+            setScreeningStatus(screening?.result?.screeningBlocked ? "blocked" : "ok");
+          } catch (screenError) {
+            console.error("Screening error:", screenError);
+            setScreeningStatus("ok");
+          }
+        }
+      } else {
+        toast.warning("Impossible d'extraire les données du document.");
+      }
+    } catch (err) {
+      console.error("OCR Identity error:", err);
+      toast.error("Erreur lors de l'analyse de la pièce d'identité");
+    } finally {
+      setIsIdentityOCRProcessing(false);
+    }
+  };
+
+
     onUpdate({ 
       priorCertificateType: "declaration",
       declarationText 

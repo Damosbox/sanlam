@@ -1,76 +1,83 @@
 
 
-## Ajouter l'accès caméra temps réel sur tous les points d'upload des deux parcours
+## Plan : OCR identité en premier bloc + Screening LCB-FT automatique
 
-### Contexte
-Actuellement, la plupart des `<input type="file">` n'ont pas l'attribut `capture`, ce qui empêche l'ouverture directe de la caméra sur mobile. Seul `ClientIdentificationStep` a `capture="environment"`. De plus, il manque un bouton explicite "Prendre une photo" à côté du bouton "Uploader" pour offrir le choix entre galerie et caméra.
+### Principe UX
 
-### Approche
-Créer un composant réutilisable `CameraUploadButton` qui affiche deux options (upload fichier + capture caméra) et l'intégrer dans tous les points d'upload des deux parcours.
-
-### 1. Nouveau composant : `src/components/ui/CameraUploadButton.tsx`
-
-Un composant qui encapsule :
-- Un `<input type="file" accept="image/*">` pour l'upload classique (galerie)
-- Un `<input type="file" accept="image/*" capture="environment">` pour la caméra directe
-- Deux boutons côte à côte : "Uploader un fichier" (Upload icon) et "Prendre une photo" (Camera icon)
-- Props : `onFileSelected(file: File)`, `disabled?`, `accept?`, `label?`, `id: string`
-
-### 2. Fichiers à modifier (parcours Auto)
-
-| Fichier | Point d'upload | Modification |
-|---------|---------------|-------------|
-| `SubscriptionFlow.tsx` | Carte grise OCR (ligne ~422) | Ajouter `capture="environment"` + bouton caméra séparé |
-| `SubscriptionFlow.tsx` | Documents justificatifs (permis, assurance, etc.) | Ajouter bouton caméra |
-| `UnderwritingStep.tsx` | Justificatifs underwriting (ligne ~217) | Ajouter `accept="image/*"` + `capture` |
-| `BindingStep.tsx` | Scan reçu cash (ligne ~448) | Ajouter `capture="environment"` |
-| `ClaimOCRUploader.tsx` | Upload constat/carte grise (ligne ~100) | Ajouter `capture="environment"` + bouton caméra |
-| `DamageForm.tsx` | Photo zone dommage (ligne ~127) | Ajouter `capture="environment"` + bouton caméra |
-
-### 3. Fichiers à modifier (parcours Pack Obsèques / Vie)
-
-| Fichier | Point d'upload | Modification |
-|---------|---------------|-------------|
-| `PackObsequesSubscriptionFlow.tsx` | OCR identité step 1 (ligne ~257) | Ajouter `capture="environment"` |
-| `PackObsequesSubscriptionFlow.tsx` | OCR identité step 2 (ligne ~399) | Ajouter `capture="environment"` |
-| `ClientIdentificationStep.tsx` | OCR identité (déjà `capture`) | Ajouter bouton "Uploader depuis galerie" en complément |
-
-### 4. Fichiers complémentaires (sinistres broker + KYC)
-
-| Fichier | Modification |
-|---------|-------------|
-| `ClaimNewPage.tsx` (broker) | Ajouter `capture="environment"` + bouton caméra |
-| `ClientKYCSection.tsx` | Ajouter `capture="environment"` (déjà accept image) |
-| `LeadKYCSection.tsx` | Ajouter `capture="environment"` |
-| `ClientDocumentsSection.tsx` | Ajouter `capture="environment"` + `accept="image/*"` |
-
-### Détail technique du composant `CameraUploadButton`
+Le bloc **"Scanner une pièce d'identité"** (CameraUploadButton) est toujours le **tout premier élément** de chaque card qui collecte des données d'identité. L'agent scanne d'abord, les champs en dessous se pré-remplissent, puis le screening LCB-FT se lance silencieusement en arrière-plan.
 
 ```text
-┌─────────────────────────────────┐
-│  [📁 Uploader]  [📷 Scanner]   │
-│     (galerie)    (caméra)       │
-│  <input hidden>  <input hidden  │
-│                   capture>      │
-└─────────────────────────────────┘
+┌────────────────────────────────────────────┐
+│ 📄 Scanner une pièce d'identité           │  ← TOUJOURS EN PREMIER
+│ [Uploader] [Scanner]                       │
+│ ✅ Conformité validée  /  🔴 Bloqué       │
+├────────────────────────────────────────────┤
+│ Type de pièce :  [CNI    ▼]  (pré-rempli) │
+│ N° pièce :       [________]  (pré-rempli) │
+│ Nom :            [________]  (pré-rempli) │
+│ Prénom :         [________]  (pré-rempli) │
+│ Date naissance : [________]  (pré-rempli) │
+│ ...                                        │
+└────────────────────────────────────────────┘
 ```
 
-- Le bouton "Scanner" utilise `<input capture="environment">` qui ouvre la caméra native sur mobile
-- Le bouton "Uploader" ouvre le sélecteur de fichiers classique
-- Sur desktop, les deux ouvrent le même dialogue fichier (comportement natif du navigateur)
-- Le composant passe le fichier sélectionné via `onFileSelected(file)`
+### Changements par fichier
 
-### Fichiers impactés (total : ~12)
-1. **Nouveau** : `src/components/ui/CameraUploadButton.tsx`
-2. `src/components/guided-sales/steps/SubscriptionFlow.tsx`
-3. `src/components/guided-sales/steps/PackObsequesSubscriptionFlow.tsx`
-4. `src/components/guided-sales/steps/ClientIdentificationStep.tsx`
-5. `src/components/guided-sales/steps/BindingStep.tsx`
-6. `src/components/guided-sales/steps/UnderwritingStep.tsx`
-7. `src/components/ClaimOCRUploader.tsx`
-8. `src/components/DamageForm.tsx`
-9. `src/pages/broker/ClaimNewPage.tsx`
-10. `src/components/clients/ClientKYCSection.tsx`
-11. `src/components/leads/LeadKYCSection.tsx`
-12. `src/components/clients/ClientDocumentsSection.tsx`
+#### 1. `PackObsequesSubscriptionFlow.tsx` — Steps 1 et 2
+
+**Actuellement :** L'OCR est en 3e position (après type de pièce et numéro d'identification).
+**Cible :** Déplacer le bloc OCR **avant** les champs "Type de pièce" et "Numéro d'identification" pour qu'il les pré-remplisse.
+- Après OCR réussi : chaîner `supabase.functions.invoke("screen-ppe")` avec `firstName`, `lastName` extraits
+- State local `screeningStatus: "idle" | "processing" | "ok" | "blocked"` (un par step)
+- Si bloqué : Alert destructive + "Suivant" désactivé
+- Si OK : badge vert discret sous le bouton d'upload
+
+#### 2. `SubscriptionFlow.tsx` — Sub-step 3 (Documents)
+
+**Actuellement :** Pas d'OCR identité, seulement carte grise.
+**Cible :** Ajouter un bloc OCR identité **en tout premier** dans la card Documents (avant "Lieu d'obtention du permis").
+- Appel `ocr-identity` → pré-remplir `ownerLastName`, `ownerFirstName` dans le state subscription
+- Chaîner `screen-ppe` automatiquement
+- Même UI : badge vert ou alerte bloquante
+- La carte grise reste en position 2
+
+#### 3. `SubscriptionFlow.tsx` — Sub-step 5 (Conducteur/Propriétaire)
+
+**Actuellement :** Champs nom/prénom du propriétaire manuels, pas d'OCR.
+**Cible :** Ajouter le bloc OCR identité **en tout premier** dans la card "Information du propriétaire".
+- Si déjà scanné à la sub-step 3, afficher le badge de conformité en lecture seule (pas de re-scan nécessaire)
+- Sinon, permettre le scan avec pré-remplissage des champs propriétaire
+- Chaîner `screen-ppe` si pas encore fait
+
+#### 4. `ClientIdentificationStep.tsx`
+
+**Actuellement :** L'OCR est dans un Collapsible en bas du formulaire d'identification.
+**Cible :** Remonter le bloc OCR **en tout premier** dans la card, avant la recherche de contact.
+- Après OCR : pré-remplir `firstName`, `lastName`, `identityDocumentType`, `identityDocumentNumber`
+- Chaîner `screen-ppe` automatiquement
+- Badge vert ou alerte bloquante visible immédiatement
+
+### Logique screening commune (tous les points)
+
+```typescript
+// Après OCR réussi
+const { data: screening } = await supabase.functions.invoke('screen-ppe', {
+  body: { firstName, lastName, nationality }
+});
+if (screening?.screeningBlocked) {
+  setScreeningStatus('blocked'); // alerte rouge, "Suivant" désactivé
+} else {
+  setScreeningStatus('ok'); // badge vert
+}
+```
+
+L'agent ne voit **jamais** les détails PPE/AML — juste "Conformité validée" ou "Souscription impossible — contactez votre responsable".
+
+### Fichiers impactés
+
+| Fichier | Changement |
+|---|---|
+| `PackObsequesSubscriptionFlow.tsx` | Remonter OCR en 1er bloc steps 1 & 2, + chaîner `screen-ppe` |
+| `SubscriptionFlow.tsx` | + OCR identité en 1er bloc sub-steps 3 & 5, + `screen-ppe` |
+| `ClientIdentificationStep.tsx` | Remonter OCR en 1er bloc, + `screen-ppe` après extraction |
 

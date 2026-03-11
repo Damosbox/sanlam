@@ -208,7 +208,7 @@ export const LeadKYCSection = ({ leadId }: LeadKYCSectionProps) => {
           identity_document_type: docTypeMap[extracted.documentType] || "other",
           identity_document_number: extracted.documentNumber || prev.identity_document_number,
           identity_expiry_date: extracted.expiryDate || prev.identity_expiry_date,
-          identity_verified: true,
+          // Ne PAS auto-activer identity_verified — réservé compliance
         }));
 
         toast({ 

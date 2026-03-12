@@ -300,56 +300,42 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "openai/gpt-5-mini",
         messages: [
           {
             role: "system",
-            content: `Tu es un expert actuariel. Analyse le contenu CSV fourni et extrais les données pour les mapper vers le schéma JSON suivant d'une règle de calcul d'assurance:\n\n${schemaDescription}\n\nRègles:\n- Génère un id UUID pour chaque élément\n- Si tu ne trouves pas de données pour une section, retourne un tableau vide\n- Les taux de taxes sont en pourcentage\n- Les montants de frais sont en valeur absolue\n- Si le type est ambigu, utilise "non-vie" par défaut\n- Retourne aussi un tableau "warnings" avec les colonnes/données ignorées ou ambiguës`,
+            content: `You are an actuarial expert. Analyze the CSV content and extract structured data.
+
+Return a valid JSON object with this EXACT structure. Every array item MUST have ALL fields populated:
+
+{
+  "data": {
+    "name": "string",
+    "description": "string",
+    "type": "vie or non-vie",
+    "usage_category": "string code like 401",
+    "usage_category_label": "string label",
+    "base_formula": "string",
+    "parameters": [{"id": "uuid", "code": "snake_case_code", "label": "Human Label", "type": "text|number|select|date|boolean", "required": true, "category": "COTATION", "value": ""}],
+    "formulas": [{"id": "uuid", "code": "UPPER_CODE", "name": "Formula Name", "formula": "math expression", "guarantees": []}],
+    "taxes": [{"id": "uuid", "code": "UPPER_CODE", "name": "Tax Name", "rate": 14.2, "isActive": true}],
+    "fees": [{"id": "uuid", "code": "UPPER_CODE", "name": "Fee Name", "amount": 5000, "condition": ""}],
+    "tables_ref": [],
+    "charges": [{"id": "uuid", "code": "UPPER_CODE", "name": "Charge Name", "value": "12%", "category": "CHARGEMENT", "description": ""}],
+    "packages": [],
+    "options": []
+  },
+  "warnings": []
+}
+
+CRITICAL: Each object in parameters MUST have code, label, type. Each in formulas MUST have code, name. Each in taxes MUST have code, name, rate. Generate real UUID v4 for each id.`,
           },
           {
             role: "user",
-            content: `Analyse ce CSV et retourne le JSON structuré:\n\n${csvContent}`,
+            content: csvContent,
           },
         ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "extract_calc_rule",
-              description: "Extract structured calculation rule data from CSV",
-              parameters: {
-                type: "object",
-                properties: {
-                  data: {
-                    type: "object",
-                    properties: {
-                      name: { type: "string" },
-                      description: { type: "string" },
-                      type: { type: "string" },
-                      usage_category: { type: "string" },
-                      usage_category_label: { type: "string" },
-                      base_formula: { type: "string" },
-                      parameters: { type: "array", items: { type: "object" } },
-                      formulas: { type: "array", items: { type: "object" } },
-                      taxes: { type: "array", items: { type: "object" } },
-                      fees: { type: "array", items: { type: "object" } },
-                      tables_ref: { type: "array", items: { type: "object" } },
-                      charges: { type: "array", items: { type: "object" } },
-                      packages: { type: "array", items: { type: "object" } },
-                      options: { type: "array", items: { type: "object" } },
-                    },
-                  },
-                  warnings: {
-                    type: "array",
-                    items: { type: "string" },
-                  },
-                },
-                required: ["data", "warnings"],
-              },
-            },
-          },
-        ],
-        tool_choice: { type: "function", function: { name: "extract_calc_rule" } },
+        response_format: { type: "json_object" },
       }),
     });
 
@@ -375,21 +361,33 @@ serve(async (req) => {
     }
 
     const aiResponse = await response.json();
-    const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall) {
+    const content = aiResponse.choices?.[0]?.message?.content;
+    if (!content) {
       return new Response(
         JSON.stringify({ success: false, error: "L'IA n'a pas pu extraire de données structurées" }),
         { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const parsed = JSON.parse(toolCall.function.arguments);
+    let parsed: any;
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      // Try extracting JSON from markdown code block
+      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (jsonMatch) {
+        parsed = JSON.parse(jsonMatch[1].trim());
+      } else {
+        throw new Error("Réponse IA invalide (pas de JSON)");
+      }
+    }
+
+    const data = parsed.data || parsed;
 
     // Add UUIDs if missing
     const addIds = (arr: any[]) =>
       (arr || []).map((item: any) => ({ ...item, id: item.id || crypto.randomUUID() }));
 
-    const data = parsed.data || {};
     if (data.parameters) data.parameters = addIds(data.parameters);
     if (data.formulas) data.formulas = addIds(data.formulas).map((f: any) => ({ ...f, guarantees: f.guarantees || [] }));
     if (data.taxes) data.taxes = addIds(data.taxes);

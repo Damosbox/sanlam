@@ -304,52 +304,38 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `Tu es un expert actuariel. Analyse le contenu CSV fourni et extrais les données pour les mapper vers le schéma JSON suivant d'une règle de calcul d'assurance:\n\n${schemaDescription}\n\nRègles CRITIQUES:\n- Chaque élément DOIT avoir tous ses champs remplis (code, name/label, etc.) - ne retourne JAMAIS un objet avec seulement un id\n- Génère un id UUID pour chaque élément\n- Si tu ne trouves pas de données pour une section, retourne un tableau vide\n- Les taux de taxes sont en pourcentage\n- Les montants de frais sont en valeur absolue\n- Si le type est ambigu, utilise "non-vie" par défaut\n- Pour les paramètres: code, label et type sont OBLIGATOIRES\n- Pour les formules: code, name sont OBLIGATOIRES\n- Pour les taxes: code, name, rate sont OBLIGATOIRES\n- Pour les frais: code, name, amount sont OBLIGATOIRES\n- Retourne aussi un tableau "warnings" avec les colonnes/données ignorées ou ambiguës`,
+            content: `Tu es un expert actuariel. Analyse le contenu CSV fourni et retourne un JSON structuré.
+
+SCHÉMA DE SORTIE ATTENDU:
+${schemaDescription}
+
+RÈGLES CRITIQUES:
+- Chaque élément DOIT avoir TOUS ses champs remplis (code, name/label, type, etc.)
+- Génère un UUID v4 pour chaque id
+- Si tu ne trouves pas de données pour une section, retourne un tableau vide []
+- Les taux de taxes sont en pourcentage (nombre)
+- Les montants de frais sont en valeur absolue (nombre)
+- Si le type est ambigu, utilise "non-vie" par défaut
+- Pour les paramètres: code, label et type sont OBLIGATOIRES
+- Pour les formules: code et name sont OBLIGATOIRES
+- Pour les taxes: code, name et rate sont OBLIGATOIRES
+- Pour les frais: code, name et amount sont OBLIGATOIRES
+- Pour les charges: code, name et value sont OBLIGATOIRES
+
+RETOURNE UNIQUEMENT un JSON valide avec cette structure exacte:
+{
+  "data": { ... le schéma ci-dessus ... },
+  "warnings": ["string"] 
+}
+
+NE RETOURNE RIEN D'AUTRE QUE LE JSON.`,
           },
           {
             role: "user",
-            content: `Analyse ce CSV et retourne le JSON structuré avec TOUS les champs remplis pour chaque élément:\n\n${csvContent}`,
+            content: `Analyse ce CSV et retourne le JSON structuré avec TOUS les champs remplis:\n\n${csvContent}`,
           },
         ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "extract_calc_rule",
-              description: "Extract structured calculation rule data from CSV",
-              parameters: {
-                type: "object",
-                properties: {
-                  data: {
-                    type: "object",
-                    properties: {
-                      name: { type: "string", description: "Nom de la règle" },
-                      description: { type: "string", description: "Description de la règle" },
-                      type: { type: "string", enum: ["vie", "non-vie"] },
-                      usage_category: { type: "string", description: "Code catégorie ex: 401" },
-                      usage_category_label: { type: "string" },
-                      base_formula: { type: "string" },
-                      parameters: { type: "array", items: { type: "object", properties: { id: {type:"string"}, code: {type:"string"}, label: {type:"string"}, type: {type:"string", enum:["text","number","select","date","boolean"]}, required: {type:"boolean"}, category: {type:"string"}, value: {type:"string"}, options: {type:"array",items:{type:"string"}} }, required: ["id","code","label","type"] } },
-                      formulas: { type: "array", items: { type: "object", properties: { id: {type:"string"}, code: {type:"string"}, name: {type:"string"}, formula: {type:"string"}, guarantees: {type:"array",items:{type:"object"}} }, required: ["id","code","name"] } },
-                      taxes: { type: "array", items: { type: "object", properties: { id: {type:"string"}, code: {type:"string"}, name: {type:"string"}, rate: {type:"number"}, isActive: {type:"boolean"} }, required: ["id","code","name","rate"] } },
-                      fees: { type: "array", items: { type: "object", properties: { id: {type:"string"}, code: {type:"string"}, name: {type:"string"}, amount: {type:"number"}, condition: {type:"string"} }, required: ["id","code","name","amount"] } },
-                      tables_ref: { type: "array", items: { type: "object", properties: { id: {type:"string"}, code: {type:"string"}, name: {type:"string"}, type: {type:"string",enum:["key_value","brackets"]}, data: {type:"object"} }, required: ["id","code","name","type"] } },
-                      charges: { type: "array", items: { type: "object", properties: { id: {type:"string"}, code: {type:"string"}, name: {type:"string"}, value: {type:"string"}, category: {type:"string"}, description: {type:"string"} }, required: ["id","code","name","value"] } },
-                      packages: { type: "array", items: { type: "object", properties: { id: {type:"string"}, code: {type:"string"}, name: {type:"string"}, description: {type:"string"}, configuration: {type:"string"} }, required: ["id","code","name"] } },
-                      options: { type: "array", items: { type: "object", properties: { id: {type:"string"}, code: {type:"string"}, name: {type:"string"}, description: {type:"string"}, parameters: {type:"string"} }, required: ["id","code","name"] } },
-                    },
-                  },
-                  warnings: {
-                    type: "array",
-                    items: { type: "string" },
-                  },
-                },
-                required: ["data", "warnings"],
-              },
-            },
-          },
-        ],
-        tool_choice: { type: "function", function: { name: "extract_calc_rule" } },
+        response_format: { type: "json_object" },
       }),
     });
 
@@ -375,21 +361,33 @@ serve(async (req) => {
     }
 
     const aiResponse = await response.json();
-    const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall) {
+    const content = aiResponse.choices?.[0]?.message?.content;
+    if (!content) {
       return new Response(
         JSON.stringify({ success: false, error: "L'IA n'a pas pu extraire de données structurées" }),
         { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const parsed = JSON.parse(toolCall.function.arguments);
+    let parsed: any;
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      // Try extracting JSON from markdown code block
+      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (jsonMatch) {
+        parsed = JSON.parse(jsonMatch[1].trim());
+      } else {
+        throw new Error("Réponse IA invalide (pas de JSON)");
+      }
+    }
+
+    const data = parsed.data || parsed;
 
     // Add UUIDs if missing
     const addIds = (arr: any[]) =>
       (arr || []).map((item: any) => ({ ...item, id: item.id || crypto.randomUUID() }));
 
-    const data = parsed.data || {};
     if (data.parameters) data.parameters = addIds(data.parameters);
     if (data.formulas) data.formulas = addIds(data.formulas).map((f: any) => ({ ...f, guarantees: f.guarantees || [] }));
     if (data.taxes) data.taxes = addIds(data.taxes);

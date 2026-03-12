@@ -492,7 +492,7 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
                   <div className="flex-1 grid gap-2 grid-cols-3">
                     <Input placeholder="Code" value={p.code} onChange={(e) => updateParameter(idx, { code: e.target.value })} disabled={p.source === "catalogue"} />
                     <Input placeholder="Libellé" value={p.label} onChange={(e) => updateParameter(idx, { label: e.target.value })} />
-                    <Select value={p.type} onValueChange={(v) => updateParameter(idx, { type: v as CalcRuleParameter["type"] })} disabled={p.source === "catalogue"}>
+                    <Select value={p.type || "text"} onValueChange={(v) => updateParameter(idx, { type: v as CalcRuleParameter["type"] })} disabled={p.source === "catalogue"}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="text">Texte</SelectItem>
@@ -515,7 +515,7 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
                     <div className="grid gap-2 grid-cols-3">
                       <div className="space-y-1">
                         <Label className="text-xs">Catégorie</Label>
-                        <Select value={p.category || ""} onValueChange={(v) => updateParameter(idx, { category: v })}>
+                        <Select value={p.category || undefined} onValueChange={(v) => updateParameter(idx, { category: v })}>
                           <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="TECHNIQUE">Technique</SelectItem>
@@ -589,7 +589,7 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
                   <Input placeholder="Code" value={c.code} onChange={(e) => updateCharge(idx, { code: e.target.value })} />
                   <Input placeholder="Nom" value={c.name} onChange={(e) => updateCharge(idx, { name: e.target.value })} />
                   <Input placeholder="Valeur (ex: 0.2)" value={c.value} onChange={(e) => updateCharge(idx, { value: e.target.value })} />
-                  <Select value={c.category} onValueChange={(v) => updateCharge(idx, { category: v })}>
+                  <Select value={c.category || "CHARGEMENT"} onValueChange={(v) => updateCharge(idx, { category: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="TECHNIQUE">Technique</SelectItem>

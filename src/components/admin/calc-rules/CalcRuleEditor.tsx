@@ -104,15 +104,16 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
   const [csvDialogOpen, setCsvDialogOpen] = useState(false);
 
   const handleCsvApply = (data: any) => {
+    console.log("[CSV Import] Applying data:", data);
     setForm((f) => {
       const merged = { ...f };
-      // General info: only if current fields are empty
-      if (!f.name && data.name) merged.name = data.name;
-      if (!f.description && data.description) merged.description = data.description;
-      if (!f.type && data.type) merged.type = data.type;
-      if (!f.usage_category && data.usage_category) merged.usage_category = data.usage_category;
-      if (!f.usage_category_label && data.usage_category_label) merged.usage_category_label = data.usage_category_label;
-      if (!f.base_formula && data.base_formula) merged.base_formula = data.base_formula;
+      // General info: apply from CSV, overwrite only if CSV provides a value
+      if (data.name) merged.name = data.name;
+      if (data.description) merged.description = data.description;
+      if (data.type) merged.type = data.type;
+      if (data.usage_category) merged.usage_category = data.usage_category;
+      if (data.usage_category_label) merged.usage_category_label = data.usage_category_label;
+      if (data.base_formula) merged.base_formula = data.base_formula;
 
       // Merge arrays by code (no duplicates)
       const mergeByCode = <T extends { code: string }>(existing: T[], incoming: T[] = []): T[] => {

@@ -20,7 +20,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Plus, Trash2, Save, Loader2, BookOpen, ChevronDown, Upload } from "lucide-react";
+import { Plus, Trash2, Save, Loader2, BookOpen, ChevronDown, Upload, FileSpreadsheet } from "lucide-react";
 import {
   Popover,
   PopoverContent,

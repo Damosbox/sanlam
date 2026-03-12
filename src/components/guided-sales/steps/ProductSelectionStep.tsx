@@ -85,34 +85,31 @@ export const ProductSelectionStep = ({ state, onUpdate, onNext }: ProductSelecti
     onNext();
   };
 
-  // Static products always shown
-  const staticNonVie = (
-    <ProductCard
-      icon={<Car className="h-8 w-8 text-primary" />}
-      title="Assurance Auto"
-      description="Assurance automobile tous risques ou responsabilité civile pour véhicules particuliers et professionnels"
-      onSelect={() => handleSelectProduct("non-vie", "auto")}
-    />
-  );
-
-  const staticVie = (
-    <ProductCard
-      icon={<Shield className="h-8 w-8 text-primary" />}
-      title="Pack Obsèques"
-      description="Garantit le versement d'un capital défini en cas de décès pour couvrir les frais funéraires"
-      onSelect={() => handleSelectProduct("vie", "pack_obseques")}
-    />
-  );
-
   // Normalize category for comparison
   const isNonVie = (cat: string) => ["non-vie", "non_vie", "auto", "habitation"].includes(cat.toLowerCase());
   const isVie = (cat: string) => ["vie", "santé", "sante"].includes(cat.toLowerCase());
 
-  // Dynamic products from DB (excluding known ones to avoid duplicates)
-  const dynamicNonVie = (dbProducts ?? [])
-    .filter(p => isNonVie(p.category) && !KNOWN_PRODUCTS.has(p.product_type ?? ""));
-  const dynamicVie = (dbProducts ?? [])
-    .filter(p => isVie(p.category) && !KNOWN_PRODUCTS.has(p.product_type ?? ""));
+  // Split DB products by category
+  const dbNonVie = (dbProducts ?? []).filter(p => isNonVie(p.category));
+  const dbVie = (dbProducts ?? []).filter(p => isVie(p.category));
+
+  // Check if DB already has products with these types (to avoid duplicate static cards)
+  const hasAutoInDb = dbNonVie.some(p => p.product_type === "auto");
+  const hasPackObsequesInDb = dbVie.some(p => p.product_type === "pack_obseques");
+
+  const renderProductCard = (p: { id: string; name: string; description: string | null; product_type: string | null; category: string }) => (
+    <ProductCard
+      key={p.id}
+      icon={getIconForProduct(p.product_type, p.category)}
+      title={p.name}
+      description={p.description || ""}
+      onSelect={() => handleSelectProduct(
+        isNonVie(p.category) ? "non-vie" : "vie",
+        p.product_type ?? p.id
+      )}
+      comingSoon={!FLOW_ENABLED_PRODUCTS.has(p.product_type ?? "")}
+    />
+  );
 
   return (
     <div className="space-y-6">
@@ -131,35 +128,33 @@ export const ProductSelectionStep = ({ state, onUpdate, onNext }: ProductSelecti
 
         <TabsContent value="non-vie" className="mt-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {staticNonVie}
-            {isLoading && <Skeleton className="h-64 rounded-lg" />}
-            {dynamicNonVie.map(p => (
+            {/* Static Auto fallback only if no DB product with product_type=auto */}
+            {!hasAutoInDb && (
               <ProductCard
-                key={p.id}
-                icon={getIconForProduct(p.product_type, p.category)}
-                title={p.name}
-                description={p.description || ""}
-                onSelect={() => handleSelectProduct("non-vie", p.product_type ?? p.id)}
-                comingSoon={!KNOWN_PRODUCTS.has(p.product_type ?? "")}
+                icon={<Car className="h-8 w-8 text-primary" />}
+                title="Assurance Auto"
+                description="Assurance automobile tous risques ou responsabilité civile pour véhicules particuliers et professionnels"
+                onSelect={() => handleSelectProduct("non-vie", "auto")}
               />
-            ))}
+            )}
+            {isLoading && <Skeleton className="h-64 rounded-lg" />}
+            {dbNonVie.map(renderProductCard)}
           </div>
         </TabsContent>
 
         <TabsContent value="vie" className="mt-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {staticVie}
-            {isLoading && <Skeleton className="h-64 rounded-lg" />}
-            {dynamicVie.map(p => (
+            {/* Static Pack Obsèques fallback only if no DB product with product_type=pack_obseques */}
+            {!hasPackObsequesInDb && (
               <ProductCard
-                key={p.id}
-                icon={getIconForProduct(p.product_type, p.category)}
-                title={p.name}
-                description={p.description || ""}
-                onSelect={() => handleSelectProduct("vie", p.product_type ?? p.id)}
-                comingSoon={!KNOWN_PRODUCTS.has(p.product_type ?? "")}
+                icon={<Shield className="h-8 w-8 text-primary" />}
+                title="Pack Obsèques"
+                description="Garantit le versement d'un capital défini en cas de décès pour couvrir les frais funéraires"
+                onSelect={() => handleSelectProduct("vie", "pack_obseques")}
               />
-            ))}
+            )}
+            {isLoading && <Skeleton className="h-64 rounded-lg" />}
+            {dbVie.map(renderProductCard)}
           </div>
         </TabsContent>
       </Tabs>

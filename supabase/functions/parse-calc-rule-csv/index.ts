@@ -304,38 +304,39 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `Tu es un expert actuariel. Analyse le contenu CSV fourni et retourne un JSON structuré.
+            content: `You are an actuarial expert. Analyze the CSV content and extract structured data.
 
-SCHÉMA DE SORTIE ATTENDU:
-${schemaDescription}
+Return a valid JSON object with this EXACT structure. Every array item MUST have ALL fields populated:
 
-RÈGLES CRITIQUES:
-- Chaque élément DOIT avoir TOUS ses champs remplis (code, name/label, type, etc.)
-- Génère un UUID v4 pour chaque id
-- Si tu ne trouves pas de données pour une section, retourne un tableau vide []
-- Les taux de taxes sont en pourcentage (nombre)
-- Les montants de frais sont en valeur absolue (nombre)
-- Si le type est ambigu, utilise "non-vie" par défaut
-- Pour les paramètres: code, label et type sont OBLIGATOIRES
-- Pour les formules: code et name sont OBLIGATOIRES
-- Pour les taxes: code, name et rate sont OBLIGATOIRES
-- Pour les frais: code, name et amount sont OBLIGATOIRES
-- Pour les charges: code, name et value sont OBLIGATOIRES
-
-RETOURNE UNIQUEMENT un JSON valide avec cette structure exacte:
 {
-  "data": { ... le schéma ci-dessus ... },
-  "warnings": ["string"] 
+  "data": {
+    "name": "string",
+    "description": "string",
+    "type": "vie or non-vie",
+    "usage_category": "string code like 401",
+    "usage_category_label": "string label",
+    "base_formula": "string",
+    "parameters": [{"id": "uuid", "code": "snake_case_code", "label": "Human Label", "type": "text|number|select|date|boolean", "required": true, "category": "COTATION", "value": ""}],
+    "formulas": [{"id": "uuid", "code": "UPPER_CODE", "name": "Formula Name", "formula": "math expression", "guarantees": []}],
+    "taxes": [{"id": "uuid", "code": "UPPER_CODE", "name": "Tax Name", "rate": 14.2, "isActive": true}],
+    "fees": [{"id": "uuid", "code": "UPPER_CODE", "name": "Fee Name", "amount": 5000, "condition": ""}],
+    "tables_ref": [],
+    "charges": [{"id": "uuid", "code": "UPPER_CODE", "name": "Charge Name", "value": "12%", "category": "CHARGEMENT", "description": ""}],
+    "packages": [],
+    "options": []
+  },
+  "warnings": []
 }
 
-NE RETOURNE RIEN D'AUTRE QUE LE JSON.`,
+CRITICAL: Each object in parameters MUST have code, label, type. Each in formulas MUST have code, name. Each in taxes MUST have code, name, rate. Generate real UUID v4 for each id.`,
           },
           {
             role: "user",
-            content: `Analyse ce CSV et retourne le JSON structuré avec TOUS les champs remplis:\n\n${csvContent}`,
+            content: csvContent,
           },
         ],
         response_format: { type: "json_object" },
+        temperature: 0,
       }),
     });
 

@@ -104,11 +104,15 @@ export const ProductSelectionStep = ({ state, onUpdate, onNext }: ProductSelecti
     />
   );
 
+  // Normalize category for comparison
+  const isNonVie = (cat: string) => ["non-vie", "non_vie", "auto", "habitation"].includes(cat.toLowerCase());
+  const isVie = (cat: string) => ["vie", "santé", "sante"].includes(cat.toLowerCase());
+
   // Dynamic products from DB (excluding known ones to avoid duplicates)
   const dynamicNonVie = (dbProducts ?? [])
-    .filter(p => p.category === "non-vie" && !KNOWN_PRODUCTS.has(p.product_type ?? ""));
+    .filter(p => isNonVie(p.category) && !KNOWN_PRODUCTS.has(p.product_type ?? ""));
   const dynamicVie = (dbProducts ?? [])
-    .filter(p => p.category === "vie" && !KNOWN_PRODUCTS.has(p.product_type ?? ""));
+    .filter(p => isVie(p.category) && !KNOWN_PRODUCTS.has(p.product_type ?? ""));
 
   return (
     <div className="space-y-6">

@@ -515,7 +515,7 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
                     <div className="grid gap-2 grid-cols-3">
                       <div className="space-y-1">
                         <Label className="text-xs">Catégorie</Label>
-                        <Select value={p.category || ""} onValueChange={(v) => updateParameter(idx, { category: v })}>
+                        <Select value={p.category || undefined} onValueChange={(v) => updateParameter(idx, { category: v })}>
                           <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="TECHNIQUE">Technique</SelectItem>

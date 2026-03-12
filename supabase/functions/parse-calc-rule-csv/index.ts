@@ -361,17 +361,10 @@ CRITICAL: Each object in parameters MUST have code, label, type. Each in formula
     }
 
     const aiResponse = await response.json();
-    console.log("AI raw response:", JSON.stringify(aiResponse).substring(0, 2000));
     const content = aiResponse.choices?.[0]?.message?.content;
-    console.log("AI content:", content ? content.substring(0, 1000) : "NO CONTENT");
     if (!content) {
-      // Check if it used tool calls instead
-      const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
-      if (toolCall) {
-        console.log("AI used tool call instead:", JSON.stringify(toolCall.function.arguments).substring(0, 1000));
-      }
       return new Response(
-        JSON.stringify({ success: false, error: "L'IA n'a pas pu extraire de données structurées", debug: aiResponse.choices?.[0]?.message }),
+        JSON.stringify({ success: false, error: "L'IA n'a pas pu extraire de données structurées" }),
         { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

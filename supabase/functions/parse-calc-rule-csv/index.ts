@@ -304,11 +304,11 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `Tu es un expert actuariel. Analyse le contenu CSV fourni et extrais les données pour les mapper vers le schéma JSON suivant d'une règle de calcul d'assurance:\n\n${schemaDescription}\n\nRègles:\n- Génère un id UUID pour chaque élément\n- Si tu ne trouves pas de données pour une section, retourne un tableau vide\n- Les taux de taxes sont en pourcentage\n- Les montants de frais sont en valeur absolue\n- Si le type est ambigu, utilise "non-vie" par défaut\n- Retourne aussi un tableau "warnings" avec les colonnes/données ignorées ou ambiguës`,
+            content: `Tu es un expert actuariel. Analyse le contenu CSV fourni et extrais les données pour les mapper vers le schéma JSON suivant d'une règle de calcul d'assurance:\n\n${schemaDescription}\n\nRègles CRITIQUES:\n- Chaque élément DOIT avoir tous ses champs remplis (code, name/label, etc.) - ne retourne JAMAIS un objet avec seulement un id\n- Génère un id UUID pour chaque élément\n- Si tu ne trouves pas de données pour une section, retourne un tableau vide\n- Les taux de taxes sont en pourcentage\n- Les montants de frais sont en valeur absolue\n- Si le type est ambigu, utilise "non-vie" par défaut\n- Pour les paramètres: code, label et type sont OBLIGATOIRES\n- Pour les formules: code, name sont OBLIGATOIRES\n- Pour les taxes: code, name, rate sont OBLIGATOIRES\n- Pour les frais: code, name, amount sont OBLIGATOIRES\n- Retourne aussi un tableau "warnings" avec les colonnes/données ignorées ou ambiguës`,
           },
           {
             role: "user",
-            content: `Analyse ce CSV et retourne le JSON structuré:\n\n${csvContent}`,
+            content: `Analyse ce CSV et retourne le JSON structuré avec TOUS les champs remplis pour chaque élément:\n\n${csvContent}`,
           },
         ],
         tools: [

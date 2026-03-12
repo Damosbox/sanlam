@@ -115,10 +115,21 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
       if (data.usage_category_label) merged.usage_category_label = data.usage_category_label;
       if (data.base_formula) merged.base_formula = data.base_formula;
 
-      // Merge arrays by code (no duplicates)
-      const mergeByCode = <T extends { code: string }>(existing: T[], incoming: T[] = []): T[] => {
-        const codes = new Set(existing.map((e) => e.code));
-        return [...existing, ...incoming.filter((i) => i.code && !codes.has(i.code))];
+      // Merge arrays by code (no duplicates), or append if no code
+      const mergeByCode = <T extends { code?: string; id?: string }>(existing: T[], incoming: T[] = []): T[] => {
+        const codes = new Set(existing.map((e) => e.code).filter(Boolean));
+        const ids = new Set(existing.map((e) => e.id).filter(Boolean));
+        return [
+          ...existing,
+          ...incoming.filter((i) => {
+            if (i.code && codes.has(i.code)) return false;
+            if (!i.code && i.id && ids.has(i.id)) return false;
+            // Skip items that are essentially empty (only have id)
+            const keys = Object.keys(i).filter(k => k !== 'id' && k !== 'guarantees' && k !== 'displayOrder' && k !== 'isActive' && k !== 'source');
+            if (keys.length === 0) return false;
+            return true;
+          }),
+        ];
       };
 
       if (data.parameters) merged.parameters = mergeByCode(f.parameters, data.parameters);
@@ -129,6 +140,8 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
       if (data.charges) merged.charges = mergeByCode(f.charges, data.charges);
       if (data.packages) merged.packages = mergeByCode(f.packages, data.packages);
       if (data.options) merged.options = mergeByCode(f.options, data.options);
+      
+      console.log("[CSV Import] Merged form:", merged);
 
       return merged;
     });

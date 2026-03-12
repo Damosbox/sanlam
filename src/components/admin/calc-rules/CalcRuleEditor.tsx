@@ -34,6 +34,7 @@ import type {
   CalcRuleOption, CalcRulePackage, CalcRuleCharge,
 } from "./types";
 import { CalcRuleSimulator } from "./CalcRuleSimulator";
+import { CsvImportDialog } from "./CsvImportDialog";
 
 interface CalcRuleEditorProps {
   rule: CalcRule | null;

@@ -30,3 +30,28 @@ Le bloc **"Scanner une pièce d'identité"** (CameraUploadButton) est toujours l
 - ✅ Screening LCB-FT chaîné après extraction OCR
 - ✅ Badge vert ou alerte bloquante visible immédiatement
 - ✅ `canProceed` bloqué si screening échoué
+
+---
+
+## ✅ Plan implémenté : Import CSV global + IA pour pré-remplir les règles de calcul
+
+### Fonctionnalité
+
+Bouton **"Importer un CSV actuariel"** dans le `CalcRuleEditor` qui :
+1. Accepte un fichier CSV (format sections `[SECTION]` ou libre)
+2. Parser déterministe pour les CSV structurés par sections
+3. Fallback IA (Lovable AI - `google/gemini-2.5-flash`) pour les CSV non structurés
+4. Dialog avec upload, analyse, aperçu des résultats et application
+
+### Fichiers créés/modifiés
+
+| Fichier | Changement |
+|---|---|
+| `supabase/functions/parse-calc-rule-csv/index.ts` | ✅ Nouvelle Edge Function (parser déterministe + IA via tool calling) |
+| `src/components/admin/calc-rules/CsvImportDialog.tsx` | ✅ Nouveau composant Dialog d'import |
+| `src/components/admin/calc-rules/CalcRuleEditor.tsx` | ✅ Bouton import + logique de merge sans doublons |
+
+### Logique de merge
+- Infos générales : appliquées uniquement si champs vides
+- Listes (paramètres, formules, etc.) : ajoutées sans doublon (clé = `code`)
+- `base_formula` : mise à jour uniquement si vide

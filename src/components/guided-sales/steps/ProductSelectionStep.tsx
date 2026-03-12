@@ -50,8 +50,8 @@ const ProductCard = ({ icon, title, description, onSelect, disabled, comingSoon 
   </Card>
 );
 
-// Known product types that have dedicated flows
-const KNOWN_PRODUCTS = new Set(["auto", "pack_obseques"]);
+// Product types that have dedicated sales flows (functional, not "en construction")
+const FLOW_ENABLED_PRODUCTS = new Set(["auto", "pack_obseques"]);
 
 const getIconForProduct = (productType: string | null, category: string) => {
   switch (productType) {

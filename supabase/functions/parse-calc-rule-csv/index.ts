@@ -411,6 +411,7 @@ CRITICAL: Each object in parameters MUST have code, label, type. Each in formula
         data,
         warnings: parsed.warnings || [],
         method: "ai",
+        _debug_raw_content: content.substring(0, 2000),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

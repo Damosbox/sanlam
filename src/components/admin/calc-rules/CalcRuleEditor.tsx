@@ -404,6 +404,20 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
         }}
       />
 
+      {/* CSV Import Button */}
+      <div className="flex justify-end">
+        <Button variant="outline" onClick={() => setCsvDialogOpen(true)}>
+          <FileSpreadsheet className="h-4 w-4 mr-2" />
+          Importer un CSV actuariel
+        </Button>
+      </div>
+
+      <CsvImportDialog
+        open={csvDialogOpen}
+        onOpenChange={setCsvDialogOpen}
+        onApply={handleCsvApply}
+      />
+
       <Accordion type="multiple" defaultValue={["general", "parameters"]} className="space-y-2">
         {/* 1. General Info */}
         <AccordionItem value="general" className="border rounded-lg px-4">

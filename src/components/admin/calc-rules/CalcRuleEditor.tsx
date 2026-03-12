@@ -589,7 +589,7 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
                   <Input placeholder="Code" value={c.code} onChange={(e) => updateCharge(idx, { code: e.target.value })} />
                   <Input placeholder="Nom" value={c.name} onChange={(e) => updateCharge(idx, { name: e.target.value })} />
                   <Input placeholder="Valeur (ex: 0.2)" value={c.value} onChange={(e) => updateCharge(idx, { value: e.target.value })} />
-                  <Select value={c.category} onValueChange={(v) => updateCharge(idx, { category: v })}>
+                  <Select value={c.category || "CHARGEMENT"} onValueChange={(v) => updateCharge(idx, { category: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="TECHNIQUE">Technique</SelectItem>

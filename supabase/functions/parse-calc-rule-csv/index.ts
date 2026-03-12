@@ -336,7 +336,6 @@ CRITICAL: Each object in parameters MUST have code, label, type. Each in formula
           },
         ],
         response_format: { type: "json_object" },
-        temperature: 0,
       }),
     });
 

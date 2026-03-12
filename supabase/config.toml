@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.create-user]
 verify_jwt = false
+
+[functions.parse-calc-rule-csv]
+verify_jwt = false

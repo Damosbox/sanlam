@@ -20,7 +20,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Plus, Trash2, Save, Loader2, BookOpen, ChevronDown, Upload } from "lucide-react";
+import { Plus, Trash2, Save, Loader2, BookOpen, ChevronDown, Upload, FileSpreadsheet } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -34,6 +34,7 @@ import type {
   CalcRuleOption, CalcRulePackage, CalcRuleCharge,
 } from "./types";
 import { CalcRuleSimulator } from "./CalcRuleSimulator";
+import { CsvImportDialog } from "./CsvImportDialog";
 
 interface CalcRuleEditorProps {
   rule: CalcRule | null;
@@ -100,6 +101,37 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
   });
   const [catalogueFilter, setCatalogueFilter] = useState("");
   const [form, setForm] = useState(buildInitialForm(rule));
+  const [csvDialogOpen, setCsvDialogOpen] = useState(false);
+
+  const handleCsvApply = (data: any) => {
+    setForm((f) => {
+      const merged = { ...f };
+      // General info: only if current fields are empty
+      if (!f.name && data.name) merged.name = data.name;
+      if (!f.description && data.description) merged.description = data.description;
+      if (!f.type && data.type) merged.type = data.type;
+      if (!f.usage_category && data.usage_category) merged.usage_category = data.usage_category;
+      if (!f.usage_category_label && data.usage_category_label) merged.usage_category_label = data.usage_category_label;
+      if (!f.base_formula && data.base_formula) merged.base_formula = data.base_formula;
+
+      // Merge arrays by code (no duplicates)
+      const mergeByCode = <T extends { code: string }>(existing: T[], incoming: T[] = []): T[] => {
+        const codes = new Set(existing.map((e) => e.code));
+        return [...existing, ...incoming.filter((i) => i.code && !codes.has(i.code))];
+      };
+
+      if (data.parameters) merged.parameters = mergeByCode(f.parameters, data.parameters);
+      if (data.formulas) merged.formulas = mergeByCode(f.formulas, data.formulas);
+      if (data.taxes) merged.taxes = mergeByCode(f.taxes, data.taxes);
+      if (data.fees) merged.fees = mergeByCode(f.fees, data.fees);
+      if (data.tables_ref) merged.tables_ref = mergeByCode(f.tables_ref, data.tables_ref);
+      if (data.charges) merged.charges = mergeByCode(f.charges, data.charges);
+      if (data.packages) merged.packages = mergeByCode(f.packages, data.packages);
+      if (data.options) merged.options = mergeByCode(f.options, data.options);
+
+      return merged;
+    });
+  };
 
   useEffect(() => {
     setForm(buildInitialForm(rule));
@@ -370,6 +402,20 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
           if (file) processCsvFile(file);
           e.target.value = "";
         }}
+      />
+
+      {/* CSV Import Button */}
+      <div className="flex justify-end">
+        <Button variant="outline" onClick={() => setCsvDialogOpen(true)}>
+          <FileSpreadsheet className="h-4 w-4 mr-2" />
+          Importer un CSV actuariel
+        </Button>
+      </div>
+
+      <CsvImportDialog
+        open={csvDialogOpen}
+        onOpenChange={setCsvDialogOpen}
+        onApply={handleCsvApply}
       />
 
       <Accordion type="multiple" defaultValue={["general", "parameters"]} className="space-y-2">

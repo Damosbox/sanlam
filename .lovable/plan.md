@@ -1,34 +1,57 @@
 
 
-## Diagnostic
+## ✅ Plan implémenté : OCR identité en premier bloc + Screening LCB-FT automatique
 
-Le composant `ProductSelectionStep.tsx` est **entièrement statique** : les produits "Assurance Auto" et "Pack Obsèques" sont codés en dur avec des icônes et descriptions fixes. Il ne fait aucune requête à la base de données — les produits créés dans l'admin ne sont jamais récupérés ni affichés.
+### Principe UX
 
-## Plan : Rendre la sélection de produits dynamique
+Le bloc **"Scanner une pièce d'identité"** (CameraUploadButton) est toujours le **tout premier élément** de chaque card qui collecte des données d'identité. L'agent scanne d'abord, les champs en dessous se pré-remplissent, puis le screening LCB-FT se lance silencieusement en arrière-plan.
 
-### Approche
+### Changements implémentés
 
-Remplacer les cartes statiques par une liste dynamique alimentée depuis la table `products` (filtré par `is_active = true`), tout en conservant le regroupement par onglet Non-Vie / Vie.
+#### 1. `PackObsequesSubscriptionFlow.tsx` — Steps 1 et 2
+- ✅ OCR déplacé en **premier bloc** avant les champs Type de pièce / Numéro
+- ✅ Screening LCB-FT chaîné après OCR réussi
+- ✅ Badge vert "Conformité validée" ou alerte bloquante
+- ✅ Bouton "Suivant" désactivé si `screeningBlocked`
 
-### Changements
+#### 2. `SubscriptionFlow.tsx` — Sub-step 3 (Documents)
+- ✅ Bloc OCR identité ajouté en **premier** dans la card Documents
+- ✅ Screening LCB-FT chaîné après extraction
+- ✅ Pré-remplissage nom/prénom propriétaire
+- ✅ Validation sub-step 3 inclut vérification screening
 
-**Fichier : `src/components/guided-sales/steps/ProductSelectionStep.tsx`**
+#### 3. `SubscriptionFlow.tsx` — Sub-step 5 (Conducteur)
+- ✅ Bloc OCR identité en premier si pas encore scanné à la sub-step 3
+- ✅ Badge de conformité affiché en lecture seule si déjà validé
+- ✅ Screening LCB-FT si pas encore effectué
 
-1. Ajouter un `useQuery` qui charge les produits actifs depuis `supabase.from("products").select("*").eq("is_active", true)`
-2. Grouper les résultats par `category` ("vie" / "non-vie")
-3. Mapper chaque produit vers une `ProductCard` avec :
-   - `title` = `product.name`
-   - `description` = `product.description`
-   - `icon` = icône par défaut selon `product_type` ou `category` (Car pour auto, Shield pour vie, etc.)
-   - `onSelect` → passe `product.id` et `product.product_type` au state
-4. Afficher un skeleton loader pendant le chargement
-5. Conserver le fallback statique si aucun produit n'est trouvé en base
+#### 4. `ClientIdentificationStep.tsx`
+- ✅ OCR déplacé du Collapsible vers le **tout premier bloc** de la card
+- ✅ Screening LCB-FT chaîné après extraction OCR
+- ✅ Badge vert ou alerte bloquante visible immédiatement
+- ✅ `canProceed` bloqué si screening échoué
 
-**Fichier : `src/components/guided-sales/types.ts`**
+---
 
-- Vérifier que `SelectedProductType` accepte des valeurs dynamiques (string) au lieu de seulement `"auto" | "pack_obseques"` — ajuster si nécessaire pour supporter les nouveaux produits
+## ✅ Plan implémenté : Import CSV global + IA pour pré-remplir les règles de calcul
 
-### Impact sur le flux existant
+### Fonctionnalité
 
-Les flows de souscription existants (auto, pack obsèques) continueront de fonctionner car ils matchent par `product_type`. Les nouveaux produits sans flow dédié afficheront un message "Parcours en construction".
+Bouton **"Importer un CSV actuariel"** dans le `CalcRuleEditor` qui :
+1. Accepte un fichier CSV (format sections `[SECTION]` ou libre)
+2. Parser déterministe pour les CSV structurés par sections
+3. Fallback IA (Lovable AI - `google/gemini-2.5-flash`) pour les CSV non structurés
+4. Dialog avec upload, analyse, aperçu des résultats et application
 
+### Fichiers créés/modifiés
+
+| Fichier | Changement |
+|---|---|
+| `supabase/functions/parse-calc-rule-csv/index.ts` | ✅ Nouvelle Edge Function (parser déterministe + IA via tool calling) |
+| `src/components/admin/calc-rules/CsvImportDialog.tsx` | ✅ Nouveau composant Dialog d'import |
+| `src/components/admin/calc-rules/CalcRuleEditor.tsx` | ✅ Bouton import + logique de merge sans doublons |
+
+### Logique de merge
+- Infos générales : appliquées uniquement si champs vides
+- Listes (paramètres, formules, etc.) : ajoutées sans doublon (clé = `code`)
+- `base_formula` : mise à jour uniquement si vide

@@ -492,7 +492,7 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
                   <div className="flex-1 grid gap-2 grid-cols-3">
                     <Input placeholder="Code" value={p.code} onChange={(e) => updateParameter(idx, { code: e.target.value })} disabled={p.source === "catalogue"} />
                     <Input placeholder="Libellé" value={p.label} onChange={(e) => updateParameter(idx, { label: e.target.value })} />
-                    <Select value={p.type} onValueChange={(v) => updateParameter(idx, { type: v as CalcRuleParameter["type"] })} disabled={p.source === "catalogue"}>
+                    <Select value={p.type || "text"} onValueChange={(v) => updateParameter(idx, { type: v as CalcRuleParameter["type"] })} disabled={p.source === "catalogue"}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="text">Texte</SelectItem>

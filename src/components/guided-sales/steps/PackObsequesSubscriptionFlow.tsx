@@ -244,8 +244,8 @@ export const PackObsequesSubscriptionFlow = ({
     return true;
   };
 
-  const isStep1Valid = data.identityDocumentType && data.identityNumber && data.lastName && data.firstName && data.birthDate && isAgeValid(data.birthDate) && data.nationality && data.profession && data.maritalStatus && data.email && data.phone && screeningStep1 !== "blocked";
-  const isStep2Valid = data.conjointIdType && data.conjointIdNumber && data.conjointLastName && data.conjointFirstName && data.conjointBirthDate && isAgeValid(data.conjointBirthDate) && data.conjointNationality && data.conjointProfession && data.conjointPaysResidence && data.conjointVilleResidence && data.conjointEmail && data.conjointPhone && screeningStep2 !== "blocked";
+  const isStep1Valid = data.identityDocumentType && data.identityNumber && data.lastName && data.firstName && data.birthDate && isAgeValid(data.birthDate, MAX_AGE_PRINCIPAL) && data.nationality && data.profession && data.maritalStatus && data.email && data.phone && screeningStep1 !== "blocked";
+  const isStep2Valid = data.conjointIdType && data.conjointIdNumber && data.conjointLastName && data.conjointFirstName && data.conjointBirthDate && isAgeValid(data.conjointBirthDate, MAX_AGE_CONJOINT) && data.conjointNationality && data.conjointProfession && data.conjointEmail && data.conjointPhone && screeningStep2 !== "blocked";
   const isStep3Valid = data.taille > 0 && data.poids > 0 && data.medicalQ1 !== undefined && data.medicalQ2 !== undefined && data.medicalQ3 !== undefined && data.medicalQ4 !== undefined && data.medicalQ5 !== undefined && data.medicalQ6 !== undefined && data.medicalQ7 !== undefined && data.medicalQ8 !== undefined && data.medicalQ9 !== undefined && data.medicalQ10 !== undefined;
   const isStep4Valid = !!data.beneficiaireType && (data.beneficiaireType === "ayant_droit" || (data.beneficiaireNom && data.beneficiairePrenom && data.beneficiaireLien));
   const isStep5Valid = data.prelevementAuto === false || (data.prelevementAuto === true && data.typePrelevement && (data.typePrelevement !== "banque" || (data.rib && data.nomBanque && data.titulaireBanque)));

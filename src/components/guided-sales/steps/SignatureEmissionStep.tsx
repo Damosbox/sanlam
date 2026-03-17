@@ -43,13 +43,12 @@ interface SignatureEmissionStepProps {
 // --- Shared helpers ---
 
 const planNames: Record<PlanTier, string> = {
-  mini: "MINI",
-  basic: "BASIC",
-  medium: "MEDIUM",
-  medium_plus: "MEDIUM+",
-  evolution: "EVOLUTION",
-  evolution_plus: "EVOLUTION+",
-  supreme: "SUPRÊME",
+  mini: "TIERS SIMPLE",
+  basic: "TIERS SIMPLE AMÉLIORÉ",
+  medium: "TIERS COMPLET",
+  medium_plus: "TIERS COMPLET",
+  evolution: "TOUT RISQUE",
+  evolution_plus: "TIERCE COLLISION",
 };
 
 const periodicityLabels: Record<ContractPeriodicity, string> = {

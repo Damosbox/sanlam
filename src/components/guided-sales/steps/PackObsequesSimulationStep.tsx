@@ -11,7 +11,7 @@ import { GuidedSalesState, PackObsequesData, PackObsequesFormula, AdhesionType, 
 import { ChevronLeft, ChevronRight, Shield, Calculator, Check, Save, Send, Loader2, ShieldCheck, ShieldAlert } from "lucide-react";
 import { CameraUploadButton } from "@/components/ui/CameraUploadButton";
 import { formatFCFA } from "@/utils/formatCurrency";
-import { calculatePackObsequesPremium, getPeriodicPremium } from "@/utils/packObsequesPremiumCalculator";
+import { calculatePackObsequesPremium, getPeriodicPremium, MAX_AGE_PRINCIPAL } from "@/utils/packObsequesPremiumCalculator";
 import { toast } from "sonner";
 import { QuotationSaveDialog } from "../QuotationSaveDialog";
 import { format } from "date-fns";
@@ -112,18 +112,27 @@ export const PackObsequesSimulationStep = ({
     const digits = phone.replace(/\D/g, "");
     return digits.length >= 10 && digits.length <= 15;
   };
-  const isAgeValid = (dateStr: string) => {
-    if (!dateStr) return false;
+  const getAge = (dateStr: string) => {
+    if (!dateStr) return 0;
     const birth = new Date(dateStr);
     const today = new Date();
     let age = today.getFullYear() - birth.getFullYear();
     const m = today.getMonth() - birth.getMonth();
     if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-    return age >= 18;
+    return age;
+  };
+  const isAgeValid = (dateStr: string) => {
+    const age = getAge(dateStr);
+    return age >= 18 && age <= MAX_AGE_PRINCIPAL;
   };
   const getMaxBirthDate = () => {
     const d = new Date();
     d.setFullYear(d.getFullYear() - 18);
+    return d.toISOString().split("T")[0];
+  };
+  const getMinBirthDate = () => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - MAX_AGE_PRINCIPAL);
     return d.toISOString().split("T")[0];
   };
   const isSubStep3Valid = data.lastName && data.firstName && data.phone && isPhoneValid(data.phone) && data.birthDate && isAgeValid(data.birthDate) && screeningStatus !== "blocked";
@@ -533,16 +542,20 @@ export const PackObsequesSimulationStep = ({
         </div>
 
         {/* 4. Date de naissance */}
-        <div className="space-y-2">
-          <Label>4. Date de naissance *</Label>
-          <Input
-            type="date"
-            value={data.birthDate}
-            max={getMaxBirthDate()}
-            onChange={(e) => onUpdate({ birthDate: e.target.value })}
-          />
-          {data.birthDate && !isAgeValid(data.birthDate) && (
-            <p className="text-xs text-destructive">L'assuré doit avoir au moins 18 ans</p>
+         <div className="space-y-2">
+           <Label>4. Date de naissance *</Label>
+           <Input
+             type="date"
+             value={data.birthDate}
+             min={getMinBirthDate()}
+             max={getMaxBirthDate()}
+             onChange={(e) => onUpdate({ birthDate: e.target.value })}
+           />
+           {data.birthDate && getAge(data.birthDate) < 18 && (
+             <p className="text-xs text-destructive">L'assuré doit avoir au moins 18 ans</p>
+           )}
+           {data.birthDate && getAge(data.birthDate) > MAX_AGE_PRINCIPAL && (
+             <p className="text-xs text-destructive">L'assuré ne peut pas dépasser {MAX_AGE_PRINCIPAL} ans</p>
           )}
         </div>
 

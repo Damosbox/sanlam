@@ -68,6 +68,11 @@ const CAPITAL_PAR_ASCENDANT: Record<PackObsequesFormula, number> = {
 const FRAIS_ACCESSOIRES = 5000;
 const TAUX_TAXE = 0.14; // 14% de taxes
 
+// Plafonds d'âge
+export const MAX_AGE_PRINCIPAL = 70;
+export const MAX_AGE_CONJOINT = 65;
+export const MAX_AGE_ENFANT = 21;
+
 export const calculatePackObsequesPremium = (data: PackObsequesData): PackObsequesPremiumBreakdown => {
   const { nombreEnfants, nombreAscendants, addSpouse, periodicity, formula = "bronze" } = data;
   

@@ -85,7 +85,7 @@ const generateRecommendation = (state: GuidedSalesState): AIRecommendation | nul
   }
   
   // Recommandation si le véhicule est ancien et le plan est premium
-  if (needsAnalysis.vehicleFirstCirculationDate && ["evolution", "evolution_plus", "supreme"].includes(coverage.planTier)) {
+  if (needsAnalysis.vehicleFirstCirculationDate && ["evolution", "evolution_plus"].includes(coverage.planTier)) {
     const vehicleYear = new Date(needsAnalysis.vehicleFirstCirculationDate).getFullYear();
     const currentYear = new Date().getFullYear();
     const vehicleAge = currentYear - vehicleYear;

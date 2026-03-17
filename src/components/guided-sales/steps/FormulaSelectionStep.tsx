@@ -158,13 +158,6 @@ export const FormulaSelectionStep = ({
       // Règle Excel TIERS COMPLET : Si 3 mois → seulement Medium+
       if (periodMonths === 3 && formula.tier === "medium_plus") return true;
 
-      // Règle TIERCE COLLISION pour 12 mois :
-      // Si âge véhicule > 5 → [basic - medium+]
-      // Si âge véhicule ≤ 5 → [basic - medium+ + supreme]
-      if (formula.tier === "supreme" && vehicleAge !== null && vehicleAge > 5) {
-        return false;
-      }
-
       return true;
     });
   }, [periodMonths, vehicleAge]);

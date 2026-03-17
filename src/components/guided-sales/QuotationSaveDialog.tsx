@@ -305,6 +305,12 @@ export const QuotationSaveDialog = ({
                     SMS
                   </Label>
                 </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="tous" id="ch-tous" />
+                  <Label htmlFor="ch-tous" className="font-normal cursor-pointer">
+                    Tous les canaux
+                  </Label>
+                </div>
               </RadioGroup>
             </div>
           )}

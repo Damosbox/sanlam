@@ -11,7 +11,7 @@ import { GuidedSalesState, PackObsequesData, PackObsequesFormula, AdhesionType, 
 import { ChevronLeft, ChevronRight, Shield, Calculator, Check, Save, Send, Loader2, ShieldCheck, ShieldAlert } from "lucide-react";
 import { CameraUploadButton } from "@/components/ui/CameraUploadButton";
 import { formatFCFA } from "@/utils/formatCurrency";
-import { calculatePackObsequesPremium, getPeriodicPremium } from "@/utils/packObsequesPremiumCalculator";
+import { calculatePackObsequesPremium, getPeriodicPremium, MAX_AGE_PRINCIPAL } from "@/utils/packObsequesPremiumCalculator";
 import { toast } from "sonner";
 import { QuotationSaveDialog } from "../QuotationSaveDialog";
 import { format } from "date-fns";

@@ -236,14 +236,12 @@ export const PackObsequesSubscriptionFlow = ({
   };
 
   // ===== VALIDATION =====
-  const isAgeValid = (dateStr: string) => {
+  const isAgeValid = (dateStr: string, maxAge?: number) => {
     if (!dateStr) return false;
-    const birth = new Date(dateStr);
-    const today = new Date();
-    let age = today.getFullYear() - birth.getFullYear();
-    const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-    return age >= MIN_AGE;
+    const age = getAge(dateStr);
+    if (age < MIN_AGE) return false;
+    if (maxAge && age > maxAge) return false;
+    return true;
   };
 
   const isStep1Valid = data.identityDocumentType && data.identityNumber && data.lastName && data.firstName && data.birthDate && isAgeValid(data.birthDate) && data.nationality && data.profession && data.maritalStatus && data.email && data.phone && screeningStep1 !== "blocked";

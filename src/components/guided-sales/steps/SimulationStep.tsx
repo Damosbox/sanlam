@@ -414,6 +414,51 @@ export const SimulationStep = ({
         <p className="text-muted-foreground mt-1">Étape 3/5 - Caractéristiques techniques</p>
       </div>
 
+      {/* Scanner carte grise en premier */}
+      <Card className="border-primary/30 bg-primary/5">
+        <CardContent className="pt-6">
+          <Label className="text-sm font-medium mb-1 block">Scanner la carte grise (OCR)</Label>
+          <p className="text-xs text-muted-foreground mb-3">
+            Prenez une photo de la carte grise pour pré-remplir automatiquement les informations du véhicule.
+          </p>
+          <div className="flex items-center gap-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleCarteGriseUpload}
+              disabled={isOCRProcessing}
+            />
+            {isOCRProcessing ? (
+              <Button variant="outline" disabled className="gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Analyse en cours...
+              </Button>
+            ) : (
+              <CameraUploadButton
+                id="carte-grise-simulation"
+                onFileSelected={(file) => {
+                  const dt = new DataTransfer();
+                  dt.items.add(file);
+                  const fakeEvent = { target: { files: dt.files } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                  handleCarteGriseUpload(fakeEvent);
+                }}
+                disabled={isOCRProcessing}
+                label="Scanner la carte grise"
+                variant="outline"
+              />
+            )}
+            {ocrSuccess && (
+              <span className="text-sm text-green-600 flex items-center gap-1">
+                <CheckCircle2 className="h-4 w-4" />
+                Données extraites
+              </span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardContent className="pt-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -13,7 +13,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { CameraUploadButton } from "@/components/ui/CameraUploadButton";
 import { formatFCFA } from "@/utils/formatCurrency";
-import { calculatePackObsequesPremium, getPeriodicPremium } from "@/utils/packObsequesPremiumCalculator";
+import { calculatePackObsequesPremium, getPeriodicPremium, MAX_AGE_PRINCIPAL, MAX_AGE_CONJOINT } from "@/utils/packObsequesPremiumCalculator";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";

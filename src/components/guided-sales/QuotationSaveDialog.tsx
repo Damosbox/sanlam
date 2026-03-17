@@ -103,9 +103,25 @@ export const QuotationSaveDialog = ({
     else if (firstName.trim().length > 100)
       newErrors.firstName = "100 caractères maximum";
 
-    if (!email.trim()) newErrors.email = "L'adresse e-mail est requise";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
-      newErrors.email = "Format e-mail invalide";
+    // Validation conditionnelle par canal
+    if (mode === "send") {
+      const needsEmail = channel === "email" || channel === "tous";
+      const needsPhone = channel === "whatsapp" || channel === "sms" || channel === "tous";
+
+      if (needsEmail) {
+        if (!email.trim()) newErrors.email = "L'adresse e-mail est requise";
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+          newErrors.email = "Format e-mail invalide";
+      }
+      if (needsPhone) {
+        if (!phone.trim()) newErrors.phone = "Le numéro de téléphone est requis";
+      }
+    } else {
+      // Mode save : email obligatoire
+      if (!email.trim()) newErrors.email = "L'adresse e-mail est requise";
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+        newErrors.email = "Format e-mail invalide";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;

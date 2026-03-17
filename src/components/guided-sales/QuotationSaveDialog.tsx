@@ -227,7 +227,10 @@ export const QuotationSaveDialog = ({
           {/* Téléphone & Type d'emploi */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="qs-phone">Numéro de téléphone</Label>
+              <Label htmlFor="qs-phone">
+                Numéro de téléphone
+                {mode === "send" && (channel === "whatsapp" || channel === "sms" || channel === "tous") && " *"}
+              </Label>
               <Input
                 id="qs-phone"
                 type="tel"
@@ -235,6 +238,9 @@ export const QuotationSaveDialog = ({
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+225 XX XX XX XX"
               />
+              {errors.phone && (
+                <p className="text-sm text-destructive">{errors.phone}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Type d'emploi</Label>

@@ -82,7 +82,6 @@ const guaranteesByPlan: Record<PlanTier, string[]> = {
   medium_plus: ["RC", "Défense Recours", "IC/IPT", "Avance sur recours", "Incendie", "Vol", "Vol à main armée", "Vol accessoires", "Bris de glaces"],
   evolution: ["RC", "Défense Recours", "IC/IPT", "Avance sur recours", "Incendie", "Vol", "Vol accessoires", "Bris de glaces", "Tierce complète plafonnée"],
   evolution_plus: ["RC", "Défense Recours", "IC/IPT", "Avance sur recours", "Incendie", "Vol", "Vol accessoires", "Bris de glaces", "Tierce collision plafonnée"],
-  supreme: ["RC", "Défense Recours", "IC/IPT", "Avance sur recours (gratuit)", "Incendie", "Vol", "Vol accessoires", "Bris de glaces (gratuit)", "Tierce complète non plafonnée"],
 };
 
 const cityLabels: Record<string, string> = {

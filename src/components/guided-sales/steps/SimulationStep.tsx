@@ -85,6 +85,9 @@ export const SimulationStep = ({
   onSubStepChange
 }: SimulationStepProps) => {
   const [subStep, setSubStepLocal] = useState<1 | 2 | 3 | 4 | 5>((initialSubStep ?? 1) as 1 | 2 | 3 | 4 | 5);
+  const [isOCRProcessing, setIsOCRProcessing] = useState(false);
+  const [ocrSuccess, setOcrSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { needsAnalysis, simulationCalculated, calculatedPremium } = state;
 
   const setSubStep = (val: 1 | 2 | 3 | 4 | 5) => {

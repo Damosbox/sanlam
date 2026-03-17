@@ -364,11 +364,11 @@ export const PackObsequesSubscriptionFlow = ({
           <Input value={data.firstName} onChange={(e) => onUpdate({ firstName: e.target.value })} placeholder="Écrivez ici" />
         </div>
 
-        <div className="space-y-2">
-          <Label>Date de naissance * {data.birthDate && <span className="text-xs text-muted-foreground italic">(pré-rempli)</span>}</Label>
-          <Input type="date" value={data.birthDate} max={getMaxBirthDate()} onChange={(e) => onUpdate({ birthDate: e.target.value })} />
-          <AgeAlert value={data.birthDate} />
-        </div>
+         <div className="space-y-2">
+           <Label>Date de naissance * {data.birthDate && <span className="text-xs text-muted-foreground italic">(pré-rempli)</span>}</Label>
+           <Input type="date" value={data.birthDate} min={getMinBirthDateForAge(MAX_AGE_PRINCIPAL)} max={getMaxBirthDate()} onChange={(e) => onUpdate({ birthDate: e.target.value })} />
+           <AgeAlert value={data.birthDate} maxAge={MAX_AGE_PRINCIPAL} label="L'assuré principal" />
+         </div>
 
         <div className="space-y-2">
           <Label>Nationalité *</Label>

@@ -25,9 +25,8 @@ const planNames: Record<PlanTier, string> = {
   basic: "TIERS SIMPLE AMÉLIORÉ",
   medium: "TIERS COMPLET",
   medium_plus: "TIERS COMPLET",
-  evolution: "TIERS RISQUES",
+  evolution: "TOUT RISQUE",
   evolution_plus: "TIERCE COLLISION",
-  supreme: "SUPRÊME",
 };
 
 const periodicityLabels: Record<ContractPeriodicity, string> = {

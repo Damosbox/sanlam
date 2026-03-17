@@ -446,7 +446,6 @@ export const SimulationStep = ({
                 }}
                 disabled={isOCRProcessing}
                 label="Scanner la carte grise"
-                variant="outline"
               />
             )}
             {ocrSuccess && (

@@ -569,20 +569,20 @@ export const PackObsequesSubscriptionFlow = ({
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label>Pays de résidence *</Label>
-          <Select value={data.conjointPaysResidence} onValueChange={(v) => onUpdate({ conjointPaysResidence: v })}>
-            <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
-            <SelectContent>
-              {COUNTRIES.map(c => <SelectItem key={c} value={c.toLowerCase().replace(/[' ]/g, "_")}>{c}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
+         <div className="space-y-2">
+           <Label>Pays de résidence</Label>
+           <Select value={data.conjointPaysResidence} onValueChange={(v) => onUpdate({ conjointPaysResidence: v })}>
+             <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+             <SelectContent>
+               {COUNTRIES.map(c => <SelectItem key={c} value={c.toLowerCase().replace(/[' ]/g, "_")}>{c}</SelectItem>)}
+             </SelectContent>
+           </Select>
+         </div>
 
-        <div className="space-y-2">
-          <Label>Ville de résidence *</Label>
-          <Input value={data.conjointVilleResidence} onChange={(e) => onUpdate({ conjointVilleResidence: e.target.value })} placeholder="Écrivez ici" />
-        </div>
+         <div className="space-y-2">
+           <Label>Ville de résidence</Label>
+           <Input value={data.conjointVilleResidence} onChange={(e) => onUpdate({ conjointVilleResidence: e.target.value })} placeholder="Écrivez ici" />
+         </div>
 
         <div className="space-y-2">
           <Label>Email *</Label>

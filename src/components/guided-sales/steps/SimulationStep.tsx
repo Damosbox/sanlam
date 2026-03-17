@@ -165,6 +165,56 @@ export const SimulationStep = ({
     }
   };
 
+  // ── OCR Carte Grise handler ──
+  const handleCarteGriseUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsOCRProcessing(true);
+    setOcrSuccess(false);
+
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data, error } = await supabase.functions.invoke("ocr-vehicle-registration", {
+        body: { imageBase64: base64 },
+      });
+
+      if (error) throw error;
+
+      if (data?.extracted) {
+        const ext = data.extracted;
+        const updates: Partial<GuidedSalesState["needsAnalysis"]> = {};
+        const filledFields: string[] = [];
+
+        if (ext.vehicleBrand) { updates.vehicleBrand = ext.vehicleBrand; filledFields.push("Marque"); }
+        if (ext.vehicleModel) { updates.vehicleModel = ext.vehicleModel; filledFields.push("Modèle"); }
+
+        onUpdate(updates);
+        setOcrSuccess(true);
+
+        if (filledFields.length > 0) {
+          toast.success(`Carte grise analysée ! Champs pré-remplis : ${filledFields.join(", ")}`, { duration: 5000 });
+        } else {
+          toast.warning("L'analyse n'a pas pu extraire de données. Vérifiez la qualité de l'image.");
+        }
+      } else {
+        toast.warning("Impossible d'extraire les données de la carte grise.");
+      }
+    } catch (err) {
+      console.error("OCR error:", err);
+      toast.error("Erreur lors de l'analyse de la carte grise");
+    } finally {
+      setIsOCRProcessing(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const goBack = () => {
     if (subStep > 1) {
       setSubStep((subStep - 1) as 1 | 2 | 3 | 4 | 5);

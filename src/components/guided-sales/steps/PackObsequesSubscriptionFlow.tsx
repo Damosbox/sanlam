@@ -537,11 +537,11 @@ export const PackObsequesSubscriptionFlow = ({
           <Input value={data.conjointFirstName} onChange={(e) => onUpdate({ conjointFirstName: e.target.value })} placeholder="Écrivez ici" />
         </div>
 
-        <div className="space-y-2">
-          <Label>Date de naissance *</Label>
-          <Input type="date" value={data.conjointBirthDate} max={getMaxBirthDate()} onChange={(e) => onUpdate({ conjointBirthDate: e.target.value })} />
-          <AgeAlert value={data.conjointBirthDate} />
-        </div>
+         <div className="space-y-2">
+           <Label>Date de naissance *</Label>
+           <Input type="date" value={data.conjointBirthDate} min={getMinBirthDateForAge(MAX_AGE_CONJOINT)} max={getMaxBirthDate()} onChange={(e) => onUpdate({ conjointBirthDate: e.target.value })} />
+           <AgeAlert value={data.conjointBirthDate} maxAge={MAX_AGE_CONJOINT} label="Le conjoint" />
+         </div>
 
         <div className="space-y-2">
           <Label>Nationalité *</Label>

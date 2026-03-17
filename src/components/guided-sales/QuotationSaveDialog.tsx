@@ -261,7 +261,10 @@ export const QuotationSaveDialog = ({
 
           {/* Email */}
           <div className="space-y-1.5">
-            <Label htmlFor="qs-email">Adresse e-mail *</Label>
+            <Label htmlFor="qs-email">
+              Adresse e-mail
+              {(mode === "save" || channel === "email" || channel === "tous") && " *"}
+            </Label>
             <Input
               id="qs-email"
               type="email"

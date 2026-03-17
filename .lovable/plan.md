@@ -1,57 +1,52 @@
 
 
-## ✅ Plan implémenté : OCR identité en premier bloc + Screening LCB-FT automatique
+## Plan : Corrections Pack Obsèques
 
-### Principe UX
+### 1. Plafond d'âge
+**Constat :** Seul un minimum de 18 ans est vérifié, aucun plafond maximum n'existe.
 
-Le bloc **"Scanner une pièce d'identité"** (CameraUploadButton) est toujours le **tout premier élément** de chaque card qui collecte des données d'identité. L'agent scanne d'abord, les champs en dessous se pré-remplissent, puis le screening LCB-FT se lance silencieusement en arrière-plan.
+**Modifications :**
+- `PackObsequesSimulationStep.tsx` : Ajouter validation d'âge max (ex: 70 ans pour l'assuré principal, 65 ans pour le conjoint, 21 ans pour les enfants — à confirmer avec les règles métier exactes). Afficher un message d'erreur si l'âge dépasse le plafond.
+- `PackObsequesSubscriptionFlow.tsx` : Même validation d'âge max dans les étapes 1 (assuré) et 2 (conjoint).
+- Ajouter des constantes `MAX_AGE_PRINCIPAL = 70`, `MAX_AGE_CONJOINT = 65` (ajustables).
 
-### Changements implémentés
+### 2. Informations exactes du volet
+**Constat :** Les tarifs, capitaux et conditions sont actuellement des estimations statiques dans `packObsequesPremiumCalculator.ts`.
 
-#### 1. `PackObsequesSubscriptionFlow.tsx` — Steps 1 et 2
-- ✅ OCR déplacé en **premier bloc** avant les champs Type de pièce / Numéro
-- ✅ Screening LCB-FT chaîné après OCR réussi
-- ✅ Badge vert "Conformité validée" ou alerte bloquante
-- ✅ Bouton "Suivant" désactivé si `screeningBlocked`
+**Modifications :**
+- Mettre à jour les tarifs exacts dans le calculateur si des valeurs précises sont fournies. Pour l'instant, afficher clairement les labels "Bronze / Argent / Or" avec les capitaux garantis correspondants dans la simulation (sub-step 5).
+- S'assurer que toutes les informations affichées (capital garanti, prime périodique, frais d'adhésion) correspondent aux conditions réelles du produit.
 
-#### 2. `SubscriptionFlow.tsx` — Sub-step 3 (Documents)
-- ✅ Bloc OCR identité ajouté en **premier** dans la card Documents
-- ✅ Screening LCB-FT chaîné après extraction
-- ✅ Pré-remplissage nom/prénom propriétaire
-- ✅ Validation sub-step 3 inclut vérification screening
+### 3. Supprimer l'obligation des champs Ville et Pays de Résidence
+**Constat :** Dans `PackObsequesSubscriptionFlow.tsx` :
+- Step 1 (assuré principal) : `paysResidence` et `villeResidence` ne sont pas dans `isStep1Valid` mais ont un label sans `*`. OK.
+- Step 2 (conjoint) : `conjointPaysResidence` et `conjointVilleResidence` **sont** dans `isStep2Valid` (ligne 235) avec `*` obligatoire.
 
-#### 3. `SubscriptionFlow.tsx` — Sub-step 5 (Conducteur)
-- ✅ Bloc OCR identité en premier si pas encore scanné à la sub-step 3
-- ✅ Badge de conformité affiché en lecture seule si déjà validé
-- ✅ Screening LCB-FT si pas encore effectué
+**Modifications :**
+- `PackObsequesSubscriptionFlow.tsx` : Retirer `conjointPaysResidence` et `conjointVilleResidence` de `isStep2Valid`. Retirer les `*` des labels correspondants.
 
-#### 4. `ClientIdentificationStep.tsx`
-- ✅ OCR déplacé du Collapsible vers le **tout premier bloc** de la card
-- ✅ Screening LCB-FT chaîné après extraction OCR
-- ✅ Badge vert ou alerte bloquante visible immédiatement
-- ✅ `canProceed` bloqué si screening échoué
+### 4. Supprimer le champ BNS
+**Constat :** Le `DiscountSelector` (BNS + réduction commerciale) est uniquement dans `RecapStep.tsx`, qui concerne le parcours Auto. Il n'apparaît pas dans le flux Pack Obsèques. Aucune modification nécessaire pour Pack Obsèques — c'est déjà absent.
+
+### 5. OCR à chaque étape pour pré-remplissage des ayants droits
+**Constat :** L'OCR est actuellement présent dans :
+- Simulation sub-step 3 (assuré principal)
+- Subscription step 1 (assuré principal)
+- Subscription step 2 (conjoint)
+
+Mais il manque dans l'étape 4 (bénéficiaires) quand le type est "autre".
+
+**Modifications :**
+- `PackObsequesSubscriptionFlow.tsx` step 4 (bénéficiaires) : Ajouter un bloc OCR identique quand `beneficiaireType === "autre"` pour scanner une pièce d'identité et pré-remplir `beneficiaireNom` et `beneficiairePrenom`.
+- Ajouter un paramètre `target: "beneficiaire"` dans le handler OCR existant.
 
 ---
 
-## ✅ Plan implémenté : Import CSV global + IA pour pré-remplir les règles de calcul
+### Fichiers à modifier
 
-### Fonctionnalité
-
-Bouton **"Importer un CSV actuariel"** dans le `CalcRuleEditor` qui :
-1. Accepte un fichier CSV (format sections `[SECTION]` ou libre)
-2. Parser déterministe pour les CSV structurés par sections
-3. Fallback IA (Lovable AI - `google/gemini-2.5-flash`) pour les CSV non structurés
-4. Dialog avec upload, analyse, aperçu des résultats et application
-
-### Fichiers créés/modifiés
-
-| Fichier | Changement |
+| Fichier | Changements |
 |---|---|
-| `supabase/functions/parse-calc-rule-csv/index.ts` | ✅ Nouvelle Edge Function (parser déterministe + IA via tool calling) |
-| `src/components/admin/calc-rules/CsvImportDialog.tsx` | ✅ Nouveau composant Dialog d'import |
-| `src/components/admin/calc-rules/CalcRuleEditor.tsx` | ✅ Bouton import + logique de merge sans doublons |
+| `PackObsequesSimulationStep.tsx` | Ajouter validation âge max (assuré principal) |
+| `PackObsequesSubscriptionFlow.tsx` | Âge max steps 1+2, retirer obligation ville/pays conjoint, OCR step 4 bénéficiaires |
+| `packObsequesPremiumCalculator.ts` | Ajouter constantes d'âge max exportées |
 
-### Logique de merge
-- Infos générales : appliquées uniquement si champs vides
-- Listes (paramètres, formules, etc.) : ajoutées sans doublon (clé = `code`)
-- `base_formula` : mise à jour uniquement si vide

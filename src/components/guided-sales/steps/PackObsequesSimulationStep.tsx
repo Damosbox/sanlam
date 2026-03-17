@@ -112,18 +112,27 @@ export const PackObsequesSimulationStep = ({
     const digits = phone.replace(/\D/g, "");
     return digits.length >= 10 && digits.length <= 15;
   };
-  const isAgeValid = (dateStr: string) => {
-    if (!dateStr) return false;
+  const getAge = (dateStr: string) => {
+    if (!dateStr) return 0;
     const birth = new Date(dateStr);
     const today = new Date();
     let age = today.getFullYear() - birth.getFullYear();
     const m = today.getMonth() - birth.getMonth();
     if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-    return age >= 18;
+    return age;
+  };
+  const isAgeValid = (dateStr: string) => {
+    const age = getAge(dateStr);
+    return age >= 18 && age <= MAX_AGE_PRINCIPAL;
   };
   const getMaxBirthDate = () => {
     const d = new Date();
     d.setFullYear(d.getFullYear() - 18);
+    return d.toISOString().split("T")[0];
+  };
+  const getMinBirthDate = () => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - MAX_AGE_PRINCIPAL);
     return d.toISOString().split("T")[0];
   };
   const isSubStep3Valid = data.lastName && data.firstName && data.phone && isPhoneValid(data.phone) && data.birthDate && isAgeValid(data.birthDate) && screeningStatus !== "blocked";

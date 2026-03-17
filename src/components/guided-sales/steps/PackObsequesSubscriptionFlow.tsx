@@ -655,6 +655,45 @@ export const PackObsequesSubscriptionFlow = ({
     </Card>
   );
 
+  // ===== OCR handler for beneficiaire =====
+  const handleBeneficiaireOCR = async (file: File) => {
+    setIsOCRProcessing("beneficiaire");
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data: result, error } = await supabase.functions.invoke("ocr-identity", {
+        body: { imageBase64: base64 },
+      });
+      if (error) throw error;
+
+      if (result?.extracted) {
+        const ext = result.extracted;
+        const updates: Partial<PackObsequesData> = {};
+        const filledFields: string[] = [];
+        if (ext.lastName) { updates.beneficiaireNom = ext.lastName; filledFields.push("Nom"); }
+        if (ext.firstName) { updates.beneficiairePrenom = ext.firstName; filledFields.push("Prénom"); }
+        onUpdate(updates);
+        if (filledFields.length > 0) {
+          toast.success(`Pièce analysée ! Champs pré-remplis : ${filledFields.join(", ")}`, { duration: 5000 });
+        } else {
+          toast.warning("L'analyse n'a pas pu extraire de données.");
+        }
+      } else {
+        toast.warning("Impossible d'extraire les données du document.");
+      }
+    } catch (err) {
+      console.error("OCR error:", err);
+      toast.error("Erreur lors de l'analyse du document");
+    } finally {
+      setIsOCRProcessing(null);
+    }
+  };
+
   // ===== STEP 4: Bénéficiaires =====
   const renderStep4 = () => (
     <Card>
@@ -682,12 +721,37 @@ export const PackObsequesSubscriptionFlow = ({
 
         {data.beneficiaireType === "autre" && (
           <div className="space-y-4 pt-4 border-t">
+            {/* OCR Scanner for beneficiary */}
             <div className="space-y-2">
-              <Label>Nom du bénéficiaire *</Label>
+              <Label className="font-medium">📄 Scanner la pièce d'identité du bénéficiaire</Label>
+              {isOCRProcessing === "beneficiaire" ? (
+                <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <div>
+                    <p className="text-sm font-medium">Analyse en cours...</p>
+                    <p className="text-xs text-muted-foreground">Extraction des données d'identité du bénéficiaire</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Scannez la pièce pour pré-remplir nom et prénom</p>
+                  <CameraUploadButton
+                    id="ocr-identity-beneficiaire"
+                    onFileSelected={handleBeneficiaireOCR}
+                    disabled={isOCRProcessing !== null}
+                    uploadLabel="Uploader"
+                    cameraLabel="Scanner"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Nom du bénéficiaire * {data.beneficiaireNom && <span className="text-xs text-muted-foreground italic">(pré-rempli)</span>}</Label>
               <Input value={data.beneficiaireNom || ""} onChange={(e) => onUpdate({ beneficiaireNom: e.target.value })} placeholder="Écrivez ici" />
             </div>
             <div className="space-y-2">
-              <Label>Prénom du bénéficiaire *</Label>
+              <Label>Prénom du bénéficiaire * {data.beneficiairePrenom && <span className="text-xs text-muted-foreground italic">(pré-rempli)</span>}</Label>
               <Input value={data.beneficiairePrenom || ""} onChange={(e) => onUpdate({ beneficiairePrenom: e.target.value })} placeholder="Écrivez ici" />
             </div>
             <div className="space-y-2">

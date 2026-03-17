@@ -542,16 +542,20 @@ export const PackObsequesSimulationStep = ({
         </div>
 
         {/* 4. Date de naissance */}
-        <div className="space-y-2">
-          <Label>4. Date de naissance *</Label>
-          <Input
-            type="date"
-            value={data.birthDate}
-            max={getMaxBirthDate()}
-            onChange={(e) => onUpdate({ birthDate: e.target.value })}
-          />
-          {data.birthDate && !isAgeValid(data.birthDate) && (
-            <p className="text-xs text-destructive">L'assuré doit avoir au moins 18 ans</p>
+         <div className="space-y-2">
+           <Label>4. Date de naissance *</Label>
+           <Input
+             type="date"
+             value={data.birthDate}
+             min={getMinBirthDate()}
+             max={getMaxBirthDate()}
+             onChange={(e) => onUpdate({ birthDate: e.target.value })}
+           />
+           {data.birthDate && getAge(data.birthDate) < 18 && (
+             <p className="text-xs text-destructive">L'assuré doit avoir au moins 18 ans</p>
+           )}
+           {data.birthDate && getAge(data.birthDate) > MAX_AGE_PRINCIPAL && (
+             <p className="text-xs text-destructive">L'assuré ne peut pas dépasser {MAX_AGE_PRINCIPAL} ans</p>
           )}
         </div>
 

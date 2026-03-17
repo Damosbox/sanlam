@@ -75,7 +75,7 @@ const FORMULA_DEFINITIONS: FormulaDefinition[] = [
   },
   {
     tier: "evolution",
-    name: "TIERS RISQUES",
+    name: "TOUT RISQUE",
     description: "Tiers Amélioré + Tierce Complète",
     guarantees: [
       "RC", "Défense/Recours", "Recours des tiers incendie", "Individuel conducteur",
@@ -97,20 +97,6 @@ const FORMULA_DEFINITIONS: FormulaDefinition[] = [
       "Vol des accessoires", "Bris de glaces", "Tierce collision",
     ],
     maxVehicleAge: 7,
-    minPeriodMonths: 6,
-    maxPeriodMonths: 12,
-    availableAssistances: ["avantage", "relax", "liberte"],
-  },
-  {
-    tier: "supreme",
-    name: "SUPRÊME",
-    description: "Protection maximale – Tierce tous risques",
-    guarantees: [
-      "RC", "Défense/Recours", "Recours des tiers incendie", "Individuel conducteur",
-      "Avance sur recours", "Incendie", "Vol", "Vol à mains armées",
-      "Vol des accessoires", "Bris de glaces", "Tierce complète", "Tierce collision",
-    ],
-    maxVehicleAge: 5,
     minPeriodMonths: 6,
     maxPeriodMonths: 12,
     availableAssistances: ["avantage", "relax", "liberte"],
@@ -171,13 +157,6 @@ export const FormulaSelectionStep = ({
 
       // Règle Excel TIERS COMPLET : Si 3 mois → seulement Medium+
       if (periodMonths === 3 && formula.tier === "medium_plus") return true;
-
-      // Règle TIERCE COLLISION pour 12 mois :
-      // Si âge véhicule > 5 → [basic - medium+]
-      // Si âge véhicule ≤ 5 → [basic - medium+ + supreme]
-      if (formula.tier === "supreme" && vehicleAge !== null && vehicleAge > 5) {
-        return false;
-      }
 
       return true;
     });

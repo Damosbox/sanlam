@@ -78,7 +78,6 @@ const PLAN_COVERAGES: Record<PlanTier, string[]> = {
   medium_plus: ["recours_anticipe", "incendie", "vol", "vol_accessoires", "brisGlaces"],
   evolution: ["recours_anticipe", "incendie", "vol", "vol_accessoires", "brisGlaces", "dommages"],
   evolution_plus: ["recours_anticipe", "incendie", "vol", "vol_accessoires", "brisGlaces", "tiersCollision"],
-  supreme: ["recours_anticipe", "incendie", "vol", "vol_accessoires", "brisGlaces", "dommages"],
 };
 
 // Constantes fiscales CIMA

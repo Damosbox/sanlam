@@ -103,9 +103,25 @@ export const QuotationSaveDialog = ({
     else if (firstName.trim().length > 100)
       newErrors.firstName = "100 caractères maximum";
 
-    if (!email.trim()) newErrors.email = "L'adresse e-mail est requise";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
-      newErrors.email = "Format e-mail invalide";
+    // Validation conditionnelle par canal
+    if (mode === "send") {
+      const needsEmail = channel === "email" || channel === "tous";
+      const needsPhone = channel === "whatsapp" || channel === "sms" || channel === "tous";
+
+      if (needsEmail) {
+        if (!email.trim()) newErrors.email = "L'adresse e-mail est requise";
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+          newErrors.email = "Format e-mail invalide";
+      }
+      if (needsPhone) {
+        if (!phone.trim()) newErrors.phone = "Le numéro de téléphone est requis";
+      }
+    } else {
+      // Mode save : email obligatoire
+      if (!email.trim()) newErrors.email = "L'adresse e-mail est requise";
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+        newErrors.email = "Format e-mail invalide";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -211,7 +227,10 @@ export const QuotationSaveDialog = ({
           {/* Téléphone & Type d'emploi */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="qs-phone">Numéro de téléphone</Label>
+              <Label htmlFor="qs-phone">
+                Numéro de téléphone
+                {mode === "send" && (channel === "whatsapp" || channel === "sms" || channel === "tous") && " *"}
+              </Label>
               <Input
                 id="qs-phone"
                 type="tel"
@@ -219,6 +238,9 @@ export const QuotationSaveDialog = ({
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+225 XX XX XX XX"
               />
+              {errors.phone && (
+                <p className="text-sm text-destructive">{errors.phone}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Type d'emploi</Label>
@@ -239,7 +261,10 @@ export const QuotationSaveDialog = ({
 
           {/* Email */}
           <div className="space-y-1.5">
-            <Label htmlFor="qs-email">Adresse e-mail *</Label>
+            <Label htmlFor="qs-email">
+              Adresse e-mail
+              {(mode === "save" || channel === "email" || channel === "tous") && " *"}
+            </Label>
             <Input
               id="qs-email"
               type="email"
@@ -278,6 +303,12 @@ export const QuotationSaveDialog = ({
                   <RadioGroupItem value="sms" id="ch-sms" />
                   <Label htmlFor="ch-sms" className="font-normal cursor-pointer">
                     SMS
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="tous" id="ch-tous" />
+                  <Label htmlFor="ch-tous" className="font-normal cursor-pointer">
+                    Tous les canaux
                   </Label>
                 </div>
               </RadioGroup>

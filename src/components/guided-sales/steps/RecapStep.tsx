@@ -25,9 +25,8 @@ const planNames: Record<PlanTier, string> = {
   basic: "TIERS SIMPLE AMÉLIORÉ",
   medium: "TIERS COMPLET",
   medium_plus: "TIERS COMPLET",
-  evolution: "TIERS RISQUES",
+  evolution: "TOUT RISQUE",
   evolution_plus: "TIERCE COLLISION",
-  supreme: "SUPRÊME",
 };
 
 const periodicityLabels: Record<ContractPeriodicity, string> = {
@@ -61,7 +60,6 @@ const guaranteesByPlan: Record<PlanTier, string[]> = {
   medium_plus: ["RC", "Défense Recours", "IC/IPT", "Avance sur recours", "Incendie", "Vol", "Vol à main armée", "Vol accessoires", "Bris de glaces"],
   evolution: ["RC", "Défense Recours", "IC/IPT", "Avance sur recours", "Incendie", "Vol", "Vol accessoires", "Bris de glaces", "Tierce complète plafonnée"],
   evolution_plus: ["RC", "Défense Recours", "IC/IPT", "Avance sur recours", "Incendie", "Vol", "Vol accessoires", "Bris de glaces", "Tierce collision plafonnée"],
-  supreme: ["RC", "Défense Recours", "IC/IPT", "Avance sur recours (gratuit)", "Incendie", "Vol", "Vol accessoires", "Bris de glaces (gratuit)", "Tierce complète non plafonnée"],
 };
 
 interface PremiumLineProps {

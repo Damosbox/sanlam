@@ -62,21 +62,36 @@ const formatDateFR = (dateStr: string) => {
 
 const MIN_AGE = 18;
 
+const getAge = (dateStr: string) => {
+  if (!dateStr) return 0;
+  const birth = new Date(dateStr);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+};
+
 const getMaxBirthDate = () => {
   const d = new Date();
   d.setFullYear(d.getFullYear() - MIN_AGE);
   return d.toISOString().split("T")[0];
 };
 
-const AgeAlert = ({ value }: { value: string }) => {
+const getMinBirthDateForAge = (maxAge: number) => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - maxAge);
+  return d.toISOString().split("T")[0];
+};
+
+const AgeAlert = ({ value, maxAge, label }: { value: string; maxAge?: number; label?: string }) => {
   if (!value) return null;
-  const birth = new Date(value);
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  const age = getAge(value);
   if (age < MIN_AGE) {
-    return <p className="text-xs text-destructive">L'assuré doit avoir au moins {MIN_AGE} ans</p>;
+    return <p className="text-xs text-destructive">{label || "L'assuré"} doit avoir au moins {MIN_AGE} ans</p>;
+  }
+  if (maxAge && age > maxAge) {
+    return <p className="text-xs text-destructive">{label || "L'assuré"} ne peut pas dépasser {maxAge} ans</p>;
   }
   return null;
 };

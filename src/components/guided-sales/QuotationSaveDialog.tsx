@@ -95,12 +95,10 @@ export const QuotationSaveDialog = ({
   const validate = (): boolean => {
     if (optional) return true;
     const newErrors: Record<string, string> = {};
-    if (!lastName.trim()) newErrors.lastName = "Le nom est requis";
-    else if (lastName.trim().length > 100)
+    if (lastName.trim().length > 100)
       newErrors.lastName = "100 caractères maximum";
 
-    if (!firstName.trim()) newErrors.firstName = "Le prénom est requis";
-    else if (firstName.trim().length > 100)
+    if (firstName.trim().length > 100)
       newErrors.firstName = "100 caractères maximum";
 
     // Validation conditionnelle par canal
@@ -172,7 +170,7 @@ export const QuotationSaveDialog = ({
           {/* Nom & Prénom */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="qs-lastName">Nom *</Label>
+              <Label htmlFor="qs-lastName">Nom</Label>
               <Input
                 id="qs-lastName"
                 value={lastName}
@@ -185,7 +183,7 @@ export const QuotationSaveDialog = ({
               )}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="qs-firstName">Prénom *</Label>
+              <Label htmlFor="qs-firstName">Prénom</Label>
               <Input
                 id="qs-firstName"
                 value={firstName}

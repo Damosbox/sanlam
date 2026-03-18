@@ -730,8 +730,9 @@ export const PackObsequesSimulationStep = ({
 
         {/* Section — Données de simulation (always visible) */}
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-lg">{simulationCalculated ? "3." : "2."} Données de simulation</CardTitle>
+            <SectionEditButton targetStep={1} />
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm">

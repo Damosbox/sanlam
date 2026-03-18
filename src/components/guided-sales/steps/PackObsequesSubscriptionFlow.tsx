@@ -890,7 +890,12 @@ export const PackObsequesSubscriptionFlow = ({
           </AccordionItem>
 
           <AccordionItem value="assure">
-            <AccordionTrigger>Informations sur l'assuré(e) principal(e)</AccordionTrigger>
+            <div className="flex items-center justify-between">
+              <AccordionTrigger className="flex-1">Informations sur l'assuré(e) principal(e)</AccordionTrigger>
+              <Button variant="ghost" size="sm" onClick={() => setCurrentStep(1)} className="text-muted-foreground hover:text-primary text-xs gap-1 mr-2 shrink-0">
+                <ChevronLeft className="h-3 w-3" />Modifier
+              </Button>
+            </div>
             <AccordionContent>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Nom</span><span>{data.lastName} {data.firstName}</span></div>
@@ -906,7 +911,12 @@ export const PackObsequesSubscriptionFlow = ({
 
           {isMarried && (
             <AccordionItem value="conjoint">
-              <AccordionTrigger>Information sur le conjoint</AccordionTrigger>
+              <div className="flex items-center justify-between">
+                <AccordionTrigger className="flex-1">Information sur le conjoint</AccordionTrigger>
+                <Button variant="ghost" size="sm" onClick={() => setCurrentStep(2)} className="text-muted-foreground hover:text-primary text-xs gap-1 mr-2 shrink-0">
+                  <ChevronLeft className="h-3 w-3" />Modifier
+                </Button>
+              </div>
               <AccordionContent>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between"><span className="text-muted-foreground">Nom</span><span>{data.conjointLastName} {data.conjointFirstName}</span></div>
@@ -935,7 +945,12 @@ export const PackObsequesSubscriptionFlow = ({
           </AccordionItem>
 
           <AccordionItem value="medical">
-            <AccordionTrigger>Questionnaire médical - Assuré principal</AccordionTrigger>
+            <div className="flex items-center justify-between">
+              <AccordionTrigger className="flex-1">Questionnaire médical - Assuré principal</AccordionTrigger>
+              <Button variant="ghost" size="sm" onClick={() => setCurrentStep(3)} className="text-muted-foreground hover:text-primary text-xs gap-1 mr-2 shrink-0">
+                <ChevronLeft className="h-3 w-3" />Modifier
+              </Button>
+            </div>
             <AccordionContent>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Taille</span><span>{data.taille} cm</span></div>
@@ -951,7 +966,12 @@ export const PackObsequesSubscriptionFlow = ({
           </AccordionItem>
 
           <AccordionItem value="beneficiaires">
-            <AccordionTrigger>Information sur les bénéficiaires</AccordionTrigger>
+            <div className="flex items-center justify-between">
+              <AccordionTrigger className="flex-1">Information sur les bénéficiaires</AccordionTrigger>
+              <Button variant="ghost" size="sm" onClick={() => setCurrentStep(4)} className="text-muted-foreground hover:text-primary text-xs gap-1 mr-2 shrink-0">
+                <ChevronLeft className="h-3 w-3" />Modifier
+              </Button>
+            </div>
             <AccordionContent>
               <div className="text-sm">
                 <span className="capitalize">{data.beneficiaireType === "ayant_droit" ? "Ayant droit légaux" : `${data.beneficiaireNom} ${data.beneficiairePrenom} (${data.beneficiaireLien})`}</span>
@@ -960,7 +980,12 @@ export const PackObsequesSubscriptionFlow = ({
           </AccordionItem>
 
           <AccordionItem value="prelevement">
-            <AccordionTrigger>Moyen de prélèvement</AccordionTrigger>
+            <div className="flex items-center justify-between">
+              <AccordionTrigger className="flex-1">Moyen de prélèvement</AccordionTrigger>
+              <Button variant="ghost" size="sm" onClick={() => setCurrentStep(5)} className="text-muted-foreground hover:text-primary text-xs gap-1 mr-2 shrink-0">
+                <ChevronLeft className="h-3 w-3" />Modifier
+              </Button>
+            </div>
             <AccordionContent>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Prélèvement auto</span><span>{data.prelevementAuto ? "Oui" : "Non"}</span></div>

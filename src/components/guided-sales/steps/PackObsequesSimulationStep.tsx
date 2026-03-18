@@ -687,12 +687,20 @@ export const PackObsequesSimulationStep = ({
     const periodicPremium = getPeriodicPremium(breakdown.primeTotale, data.periodicity);
     const premierePrime = periodicPremium + breakdown.fraisAccessoires;
 
+    const SectionEditButton = ({ targetStep }: { targetStep: 1 | 2 | 3 | 4 | 5 }) => (
+      <Button variant="ghost" size="sm" onClick={() => setSubStep(targetStep)} className="gap-1.5 text-muted-foreground hover:text-primary">
+        <ChevronLeft className="h-3.5 w-3.5" />
+        Modifier
+      </Button>
+    );
+
     return (
       <div className="space-y-4">
         {/* Section — Détails sur les capitaux (always visible) */}
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-lg">{simulationCalculated ? "2." : "1."} Détails sur les capitaux</CardTitle>
+            <SectionEditButton targetStep={1} />
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm">
@@ -722,8 +730,9 @@ export const PackObsequesSimulationStep = ({
 
         {/* Section — Données de simulation (always visible) */}
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-lg">{simulationCalculated ? "3." : "2."} Données de simulation</CardTitle>
+            <SectionEditButton targetStep={1} />
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm">

@@ -1063,13 +1063,22 @@ export const PackObsequesSubscriptionFlow = ({
     { id: "moov", name: "Moov Money", color: "bg-cyan-500" },
   ];
 
+  const isAutoDebitNonEwallet = data.prelevementAuto && data.typePrelevement && data.typePrelevement !== "ewallet";
+
   const renderStep7 = () => (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <Banknote className="h-5 w-5 text-primary" />
-          Paiement de la souscription
+          {isAutoDebitNonEwallet ? "Paiement de la première prime" : "Paiement de la souscription"}
         </CardTitle>
+        {isAutoDebitNonEwallet && (
+          <p className="text-sm text-muted-foreground mt-1">
+            Les prochaines primes seront prélevées automatiquement via{" "}
+            {data.typePrelevement === "banque" ? "votre compte bancaire" : data.typePrelevement === "solde" ? "votre solde employeur" : "APS"}.
+            Seule la première prime et les frais d'adhésion sont à régler maintenant par paiement mobile.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Financial recap */}

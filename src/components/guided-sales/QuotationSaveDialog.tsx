@@ -170,7 +170,7 @@ export const QuotationSaveDialog = ({
           {/* Nom & Prénom */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="qs-lastName">Nom *</Label>
+              <Label htmlFor="qs-lastName">Nom</Label>
               <Input
                 id="qs-lastName"
                 value={lastName}

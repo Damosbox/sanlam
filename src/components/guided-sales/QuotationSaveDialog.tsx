@@ -183,7 +183,7 @@ export const QuotationSaveDialog = ({
               )}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="qs-firstName">Prénom *</Label>
+              <Label htmlFor="qs-firstName">Prénom</Label>
               <Input
                 id="qs-firstName"
                 value={firstName}

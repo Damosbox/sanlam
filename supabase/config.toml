@@ -4,10 +4,10 @@ project_id = "ygdgludwuybclprzshol"
 verify_jwt = false
 
 [functions.otp-verification]
-verify_jwt = true
+verify_jwt = false
 
 [functions.ocr-identity]
-verify_jwt = true
+verify_jwt = false
 
 [functions.sales-assistant]
 verify_jwt = false
@@ -25,4 +25,10 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.parse-calc-rule-csv]
+verify_jwt = false
+
+[functions.create-test-users]
+verify_jwt = false
+
+[functions.create-mock-clients]
 verify_jwt = false

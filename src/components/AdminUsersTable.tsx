@@ -33,7 +33,7 @@ interface UserWithRole {
   partner_type: PartnerType | null;
   created_at: string;
   user_roles: Array<{
-    role: "admin" | "broker" | "compliance" | "customer";
+    role: string;
   }>;
   broker_settings?: {
     otp_verification_enabled: boolean;

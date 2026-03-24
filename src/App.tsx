@@ -171,6 +171,8 @@ const App = () => (
             <Route path="broker-news" element={<AdminBrokerNewsPage />} />
             <Route path="agents-portfolio" element={<AdminAgentsPortfolioPage />} />
             <Route path="conversions" element={<AdminConversionsPage />} />
+            <Route path="agent-performance" element={<AdminAgentPerformancePage />} />
+            <Route path="loss-ratio" element={<AdminLossRatioPage />} />
             <Route path="compliance" element={<AdminComplianceDashboardPage />} />
           </Route>
 

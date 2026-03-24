@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, TrendingUp, Users, UserCheck, ArrowRight } from "lucide-react";
 import { PeriodFilter, computeDateRange, DateRange } from "@/components/broker/dashboard/PeriodFilter";
 import { Progress } from "@/components/ui/progress";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from "recharts";
 
 interface ConversionData {
   agentId: string;
@@ -13,9 +14,9 @@ interface ConversionData {
   totalLeads: number;
   convertedLeads: number;
   conversionRate: number;
-  byProduct: Record<string, { total: number; converted: number }>;
 }
 
+const STATUS_ORDER = ["nouveau", "contacte", "qualifie", "proposition", "negoce", "converti"];
 const STATUS_LABELS: Record<string, string> = {
   nouveau: "Nouveau",
   contacte: "Contacté",
@@ -39,7 +40,6 @@ export default function ConversionsPage() {
   const fetchConversions = async () => {
     setLoading(true);
     try {
-      // Get all leads in the period
       const { data: leads } = await supabase
         .from("leads")
         .select("id, status, assigned_broker_id, product_interest, created_at")
@@ -48,7 +48,6 @@ export default function ConversionsPage() {
 
       setAllLeads(leads || []);
 
-      // Get broker profiles
       const brokerIds = [...new Set((leads || []).map((l) => l.assigned_broker_id).filter(Boolean))];
       const { data: profiles } = await supabase
         .from("profiles")
@@ -57,7 +56,6 @@ export default function ConversionsPage() {
 
       const profileMap = new Map((profiles || []).map((p) => [p.id, `${p.first_name || ""} ${p.last_name || ""}`]));
 
-      // Group by agent
       const agentMap = new Map<string, ConversionData>();
       for (const lead of leads || []) {
         const agentId = lead.assigned_broker_id || "unassigned";
@@ -68,20 +66,13 @@ export default function ConversionsPage() {
             totalLeads: 0,
             convertedLeads: 0,
             conversionRate: 0,
-            byProduct: {},
           });
         }
         const agent = agentMap.get(agentId)!;
         agent.totalLeads++;
         if (lead.status === "converti") agent.convertedLeads++;
-
-        const product = lead.product_interest || "Autre";
-        if (!agent.byProduct[product]) agent.byProduct[product] = { total: 0, converted: 0 };
-        agent.byProduct[product].total++;
-        if (lead.status === "converti") agent.byProduct[product].converted++;
       }
 
-      // Calculate conversion rates
       for (const agent of agentMap.values()) {
         agent.conversionRate = agent.totalLeads > 0 ? (agent.convertedLeads / agent.totalLeads) * 100 : 0;
       }
@@ -98,11 +89,24 @@ export default function ConversionsPage() {
   const convertedLeads = allLeads.filter((l) => l.status === "converti").length;
   const globalRate = totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0;
 
-  // Status distribution
+  // Status distribution for KPI
   const statusCounts = allLeads.reduce((acc, l) => {
     acc[l.status] = (acc[l.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
+
+  // Funnel data
+  const funnelData = STATUS_ORDER.map((status, i) => {
+    const count = statusCounts[status] || 0;
+    const prevCount = i === 0 ? totalLeads : (statusCounts[STATUS_ORDER[i - 1]] || 0);
+    const dropOff = prevCount > 0 && i > 0 ? Math.round(((prevCount - count) / prevCount) * 100) : 0;
+    return {
+      status: STATUS_LABELS[status],
+      count,
+      dropOff: i === 0 ? null : dropOff,
+    };
+  });
+  const lostCount = statusCounts["perdu"] || 0;
 
   if (loading) {
     return (
@@ -168,6 +172,39 @@ export default function ConversionsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Funnel Chart */}
+      {totalLeads > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Funnel de Conversion</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={funnelData} layout="vertical" margin={{ left: 20, right: 40 }}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis type="number" />
+                <YAxis dataKey="status" type="category" width={100} className="text-xs" />
+                <Tooltip
+                  formatter={(value: number, _name: string, props: any) => {
+                    const dropOff = props.payload.dropOff;
+                    return [`${value} leads${dropOff !== null ? ` (−${dropOff}% drop)` : ""}`, "Leads"];
+                  }}
+                />
+                <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                  {funnelData.map((_, i) => (
+                    <Cell key={i} className="fill-primary" style={{ opacity: 1 - i * 0.12 }} />
+                  ))}
+                  <LabelList dataKey="count" position="right" className="text-xs fill-foreground" />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            {lostCount > 0 && (
+              <p className="text-sm text-destructive mt-2">🔴 Perdus : {lostCount} leads</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Conversion Table by Agent */}
       <Card>

@@ -22,6 +22,8 @@ import {
   PieChart,
   ArrowRightLeft,
   ShieldCheck,
+  Target,
+  AlertTriangle,
 } from "lucide-react";
 import {
   Sidebar,
@@ -131,6 +133,8 @@ export function AdminSidebar() {
   const pilotageItems = [
     { title: "Portefeuille Agents", url: "/admin/agents-portfolio", icon: PieChart },
     { title: "Conversions", url: "/admin/conversions", icon: ArrowRightLeft },
+    { title: "Performance Agents", url: "/admin/agent-performance", icon: Target },
+    { title: "Sinistralité", url: "/admin/loss-ratio", icon: AlertTriangle },
     { title: "Conformité KYC", url: "/admin/compliance", icon: ShieldCheck },
   ];
 

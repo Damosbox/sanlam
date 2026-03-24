@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Users, TrendingUp, Briefcase, UserCheck } from "lucide-react";
 import { PeriodFilter, computeDateRange, DateRange } from "@/components/broker/dashboard/PeriodFilter";
 import { formatFCFA } from "@/utils/formatCurrency";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 interface AgentPortfolio {
   id: string;
@@ -19,6 +20,11 @@ interface AgentPortfolio {
   activePolicies: number;
 }
 
+interface MonthlyCA {
+  month: string;
+  ca: number;
+}
+
 const PARTNER_TYPE_LABELS: Record<string, string> = {
   courtier: "Courtier",
   agent_general: "Agent Général",
@@ -29,6 +35,7 @@ const PARTNER_TYPE_LABELS: Record<string, string> = {
 
 export default function AgentsPortfolioPage() {
   const [agents, setAgents] = useState<AgentPortfolio[]>([]);
+  const [monthlyCA, setMonthlyCA] = useState<MonthlyCA[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange>(computeDateRange("fiscal_year"));
 
@@ -39,7 +46,6 @@ export default function AgentsPortfolioPage() {
   const fetchAgents = async () => {
     setLoading(true);
     try {
-      // Get all broker profiles
       const { data: brokerRoles } = await supabase
         .from("user_roles")
         .select("user_id")
@@ -47,48 +53,54 @@ export default function AgentsPortfolioPage() {
 
       if (!brokerRoles || brokerRoles.length === 0) {
         setAgents([]);
+        setMonthlyCA([]);
         setLoading(false);
         return;
       }
 
       const brokerIds = brokerRoles.map((r) => r.user_id);
 
-      // Get profiles
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, email, first_name, last_name, partner_type")
         .in("id", brokerIds);
 
+      // Fetch all active subscriptions in period for monthly CA
+      const { data: allSubs } = await supabase
+        .from("subscriptions")
+        .select("assigned_broker_id, monthly_premium, start_date")
+        .eq("status", "active")
+        .gte("start_date", dateRange.from.toISOString())
+        .lte("start_date", dateRange.to.toISOString());
+
+      // Monthly CA aggregation
+      const monthMap = new Map<string, number>();
+      for (const s of allSubs || []) {
+        const d = new Date(s.start_date);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        monthMap.set(key, (monthMap.get(key) || 0) + (Number(s.monthly_premium) || 0));
+      }
+      const sortedMonths = Array.from(monthMap.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([month, ca]) => ({ month, ca }));
+      setMonthlyCA(sortedMonths);
+
       // Build portfolio for each agent
       const portfolios: AgentPortfolio[] = await Promise.all(
         (profiles || []).map(async (profile) => {
-          // Count clients
           const { count: clientCount } = await supabase
             .from("broker_clients")
             .select("*", { count: "exact", head: true })
             .eq("broker_id", profile.id);
 
-          // Count leads
           const { count: leadCount } = await supabase
             .from("leads")
             .select("*", { count: "exact", head: true })
             .eq("assigned_broker_id", profile.id);
 
-          // Sum premiums from subscriptions in period
-          const { data: subs } = await supabase
-            .from("subscriptions")
-            .select("monthly_premium")
-            .eq("assigned_broker_id", profile.id)
-            .eq("status", "active")
-            .gte("start_date", dateRange.from.toISOString())
-            .lte("start_date", dateRange.to.toISOString());
+          const agentSubs = (allSubs || []).filter((s) => s.assigned_broker_id === profile.id);
+          const totalPremium = agentSubs.reduce((sum, s) => sum + (Number(s.monthly_premium) || 0), 0);
 
-          const totalPremium = (subs || []).reduce(
-            (sum, s) => sum + (Number(s.monthly_premium) || 0),
-            0
-          );
-
-          // Count active policies
           const { count: activePolicies } = await supabase
             .from("subscriptions")
             .select("*", { count: "exact", head: true })
@@ -184,6 +196,26 @@ export default function AgentsPortfolioPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Monthly CA Chart */}
+      {monthlyCA.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Évolution du CA mensuel</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={monthlyCA}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="month" className="text-xs" />
+                <YAxis tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
+                <Tooltip formatter={(value: number) => [formatFCFA(value), "CA"]} />
+                <Bar dataKey="ca" className="fill-primary" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Agents Table */}
       <Card>

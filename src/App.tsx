@@ -70,6 +70,8 @@ import AdminCalcVariablesPage from "./pages/admin/CalcVariablesPage";
 import AdminAgentsPortfolioPage from "./pages/admin/AgentsPortfolioPage";
 import AdminConversionsPage from "./pages/admin/ConversionsPage";
 import AdminComplianceDashboardPage from "./pages/admin/ComplianceDashboardPage";
+import AdminAgentPerformancePage from "./pages/admin/AgentPerformancePage";
+import AdminLossRatioPage from "./pages/admin/LossRatioPage";
 
 const queryClient = new QueryClient();
 
@@ -169,6 +171,8 @@ const App = () => (
             <Route path="broker-news" element={<AdminBrokerNewsPage />} />
             <Route path="agents-portfolio" element={<AdminAgentsPortfolioPage />} />
             <Route path="conversions" element={<AdminConversionsPage />} />
+            <Route path="agent-performance" element={<AdminAgentPerformancePage />} />
+            <Route path="loss-ratio" element={<AdminLossRatioPage />} />
             <Route path="compliance" element={<AdminComplianceDashboardPage />} />
           </Route>
 

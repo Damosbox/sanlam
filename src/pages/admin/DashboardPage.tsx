@@ -135,9 +135,9 @@ export default function DashboardPage() {
           )}
 
           {totalRenewals > 0 && (
-            <Card className="border-orange-500/50">
+            <Card className="border-accent/50">
               <CardHeader className="flex flex-row items-center gap-2 pb-2">
-                <RefreshCw className="h-5 w-5 text-orange-500" />
+                <RefreshCw className="h-5 w-5 text-accent-foreground" />
                 <CardTitle className="text-base">Renouvellements imminents ({totalRenewals})</CardTitle>
               </CardHeader>
               <CardContent>

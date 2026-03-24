@@ -40,7 +40,7 @@ export const CreateUserDialog = ({ onUserCreated }: CreateUserDialogProps) => {
     lastName: "",
     email: "",
     password: "",
-    role: "customer" as "admin" | "broker" | "customer",
+    role: "customer" as "admin" | "broker" | "customer" | "backoffice_crc" | "backoffice_conformite",
     partnerType: null as PartnerType | null,
   });
 

@@ -419,7 +419,10 @@ export const AdminUsersTable = ({ roleFilter }: AdminUsersTableProps) => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="customer">Client</SelectItem>
-                        <SelectItem value="broker">Partenaire</SelectItem>
+                        <SelectItem value="broker">Agent</SelectItem>
+                        <SelectItem value="backoffice_crc">BackOffice CRC</SelectItem>
+                        <SelectItem value="backoffice_conformite">BackOffice Conformité</SelectItem>
+                        <SelectItem value="compliance">Conformité</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
                       </SelectContent>
                     </Select>

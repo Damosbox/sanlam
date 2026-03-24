@@ -167,6 +167,9 @@ const App = () => (
             <Route path="competitive" element={<AdminCompetitivePage />} />
             <Route path="data" element={<AdminTestDataPage />} />
             <Route path="broker-news" element={<AdminBrokerNewsPage />} />
+            <Route path="agents-portfolio" element={<AdminAgentsPortfolioPage />} />
+            <Route path="conversions" element={<AdminConversionsPage />} />
+            <Route path="compliance" element={<AdminComplianceDashboardPage />} />
           </Route>
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

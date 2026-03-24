@@ -238,6 +238,16 @@ export function AdminSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {/* Pilotage */}
+        <SidebarGroup>
+          <SidebarGroupLabel>{!collapsed && "Pilotage"}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {pilotageItems.map(renderMenuItem)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         {/* Engagement */}
         <SidebarGroup>
           <SidebarGroupLabel>{!collapsed && "Engagement"}</SidebarGroupLabel>

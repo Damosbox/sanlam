@@ -268,8 +268,8 @@ export const CreateUserDialog = ({ onUserCreated }: CreateUserDialogProps) => {
               <Label htmlFor="role">Rôle</Label>
               <Select
                 value={formData.role}
-                onValueChange={(value: "admin" | "broker" | "customer") => 
-                  setFormData({ ...formData, role: value, partnerType: value === "broker" ? formData.partnerType : null })
+                onValueChange={(value: string) => 
+                  setFormData({ ...formData, role: value as any, partnerType: value === "broker" ? formData.partnerType : null })
                 }
               >
                 <SelectTrigger>
@@ -277,7 +277,9 @@ export const CreateUserDialog = ({ onUserCreated }: CreateUserDialogProps) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="customer">Client</SelectItem>
-                  <SelectItem value="broker">Partenaire</SelectItem>
+                  <SelectItem value="broker">Agent / Partenaire</SelectItem>
+                  <SelectItem value="backoffice_crc">BackOffice CRC</SelectItem>
+                  <SelectItem value="backoffice_conformite">BackOffice Conformité</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
               </Select>

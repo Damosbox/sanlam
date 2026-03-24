@@ -85,7 +85,7 @@ export const AdminPermissions = () => {
     );
   };
 
-  const togglePermission = async (role: "admin" | "compliance" | "broker" | "customer", permissionId: string) => {
+  const togglePermission = async (role: string, permissionId: string) => {
     const key = `${role}-${permissionId}`;
     setUpdating(key);
 

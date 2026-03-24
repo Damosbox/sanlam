@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 
-export type UserRole = "admin" | "compliance" | "broker" | "customer" | null;
+export type UserRole = "admin" | "compliance" | "backoffice_crc" | "backoffice_conformite" | "broker" | "customer" | null;
 
 export interface UseUserPermissionsResult {
   role: UserRole;

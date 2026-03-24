@@ -114,7 +114,7 @@ export const AdminUsersTable = ({ roleFilter }: AdminUsersTableProps) => {
       // Insert new role
       const { error } = await supabase
         .from("user_roles")
-        .insert([{ user_id: userId, role: newRole as "admin" | "broker" | "customer" }]);
+        .insert([{ user_id: userId, role: newRole as any }]);
 
       if (error) throw error;
 

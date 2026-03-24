@@ -70,6 +70,8 @@ import AdminCalcVariablesPage from "./pages/admin/CalcVariablesPage";
 import AdminAgentsPortfolioPage from "./pages/admin/AgentsPortfolioPage";
 import AdminConversionsPage from "./pages/admin/ConversionsPage";
 import AdminComplianceDashboardPage from "./pages/admin/ComplianceDashboardPage";
+import AdminAgentPerformancePage from "./pages/admin/AgentPerformancePage";
+import AdminLossRatioPage from "./pages/admin/LossRatioPage";
 
 const queryClient = new QueryClient();
 

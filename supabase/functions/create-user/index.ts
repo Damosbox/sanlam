@@ -13,7 +13,7 @@ interface CreateUserRequest {
   password: string;
   firstName: string;
   lastName: string;
-  role: 'admin' | 'broker' | 'customer';
+  role: 'admin' | 'broker' | 'customer' | 'backoffice_crc' | 'backoffice_conformite';
   partnerType?: PartnerType | null;
 }
 

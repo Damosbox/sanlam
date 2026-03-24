@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_targets: {
+        Row: {
+          agent_id: string
+          created_at: string
+          id: string
+          period_end: string
+          period_start: string
+          target_conversions: number
+          target_premium: number
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          id?: string
+          period_end: string
+          period_start: string
+          target_conversions?: number
+          target_premium?: number
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          id?: string
+          period_end?: string
+          period_start?: string
+          target_conversions?: number
+          target_premium?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string

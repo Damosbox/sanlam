@@ -259,7 +259,13 @@ export const AdminUsersTable = ({ roleFilter }: AdminUsersTableProps) => {
       case "admin":
         return "Admin";
       case "broker":
-        return "Partenaire";
+        return "Agent";
+      case "backoffice_crc":
+        return "BackOffice CRC";
+      case "backoffice_conformite":
+        return "BackOffice Conformité";
+      case "compliance":
+        return "Conformité";
       case "customer":
         return "Client";
       default:

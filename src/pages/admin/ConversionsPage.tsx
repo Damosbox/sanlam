@@ -161,7 +161,7 @@ export default function ConversionsPage() {
             <div className="flex flex-wrap gap-1">
               {Object.entries(statusCounts).map(([status, count]) => (
                 <Badge key={status} variant="outline" className="text-xs">
-                  {STATUS_LABELS[status] || status}: {count}
+                  {STATUS_LABELS[status] || status}: {count as number}
                 </Badge>
               ))}
             </div>

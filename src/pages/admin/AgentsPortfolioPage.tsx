@@ -77,14 +77,14 @@ export default function AgentsPortfolioPage() {
           // Sum premiums from subscriptions in period
           const { data: subs } = await supabase
             .from("subscriptions")
-            .select("premium_amount")
+            .select("monthly_premium")
             .eq("assigned_broker_id", profile.id)
             .eq("status", "active")
             .gte("start_date", dateRange.from.toISOString())
             .lte("start_date", dateRange.to.toISOString());
 
           const totalPremium = (subs || []).reduce(
-            (sum, s) => sum + (Number(s.premium_amount) || 0),
+            (sum, s) => sum + (Number(s.monthly_premium) || 0),
             0
           );
 

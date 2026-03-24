@@ -142,7 +142,7 @@ const App = () => (
 
           {/* Admin Routes with Sidebar Layout */}
           <Route path="/admin" element={
-            <RoleProtectedRoute allowedRoles={["admin"]}>
+            <RoleProtectedRoute allowedRoles={["admin", "backoffice_crc", "backoffice_conformite"]}>
               <AdminLayout />
             </RoleProtectedRoute>
           }>

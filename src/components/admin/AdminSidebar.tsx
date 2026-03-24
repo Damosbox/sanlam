@@ -22,6 +22,8 @@ import {
   PieChart,
   ArrowRightLeft,
   ShieldCheck,
+  Target,
+  AlertTriangle,
 } from "lucide-react";
 import {
   Sidebar,

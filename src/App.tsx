@@ -67,6 +67,9 @@ import AdminTestDataPage from "./pages/admin/TestDataPage";
 import AdminBrokerNewsPage from "./pages/admin/BrokerNewsPage";
 import AdminCalcRulesPage from "./pages/admin/CalcRulesPage";
 import AdminCalcVariablesPage from "./pages/admin/CalcVariablesPage";
+import AdminAgentsPortfolioPage from "./pages/admin/AgentsPortfolioPage";
+import AdminConversionsPage from "./pages/admin/ConversionsPage";
+import AdminComplianceDashboardPage from "./pages/admin/ComplianceDashboardPage";
 
 const queryClient = new QueryClient();
 

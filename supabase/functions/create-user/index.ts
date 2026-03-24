@@ -90,7 +90,7 @@ serve(async (req) => {
       );
     }
 
-    const validRoles = ['admin', 'broker', 'customer'];
+    const validRoles = ['admin', 'broker', 'customer', 'backoffice_crc', 'backoffice_conformite'];
     if (!validRoles.includes(role)) {
       return new Response(
         JSON.stringify({ error: 'Rôle invalide' }),

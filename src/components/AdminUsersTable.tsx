@@ -41,7 +41,7 @@ interface UserWithRole {
 }
 
 interface AdminUsersTableProps {
-  roleFilter?: "admin" | "broker" | "customer";
+  roleFilter?: "admin" | "broker" | "customer" | "backoffice_crc" | "backoffice_conformite";
 }
 
 export const AdminUsersTable = ({ roleFilter }: AdminUsersTableProps) => {

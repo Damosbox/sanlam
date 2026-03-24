@@ -33,7 +33,7 @@ interface UserWithRole {
   partner_type: PartnerType | null;
   created_at: string;
   user_roles: Array<{
-    role: "admin" | "broker" | "compliance" | "customer";
+    role: string;
   }>;
   broker_settings?: {
     otp_verification_enabled: boolean;
@@ -41,7 +41,7 @@ interface UserWithRole {
 }
 
 interface AdminUsersTableProps {
-  roleFilter?: "admin" | "broker" | "customer";
+  roleFilter?: "admin" | "broker" | "customer" | "backoffice_crc" | "backoffice_conformite";
 }
 
 export const AdminUsersTable = ({ roleFilter }: AdminUsersTableProps) => {
@@ -114,7 +114,7 @@ export const AdminUsersTable = ({ roleFilter }: AdminUsersTableProps) => {
       // Insert new role
       const { error } = await supabase
         .from("user_roles")
-        .insert([{ user_id: userId, role: newRole as "admin" | "broker" | "customer" }]);
+        .insert([{ user_id: userId, role: newRole as any }]);
 
       if (error) throw error;
 
@@ -259,7 +259,13 @@ export const AdminUsersTable = ({ roleFilter }: AdminUsersTableProps) => {
       case "admin":
         return "Admin";
       case "broker":
-        return "Partenaire";
+        return "Agent";
+      case "backoffice_crc":
+        return "BackOffice CRC";
+      case "backoffice_conformite":
+        return "BackOffice Conformité";
+      case "compliance":
+        return "Conformité";
       case "customer":
         return "Client";
       default:
@@ -413,7 +419,10 @@ export const AdminUsersTable = ({ roleFilter }: AdminUsersTableProps) => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="customer">Client</SelectItem>
-                        <SelectItem value="broker">Partenaire</SelectItem>
+                        <SelectItem value="broker">Agent</SelectItem>
+                        <SelectItem value="backoffice_crc">BackOffice CRC</SelectItem>
+                        <SelectItem value="backoffice_conformite">BackOffice Conformité</SelectItem>
+                        <SelectItem value="compliance">Conformité</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
                       </SelectContent>
                     </Select>

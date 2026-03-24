@@ -19,6 +19,9 @@ import {
   Package,
   Calculator,
   Variable,
+  PieChart,
+  ArrowRightLeft,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Sidebar,
@@ -121,8 +124,14 @@ export function AdminSidebar() {
 
   const usersItems = [
     { title: "Clients", url: "/admin/users/clients", icon: Users, badge: badges.newClients },
-    { title: "Partenaires", url: "/admin/users/partners", icon: Briefcase, badge: badges.newPartners },
+    { title: "Agents", url: "/admin/users/partners", icon: Briefcase, badge: badges.newPartners },
     { title: "Administrateurs", url: "/admin/users/admins", icon: UserCheck, badge: badges.newAdmins },
+  ];
+
+  const pilotageItems = [
+    { title: "Portefeuille Agents", url: "/admin/agents-portfolio", icon: PieChart },
+    { title: "Conversions", url: "/admin/conversions", icon: ArrowRightLeft },
+    { title: "Conformité KYC", url: "/admin/compliance", icon: ShieldCheck },
   ];
 
   const securityItems = [
@@ -225,6 +234,16 @@ export function AdminSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {securityItems.map(renderMenuItem)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Pilotage */}
+        <SidebarGroup>
+          <SidebarGroupLabel>{!collapsed && "Pilotage"}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {pilotageItems.map(renderMenuItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

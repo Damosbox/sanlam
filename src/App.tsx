@@ -67,6 +67,9 @@ import AdminTestDataPage from "./pages/admin/TestDataPage";
 import AdminBrokerNewsPage from "./pages/admin/BrokerNewsPage";
 import AdminCalcRulesPage from "./pages/admin/CalcRulesPage";
 import AdminCalcVariablesPage from "./pages/admin/CalcVariablesPage";
+import AdminAgentsPortfolioPage from "./pages/admin/AgentsPortfolioPage";
+import AdminConversionsPage from "./pages/admin/ConversionsPage";
+import AdminComplianceDashboardPage from "./pages/admin/ComplianceDashboardPage";
 
 const queryClient = new QueryClient();
 
@@ -139,7 +142,7 @@ const App = () => (
 
           {/* Admin Routes with Sidebar Layout */}
           <Route path="/admin" element={
-            <RoleProtectedRoute allowedRoles={["admin"]}>
+            <RoleProtectedRoute allowedRoles={["admin", "backoffice_crc", "backoffice_conformite"]}>
               <AdminLayout />
             </RoleProtectedRoute>
           }>
@@ -164,6 +167,9 @@ const App = () => (
             <Route path="competitive" element={<AdminCompetitivePage />} />
             <Route path="data" element={<AdminTestDataPage />} />
             <Route path="broker-news" element={<AdminBrokerNewsPage />} />
+            <Route path="agents-portfolio" element={<AdminAgentsPortfolioPage />} />
+            <Route path="conversions" element={<AdminConversionsPage />} />
+            <Route path="compliance" element={<AdminComplianceDashboardPage />} />
           </Route>
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

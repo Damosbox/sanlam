@@ -110,7 +110,7 @@ export const AdminPermissions = () => {
       } else {
         const { data, error } = await supabase
           .from("role_permissions")
-          .insert({ role: role, permission_id: permissionId })
+          .insert({ role: role as any, permission_id: permissionId })
           .select()
           .single();
 

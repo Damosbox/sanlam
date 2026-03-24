@@ -19,6 +19,9 @@ import {
   Package,
   Calculator,
   Variable,
+  PieChart,
+  ArrowRightLeft,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Sidebar,

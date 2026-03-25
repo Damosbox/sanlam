@@ -3,14 +3,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, TrendingUp, Users, UserCheck, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, TrendingUp, Users, UserCheck, ArrowRight, Download } from "lucide-react";
 import { PeriodFilter, computeDateRange, DateRange } from "@/components/broker/dashboard/PeriodFilter";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LabelList } from "recharts";
+import { TopBottomAgents } from "@/components/admin/TopBottomAgents";
+import { exportToCSV } from "@/utils/exportCsv";
 
 interface ConversionData {
   agentId: string;
   agentName: string;
+  brokerType: string;
   totalLeads: number;
   convertedLeads: number;
   conversionRate: number;
@@ -18,13 +22,13 @@ interface ConversionData {
 
 const STATUS_ORDER = ["nouveau", "contacte", "qualifie", "proposition", "negoce", "converti"];
 const STATUS_LABELS: Record<string, string> = {
-  nouveau: "Nouveau",
-  contacte: "Contacté",
-  qualifie: "Qualifié",
-  proposition: "Proposition",
-  negoce: "Négocié",
-  converti: "Converti",
-  perdu: "Perdu",
+  nouveau: "Nouveau", contacte: "Contacté", qualifie: "Qualifié",
+  proposition: "Proposition", negoce: "Négocié", converti: "Converti", perdu: "Perdu",
+};
+
+const PARTNER_TYPE_LABELS: Record<string, string> = {
+  courtier: "Courtier", agent_general: "Agent Général", agent_mandataire: "Agent Mandataire",
+  agent_sanlam: "Agent Sanlam Allianz", banquier: "Banquier",
 };
 
 export default function ConversionsPage() {
@@ -33,15 +37,12 @@ export default function ConversionsPage() {
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange>(computeDateRange("fiscal_year"));
 
-  useEffect(() => {
-    fetchConversions();
-  }, [dateRange]);
+  useEffect(() => { fetchConversions(); }, [dateRange]);
 
   const fetchConversions = async () => {
     setLoading(true);
     try {
-      const { data: leads } = await supabase
-        .from("leads")
+      const { data: leads } = await supabase.from("leads")
         .select("id, status, assigned_broker_id, product_interest, created_at")
         .gte("created_at", dateRange.from.toISOString())
         .lte("created_at", dateRange.to.toISOString());
@@ -49,23 +50,24 @@ export default function ConversionsPage() {
       setAllLeads(leads || []);
 
       const brokerIds = [...new Set((leads || []).map((l) => l.assigned_broker_id).filter(Boolean))];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, first_name, last_name")
+      const { data: profiles } = await supabase.from("profiles")
+        .select("id, first_name, last_name, partner_type")
         .in("id", brokerIds.length > 0 ? brokerIds : ["00000000-0000-0000-0000-000000000000"]);
 
-      const profileMap = new Map((profiles || []).map((p) => [p.id, `${p.first_name || ""} ${p.last_name || ""}`]));
+      const profileMap = new Map((profiles || []).map((p) => [p.id, {
+        name: `${p.first_name || ""} ${p.last_name || ""}`,
+        partnerType: p.partner_type || "",
+      }]));
 
       const agentMap = new Map<string, ConversionData>();
       for (const lead of leads || []) {
         const agentId = lead.assigned_broker_id || "unassigned";
         if (!agentMap.has(agentId)) {
+          const profile = profileMap.get(agentId);
           agentMap.set(agentId, {
-            agentId,
-            agentName: profileMap.get(agentId) || "Non assigné",
-            totalLeads: 0,
-            convertedLeads: 0,
-            conversionRate: 0,
+            agentId, agentName: profile?.name || "Non assigné",
+            brokerType: PARTNER_TYPE_LABELS[profile?.partnerType || ""] || "—",
+            totalLeads: 0, convertedLeads: 0, conversionRate: 0,
           });
         }
         const agent = agentMap.get(agentId)!;
@@ -89,32 +91,28 @@ export default function ConversionsPage() {
   const convertedLeads = allLeads.filter((l) => l.status === "converti").length;
   const globalRate = totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0;
 
-  // Status distribution for KPI
-  const statusCounts = allLeads.reduce((acc, l) => {
-    acc[l.status] = (acc[l.status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const statusCounts = allLeads.reduce((acc, l) => { acc[l.status] = (acc[l.status] || 0) + 1; return acc; }, {} as Record<string, number>);
 
-  // Funnel data
   const funnelData = STATUS_ORDER.map((status, i) => {
     const count = statusCounts[status] || 0;
     const prevCount = i === 0 ? totalLeads : (statusCounts[STATUS_ORDER[i - 1]] || 0);
     const dropOff = prevCount > 0 && i > 0 ? Math.round(((prevCount - count) / prevCount) * 100) : 0;
-    return {
-      status: STATUS_LABELS[status],
-      count,
-      dropOff: i === 0 ? null : dropOff,
-    };
+    return { status: STATUS_LABELS[status], count, dropOff: i === 0 ? null : dropOff };
   });
   const lostCount = statusCounts["perdu"] || 0;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const withData = data.filter((d) => d.totalLeads > 0);
+  const topAgents = withData.slice(0, 3).map((d) => ({ name: d.agentName, value: `${d.conversionRate.toFixed(1)}%` }));
+  const bottomAgents = withData.slice(-3).reverse().map((d) => ({ name: d.agentName, value: `${d.conversionRate.toFixed(1)}%` }));
+
+  const handleExport = () => {
+    exportToCSV(data.map((d) => ({
+      Agent: d.agentName, Broker: d.brokerType, Prospects: d.totalLeads,
+      Convertis: d.convertedLeads, "Taux (%)": d.conversionRate.toFixed(1),
+    })), "conversions");
+  };
+
+  if (loading) return <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   return (
     <div className="space-y-6 p-6">
@@ -123,99 +121,46 @@ export default function ConversionsPage() {
           <h1 className="text-2xl font-bold">Conversions Prospect → Client</h1>
           <p className="text-muted-foreground">Suivi des taux de conversion par agent et par produit</p>
         </div>
-        <PeriodFilter onPeriodChange={setDateRange} />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleExport}><Download className="h-4 w-4 mr-1" />CSV</Button>
+          <PeriodFilter onPeriodChange={setDateRange} />
+        </div>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Prospects</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalLeads}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Convertis</CardTitle>
-            <UserCheck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{convertedLeads}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taux Global</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{globalRate.toFixed(1)}%</div>
-            <Progress value={globalRate} className="mt-2" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pipeline</CardTitle>
-            <ArrowRight className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-1">
-              {Object.entries(statusCounts).map(([status, count]) => (
-                <Badge key={status} variant="outline" className="text-xs">
-                  {STATUS_LABELS[status] || status}: {count as number}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Total Prospects</CardTitle><Users className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{totalLeads}</div></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Convertis</CardTitle><UserCheck className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{convertedLeads}</div></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Taux Global</CardTitle><TrendingUp className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{globalRate.toFixed(1)}%</div><Progress value={globalRate} className="mt-2" /></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Pipeline</CardTitle><ArrowRight className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="flex flex-wrap gap-1">{Object.entries(statusCounts).map(([status, count]) => (<Badge key={status} variant="outline" className="text-xs">{STATUS_LABELS[status] || status}: {count as number}</Badge>))}</div></CardContent></Card>
       </div>
 
-      {/* Funnel Chart */}
+      <TopBottomAgents metricLabel="Taux de conversion" topAgents={topAgents} bottomAgents={bottomAgents} />
+
       {totalLeads > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle>Funnel de Conversion</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Funnel de Conversion</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={funnelData} layout="vertical" margin={{ left: 20, right: 40 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis type="number" />
-                <YAxis dataKey="status" type="category" width={100} className="text-xs" />
-                <Tooltip
-                  formatter={(value: number, _name: string, props: any) => {
-                    const dropOff = props.payload.dropOff;
-                    return [`${value} leads${dropOff !== null ? ` (−${dropOff}% drop)` : ""}`, "Leads"];
-                  }}
-                />
-                <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                  {funnelData.map((_, i) => (
-                    <Cell key={i} className="fill-primary" style={{ opacity: 1 - i * 0.12 }} />
-                  ))}
-                  <LabelList dataKey="count" position="right" className="text-xs fill-foreground" />
-                </Bar>
+                <XAxis type="number" /><YAxis dataKey="status" type="category" width={100} className="text-xs" />
+                <Tooltip formatter={(value: number, _name: string, props: any) => { const dropOff = props.payload.dropOff; return [`${value} leads${dropOff !== null ? ` (−${dropOff}% drop)` : ""}`, "Leads"]; }} />
+                <Bar dataKey="count" radius={[0, 4, 4, 0]}>{funnelData.map((_, i) => (<Cell key={i} className="fill-primary" style={{ opacity: 1 - i * 0.12 }} />))}<LabelList dataKey="count" position="right" className="text-xs fill-foreground" /></Bar>
               </BarChart>
             </ResponsiveContainer>
-            {lostCount > 0 && (
-              <p className="text-sm text-destructive mt-2">🔴 Perdus : {lostCount} leads</p>
-            )}
+            {lostCount > 0 && <p className="text-sm text-destructive mt-2">🔴 Perdus : {lostCount} leads</p>}
           </CardContent>
         </Card>
       )}
 
-      {/* Conversion Table by Agent */}
       <Card>
-        <CardHeader>
-          <CardTitle>Conversions par Agent</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle>Conversions par Agent</CardTitle></CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Agent</TableHead>
+                <TableHead>Broker</TableHead>
                 <TableHead className="text-center">Prospects</TableHead>
                 <TableHead className="text-center">Convertis</TableHead>
                 <TableHead className="text-center">Taux</TableHead>
@@ -226,23 +171,14 @@ export default function ConversionsPage() {
               {data.map((agent) => (
                 <TableRow key={agent.agentId}>
                   <TableCell className="font-medium">{agent.agentName}</TableCell>
+                  <TableCell><Badge variant="outline" className="text-xs">{agent.brokerType}</Badge></TableCell>
                   <TableCell className="text-center">{agent.totalLeads}</TableCell>
                   <TableCell className="text-center">{agent.convertedLeads}</TableCell>
-                  <TableCell className="text-center font-semibold">
-                    {agent.conversionRate.toFixed(1)}%
-                  </TableCell>
-                  <TableCell className="w-40">
-                    <Progress value={agent.conversionRate} />
-                  </TableCell>
+                  <TableCell className="text-center font-semibold">{agent.conversionRate.toFixed(1)}%</TableCell>
+                  <TableCell className="w-40"><Progress value={agent.conversionRate} /></TableCell>
                 </TableRow>
               ))}
-              {data.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    Aucune donnée sur cette période
-                  </TableCell>
-                </TableRow>
-              )}
+              {data.length === 0 && (<TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Aucune donnée sur cette période</TableCell></TableRow>)}
             </TableBody>
           </Table>
         </CardContent>

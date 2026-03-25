@@ -1,90 +1,108 @@
+# Plan: Améliorations Pilotage Admin
 
+## Synthese des demandes
 
-## Plan : Pilotage P0 → P2
+1. **Commissions** : Ajouter une colonne dans tableau par agent pour commissions + export CSV global
+2. **Top 3 meilleurs / moins bons agents** : Afficher partout (Conversions, Performance, Sinistralité, Portefeuille)
+3. **Filtres périodiques partout** : S'assurer que le `PeriodFilter` est au-dessus de chaque tableau (Compliance manque)
+4. **Conversions : colonne Broker** : Ajouter le `partner_type` (groupe/entité) comme colonne "Broker"
+5. **Performance : Top 3 meilleurs** : Section visuelle des 3 meilleurs agents
+6. **Sidebar : Sections collapsibles** : Permettre de collapse/expand les groupes de navigation
 
-Rappel des priorites du brainstorming AARRR :
-- **P0** : Funnel de conversion avec drop-off + Evolution CA mensuel
-- **P1** : Objectifs vs Realise par agent + Alertes leads dormants/renouvellements imminents
-- **P2** : Ratio sinistralite par agent
+---
 
-### 1. P0 — Funnel de conversion (ConversionsPage)
+## Etape 1 — Sidebar collapsible
 
-Ajouter dans `ConversionsPage.tsx` un graphique funnel horizontal (Recharts BarChart) montrant le nombre de leads par statut ordonne : Nouveau → Contacte → Qualifie → Proposition → Negocie → Converti (+ Perdu en rouge a part). Afficher le % de drop-off entre chaque etape.
+**Fichier** : `src/components/admin/AdminSidebar.tsx`
 
-### 2. P0 — Evolution CA mensuel (AgentsPortfolioPage)
+Utiliser le composant `Collapsible` de Radix (deja disponible dans `src/components/ui/collapsible.tsx`) pour wrapper chaque `SidebarGroup`. Chaque label de groupe devient un `CollapsibleTrigger` avec une icone chevron qui tourne. Le contenu (`SidebarGroupContent`) est wrappé dans `CollapsibleContent`. Etat `open` par defaut pour chaque section, persisté en `localStorage`.
 
-Ajouter dans `AgentsPortfolioPage.tsx` un graphique LineChart/BarChart (Recharts) montrant l'evolution du CA (somme des primes) mois par mois sur la periode selectionnee. Grouper les subscriptions par mois de `start_date` et afficher la courbe.
+---
 
-### 3. P1 — Objectifs vs Realise par agent (nouvelle page)
+## Etape 2 — Composant Top3 / Bottom3 reutilisable
 
-Creer `src/pages/admin/AgentPerformancePage.tsx` accessible via `/admin/agent-performance`.
-- Tableau par agent avec colonnes : Objectif CA, CA Realise, % atteinte, Objectif conversions, Conversions realisees
-- Les objectifs seront stockes dans une nouvelle table `agent_targets` (agent_id, period_start, period_end, target_premium, target_conversions)
-- Barre de progression visuelle pour chaque agent
-- Filtre par periode
+**Nouveau fichier** : `src/components/admin/TopBottomAgents.tsx`
 
-### 4. P1 — Alertes leads dormants et renouvellements imminents (AdminDashboardPage)
+Un composant generique qui prend une liste d'agents triée et un label de metrique, et affiche :
 
-Ajouter dans `src/pages/admin/DashboardPage.tsx` deux sections d'alertes :
-- **Leads dormants** : leads dont `last_contact_at` > 7 jours ou `next_followup_at` depasse, avec compteur par agent
-- **Renouvellements imminents** : subscriptions dont `end_date` est dans les 30/60/90 jours, non contactees
+- Top 3 (icones medaille or/argent/bronze) avec nom + valeur
+- Bottom 3 (icone alerte) avec nom + valeur
+- Layout en 2 colonnes (Top / Bottom) dans une Card
 
-### 5. P2 — Ratio sinistralite par agent (nouvelle page)
+---
 
-Creer `src/pages/admin/LossRatioPage.tsx` accessible via `/admin/loss-ratio`.
-- Par agent : total primes encaissees vs total montant sinistres (`claims.cost_estimation` ou `claims.approved_amount`)
-- Ratio = sinistres / primes * 100
-- Tableau + graphique BarChart par agent
-- Filtre par periode et par produit
-- KPIs globaux : ratio global, agents au-dessus du seuil (ex: > 70%)
+## Etape 3 — Export CSV generique
 
-### 6. Migration DB — table `agent_targets`
+**Nouveau fichier** : `src/utils/exportCsv.ts`
 
-```sql
-CREATE TABLE public.agent_targets (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  agent_id uuid NOT NULL,
-  period_start date NOT NULL,
-  period_end date NOT NULL,
-  target_premium numeric NOT NULL DEFAULT 0,
-  target_conversions integer NOT NULL DEFAULT 0,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
+Fonction utilitaire `exportToCSV(data: Record<string, any>[], filename: string)` reutilisable sur toutes les pages pilotage. Bouton "Exporter CSV" ajoute dans le header de chaque page.
 
-ALTER TABLE public.agent_targets ENABLE ROW LEVEL SECURITY;
+---
 
-CREATE POLICY "Admins can manage agent targets"
-  ON public.agent_targets FOR ALL
-  TO authenticated
-  USING (has_role(auth.uid(), 'admin'::app_role));
+## Etape 4 — Page Conversions : ajout colonne Broker + Top3
 
-CREATE POLICY "Agents can view their own targets"
-  ON public.agent_targets FOR SELECT
-  TO authenticated
-  USING (agent_id = auth.uid());
-```
+**Fichier** : `src/pages/admin/ConversionsPage.tsx`
 
-### 7. Sidebar + Routing
+- Fetcher `partner_type` depuis `profiles` pour chaque agent
+- Ajouter colonne "Broker" (= `partner_type` traduit via `PARTNER_TYPE_LABELS`) dans le tableau
+- Ajouter le composant `TopBottomAgents` basé sur `conversionRate`
+- Ajouter bouton export CSV
 
-Ajouter dans `AdminSidebar.tsx` pilotageItems :
-- `{ title: "Performance Agents", url: "/admin/agent-performance", icon: Target }`
-- `{ title: "Sinistralité", url: "/admin/loss-ratio", icon: AlertTriangle }`
+---
 
-Ajouter dans `App.tsx` :
-- `<Route path="agent-performance" element={<AgentPerformancePage />} />`
-- `<Route path="loss-ratio" element={<LossRatioPage />} />`
+## Etape 5 — Page Performance : Top3 + export CSV
 
-### Fichiers
+**Fichier** : `src/pages/admin/AgentPerformancePage.tsx`
 
-| Action | Fichier |
-|--------|---------|
-| Migration | Table `agent_targets` + RLS |
-| Modifie | `src/pages/admin/ConversionsPage.tsx` — funnel chart |
-| Modifie | `src/pages/admin/AgentsPortfolioPage.tsx` — CA mensuel chart |
-| Modifie | `src/pages/admin/DashboardPage.tsx` — alertes leads/renouvellements |
-| Nouveau | `src/pages/admin/AgentPerformancePage.tsx` |
-| Nouveau | `src/pages/admin/LossRatioPage.tsx` |
-| Modifie | `src/components/admin/AdminSidebar.tsx` |
-| Modifie | `src/App.tsx` |
+- Ajouter `TopBottomAgents` basé sur le taux d'atteinte CA
+- Ajouter bouton export CSV
 
+---
+
+## Etape 6 — Page Sinistralité : Top3 + export CSV
+
+**Fichier** : `src/pages/admin/LossRatioPage.tsx`
+
+- Ajouter `TopBottomAgents` (Top 3 = ratio le plus bas = meilleurs, Bottom 3 = ratio le plus haut)
+- Ajouter bouton export CSV
+
+---
+
+## Etape 7 — Page Portefeuille : Top3 + export CSV
+
+**Fichier** : `src/pages/admin/AgentsPortfolioPage.tsx`
+
+- Ajouter `TopBottomAgents` basé sur le CA total
+- Ajouter bouton export CSV
+
+---
+
+## Etape 8 — Page Conformité : ajout PeriodFilter
+
+**Fichier** : `src/pages/admin/ComplianceDashboardPage.tsx`
+
+- Ajouter `PeriodFilter` au-dessus des filtres existants
+- Filtrer les enregistrements KYC par `created_at` dans la plage sélectionnée
+
+---
+
+## Etape 9 — (nouvelle colonne dans tableau)
+
+**Fichier** : `src/pages/admin/ConversionsPage.tsx`
+
+Page de suivi des commissions par agent. Puisque la table `partner_commissions` n'existe pas encore, cette page calculera les commissions estimées a partir des souscriptions actives (CA * taux configurable). Contenu :
+
+- KPI Cards : Total commissions, Commission moyenne
+- `PeriodFilter`
+- Tableau par agent : ajouter commission
+- Bouton export CSV
+- &nbsp;
+
+---
+
+## Details techniques
+
+- `Collapsible` : utilisation de `defaultOpen={true}` + `localStorage` key par section pour persister l'etat
+- `partner_type` sert de "Broker" (groupe d'agents par entite) — deja present dans `profiles`
+- Export CSV : encodage UTF-8 avec BOM pour compatibilite Excel
+  &nbsp;

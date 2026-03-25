@@ -21,7 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Plus, Search, Copy, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, Copy, Pencil, Trash2, BookOpen } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { CalcRuleEditor } from "@/components/admin/calc-rules/CalcRuleEditor";
 import type { CalcRule } from "@/components/admin/calc-rules/types";
@@ -145,10 +146,18 @@ export default function CalcRulesPage() {
           <h1 className="text-2xl font-bold">Règles de Calcul</h1>
           <p className="text-muted-foreground">Gérez les règles actuarielles par catégorie d'usage</p>
         </div>
-        <Button onClick={() => { setEditingRule(null); setEditorOpen(true); }}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nouvelle règle
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link to="/admin/calc-docs">
+              <BookOpen className="h-4 w-4 mr-2" />
+              Doc NCalc
+            </Link>
+          </Button>
+          <Button onClick={() => { setEditingRule(null); setEditorOpen(true); }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nouvelle règle
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-3">

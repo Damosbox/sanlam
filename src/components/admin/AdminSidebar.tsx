@@ -24,6 +24,7 @@ import {
   ShieldCheck,
   Target,
   AlertTriangle,
+  BookOpen,
 } from "lucide-react";
 import {
   Sidebar,
@@ -152,6 +153,7 @@ export function AdminSidebar() {
     { title: "Produits", url: "/admin/products", icon: Package },
     { title: "Règles de calcul", url: "/admin/calc-rules", icon: Calculator },
     { title: "Variables", url: "/admin/calc-variables", icon: Variable },
+    { title: "Doc NCalc", url: "/admin/calc-docs", icon: BookOpen },
     { title: "Formulaires", url: "/admin/forms", icon: Settings },
     { title: "Actualités Broker", url: "/admin/broker-news", icon: Newspaper },
     { title: "Monitoring IA", url: "/admin/ai", icon: Brain },

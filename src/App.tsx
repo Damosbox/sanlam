@@ -72,6 +72,7 @@ import AdminConversionsPage from "./pages/admin/ConversionsPage";
 import AdminComplianceDashboardPage from "./pages/admin/ComplianceDashboardPage";
 import AdminAgentPerformancePage from "./pages/admin/AgentPerformancePage";
 import AdminLossRatioPage from "./pages/admin/LossRatioPage";
+import AdminCalcDocsPage from "./pages/admin/CalcDocsPage";
 
 const queryClient = new QueryClient();
 
@@ -174,6 +175,7 @@ const App = () => (
             <Route path="agent-performance" element={<AdminAgentPerformancePage />} />
             <Route path="loss-ratio" element={<AdminLossRatioPage />} />
             <Route path="compliance" element={<AdminComplianceDashboardPage />} />
+            <Route path="calc-docs" element={<AdminCalcDocsPage />} />
           </Route>
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

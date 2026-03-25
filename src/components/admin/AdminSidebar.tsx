@@ -130,10 +130,16 @@ export function AdminSidebar() {
     { title: "Administrateurs", url: "/admin/users/admins", icon: UserCheck, badge: badges.newAdmins },
   ];
 
-  const pilotageItems = [
-    { title: "Portefeuille Agents", url: "/admin/agents-portfolio", icon: PieChart },
+  const pilotageCommercialItems = [
     { title: "Conversions", url: "/admin/conversions", icon: ArrowRightLeft },
     { title: "Performance Agents", url: "/admin/agent-performance", icon: Target },
+  ];
+
+  const pilotagePortfolioItems = [
+    { title: "Portefeuille Agents", url: "/admin/agents-portfolio", icon: PieChart },
+  ];
+
+  const pilotageRiskItems = [
     { title: "Sinistralité", url: "/admin/loss-ratio", icon: AlertTriangle },
     { title: "Conformité KYC", url: "/admin/compliance", icon: ShieldCheck },
   ];
@@ -244,12 +250,32 @@ export function AdminSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Pilotage */}
+        {/* Pilotage — Commercial */}
         <SidebarGroup>
-          <SidebarGroupLabel>{!collapsed && "Pilotage"}</SidebarGroupLabel>
+          <SidebarGroupLabel>{!collapsed && "Pilotage — Commercial"}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {pilotageItems.map(renderMenuItem)}
+              {pilotageCommercialItems.map(renderMenuItem)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Pilotage — Portefeuille */}
+        <SidebarGroup>
+          <SidebarGroupLabel>{!collapsed && "Pilotage — Portefeuille"}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {pilotagePortfolioItems.map(renderMenuItem)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Pilotage — Risque & Conformité */}
+        <SidebarGroup>
+          <SidebarGroupLabel>{!collapsed && "Pilotage — Risque"}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {pilotageRiskItems.map(renderMenuItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

@@ -180,11 +180,13 @@ export function AdminSidebar() {
         className="cursor-pointer"
       >
         <item.icon className="h-4 w-4" />
-        {!collapsed && <span>{item.title}</span>}
+        {!collapsed && <span className="flex-1">{item.title}</span>}
+        {item.badge && item.badge > 0 && (
+          <span className="ml-auto inline-flex items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground min-w-[18px]">
+            {item.badge}
+          </span>
+        )}
       </SidebarMenuButton>
-      {item.badge && item.badge > 0 && (
-        <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
-      )}
     </SidebarMenuItem>
   );
 

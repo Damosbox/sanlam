@@ -951,6 +951,37 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
             <CreditCard className="h-5 w-5 text-primary" />
             <h3 className="font-semibold">Permis de conduire</h3>
           </div>
+
+          {/* OCR Permis de conduire */}
+          <div className="space-y-2">
+            <Label className="font-medium">📄 Scanner le permis de conduire</Label>
+            {isLicenseOCRProcessing ? (
+              <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <div>
+                  <p className="text-sm font-medium">Analyse du permis...</p>
+                  <p className="text-xs text-muted-foreground">Extraction des données du permis</p>
+                </div>
+              </div>
+            ) : licenseOCRDone ? (
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                Permis analysé
+              </Badge>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Scannez le permis pour pré-remplir les champs</p>
+                <CameraUploadButton
+                  id="license-ocr"
+                  onFileSelected={handleLicenseOCRUpload}
+                  disabled={isLicenseOCRProcessing}
+                  uploadLabel="Uploader"
+                  cameraLabel="Scanner"
+                  variant="compact"
+                />
+              </div>
+            )}
+          </div>
           
           <div>
             <Label className="text-sm font-medium">1. Conducteur habituel ?</Label>

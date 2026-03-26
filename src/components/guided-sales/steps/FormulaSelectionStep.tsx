@@ -57,7 +57,7 @@ const FORMULA_DEFINITIONS: FormulaDefinition[] = [
   },
   {
     tier: "medium",
-    name: "TIERS AMÉLIORÉ",
+    name: "TIERS COMPLET - TIERS AMÉLIORÉ",
     description: "Tiers Simple Amélioré + Incendie + Vol",
     guarantees: [
       "RC", "Défense/Recours", "Recours des tiers incendie", "Individuel conducteur",

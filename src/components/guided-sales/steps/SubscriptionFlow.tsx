@@ -94,6 +94,8 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
   const [ocrSuccess, setOcrSuccess] = useState(false);
   const [isIdentityOCRProcessing, setIsIdentityOCRProcessing] = useState(false);
   const [identityOCRDone, setIdentityOCRDone] = useState(false);
+  const [isLicenseOCRProcessing, setIsLicenseOCRProcessing] = useState(false);
+  const [licenseOCRDone, setLicenseOCRDone] = useState(false);
   const [screeningStatus, setScreeningStatus] = useState<"idle" | "processing" | "ok" | "blocked">("idle");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [addressSearch, setAddressSearch] = useState("");
@@ -285,6 +287,55 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
       toast.error("Erreur lors de l'analyse de la pièce d'identité");
     } finally {
       setIsIdentityOCRProcessing(false);
+    }
+  };
+
+  const handleLicenseOCRUpload = async (file: File) => {
+    setIsLicenseOCRProcessing(true);
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data, error } = await supabase.functions.invoke("ocr-identity", {
+        body: { imageBase64: base64, documentType: "permis" },
+      });
+
+      if (error) throw error;
+
+      if (data?.extracted) {
+        const ext = data.extracted;
+        const updates: Partial<GuidedSalesState["subscription"]> = {};
+        const filledFields: string[] = [];
+
+        if (ext.documentNumber) { updates.licenseNumber = ext.documentNumber; filledFields.push("N° permis"); }
+        if (ext.expiryDate || ext.birthDate) {
+          // Use issue date if available from the document
+          const dateVal = ext.expiryDate || ext.birthDate;
+          if (dateVal) { updates.licenseIssueDate = dateVal; filledFields.push("Date"); }
+        }
+        if (ext.lastName) { updates.ownerLastName = ext.lastName; filledFields.push("Nom"); }
+        if (ext.firstName) { updates.ownerFirstName = ext.firstName; filledFields.push("Prénom"); }
+
+        onUpdate(updates);
+        setLicenseOCRDone(true);
+
+        if (filledFields.length > 0) {
+          toast.success(`Permis analysé ! Champs pré-remplis : ${filledFields.join(", ")}`, { duration: 5000 });
+        } else {
+          toast.warning("L'analyse n'a pas pu extraire de données du permis.");
+        }
+      } else {
+        toast.warning("Impossible d'extraire les données du permis.");
+      }
+    } catch (err) {
+      console.error("OCR License error:", err);
+      toast.error("Erreur lors de l'analyse du permis de conduire");
+    } finally {
+      setIsLicenseOCRProcessing(false);
     }
   };
 
@@ -950,6 +1001,37 @@ export const SubscriptionFlow = ({ state, onUpdate, onNext, initialSubStep, onSu
           <div className="flex items-center gap-2 mb-2">
             <CreditCard className="h-5 w-5 text-primary" />
             <h3 className="font-semibold">Permis de conduire</h3>
+          </div>
+
+          {/* OCR Permis de conduire */}
+          <div className="space-y-2">
+            <Label className="font-medium">📄 Scanner le permis de conduire</Label>
+            {isLicenseOCRProcessing ? (
+              <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <div>
+                  <p className="text-sm font-medium">Analyse du permis...</p>
+                  <p className="text-xs text-muted-foreground">Extraction des données du permis</p>
+                </div>
+              </div>
+            ) : licenseOCRDone ? (
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                Permis analysé
+              </Badge>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Scannez le permis pour pré-remplir les champs</p>
+                <CameraUploadButton
+                  id="license-ocr"
+                  onFileSelected={handleLicenseOCRUpload}
+                  disabled={isLicenseOCRProcessing}
+                  uploadLabel="Uploader"
+                  cameraLabel="Scanner"
+                  variant="compact"
+                />
+              </div>
+            )}
           </div>
           
           <div>

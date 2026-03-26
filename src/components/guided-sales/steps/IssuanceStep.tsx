@@ -2,10 +2,11 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, FileText, Share2, FolderOpen, ArrowLeft, Send, Download } from "lucide-react";
+import { CheckCircle2, FileText, Share2, FolderOpen, ArrowLeft, Send, Download, Home, Heart, Car } from "lucide-react";
 import { GuidedSalesState } from "../types";
 import { toast } from "sonner";
 import { DocumentResendDialog } from "@/components/policies/DocumentResendDialog";
+import { useNavigate } from "react-router-dom";
 
 interface IssuanceStepProps {
   state: GuidedSalesState;
@@ -14,6 +15,7 @@ interface IssuanceStepProps {
 }
 
 export const IssuanceStep = ({ state, onReset, upsellAccepted }: IssuanceStepProps) => {
+  const navigate = useNavigate();
   const policyNumber = state.finalizedPolicyNumber || ("POL-2024-CI-" + Math.random().toString(36).substring(2, 8).toUpperCase());
   
   // Document resend dialog state
@@ -21,6 +23,7 @@ export const IssuanceStep = ({ state, onReset, upsellAccepted }: IssuanceStepPro
   const [selectedDocsForResend, setSelectedDocsForResend] = useState<any[]>([]);
 
   const isPackObseques = state.productSelection?.selectedProduct === "pack_obseques";
+  const currentProduct = state.productSelection?.selectedProduct;
 
   // Mock documents for the issued policy
   const mockDocuments = isPackObseques ? [
@@ -35,7 +38,42 @@ export const IssuanceStep = ({ state, onReset, upsellAccepted }: IssuanceStepPro
     { id: "doc-4", document_name: "Conditions générales", document_type: "conditions_generales", file_url: null },
   ];
 
-
+  // Cross-selling products based on current product
+  const crossSellProducts = currentProduct === "pack_obseques" ? [
+    {
+      id: "auto",
+      name: "Assurance Auto",
+      description: "Protégez votre véhicule avec une couverture adaptée à vos besoins.",
+      priceFrom: "45 000 FCFA/an",
+      icon: Car,
+      product: "auto",
+    },
+    {
+      id: "habitation",
+      name: "Assurance Habitation",
+      description: "Sécurisez votre logement et vos biens contre les risques du quotidien.",
+      priceFrom: "35 000 FCFA/an",
+      icon: Home,
+      product: "habitation",
+    },
+  ] : [
+    {
+      id: "habitation",
+      name: "Assurance Habitation",
+      description: "Sécurisez votre logement et vos biens contre les risques du quotidien.",
+      priceFrom: "35 000 FCFA/an",
+      icon: Home,
+      product: "habitation",
+    },
+    {
+      id: "pack_obseques",
+      name: "Pack Obsèques",
+      description: "Anticipez et protégez vos proches avec une couverture obsèques complète.",
+      priceFrom: "5 000 FCFA/mois",
+      icon: Heart,
+      product: "pack_obseques",
+    },
+  ];
 
   const handleResendAll = () => {
     setSelectedDocsForResend(mockDocuments);
@@ -49,7 +87,10 @@ export const IssuanceStep = ({ state, onReset, upsellAccepted }: IssuanceStepPro
 
   const handleDownloadAll = () => {
     toast.info("Téléchargement du dossier complet...");
-    // In a real implementation, this would trigger a ZIP download
+  };
+
+  const handleCrossSell = (product: string) => {
+    navigate(`/broker/guided-sales?product=${product}`);
   };
 
   return (
@@ -77,18 +118,6 @@ export const IssuanceStep = ({ state, onReset, upsellAccepted }: IssuanceStepPro
           Le contrat a été émis avec succès.
         </p>
       </div>
-
-      {/* Upsell Accepted Badge */}
-      {upsellAccepted && (
-        <Card className="border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800">
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
-              <CheckCircle2 className="h-5 w-5" />
-              <span className="font-medium">Option supplémentaire ajoutée à votre contrat</span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <Card>
         <CardContent className="pt-6 text-center">
@@ -131,6 +160,36 @@ export const IssuanceStep = ({ state, onReset, upsellAccepted }: IssuanceStepPro
                 </div>
               </div>
             ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Cross-selling */}
+      <Card>
+        <CardContent className="pt-6">
+          <h3 className="font-semibold mb-1">Découvrez nos autres produits</h3>
+          <p className="text-sm text-muted-foreground mb-4">Complétez la protection de votre client</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {crossSellProducts.map((product) => {
+              const Icon = product.icon;
+              return (
+                <div key={product.id} className="rounded-lg border p-4 hover:bg-muted/50 transition-colors space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-sm">{product.name}</h4>
+                      <p className="text-xs text-muted-foreground">À partir de {product.priceFrom}</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{product.description}</p>
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => handleCrossSell(product.product)}>
+                    En savoir plus
+                  </Button>
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>

@@ -56,27 +56,23 @@ const FORMULA_DEFINITIONS: FormulaDefinition[] = [
     availableAssistances: ["avantage", "confort", "relax", "liberte"],
   },
   {
-    tier: "medium_plus",
-    name: "TIERS COMPLET",
-    description: "Tiers Amélioré + Incendie, Vol, Bris de glaces",
+    tier: "medium",
+    name: "TIERS AMÉLIORÉ",
+    description: "Tiers Simple Amélioré + Incendie + Vol",
     guarantees: [
       "RC", "Défense/Recours", "Recours des tiers incendie", "Individuel conducteur",
       "Avance sur recours", "Incendie", "Vol", "Vol à mains armées",
-      "Vol des accessoires", "Bris de glaces",
+      "Vol des accessoires",
     ],
-    maxVehicleAge: 20,
+    maxVehicleAge: null,
     minPeriodMonths: 3,
     maxPeriodMonths: 12,
-    availableAssistances: ["avantage", "confort"],
-    assistanceRules: (vehicleAge: number) => {
-      if (vehicleAge <= 10) return ["avantage", "confort"];
-      return ["avantage"];
-    },
+    availableAssistances: ["avantage", "confort", "relax", "liberte"],
   },
   {
-    tier: "evolution",
-    name: "TOUT RISQUE",
-    description: "Tiers Amélioré + Tierce Complète",
+    tier: "medium_plus",
+    name: "TOUS RISQUES",
+    description: "Tierce complète + Incendie + Vol + Bris de glaces",
     guarantees: [
       "RC", "Défense/Recours", "Recours des tiers incendie", "Individuel conducteur",
       "Avance sur recours", "Incendie", "Vol", "Vol à mains armées",
@@ -85,7 +81,11 @@ const FORMULA_DEFINITIONS: FormulaDefinition[] = [
     maxVehicleAge: 5,
     minPeriodMonths: 6,
     maxPeriodMonths: 12,
-    availableAssistances: ["avantage", "relax", "liberte"],
+    availableAssistances: ["avantage", "confort", "relax", "liberte"],
+    assistanceRules: (vehicleAge: number) => {
+      if (vehicleAge <= 3) return ["avantage", "confort", "relax", "liberte"];
+      return ["avantage", "confort"];
+    },
   },
   {
     tier: "evolution_plus",

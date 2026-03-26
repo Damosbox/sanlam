@@ -1,108 +1,55 @@
-# Plan: Améliorations Pilotage Admin
 
-## Synthese des demandes
 
-1. **Commissions** : Ajouter une colonne dans tableau par agent pour commissions + export CSV global
-2. **Top 3 meilleurs / moins bons agents** : Afficher partout (Conversions, Performance, Sinistralité, Portefeuille)
-3. **Filtres périodiques partout** : S'assurer que le `PeriodFilter` est au-dessus de chaque tableau (Compliance manque)
-4. **Conversions : colonne Broker** : Ajouter le `partner_type` (groupe/entité) comme colonne "Broker"
-5. **Performance : Top 3 meilleurs** : Section visuelle des 3 meilleurs agents
-6. **Sidebar : Sections collapsibles** : Permettre de collapse/expand les groupes de navigation
+## Plan : 4 améliorations du parcours de vente guidée Auto
 
----
+### 1. Mise à jour des formules d'assurance
 
-## Etape 1 — Sidebar collapsible
+**Fichier** : `src/components/guided-sales/steps/FormulaSelectionStep.tsx`
 
-**Fichier** : `src/components/admin/AdminSidebar.tsx`
+Modifications dans `FORMULA_DEFINITIONS` :
+- **Ajouter** une formule "TIERS AMELIORE" (nouveau tier `medium`) entre TIERS SIMPLE AMELIORE et TIERS COMPLET, avec garanties intermédiaires (RC + Défense/Recours + Individuel + Avance sur recours + Incendie + Vol). Restriction : minPeriodMonths = 3, pas de restriction d'âge véhicule.
+- **Fusionner** TIERS COMPLET et TOUT RISQUE en une seule formule "TOUS RISQUES" sur le tier `medium_plus`. Garanties combinées (inclut Tierce complète + Incendie + Vol + Bris de glaces). Restriction : véhicule <= 5 ans, minPeriodMonths = 6.
+- Supprimer l'ancienne formule TOUT RISQUE (tier `evolution`).
+- Conserver TIERCE COLLISION inchangée.
 
-Utiliser le composant `Collapsible` de Radix (deja disponible dans `src/components/ui/collapsible.tsx`) pour wrapper chaque `SidebarGroup`. Chaque label de groupe devient un `CollapsibleTrigger` avec une icone chevron qui tourne. Le contenu (`SidebarGroupContent`) est wrappé dans `CollapsibleContent`. Etat `open` par defaut pour chaque section, persisté en `localStorage`.
+**Fichier** : `src/components/guided-sales/types.ts` — Ajouter `"medium"` au type `PlanTier`.
 
----
+### 2. Upload OCR du permis de conduire
 
-## Etape 2 — Composant Top3 / Bottom3 reutilisable
+**Fichier** : `src/components/guided-sales/steps/SubscriptionFlow.tsx`
 
-**Nouveau fichier** : `src/components/admin/TopBottomAgents.tsx`
+Dans la sous-étape 5 (Conducteur), section "Permis de conduire" :
+- Ajouter un bloc `CameraUploadButton` en haut de la card Permis (avant les champs manuels).
+- Appeler la Edge Function `ocr-identity` existante avec `documentType: "permis"` pour extraire les données.
+- Pré-remplir automatiquement : `licenseNumber`, `licenseCategory` (si extractible), `licenseIssueDate`, et éventuellement nom/prénom du conducteur.
+- Afficher un toast avec les champs pré-remplis.
 
-Un composant generique qui prend une liste d'agents triée et un label de metrique, et affiche :
+### 3. Supprimer le badge "Option supplémentaire ajoutée"
 
-- Top 3 (icones medaille or/argent/bronze) avec nom + valeur
-- Bottom 3 (icone alerte) avec nom + valeur
-- Layout en 2 colonnes (Top / Bottom) dans une Card
+**Fichier** : `src/components/guided-sales/steps/IssuanceStep.tsx`
 
----
+Supprimer le bloc conditionnel `{upsellAccepted && (...)}` (lignes 82-91) qui affiche "Option supplémentaire ajoutée à votre contrat".
 
-## Etape 3 — Export CSV generique
+### 4. Cross-selling en fin de parcours
 
-**Nouveau fichier** : `src/utils/exportCsv.ts`
+**Fichier** : `src/components/guided-sales/steps/IssuanceStep.tsx`
 
-Fonction utilitaire `exportToCSV(data: Record<string, any>[], filename: string)` reutilisable sur toutes les pages pilotage. Bouton "Exporter CSV" ajoute dans le header de chaque page.
+Remplacer le badge supprimé par une section "Découvrez nos autres produits" affichant 2 cartes produit compactes :
+- **Assurance Habitation** : icone Home, description courte, prix indicatif, bouton "En savoir plus".
+- **Pack Obsèques** : icone Heart, description courte, prix indicatif, bouton "En savoir plus".
 
----
+Les boutons redirigent vers le parcours de vente guidée avec le produit pré-sélectionné (via `navigate` avec query params). Si le produit actuel est `pack_obseques`, proposer Auto + Habitation à la place.
 
-## Etape 4 — Page Conversions : ajout colonne Broker + Top3
-
-**Fichier** : `src/pages/admin/ConversionsPage.tsx`
-
-- Fetcher `partner_type` depuis `profiles` pour chaque agent
-- Ajouter colonne "Broker" (= `partner_type` traduit via `PARTNER_TYPE_LABELS`) dans le tableau
-- Ajouter le composant `TopBottomAgents` basé sur `conversionRate`
-- Ajouter bouton export CSV
+**Fichier** : `src/components/guided-sales/steps/UpsellSidebar.tsx` — Inchangé (reste l'offre latérale avant émission).
 
 ---
 
-## Etape 5 — Page Performance : Top3 + export CSV
+### Fichiers impactés
 
-**Fichier** : `src/pages/admin/AgentPerformancePage.tsx`
+| Action | Fichier |
+|--------|---------|
+| Modifié | `src/components/guided-sales/types.ts` |
+| Modifié | `src/components/guided-sales/steps/FormulaSelectionStep.tsx` |
+| Modifié | `src/components/guided-sales/steps/SubscriptionFlow.tsx` |
+| Modifié | `src/components/guided-sales/steps/IssuanceStep.tsx` |
 
-- Ajouter `TopBottomAgents` basé sur le taux d'atteinte CA
-- Ajouter bouton export CSV
-
----
-
-## Etape 6 — Page Sinistralité : Top3 + export CSV
-
-**Fichier** : `src/pages/admin/LossRatioPage.tsx`
-
-- Ajouter `TopBottomAgents` (Top 3 = ratio le plus bas = meilleurs, Bottom 3 = ratio le plus haut)
-- Ajouter bouton export CSV
-
----
-
-## Etape 7 — Page Portefeuille : Top3 + export CSV
-
-**Fichier** : `src/pages/admin/AgentsPortfolioPage.tsx`
-
-- Ajouter `TopBottomAgents` basé sur le CA total
-- Ajouter bouton export CSV
-
----
-
-## Etape 8 — Page Conformité : ajout PeriodFilter
-
-**Fichier** : `src/pages/admin/ComplianceDashboardPage.tsx`
-
-- Ajouter `PeriodFilter` au-dessus des filtres existants
-- Filtrer les enregistrements KYC par `created_at` dans la plage sélectionnée
-
----
-
-## Etape 9 — (nouvelle colonne dans tableau)
-
-**Fichier** : `src/pages/admin/ConversionsPage.tsx`
-
-Page de suivi des commissions par agent. Puisque la table `partner_commissions` n'existe pas encore, cette page calculera les commissions estimées a partir des souscriptions actives (CA * taux configurable). Contenu :
-
-- KPI Cards : Total commissions, Commission moyenne
-- `PeriodFilter`
-- Tableau par agent : ajouter commission
-- Bouton export CSV
-- &nbsp;
-
----
-
-## Details techniques
-
-- `Collapsible` : utilisation de `defaultOpen={true}` + `localStorage` key par section pour persister l'etat
-- `partner_type` sert de "Broker" (groupe d'agents par entite) — deja present dans `profiles`
-- Export CSV : encodage UTF-8 avec BOM pour compatibilite Excel
-  &nbsp;

@@ -70,7 +70,7 @@ export const GuidedSalesFlow = () => {
   const [isCalculating, setIsCalculating] = useState(false);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [saveAndQuitDialogOpen, setSaveAndQuitDialogOpen] = useState(false);
-  const [upsellAccepted, setUpsellAccepted] = useState(false);
+  
   const isMobile = useIsMobile();
   
   // Ref for sub-step back handler from child components
@@ -775,7 +775,7 @@ export const GuidedSalesFlow = () => {
       
       case 7:
         // Step 7: Issuance (documents + cross-sell)
-        return <IssuanceStep state={state} onReset={resetFlow} upsellAccepted={upsellAccepted} />;
+        return <IssuanceStep state={state} onReset={resetFlow} />;
       
       default:
         return null;
@@ -951,11 +951,7 @@ export const GuidedSalesFlow = () => {
           {showSalesAssistant && !isMobile && (
             <div className="hidden lg:block lg:w-[35%] shrink-0">
               {state.currentStep === 7 ? (
-                <UpsellSidebar
-                  state={state}
-                  onAccept={(id) => setUpsellAccepted(true)}
-                  accepted={upsellAccepted}
-                />
+                <UpsellSidebar state={state} />
               ) : (
                 <SalesAssistant
                   state={state}
@@ -982,11 +978,7 @@ export const GuidedSalesFlow = () => {
       )}
       {isMobile && state.currentStep === 7 && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t z-20">
-          <UpsellSidebar
-            state={state}
-            onAccept={(id) => setUpsellAccepted(true)}
-            accepted={upsellAccepted}
-          />
+          <UpsellSidebar state={state} />
         </div>
       )}
     </div>

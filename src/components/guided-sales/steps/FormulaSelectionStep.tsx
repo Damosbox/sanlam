@@ -71,7 +71,7 @@ const FORMULA_DEFINITIONS: FormulaDefinition[] = [
   },
   {
     tier: "medium_plus",
-    name: "TOUS RISQUES",
+    name: "TIERS RISQUES",
     description: "Tierce complète + Incendie + Vol + Bris de glaces",
     guarantees: [
       "RC", "Défense/Recours", "Recours des tiers incendie", "Individuel conducteur",

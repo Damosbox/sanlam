@@ -1,36 +1,79 @@
 
 
-## Plan : Remplacer l'Upsell Sidebar par le Cross-Selling
+## Plan : OCR Mapping intelligent dans le Form Builder
 
 ### Objectif
 
-Quand la police est émise (étape 7), la sidebar droite affiche actuellement une offre upsell (Protection Corporelle). Il faut la remplacer par les cartes de cross-selling (Habitation, Pack Obsèques, Auto) qui lancent un **nouveau parcours de vente** complet.
+Quand un champ `file` est ajouté dans le form builder et configuré comme OCR, l'admin peut :
+1. Choisir le **type de document** (CNI, Permis, Carte Grise)
+2. Voir la **liste des clés OCR normalisées** correspondantes
+3. **Mapper chaque clé OCR** vers un champ du formulaire via un dropdown
+4. Quand le champ file OCR est drag-and-dropped, les **champs mappés s'affichent automatiquement** dans l'étape
 
-### Modifications
+### Données OCR normalisées
 
-**1. `src/components/guided-sales/steps/UpsellSidebar.tsx`** — Refactorer complètement
+Dictionnaire statique des clés par type de document (constante partagée) :
 
-Remplacer le contenu upsell actuel par :
-- Titre "Découvrez nos autres produits" + sous-titre
-- 2 cartes produit (identiques au design de la capture : icône, nom, prix indicatif, description, bouton "En savoir plus")
-- Logique dynamique selon le produit actuel (Auto → Habitation + Obsèques ; Obsèques → Auto + Habitation)
-- Le bouton navigue vers `/broker/guided-sales?product=xxx` pour démarrer un nouveau flow
-- Supprimer tout le code d'acceptation/dismiss/prix barré
+```text
+CNI:       surname, given_names, date_of_birth, place_of_birth, sex, height, document_number, date_of_issue, date_of_expiry, place_of_issue, issuing_state_name
+PERMIS:    surname, given_names, date_of_birth, place_of_birth, document_number, date_of_issue, place_of_issue, dl_class, issuing_state_name
+CARTE_GRISE: owner, document_number, regcert_regnumber, regcert_carmark, regcert_carmodel, regcert_carcolor, fuel_type, engine_power, engine_volume, number_of_seats, date_of_issue, first_issue_date, issuing_state_name
+```
 
-**2. `src/components/guided-sales/GuidedSalesFlow.tsx`** — Simplifier
+### Modifications fichiers
 
-- Supprimer l'état `upsellAccepted` et la prop `onAccept`
-- Passer uniquement `state` au composant sidebar renommé
-- Supprimer le bloc mobile fixe en bas (step 7) — le cross-sell sera dans le contenu principal via `IssuanceStep`
+**1. `src/constants/ocrDocumentKeys.ts`** (nouveau)
+- Exporter `OCR_DOCUMENT_TYPES` : tableau des types (CNI, Permis, Carte Grise)
+- Exporter `OCR_KEYS_BY_TYPE` : dictionnaire `{ CNI: [{key: "surname", label: "Nom"}, ...], ... }`
+- Exporter `getDefaultFieldType(ocrKey)` : retourne le type de champ approprié (date → "date", number → "number", etc.)
 
-**3. `src/components/guided-sales/steps/IssuanceStep.tsx`** — Conserver tel quel
+**2. `src/components/admin/FormFieldLibrary.tsx`** — Enrichir `FieldConfig`
+- Ajouter à l'interface : `ocrConfig?: { documentType: string; mappings: Array<{ ocrKey: string; targetFieldId?: string }> }`
+- Ce champ n'existe que quand `type === "file"` et OCR est activé
 
-La section cross-selling dans le contenu principal reste en place (elle est déjà implémentée). La sidebar la duplique pour le desktop large.
+**3. `src/components/admin/FormFieldEditor.tsx`** — Bloc OCR dans la configuration
+- Quand `field.type === "file"` : afficher une section "Configuration OCR"
+  - Switch "Activer OCR" → `isOcr: boolean`
+  - Select "Type de document" → `ocrConfig.documentType` (CNI / Permis / Carte Grise)
+  - Quand un type est sélectionné : afficher la **liste des clés OCR** avec pour chaque clé un dropdown "Mapper vers → [champs existants du formulaire]"
+  - Les champs existants sont récupérés depuis les autres champs de l'étape courante
+- Ajouter prop `allFields?: FieldConfig[]` pour alimenter les dropdowns de mapping
+
+**4. `src/components/admin/form-builder/FormPhaseEditor.tsx`** — Auto-génération des champs OCR
+- Modifier `addFieldToStep` : quand un champ `file` avec `ocrConfig` est ajouté, générer automatiquement les champs correspondants aux clés OCR sélectionnées (avec `ocrDataKey` renseigné et `type` approprié)
+- Passer `allFields` au `FormFieldEditor` via les props
+- Enrichir `updateField` pour détecter le changement de `ocrConfig.documentType` et proposer de régénérer les champs mappés
+
+**5. `src/components/forms/DynamicFormField.tsx`** — Côté rendu (pas de changement majeur)
+- Les champs générés ont déjà un `id` qui correspond à l'`ocrKey`, donc le remplissage auto fonctionne directement
+
+**6. `src/components/DynamicFormRenderer.tsx`** — Remplissage OCR automatique
+- Quand un champ `file` avec `ocrConfig` reçoit un fichier : appeler l'edge function OCR correspondante
+- Mapper les clés retournées vers les `field.id` correspondants via `ocrConfig.mappings`
+- Pré-remplir `formData` avec les valeurs extraites
+
+### Résumé du flux
+
+```text
+Admin (Form Builder):
+  1. Ajoute champ "Fichier" → sélectionne dans config → OCR activé
+  2. Choisit "CNI" → voit les 11 clés OCR avec labels FR
+  3. Mappe chaque clé vers un champ existant OU clique "Auto-créer"
+  4. Les champs mappés apparaissent dans le formulaire
+
+Runtime (DynamicFormRenderer):
+  1. Client upload fichier dans le champ OCR
+  2. Appel edge function ocr-identity/ocr-vehicle-registration
+  3. Réponse → mapping via ocrConfig → pré-remplissage automatique
+```
 
 ### Fichiers impactés
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/guided-sales/steps/UpsellSidebar.tsx` | Refactoré → CrossSellSidebar |
-| `src/components/guided-sales/GuidedSalesFlow.tsx` | Simplifié (suppression upsellAccepted) |
+| `src/constants/ocrDocumentKeys.ts` | Créer — dictionnaire clés OCR |
+| `src/components/admin/FormFieldLibrary.tsx` | Enrichir FieldConfig (ocrConfig) |
+| `src/components/admin/FormFieldEditor.tsx` | Ajouter bloc config OCR avec mappings |
+| `src/components/admin/form-builder/FormPhaseEditor.tsx` | Auto-génération champs + passer allFields |
+| `src/components/DynamicFormRenderer.tsx` | Appel OCR + remplissage auto |
 

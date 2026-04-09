@@ -16,7 +16,7 @@ interface FormFieldEditorProps {
   field: FieldConfig | null;
   onUpdate: (field: FieldConfig) => void;
   onDelete: () => void;
-  onOcrSelectionChange?: (documentType: OcrDocumentType, selectedKeys: string[]) => void;
+  onOcrSelectionChange?: (documentType: OcrDocumentType, selectedKeys: string[], fieldId: string) => void;
 }
 
 export const FormFieldEditor = ({ field, onUpdate, onDelete, onOcrSelectionChange }: FormFieldEditorProps) => {

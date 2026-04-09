@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Trash2, Plus, Lock, ExternalLink } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { OCR_DOCUMENT_TYPES, OCR_KEYS_BY_TYPE, OcrDocumentType } from "@/constants/ocrDocumentKeys";
@@ -15,11 +16,10 @@ interface FormFieldEditorProps {
   field: FieldConfig | null;
   onUpdate: (field: FieldConfig) => void;
   onDelete: () => void;
-  allFields?: FieldConfig[]; // All fields in the current step for OCR mapping
-  onGenerateOcrFields?: (documentType: OcrDocumentType) => void;
+  onOcrSelectionChange?: (documentType: OcrDocumentType, selectedKeys: string[]) => void;
 }
 
-export const FormFieldEditor = ({ field, onUpdate, onDelete, allFields = [], onGenerateOcrFields }: FormFieldEditorProps) => {
+export const FormFieldEditor = ({ field, onUpdate, onDelete, onOcrSelectionChange }: FormFieldEditorProps) => {
   const navigate = useNavigate();
 
   if (!field) {
@@ -121,32 +121,47 @@ export const FormFieldEditor = ({ field, onUpdate, onDelete, allFields = [], onG
         ocrConfig: { documentType: "", mappings: [] },
       });
     } else {
+      // Remove OCR fields when disabling
+      if (field.ocrConfig?.documentType && onOcrSelectionChange) {
+        onOcrSelectionChange(field.ocrConfig.documentType as OcrDocumentType, []);
+      }
       updateField({ isOcr: false, ocrConfig: undefined });
     }
   };
 
   const handleDocumentTypeChange = (docType: string) => {
-    const keys = OCR_KEYS_BY_TYPE[docType as OcrDocumentType] || [];
+    // Clear previous OCR fields if changing doc type
+    if (field.ocrConfig?.documentType && field.ocrConfig.documentType !== docType && onOcrSelectionChange) {
+      onOcrSelectionChange(field.ocrConfig.documentType as OcrDocumentType, []);
+    }
     updateField({
       ocrConfig: {
         documentType: docType,
-        mappings: keys.map((k) => ({ ocrKey: k.key, targetFieldId: undefined })),
+        mappings: [],
       },
     });
   };
 
-  const handleMappingChange = (ocrKey: string, targetFieldId: string) => {
-    if (!field.ocrConfig) return;
-    const mappings = field.ocrConfig.mappings.map((m) =>
-      m.ocrKey === ocrKey ? { ...m, targetFieldId: targetFieldId || undefined } : m
-    );
-    updateField({ ocrConfig: { ...field.ocrConfig, mappings } });
+  const handleOcrKeyToggle = (ocrKey: string, checked: boolean) => {
+    if (!field.ocrConfig?.documentType) return;
+    const currentKeys = (field.ocrConfig.mappings || []).map((m) => m.ocrKey);
+    const newKeys = checked
+      ? [...currentKeys, ocrKey]
+      : currentKeys.filter((k) => k !== ocrKey);
+
+    updateField({
+      ocrConfig: {
+        ...field.ocrConfig,
+        mappings: newKeys.map((k) => ({ ocrKey: k })),
+      },
+    });
+
+    if (onOcrSelectionChange) {
+      onOcrSelectionChange(field.ocrConfig.documentType as OcrDocumentType, newKeys);
+    }
   };
 
-  // Other fields available for mapping (exclude the file field itself and locked OCR fields)
-  const mappableFields = allFields.filter(
-    (f) => f.id !== field.id && f.type !== "file"
-  );
+  const selectedOcrKeys = new Set((field.ocrConfig?.mappings || []).map((m) => m.ocrKey));
 
   return (
     <div className="space-y-4 p-4">
@@ -322,58 +337,31 @@ export const FormFieldEditor = ({ field, onUpdate, onDelete, allFields = [], onG
                     </Select>
                   </div>
 
-                  {field.ocrConfig?.documentType && field.ocrConfig.mappings.length > 0 && (
+                  {field.ocrConfig?.documentType && (
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground">
-                        Mapping des clés OCR
+                        Champs à extraire automatiquement
                       </Label>
-                      <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                        {field.ocrConfig.mappings.map((mapping) => {
-                          const keyDef = OCR_KEYS_BY_TYPE[field.ocrConfig!.documentType as OcrDocumentType]?.find(
-                            (k) => k.key === mapping.ocrKey
-                          );
-                          return (
-                            <div key={mapping.ocrKey} className="flex items-center gap-2">
-                              <div className="flex-1 min-w-0">
-                                <span className="text-xs font-medium truncate block">
-                                  {keyDef?.label || mapping.ocrKey}
-                                </span>
-                                <span className="text-[10px] text-muted-foreground font-mono">
-                                  {mapping.ocrKey}
-                                </span>
-                              </div>
-                              <Select
-                                value={mapping.targetFieldId || "__none__"}
-                                onValueChange={(v) => handleMappingChange(mapping.ocrKey, v === "__none__" ? "" : v)}
-                              >
-                                <SelectTrigger className="w-[140px] h-8 text-xs">
-                                  <SelectValue placeholder="Sélectionner" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="__none__">— Non mappé —</SelectItem>
-                                  {mappableFields.map((f) => (
-                                    <SelectItem key={f.id} value={f.id}>
-                                      {f.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          );
-                        })}
+                      <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
+                        {(OCR_KEYS_BY_TYPE[field.ocrConfig.documentType as OcrDocumentType] || []).map((keyDef) => (
+                          <div key={keyDef.key} className="flex items-center gap-2 py-0.5">
+                            <Checkbox
+                              id={`ocr-${keyDef.key}`}
+                              checked={selectedOcrKeys.has(keyDef.key)}
+                              onCheckedChange={(checked) => handleOcrKeyToggle(keyDef.key, !!checked)}
+                            />
+                            <label
+                              htmlFor={`ocr-${keyDef.key}`}
+                              className="text-xs cursor-pointer select-none"
+                            >
+                              {keyDef.label}
+                            </label>
+                          </div>
+                        ))}
                       </div>
-
-                      {onGenerateOcrFields && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full mt-2"
-                          onClick={() => onGenerateOcrFields(field.ocrConfig!.documentType as OcrDocumentType)}
-                        >
-                          <Plus className="h-3.5 w-3.5 mr-1" />
-                          Auto-créer les champs manquants
-                        </Button>
-                      )}
+                      <p className="text-[10px] text-muted-foreground">
+                        Les champs cochés seront auto-générés et pré-remplis par l'OCR.
+                      </p>
                     </div>
                   )}
                 </div>

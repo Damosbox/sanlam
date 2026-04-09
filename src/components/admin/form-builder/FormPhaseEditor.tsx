@@ -207,54 +207,44 @@ export function FormPhaseEditor({ structure, onChange, productId }: FormPhaseEdi
     setSelectedFieldId(newField.id);
   };
 
-  // Auto-generate OCR mapped fields
-  const generateOcrFields = useCallback((documentType: OcrDocumentType) => {
+  // Handle OCR selection changes — auto-generate/remove fields
+  const handleOcrSelectionChange = useCallback((documentType: OcrDocumentType, selectedKeys: string[]) => {
     if (!currentPhase || !selectedStepId) return;
 
     const step = currentPhase.steps.find((s) => s.id === selectedStepId);
     if (!step || step.type !== "fields") return;
 
-    const existingIds = new Set((step.fields || []).map((f) => f.id));
-    const keys = OCR_KEYS_BY_TYPE[documentType] || [];
+    const existingFields = step.fields || [];
+    const selectedSet = new Set(selectedKeys);
 
-    const newFields: FieldConfig[] = keys
-      .filter((k) => !existingIds.has(`ocr_${k.key}`))
+    // Remove OCR fields that are no longer selected
+    const filteredFields = existingFields.filter(
+      (f) => f.sourceType !== "ocr" || !f.ocrDataKey || selectedSet.has(f.ocrDataKey)
+    );
+
+    // Add new OCR fields that don't exist yet
+    const existingOcrKeys = new Set(filteredFields.filter((f) => f.sourceType === "ocr" && f.ocrDataKey).map((f) => f.ocrDataKey!));
+    const keys = OCR_KEYS_BY_TYPE[documentType] || [];
+    const newFields: FieldConfig[] = selectedKeys
+      .filter((k) => !existingOcrKeys.has(k))
       .map((k) => {
-        const fieldType = getDefaultFieldType(k.key);
-        const options = getDefaultSelectOptions(k.key);
+        const keyDef = keys.find((kd) => kd.key === k);
+        const fieldType = getDefaultFieldType(k);
+        const options = getDefaultSelectOptions(k);
         return {
-          id: `ocr_${k.key}`,
+          id: `ocr_${k}`,
           type: fieldType,
-          label: k.label,
+          label: keyDef?.label || k,
           required: false,
           locked: true,
           sourceType: "ocr" as const,
-          ocrDataKey: k.key,
+          ocrDataKey: k,
           ...(options ? { options } : {}),
         };
       });
 
-    if (newFields.length === 0) return;
-
-    // Also update the ocrConfig mappings on the file field to point to the new fields
-    const updatedFields = (step.fields || []).map((f) => {
-      if (f.isOcr && f.ocrConfig?.documentType === documentType) {
-        return {
-          ...f,
-          ocrConfig: {
-            ...f.ocrConfig,
-            mappings: (f.ocrConfig.mappings || []).map((m) => ({
-              ...m,
-              targetFieldId: m.targetFieldId || `ocr_${m.ocrKey}`,
-            })),
-          },
-        };
-      }
-      return f;
-    });
-
     updateSubStep(activePhase, selectedStepId, {
-      fields: [...updatedFields, ...newFields],
+      fields: [...filteredFields, ...newFields],
     });
   }, [currentPhase, selectedStepId, activePhase]);
 
@@ -531,8 +521,7 @@ export function FormPhaseEditor({ structure, onChange, productId }: FormPhaseEdi
                   field={currentField}
                   onUpdate={updateField}
                   onDelete={() => removeField(currentField.id)}
-                  allFields={displayFields || []}
-                  onGenerateOcrFields={generateOcrFields}
+                  onOcrSelectionChange={handleOcrSelectionChange}
                 />
               ) : (
                 <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">

@@ -294,9 +294,9 @@ export function FormPhaseEditor({ structure, onChange, productId }: FormPhaseEdi
   // Supprimer un champ
   const removeField = (fieldId: string) => {
     if (!currentPhase || !selectedStepId) return;
-    // Don't allow removing locked fields
+    // Don't allow removing calc-rule locked fields (OCR locked fields can be removed)
     const field = displayFields?.find((f) => f.id === fieldId);
-    if (field?.locked) return;
+    if (field?.locked && field?.sourceType !== "ocr") return;
 
     const step = currentPhase.steps.find((s) => s.id === selectedStepId);
     if (!step || !step.fields) return;

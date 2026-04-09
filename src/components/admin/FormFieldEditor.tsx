@@ -16,7 +16,7 @@ interface FormFieldEditorProps {
   field: FieldConfig | null;
   onUpdate: (field: FieldConfig) => void;
   onDelete: () => void;
-  onOcrSelectionChange?: (documentType: OcrDocumentType, selectedKeys: string[]) => void;
+  onOcrSelectionChange?: (documentType: OcrDocumentType, selectedKeys: string[], fieldId: string) => void;
 }
 
 export const FormFieldEditor = ({ field, onUpdate, onDelete, onOcrSelectionChange }: FormFieldEditorProps) => {
@@ -123,7 +123,7 @@ export const FormFieldEditor = ({ field, onUpdate, onDelete, onOcrSelectionChang
     } else {
       // Remove OCR fields when disabling
       if (field.ocrConfig?.documentType && onOcrSelectionChange) {
-        onOcrSelectionChange(field.ocrConfig.documentType as OcrDocumentType, []);
+        onOcrSelectionChange(field.ocrConfig.documentType as OcrDocumentType, [], field.id);
       }
       updateField({ isOcr: false, ocrConfig: undefined });
     }
@@ -132,7 +132,7 @@ export const FormFieldEditor = ({ field, onUpdate, onDelete, onOcrSelectionChang
   const handleDocumentTypeChange = (docType: string) => {
     // Clear previous OCR fields if changing doc type
     if (field.ocrConfig?.documentType && field.ocrConfig.documentType !== docType && onOcrSelectionChange) {
-      onOcrSelectionChange(field.ocrConfig.documentType as OcrDocumentType, []);
+      onOcrSelectionChange(field.ocrConfig.documentType as OcrDocumentType, [], field.id);
     }
     updateField({
       ocrConfig: {
@@ -149,15 +149,9 @@ export const FormFieldEditor = ({ field, onUpdate, onDelete, onOcrSelectionChang
       ? [...currentKeys, ocrKey]
       : currentKeys.filter((k) => k !== ocrKey);
 
-    updateField({
-      ocrConfig: {
-        ...field.ocrConfig,
-        mappings: newKeys.map((k) => ({ ocrKey: k })),
-      },
-    });
-
+    // Let handleOcrSelectionChange do BOTH: update file field mappings + sync OCR child fields atomically
     if (onOcrSelectionChange) {
-      onOcrSelectionChange(field.ocrConfig.documentType as OcrDocumentType, newKeys);
+      onOcrSelectionChange(field.ocrConfig.documentType as OcrDocumentType, newKeys, field.id);
     }
   };
 

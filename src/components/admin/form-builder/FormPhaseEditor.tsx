@@ -37,6 +37,7 @@ import { FormSubStepEditor } from "./FormSubStepEditor";
 import { FormFieldLibrary, FieldConfig, FieldType } from "../FormFieldLibrary";
 import { FormFieldEditor } from "../FormFieldEditor";
 import type { CalcRuleParameter } from "../calc-rules/types";
+import { OCR_KEYS_BY_TYPE, OcrDocumentType, getDefaultFieldType, getDefaultSelectOptions } from "@/constants/ocrDocumentKeys";
 
 interface FormPhaseEditorProps {
   structure: FormStructure;

@@ -466,7 +466,7 @@ export function FormPhaseEditor({ structure, onChange, productId }: FormPhaseEdi
       </div>
 
       {/* Éditeur principal */}
-      <div className="col-span-6 border rounded-lg overflow-hidden">
+      <div className="col-span-5 border rounded-lg overflow-hidden">
         <div className="bg-muted/50 p-3 border-b flex items-center justify-between">
           <div className="flex items-center gap-2">
             {currentPhase && getPhaseIcon(currentPhase.id)}
@@ -504,15 +504,15 @@ export function FormPhaseEditor({ structure, onChange, productId }: FormPhaseEdi
       </div>
 
       {/* Panneau de droite - Bibliothèque ou Éditeur de champ */}
-      <div className="col-span-3 space-y-4">
+      <div className="col-span-4 space-y-4">
         {/* Bibliothèque de champs (visible si étape de type "fields") */}
         {currentStep?.type === "fields" && (
-          <Card className="h-[280px]">
+          <Card className="h-[260px]">
             <CardHeader className="py-3">
               <CardTitle className="text-sm">Bibliothèque de champs</CardTitle>
             </CardHeader>
             <CardContent className="p-2">
-              <ScrollArea className="h-[200px]">
+              <ScrollArea className="h-[180px]">
                 <FormFieldLibrary onAddField={addFieldToStep} />
               </ScrollArea>
             </CardContent>
@@ -520,12 +520,12 @@ export function FormPhaseEditor({ structure, onChange, productId }: FormPhaseEdi
         )}
 
         {/* Éditeur de champ */}
-        <Card className={currentStep?.type === "fields" ? "h-[300px]" : "h-[580px]"}>
+        <Card className={currentStep?.type === "fields" ? "h-[320px]" : "h-[580px]"}>
           <CardHeader className="py-3">
             <CardTitle className="text-sm">Configuration</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <ScrollArea className={currentStep?.type === "fields" ? "h-[240px]" : "h-[520px]"}>
+            <ScrollArea className={currentStep?.type === "fields" ? "h-[260px]" : "h-[520px]"}>
               {currentField ? (
                 <FormFieldEditor
                   field={currentField}

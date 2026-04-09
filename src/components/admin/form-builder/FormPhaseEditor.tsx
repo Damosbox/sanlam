@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ import { FormSubStepEditor } from "./FormSubStepEditor";
 import { FormFieldLibrary, FieldConfig, FieldType } from "../FormFieldLibrary";
 import { FormFieldEditor } from "../FormFieldEditor";
 import type { CalcRuleParameter } from "../calc-rules/types";
+import { OCR_KEYS_BY_TYPE, OcrDocumentType, getDefaultFieldType, getDefaultSelectOptions } from "@/constants/ocrDocumentKeys";
 
 interface FormPhaseEditorProps {
   structure: FormStructure;
@@ -205,6 +206,57 @@ export function FormPhaseEditor({ structure, onChange, productId }: FormPhaseEdi
     });
     setSelectedFieldId(newField.id);
   };
+
+  // Auto-generate OCR mapped fields
+  const generateOcrFields = useCallback((documentType: OcrDocumentType) => {
+    if (!currentPhase || !selectedStepId) return;
+
+    const step = currentPhase.steps.find((s) => s.id === selectedStepId);
+    if (!step || step.type !== "fields") return;
+
+    const existingIds = new Set((step.fields || []).map((f) => f.id));
+    const keys = OCR_KEYS_BY_TYPE[documentType] || [];
+
+    const newFields: FieldConfig[] = keys
+      .filter((k) => !existingIds.has(`ocr_${k.key}`))
+      .map((k) => {
+        const fieldType = getDefaultFieldType(k.key);
+        const options = getDefaultSelectOptions(k.key);
+        return {
+          id: `ocr_${k.key}`,
+          type: fieldType,
+          label: k.label,
+          required: false,
+          locked: true,
+          sourceType: "ocr" as const,
+          ocrDataKey: k.key,
+          ...(options ? { options } : {}),
+        };
+      });
+
+    if (newFields.length === 0) return;
+
+    // Also update the ocrConfig mappings on the file field to point to the new fields
+    const updatedFields = (step.fields || []).map((f) => {
+      if (f.isOcr && f.ocrConfig?.documentType === documentType) {
+        return {
+          ...f,
+          ocrConfig: {
+            ...f.ocrConfig,
+            mappings: (f.ocrConfig.mappings || []).map((m) => ({
+              ...m,
+              targetFieldId: m.targetFieldId || `ocr_${m.ocrKey}`,
+            })),
+          },
+        };
+      }
+      return f;
+    });
+
+    updateSubStep(activePhase, selectedStepId, {
+      fields: [...updatedFields, ...newFields],
+    });
+  }, [currentPhase, selectedStepId, activePhase]);
 
   const getDefaultLabel = (type: FieldType): string => {
     const labels: Record<FieldType, string> = {
@@ -479,6 +531,8 @@ export function FormPhaseEditor({ structure, onChange, productId }: FormPhaseEdi
                   field={currentField}
                   onUpdate={updateField}
                   onDelete={() => removeField(currentField.id)}
+                  allFields={displayFields || []}
+                  onGenerateOcrFields={generateOcrFields}
                 />
               ) : (
                 <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">

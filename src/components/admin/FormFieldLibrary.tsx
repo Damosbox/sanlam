@@ -14,6 +14,16 @@ export type FieldType =
   | "file" 
   | "currency";
 
+export interface OcrMapping {
+  ocrKey: string;
+  targetFieldId?: string;
+}
+
+export interface OcrConfig {
+  documentType: string;
+  mappings: OcrMapping[];
+}
+
 export interface FieldConfig {
   id: string;
   type: FieldType;
@@ -35,8 +45,11 @@ export interface FieldConfig {
     };
   };
   locked?: boolean;
-  sourceType?: "calc_rule";
+  sourceType?: "calc_rule" | "ocr";
   sourceRuleId?: string;
+  isOcr?: boolean;
+  ocrConfig?: OcrConfig;
+  ocrDataKey?: string; // The OCR key this field maps to
 }
 
 const FIELD_TYPES = [

@@ -207,8 +207,8 @@ export function FormPhaseEditor({ structure, onChange, productId }: FormPhaseEdi
     setSelectedFieldId(newField.id);
   };
 
-  // Handle OCR selection changes — auto-generate/remove fields
-  const handleOcrSelectionChange = useCallback((documentType: OcrDocumentType, selectedKeys: string[]) => {
+  // Handle OCR selection changes — auto-generate/remove fields AND update file field mappings atomically
+  const handleOcrSelectionChange = useCallback((documentType: OcrDocumentType, selectedKeys: string[], fileFieldId: string) => {
     if (!currentPhase || !selectedStepId) return;
 
     const step = currentPhase.steps.find((s) => s.id === selectedStepId);
@@ -222,8 +222,22 @@ export function FormPhaseEditor({ structure, onChange, productId }: FormPhaseEdi
       (f) => f.sourceType !== "ocr" || !f.ocrDataKey || selectedSet.has(f.ocrDataKey)
     );
 
+    // Update the file field's ocrConfig.mappings in the same update
+    const updatedFields = filteredFields.map((f) => {
+      if (f.id === fileFieldId && f.ocrConfig) {
+        return {
+          ...f,
+          ocrConfig: {
+            ...f.ocrConfig,
+            mappings: selectedKeys.map((k) => ({ ocrKey: k })),
+          },
+        };
+      }
+      return f;
+    });
+
     // Add new OCR fields that don't exist yet
-    const existingOcrKeys = new Set(filteredFields.filter((f) => f.sourceType === "ocr" && f.ocrDataKey).map((f) => f.ocrDataKey!));
+    const existingOcrKeys = new Set(updatedFields.filter((f) => f.sourceType === "ocr" && f.ocrDataKey).map((f) => f.ocrDataKey!));
     const keys = OCR_KEYS_BY_TYPE[documentType] || [];
     const newFields: FieldConfig[] = selectedKeys
       .filter((k) => !existingOcrKeys.has(k))
@@ -244,7 +258,7 @@ export function FormPhaseEditor({ structure, onChange, productId }: FormPhaseEdi
       });
 
     updateSubStep(activePhase, selectedStepId, {
-      fields: [...filteredFields, ...newFields],
+      fields: [...updatedFields, ...newFields],
     });
   }, [currentPhase, selectedStepId, activePhase]);
 
@@ -281,21 +295,32 @@ export function FormPhaseEditor({ structure, onChange, productId }: FormPhaseEdi
     });
   };
 
-  // Supprimer un champ
+  // Supprimer un champ (+ cascade delete OCR children if it's a file field)
   const removeField = (fieldId: string) => {
     if (!currentPhase || !selectedStepId) return;
-    // Don't allow removing calc-rule locked fields (OCR locked fields can be removed)
     const field = displayFields?.find((f) => f.id === fieldId);
+    // Don't allow removing calc-rule locked fields (OCR locked fields can be removed)
     if (field?.locked && field?.sourceType !== "ocr") return;
 
     const step = currentPhase.steps.find((s) => s.id === selectedStepId);
     if (!step || !step.fields) return;
 
+    // If it's a file field with OCR, also remove all its OCR child fields
+    let fieldsToRemove = new Set([fieldId]);
+    if (field?.type === "file" && field.isOcr && field.ocrConfig?.mappings) {
+      const ocrKeys = field.ocrConfig.mappings.map((m: any) => m.ocrKey);
+      step.fields.forEach((f) => {
+        if (f.sourceType === "ocr" && f.ocrDataKey && ocrKeys.includes(f.ocrDataKey)) {
+          fieldsToRemove.add(f.id);
+        }
+      });
+    }
+
     updateSubStep(activePhase, selectedStepId, {
-      fields: step.fields.filter((f) => f.id !== fieldId),
+      fields: step.fields.filter((f) => !fieldsToRemove.has(f.id)),
     });
 
-    if (selectedFieldId === fieldId) {
+    if (fieldsToRemove.has(selectedFieldId || "")) {
       setSelectedFieldId(null);
     }
   };

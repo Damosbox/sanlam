@@ -1,47 +1,59 @@
 
 
-## Plan : Simplifier l'OCR — sélection de champs uniquement, mapping automatique
+## Plan : 3 fonctionnalités Admin
 
-### Problème actuel
-L'UI montre un tableau de mapping manuel (clé OCR → champ cible) que l'admin doit remplir un par un. Or les clés sont prédéfinies et le mapping est automatique — l'admin n'a qu'à choisir **quels champs OCR il veut**.
+### 1. Import CSV d'utilisateurs en masse
 
-### Nouveau comportement
+**Objectif** : Ajouter un bouton "Importer CSV" à côté du bouton "Créer un utilisateur" dans `AdminUsersTable`. Un dialog permet d'uploader un CSV (colonnes : email, firstName, lastName, role, partnerType, password), prévisualiser les lignes, puis lancer la création en batch via l'edge function `create-user` existante.
 
-1. L'admin active OCR sur un champ `file`
-2. Il choisit le type de document (CNI / Permis / Carte Grise)
-3. La liste des champs OCR disponibles s'affiche sous forme de **checkboxes multi-select** avec les labels FR (ex: "Nom", "Date de naissance", "Numéro CNI")
-4. L'admin coche les champs qu'il veut → les champs sont auto-générés dans le formulaire avec le bon type, le bon `ocrDataKey`, et le mapping est implicite
-5. **Aucun tableau de mapping visible** — tout est automatique en coulisse
+**Fichiers :**
+- `src/components/admin/CsvUserImportDialog.tsx` — **Créer** : Dialog avec upload CSV, parsing client-side (Papa Parse ou FileReader), tableau de prévisualisation, validation (emails, rôles valides), barre de progression, et appel séquentiel de `supabase.functions.invoke('create-user')` par ligne. Résumé final (succès/échecs).
+- `src/components/AdminUsersTable.tsx` — **Modifier** : Ajouter le bouton "Importer CSV" à côté de `CreateUserDialog` dans le header.
+- `package.json` — **Modifier** : Ajouter `papaparse` + `@types/papaparse` pour le parsing CSV robuste.
 
-### Modifications
+### 2. Réorganisation sidebar Admin — Utilisateurs au même niveau que RBAC
 
-**`src/components/admin/FormFieldEditor.tsx`**
-- Supprimer tout le bloc "Mapping des clés OCR" (lignes 325-377) avec les Select par clé
-- Remplacer par une liste de checkboxes des clés OCR du type sélectionné
-- Chaque checkbox affiche le label FR (ex: "Nom (surname)")
-- Quand une checkbox est cochée/décochée, mettre à jour `ocrConfig.mappings` avec les clés sélectionnées (sans `targetFieldId` — le mapping est automatique par `ocrDataKey`)
-- Supprimer le bouton "Auto-créer les champs manquants" — la génération se fait automatiquement quand on coche
-- Supprimer la prop `onGenerateOcrFields` et `allFields` (plus nécessaires pour le mapping)
+**Objectif** : Sortir "Utilisateurs" (Clients, Agents, Admins) du groupe actuel et le placer au même niveau que "Sécurité" (Permissions, Audit), dans un nouveau groupe **"Accès & Utilisateurs"** qui regroupe les deux.
 
-**`src/components/admin/form-builder/FormPhaseEditor.tsx`**
-- Adapter `generateOcrFields` pour être appelé automatiquement quand les checkboxes changent (via `updateField`)
-- Quand un champ est décoché, supprimer le champ OCR correspondant de l'étape
-- Quand un champ est coché, générer le champ avec `ocrDataKey`, `locked: true`, `sourceType: "ocr"`, type approprié
+**Fichiers :**
+- `src/components/admin/AdminSidebar.tsx` — **Modifier** : Fusionner les groupes `users` et `security` en un seul groupe `access` avec le label **"Accès & Utilisateurs"** contenant : Clients, Agents, Administrateurs, Permissions, Audit.
 
-**`src/components/admin/FormFieldLibrary.tsx`**
-- Pas de changement structurel, `ocrConfig.mappings` reste mais simplifié (juste `ocrKey` sans `targetFieldId`)
-
-### Résumé UX
-
+Nouvelle structure sidebar :
 ```text
-Avant : Select docType → Tableau mapping (clé → champ cible) × N → Bouton "Auto-créer"
-Après : Select docType → Checkboxes des champs souhaités → Génération automatique
+📊 Tableau de Bord
+── Opérations (Sinistres, Souscriptions)
+── Accès & Utilisateurs (Clients, Agents, Administrateurs, Permissions, Audit)
+── Pilotage — Commercial
+── Pilotage — Portefeuille
+── Pilotage — Risque
+── Engagement
+── Configuration (+ Templates Documents)
+── Développement
 ```
 
-### Fichiers impactés
+### 3. Éditeur HTML de templates de documents
 
-| Fichier | Action |
-|---------|--------|
-| `FormFieldEditor.tsx` | Remplacer mapping par checkboxes multi-select |
-| `FormPhaseEditor.tsx` | Auto-génération/suppression sur changement de sélection |
+**Objectif** : Créer un éditeur WYSIWYG pour les templates de documents (contrats, attestations, etc.) utilisés dans les parcours de vente. L'admin peut créer/éditer des templates HTML avec des variables dynamiques (`{{nom_client}}`, `{{date_souscription}}`, etc.), prévisualiser le rendu, et les sauvegarder en base.
+
+**Fichiers :**
+- Table `document_templates` — **Migration** : `id`, `name`, `description`, `category` (contrat/attestation/avenant/autre), `product_id` (nullable FK), `html_content` (text), `variables` (jsonb), `is_active`, `created_at`, `updated_at`, `created_by` (FK auth.users). RLS : admin uniquement.
+- `src/components/admin/documents/DocumentTemplateEditor.tsx` — **Créer** : Éditeur HTML rich-text (TipTap/React-Quill) avec toolbar, insertion de variables dynamiques via menu dropdown, mode source HTML, et prévisualisation live.
+- `src/components/admin/documents/DocumentTemplatesList.tsx` — **Créer** : Liste des templates avec filtres par catégorie/produit, actions CRUD.
+- `src/components/admin/documents/DocumentVariableInserter.tsx` — **Créer** : Composant pour insérer les variables prédéfinies (client, police, produit, dates).
+- `src/pages/admin/DocumentTemplatesPage.tsx` — **Créer** : Page admin pour la gestion des templates.
+- `src/components/admin/AdminSidebar.tsx` — **Modifier** : Ajouter "Templates Documents" dans le groupe Configuration.
+- `src/App.tsx` — **Modifier** : Ajouter route `/admin/document-templates`.
+- `package.json` — **Modifier** : Ajouter `@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-*` pour l'éditeur rich-text.
+
+**Variables dynamiques prédéfinies :**
+- Client : `{{nom_client}}`, `{{prenom_client}}`, `{{email}}`, `{{telephone}}`, `{{adresse}}`
+- Police : `{{numero_police}}`, `{{date_effet}}`, `{{date_echeance}}`, `{{prime_ttc}}`
+- Produit : `{{nom_produit}}`, `{{formule}}`, `{{garanties}}`
+- Système : `{{date_generation}}`, `{{numero_document}}`
+
+### Ordre d'implémentation recommandé
+
+1. **Sidebar** (rapide, 15 min)
+2. **Import CSV** (moyen, 1h)
+3. **Éditeur de templates** (complexe, 2-3h)
 

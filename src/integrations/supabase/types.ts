@@ -871,35 +871,44 @@ export type Database = {
       }
       document_templates: {
         Row: {
+          category: string
           content: string | null
           created_at: string | null
           created_by: string | null
+          description: string | null
           dynamic_fields: Json | null
           id: string
           is_active: boolean | null
           name: string
+          product_id: string | null
           type: string
           updated_at: string | null
         }
         Insert: {
+          category?: string
           content?: string | null
           created_at?: string | null
           created_by?: string | null
+          description?: string | null
           dynamic_fields?: Json | null
           id?: string
           is_active?: boolean | null
           name: string
+          product_id?: string | null
           type: string
           updated_at?: string | null
         }
         Update: {
+          category?: string
           content?: string | null
           created_at?: string | null
           created_by?: string | null
+          description?: string | null
           dynamic_fields?: Json | null
           id?: string
           is_active?: boolean | null
           name?: string
+          product_id?: string | null
           type?: string
           updated_at?: string | null
         }

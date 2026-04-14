@@ -21,6 +21,7 @@ import {
 import { Shield, User, Briefcase, Phone, Mail, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
+import { CsvUserImportDialog } from "@/components/admin/CsvUserImportDialog";
 
 type PartnerType = "agent_mandataire" | "courtier" | "agent_general" | "agent_sanlam" | "banquier" | "agent_independant";
 
@@ -306,7 +307,8 @@ export const AdminUsersTable = ({ roleFilter }: AdminUsersTableProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <CsvUserImportDialog onImportComplete={fetchUsers} />
         <CreateUserDialog onUserCreated={fetchUsers} />
       </div>
       <div className="rounded-lg border bg-card">

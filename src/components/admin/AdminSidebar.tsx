@@ -50,7 +50,7 @@ export function AdminSidebar() {
   const collapsed = state === "collapsed";
   const [badges, setBadges] = useState<BadgeCounts>({ pendingClaims: 0, newClients: 0, newPartners: 0, newAdmins: 0 });
 
-  const sectionKeys = ["operations", "users", "security", "commercial", "portfolio", "risk", "engagement", "config", "dev"];
+  const sectionKeys = ["operations", "access", "commercial", "portfolio", "risk", "engagement", "config", "dev"];
   const { openSections, toggle } = useSectionState(sectionKeys);
 
   useEffect(() => {
@@ -125,12 +125,10 @@ export function AdminSidebar() {
       { title: "Sinistres", url: "/admin/claims", icon: FileText, badge: badges.pendingClaims },
       { title: "Souscriptions", url: "/admin/subscriptions", icon: TrendingUp },
     ]},
-    { key: "users", label: "Utilisateurs", items: [
+    { key: "access", label: "Accès & Utilisateurs", items: [
       { title: "Clients", url: "/admin/users/clients", icon: Users, badge: badges.newClients },
       { title: "Agents", url: "/admin/users/partners", icon: Briefcase, badge: badges.newPartners },
       { title: "Administrateurs", url: "/admin/users/admins", icon: UserCheck, badge: badges.newAdmins },
-    ]},
-    { key: "security", label: "Sécurité", items: [
       { title: "Permissions", url: "/admin/permissions", icon: KeyRound },
       { title: "Audit", url: "/admin/audit", icon: ScrollText },
     ]},
@@ -154,6 +152,7 @@ export function AdminSidebar() {
       { title: "Règles de calcul", url: "/admin/calc-rules", icon: Calculator },
       { title: "Variables", url: "/admin/calc-variables", icon: Variable },
       { title: "Formulaires", url: "/admin/forms", icon: Settings },
+      { title: "Templates Documents", url: "/admin/document-templates", icon: FileText },
       { title: "Actualités Broker", url: "/admin/broker-news", icon: Newspaper },
       { title: "Monitoring IA", url: "/admin/ai", icon: Brain },
       { title: "Concurrence", url: "/admin/competitive", icon: Shield },

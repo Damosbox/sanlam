@@ -90,7 +90,7 @@ export function DocumentTemplateEditor({ initialData, onSave, onCancel, saving }
     const prev = viewMode;
     const next = newMode as "editor" | "source" | "preview";
     if (prev === "source" && next !== "source" && editor) {
-      editor.commands.setContent(sourceHtml, false);
+      editor.commands.setContent(sourceHtml);
     }
     if (next === "source" && editor) {
       setSourceHtml(editor.getHTML());

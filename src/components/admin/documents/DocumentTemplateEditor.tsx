@@ -85,18 +85,28 @@ export function DocumentTemplateEditor({ initialData, onSave, onCancel, saving }
     editor?.chain().focus().insertContent(variable).run();
   }, [editor]);
 
-  const handleSourceChange = (html: string) => {
-    setSourceHtml(html);
-    editor?.commands.setContent(html);
+  // Sync only when switching FROM source tab to another tab
+  const handleViewChange = (newMode: string) => {
+    const prev = viewMode;
+    const next = newMode as "editor" | "source" | "preview";
+    if (prev === "source" && next !== "source" && editor) {
+      editor.commands.setContent(sourceHtml, false);
+    }
+    if (next === "source" && editor) {
+      setSourceHtml(editor.getHTML());
+    }
+    setViewMode(next);
   };
 
   const handleSave = () => {
+    // If in source mode, use sourceHtml directly; otherwise get from editor
+    const content = viewMode === "source" ? sourceHtml : (editor?.getHTML() || sourceHtml);
     onSave({
       name,
       description,
       category,
       type: category,
-      content: sourceHtml,
+      content,
       is_active: isActive,
     });
   };
@@ -154,7 +164,7 @@ export function DocumentTemplateEditor({ initialData, onSave, onCancel, saving }
       </div>
 
       {/* Content area */}
-      <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)}>
+      <Tabs value={viewMode} onValueChange={handleViewChange}>
         <TabsList>
           <TabsTrigger value="editor">Éditeur</TabsTrigger>
           <TabsTrigger value="source"><Code className="h-3 w-3 mr-1" />Source HTML</TabsTrigger>
@@ -168,14 +178,17 @@ export function DocumentTemplateEditor({ initialData, onSave, onCancel, saving }
         <TabsContent value="source">
           <Textarea
             value={sourceHtml}
-            onChange={(e) => handleSourceChange(e.target.value)}
+            onChange={(e) => setSourceHtml(e.target.value)}
             className="min-h-[400px] font-mono text-xs"
+            placeholder="Collez votre HTML ici (y compris les balises <style>)…"
           />
         </TabsContent>
         <TabsContent value="preview">
-          <div
-            className="border rounded-lg p-6 min-h-[400px] prose prose-sm max-w-none bg-white"
-            dangerouslySetInnerHTML={{ __html: sourceHtml }}
+          <iframe
+            srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:16px;font-family:sans-serif;">${sourceHtml}</body></html>`}
+            className="w-full border rounded-lg min-h-[400px] bg-white"
+            sandbox="allow-same-origin"
+            title="Prévisualisation du template"
           />
         </TabsContent>
       </Tabs>

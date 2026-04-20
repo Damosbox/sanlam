@@ -86,9 +86,23 @@ Retourne les données en utilisant la fonction extract_vehicle_data.`;
                     type: "number",
                     description: "Score de confiance de 0 à 1",
                   },
+                  authenticityStatus: {
+                    type: "string",
+                    enum: ["authentic", "suspicious", "fake", "unverified"],
+                    description: "Statut d'authenticité",
+                  },
+                  authenticityScore: { type: "number", description: "0-100" },
+                  authenticityDetails: {
+                    type: "object",
+                    properties: {
+                      imageQuality: { type: "string" },
+                      anomaliesDetected: { type: "array", items: { type: "string" } },
+                      notes: { type: "string" },
+                    },
+                  },
                 },
                 required: ["vehicleBrand", "vehicleModel", "registrationNumber", "chassisNumber", "confidence"],
-                additionalProperties: false,
+                additionalProperties: true,
               },
             },
           },
@@ -136,6 +150,46 @@ Retourne les données en utilisant la fonction extract_vehicle_data.`;
 
     const extractedData = JSON.parse(toolCall.function.arguments);
     console.log("OCR Vehicle Registration extracted:", extractedData);
+
+    // Persist for compliance audit
+    try {
+      const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+      const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        let agentId: string | null = null;
+        let agentName: string | null = null;
+        const authHeader = req.headers.get("Authorization");
+        if (authHeader) {
+          const token = authHeader.replace("Bearer ", "");
+          const { data: userData } = await supabase.auth.getUser(token);
+          if (userData?.user) {
+            agentId = userData.user.id;
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("display_name, first_name, last_name")
+              .eq("id", agentId)
+              .maybeSingle();
+            agentName = profile?.display_name || `${profile?.first_name ?? ""} ${profile?.last_name ?? ""}`.trim() || null;
+          }
+        }
+        await supabase.from("ocr_scan_results").insert({
+          entity_type: entityType || "lead",
+          entity_id: entityId || agentId || "00000000-0000-0000-0000-000000000000",
+          entity_name: entityName || `${extractedData.vehicleBrand ?? ""} ${extractedData.vehicleModel ?? ""}`.trim(),
+          document_type: "CARTE_GRISE",
+          extracted_data: extractedData,
+          confidence_score: Math.round((extractedData.confidence || 0.8) * 100),
+          authenticity_status: extractedData.authenticityStatus || "unverified",
+          authenticity_score: extractedData.authenticityScore || 0,
+          authenticity_details: extractedData.authenticityDetails || {},
+          agent_id: agentId,
+          agent_name: agentName,
+        });
+      }
+    } catch (persistErr) {
+      console.error("Failed to persist OCR scan:", persistErr);
+    }
 
     return new Response(
       JSON.stringify({

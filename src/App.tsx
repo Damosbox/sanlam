@@ -77,6 +77,7 @@ import AdminDocumentTemplatesPage from "./pages/admin/DocumentTemplatesPage";
 import PaymentAmlDemoPage from "./pages/admin/dev/PaymentAmlDemoPage";
 import DsarPage from "./pages/admin/DsarPage";
 import CommissionsPage from "./pages/broker/CommissionsPage";
+import OCRValidationPage from "./pages/admin/OCRValidationPage";
 
 const queryClient = new QueryClient();
 
@@ -183,6 +184,7 @@ const App = () => (
             <Route path="calc-docs" element={<AdminCalcDocsPage />} />
             <Route path="document-templates" element={<AdminDocumentTemplatesPage />} />
             <Route path="dsar" element={<DsarPage />} />
+            <Route path="ocr-validation" element={<OCRValidationPage />} />
             <Route path="dev/payment-aml" element={<PaymentAmlDemoPage />} />
           </Route>
 

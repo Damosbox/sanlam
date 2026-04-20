@@ -4,7 +4,7 @@ import {
   LayoutDashboard, FileText, TrendingUp, Users, KeyRound, ScrollText, Trophy,
   ClipboardList, Brain, Shield, Database, Settings, Briefcase, Newspaper,
   UserCheck, Package, Calculator, Variable, PieChart, ArrowRightLeft,
-  ShieldCheck, Target, AlertTriangle, ChevronDown, Lock,
+  ShieldCheck, Target, AlertTriangle, ChevronDown, Lock, ScanSearch,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -143,6 +143,7 @@ export function AdminSidebar() {
     { key: "risk", label: "Pilotage — Risque", items: [
       { title: "Sinistralité", url: "/admin/loss-ratio", icon: AlertTriangle },
       { title: "Conformité KYC", url: "/admin/compliance", icon: ShieldCheck },
+      { title: "Validation OCR", url: "/admin/ocr-validation", icon: ScanSearch },
     ]},
     { key: "engagement", label: "Engagement", items: [
       { title: "Fidélité", url: "/admin/loyalty", icon: Trophy },

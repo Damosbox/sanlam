@@ -74,6 +74,7 @@ import AdminAgentPerformancePage from "./pages/admin/AgentPerformancePage";
 import AdminLossRatioPage from "./pages/admin/LossRatioPage";
 import AdminCalcDocsPage from "./pages/admin/CalcDocsPage";
 import AdminDocumentTemplatesPage from "./pages/admin/DocumentTemplatesPage";
+import PaymentAmlDemoPage from "./pages/admin/dev/PaymentAmlDemoPage";
 
 const queryClient = new QueryClient();
 
@@ -178,6 +179,7 @@ const App = () => (
             <Route path="compliance" element={<AdminComplianceDashboardPage />} />
             <Route path="calc-docs" element={<AdminCalcDocsPage />} />
             <Route path="document-templates" element={<AdminDocumentTemplatesPage />} />
+            <Route path="dev/payment-aml" element={<PaymentAmlDemoPage />} />
           </Route>
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

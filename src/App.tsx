@@ -75,6 +75,8 @@ import AdminLossRatioPage from "./pages/admin/LossRatioPage";
 import AdminCalcDocsPage from "./pages/admin/CalcDocsPage";
 import AdminDocumentTemplatesPage from "./pages/admin/DocumentTemplatesPage";
 import PaymentAmlDemoPage from "./pages/admin/dev/PaymentAmlDemoPage";
+import DsarPage from "./pages/admin/DsarPage";
+import CommissionsPage from "./pages/broker/CommissionsPage";
 
 const queryClient = new QueryClient();
 
@@ -143,6 +145,7 @@ const App = () => (
             <Route path="messages" element={<MessagesPage />} />
             <Route path="news" element={<NewsPage />} />
             <Route path="campaigns" element={<CampaignsPage />} />
+            <Route path="commissions" element={<CommissionsPage />} />
           </Route>
 
           {/* Admin Routes with Sidebar Layout */}
@@ -179,6 +182,7 @@ const App = () => (
             <Route path="compliance" element={<AdminComplianceDashboardPage />} />
             <Route path="calc-docs" element={<AdminCalcDocsPage />} />
             <Route path="document-templates" element={<AdminDocumentTemplatesPage />} />
+            <Route path="dsar" element={<DsarPage />} />
             <Route path="dev/payment-aml" element={<PaymentAmlDemoPage />} />
           </Route>
 

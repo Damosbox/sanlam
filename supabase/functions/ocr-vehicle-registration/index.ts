@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { imageBase64 } = await req.json();
+    const { imageBase64, entityType, entityId, entityName } = await req.json();
 
     if (!imageBase64) {
       return new Response(
@@ -27,12 +28,15 @@ serve(async (req) => {
     }
 
     const systemPrompt = `Tu es un expert en extraction de données de cartes grises / certificats d'immatriculation de véhicules, notamment les documents africains (Côte d'Ivoire, CEDEAO).
-Analyse l'image fournie et extrait les informations suivantes de manière structurée:
+Analyse l'image fournie, extrait les informations ET évalue l'authenticité du document :
 - Marque du véhicule (ex: Toyota, Hyundai, Peugeot)
 - Modèle du véhicule (ex: Corolla, Tucson, 308)
 - Numéro d'immatriculation (ex: AB 1234 CD)
 - Numéro de châssis / VIN
 - Date de première mise en circulation (format: YYYY-MM-DD) si visible
+
+Authenticité : qualité image, alignements, signes d'altération, cohérence VIN.
+Statuts : "authentic", "suspicious", "fake", "unverified".
 
 Retourne les données en utilisant la fonction extract_vehicle_data.`;
 

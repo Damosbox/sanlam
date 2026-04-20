@@ -52,6 +52,41 @@ _Dernière mise à jour : 24 avril 2026_
 
 ---
 
+## 🔗 Routes à vérifier dans la preview
+
+Base preview : `https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app`
+
+### B2B (espace Agent — login broker requis)
+| Route | Vérifie |
+|---|---|
+| [`/b2b/dashboard`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/b2b/dashboard) | UX.2.1 + UX.2.2 — KPIs agent + pipeline leads |
+| [`/b2b/sales`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/b2b/sales) | UX.1.1 (infos produit) + UX.1.3 (PDF devis SACI) + UX.5.2 (paiement Wave/SycaPay) + UX.5.3 (activation police) |
+| [`/b2b/claims/new`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/b2b/claims/new) | UX.3.1 — Stepper FNOL |
+| [`/b2b/commissions`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/b2b/commissions) | UX.2.3 — Vue commissions |
+| [`/b2b/portfolio?tab=prospects`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/b2b/portfolio?tab=prospects) | UX.2.1 — Liste leads |
+| [`/b2b/portfolio?tab=clients`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/b2b/portfolio?tab=clients) | UX.4.4 — Fiche client compliance (clic ligne) |
+
+### Admin (login admin / compliance requis)
+| Route | Vérifie |
+|---|---|
+| [`/admin/dashboard`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/admin/dashboard) | Dashboard admin global |
+| [`/admin/compliance`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/admin/compliance) | UX.4.1 + UX.4.2 + UX.4.3 — Dashboard compliance, filtres, pagination |
+| [`/admin/ocr-validation`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/admin/ocr-validation) | UX.1.2 + UX.4.6 + UX.5.1 — Badges authenticité OCR + drawer détail |
+| [`/admin/claims`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/admin/claims) | UX.3.2 — Table sinistres back-office |
+| [`/admin/permissions`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/admin/permissions) | UX.6.1 — Matrix RBAC rôles/permissions |
+| [`/admin/dsar`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/admin/dsar) | UX.6.2 — DSAR (export, anonymisation, rectification) |
+| [`/admin/audit`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/admin/audit) | UX.6.3 — Journal d'audit |
+
+### Modal/Composant à valider en contexte
+| Élément | Comment l'ouvrir |
+|---|---|
+| `AMLBlockedDialog` (UX.4.5) | `/admin/compliance` ou fiche client → action "Bloquer/Approuver KYC" |
+| `OCRDetailDrawer` (UX.5.1) | `/admin/ocr-validation` → clic sur une ligne du tableau |
+| `ProductInfoSheet` (UX.1.1) | `/b2b/sales` → étape produit → bouton ℹ️ |
+| PDF devis SACI (UX.1.3) | `/b2b/sales` → étape récap → bouton "Télécharger devis PDF" |
+
+---
+
 ## 🛡️ Module Validation OCR Conformité — détail technique
 
 ### Contexte

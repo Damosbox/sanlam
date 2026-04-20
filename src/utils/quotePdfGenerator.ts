@@ -157,12 +157,12 @@ export function generateQuotePdf(state: GuidedSalesState, premium: PremiumBreakd
 
   // === Section Souscripteur ===
   y = drawSectionTitle(doc, y, "Souscripteur");
-  const client = state.clientInfo || {};
+  const client = state.clientIdentification;
   const clientRows: [string, string][] = [
     ["Nom complet", `${client.firstName || "—"} ${client.lastName || ""}`.trim()],
     ["Email", client.email || "—"],
     ["Téléphone", client.phone || "—"],
-    ["Adresse", client.address || "—"],
+    ["Pièce d'identité", `${client.identityDocumentType || "—"} ${client.identityDocumentNumber || ""}`.trim()],
   ];
   autoTable(doc, {
     startY: y,
@@ -181,22 +181,25 @@ export function generateQuotePdf(state: GuidedSalesState, premium: PremiumBreakd
   y = drawSectionTitle(doc, y, productType === "auto" ? "Véhicule & Garanties" : "Couverture Pack Obsèques");
 
   const needs = state.needsAnalysis;
+  const sub = state.subscription;
+  const obs = state.packObsequesData;
   const charRows: [string, string][] = [];
   if (productType === "auto") {
     charRows.push(
-      ["Marque / Modèle", `${needs.vehicleBrand || "—"} ${needs.vehicleModel || ""}`.trim()],
-      ["Immatriculation", needs.licensePlate || "—"],
-      ["Puissance fiscale", needs.fiscalPower ? `${needs.fiscalPower} CV` : "—"],
-      ["Énergie", needs.energy || "—"],
-      ["Usage", needs.usage || "—"],
+      ["Marque / Modèle", `${sub.vehicleBrand || needs.vehicleBrand || "—"} ${sub.vehicleModel || needs.vehicleModel || ""}`.trim()],
+      ["Immatriculation", sub.vehicleRegistrationNumber || "—"],
+      ["Puissance fiscale", needs.vehicleFiscalPower ? `${needs.vehicleFiscalPower} CV` : "—"],
+      ["Énergie", needs.vehicleEnergy || "—"],
+      ["Nombre de places", needs.vehicleSeats ? String(needs.vehicleSeats) : "—"],
       ["Bonus / Malus", needs.bonusMalus || "—"],
-      ["Formule choisie", state.coverage?.formula || "—"]
+      ["Formule choisie", state.coverage?.planTier || "—"]
     );
   } else {
     charRows.push(
-      ["Capital garanti", needs.capital ? formatFCFA(Number(needs.capital)) : "—"],
-      ["Durée du contrat", needs.duration ? `${needs.duration} ans` : "—"],
-      ["Nombre de bénéficiaires", String(needs.beneficiariesCount || "—")]
+      ["Formule", obs?.formula || "—"],
+      ["Type d'adhésion", obs?.adhesionType || "—"],
+      ["Périodicité", obs?.periodicity || "—"],
+      ["Date d'effet", obs?.effectiveDate || "—"],
     );
   }
   autoTable(doc, {

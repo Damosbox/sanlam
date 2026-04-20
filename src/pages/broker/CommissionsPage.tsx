@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Wallet, TrendingUp, Clock, CheckCircle2, Download, Search, Calendar } from "lucide-react";
 import { exportToCSV } from "@/utils/exportCsv";
-import { formatCurrency } from "@/utils/formatCurrency";
+import { formatFCFA as formatCurrency } from "@/utils/formatCurrency";
 
 interface Commission {
   id: string;

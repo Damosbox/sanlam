@@ -1,105 +1,80 @@
 
 
-## Analyse du registre UX Tasks SAZ 2026
+## Validation OCR — Module Conformité Admin
 
-### Vue d'ensemble du document
-52 tâches UX réparties sur 3 priorités :
-- **P0 MVP (16)** — deadline 17 avril : Parcours achat, Dashboard Agent, Claims, Compliance Admin, KYC/Paiement
-- **P1 Code Freeze (12)** — deadline 24 avril : Activation police, RBAC, DSAR, Audit
-- **P2 LOT 2 (24)** — mai-sept : Profil 360°, Marketing, Mobile Flutter, Portail B2C
+### Contexte clarifié
+- **Pas de changement côté agent B2B** : l'OCR au niveau KYC (depuis `LeadKYCSection` / `ClientKYCSection`) reste transparent pour l'agent.
+- **Nouvelle feature côté Admin Conformité uniquement** : l'équipe conformité voit un tableau de bord des scans OCR avec authenticité + score de confiance pour audit et levée de doute.
 
-### Croisement avec l'état actuel du codebase
+### Ce qui sera créé
 
-| Catégorie | Tâche registre | Statut codebase réel |
-|---|---|---|
-| **UX.1.1** Fiche produit dans flow | ✅ Partiel — `ProductCard`, `ProductSelectionStep` existent mais fiche détaillée manque |
-| **UX.1.2** Badge KYC R/Y/G | ✅ Fait — traffic light dans `ClientKYCSection` + `LeadKYCSection` |
-| **UX.1.3** PDF reçu devis | ⚠️ Partiel — `send-policy-documents` existe, template visuel à faire |
-| **UX.2.1** Vue Leads pipeline | ✅ Fait — `LeadsDataTable`, `LeadCards`, `LeadInbox` |
-| **UX.2.2** KPIs agent | ✅ Fait — `DashboardKPIs`, `KPICard`, `BrokerAnalytics` |
-| **UX.2.3** Vue Commissions | ⚠️ Partiel — KPI commission dans `DashboardPage` mais pas de détail/historique filtrable |
-| **UX.3.1** FNOL stepper | ✅ Fait — `ClaimNew.tsx`, `ClaimOCRUploader` |
-| **UX.3.2** Table sinistres back-office | ✅ Fait — `AdminClaimsTable` |
-| **UX.4.1-4.6** Compliance Admin | ✅ Fait — `ComplianceDashboardPage`, `AMLBlockedDialog`, scoring KYC |
-| **UX.5.1** OCR Regula validation | ⚠️ Partiel — `ocr-identity` fonctionne, écran validation dédié manque |
-| **UX.5.2** Parcours paiement | ✅ Fait (mock) — `PaymentStatusDialog`, `MobilePaymentStep`, `BindingStep` |
-| **UX.5.3** Activation police | ✅ Fait — `IssuanceStep`, `SignatureEmissionStep` |
-| **UX.6.1** RBAC matrix | ✅ Fait — `AdminPermissions`, `PermissionsPage` |
-| **UX.6.2** DSAR | ❌ **RIEN** — pas d'interface export/anonymisation/rectification |
-| **UX.6.3** Journal d'audit UI | ✅ Fait — `AdminAuditLogs`, `AuditPage` |
-| **UX.7.1** Profil Client 360° onglets | ✅ Fait — `ClientDetailSheet` avec tabs |
-| **UX.7.2** Scoring V2 | ✅ Fait — `ClientValueScore`, `ScoreDetailPopover` |
-| **UX.7.3-7.4** Claims V2 kanban + SLA | ❌ **RIEN** — pas de kanban, pas de dashboard SLA CIMA |
-| **UX.8.1-8.2** Cross-selling + Sales Support | ✅ Fait — `UpsellSidebar`, cross-sell dans `PaymentStatusDialog`, FAQs tab |
-| **UX.8.3-8.4** Marketing campagnes | ❌ **Placeholder** — `CampaignsPage` est vide ("en cours de développement") |
-| **UX.9.1** BI Dashboard (funnel, NPS) | ⚠️ Partiel — `AdminAnalytics`, `AdminNPSByProduct` existent, funnel manque |
-| **UX.9.2** DSAR avancée | ❌ **RIEN** |
-| **UX.10.1** Data Observatory | ❌ **RIEN** |
-| **UX.10.2** SME Club | ❌ **RIEN** |
-| **UX.10.3** Lead Gen V2 landing | ❌ **RIEN** |
-| **UX.10.4** Cross-sell V2 IA NBO/NBA | ⚠️ Partiel — `AIRecommendations` dans dashboard broker existe, pas temps réel |
-| **UX.10.5** Competitive Analysis | ✅ Fait — `CompetitiveAnalyzer`, `ClientValueNote` |
-| **UX.10.6** LMS formations | ⚠️ Placeholder — page `Formation.tsx` existe |
-| **UX.M1-M8** Mobile Flutter | ❌ **Hors scope Lovable** — React web uniquement |
-| **UX.C1-C8** Portail Client B2C | ❌ **Plateforme repositionnée B2B only** (mémoire `partner-exclusive-platform-ui-redesign`) |
+**1. Stockage des résultats OCR (DB)**
+Nouvelle table `ocr_scan_results` :
+- `id`, `created_at`
+- `entity_type` ('lead' | 'client'), `entity_id`
+- `document_type` ('CNI' | 'PERMIS' | 'CARTE_GRISE' | 'PASSEPORT')
+- `document_image_url` (storage `client-documents`)
+- `extracted_data` (jsonb — champs extraits)
+- `confidence_score` (numeric 0-100)
+- `authenticity_status` ('authentic' | 'suspicious' | 'fake' | 'unverified')
+- `authenticity_details` (jsonb — détections : altération, photo recopiée, MRZ valide, etc.)
+- `agent_id` (uuid — qui a scanné)
+- `reviewed_by`, `reviewed_at`, `review_status` ('pending' | 'validated' | 'rejected'), `review_notes`
 
-### Synthèse — Ce qui reste à faire côté web Lovable
+RLS : lecture admin + compliance + backoffice_conformite. Insert via Edge Function service role.
 
-**Gaps réels implémentables (triés par priorité) :**
+**2. Edge Functions enrichies**
+Modifier `ocr-identity` et `ocr-vehicle-registration` pour :
+- Demander à l'IA un score d'authenticité (cohérence MRZ, qualité image, détection anomalies)
+- Persister automatiquement le résultat dans `ocr_scan_results` avec `agent_id` (depuis JWT)
+- Uploader l'image source vers `client-documents/ocr-scans/`
 
-1. **P0/P1 — DSAR (UX.6.2)** : Interface admin export données client (JSON/CSV), anonymisation, rectification — conformité Loi CI 2013-450
-2. **P0 — Commissions détaillées (UX.2.3)** : Page dédiée avec solde courant, détail par police, historique filtrable, export
-3. **P0 — Fiche produit enrichie dans parcours (UX.1.1)** : Sheet/modal d'info produit accessible depuis `ProductSelectionStep` avec garanties, exclusions, FAQ
-4. **P0 — Template visuel PDF devis (UX.1.3)** : Amélioration `send-policy-documents` avec template SACI (logo, couleurs, mise en page)
-5. **P0 — Écran validation OCR Regula (UX.5.1)** : Dialog post-OCR avec preview document + champs extraits éditables + indicateur authenticité
-6. **P1 — Claims V2 (UX.7.3-7.4)** : Kanban assignation sinistres + Dashboard SLA avec alertes CIMA >48h
-7. **P1 — Module Marketing (UX.8.3-8.4)** : Création campagne multi-canal + dashboard performance
-8. **P2 — BI Funnel (UX.9.1)** : Graphiques funnel vente + cycle sinistre
-9. **P2 — Data Observatory (UX.10.1)** : Vue qualité données (doublons, champs manquants, golden record)
-10. **P2 — SME Club (UX.10.2)** : Segments PME + avantages + tarifs négociés
-11. **P2 — LMS (UX.10.6)** : Catalogue formations + quiz + certificat
-12. **P2 — Cross-sell V2 NBO/NBA (UX.10.4)** : Bandeau recommandation IA temps réel dashboard agent
-13. **P2 — Lead Gen V2 (UX.10.3)** : Landing pages configurables + formulaires publics
+**3. Page Admin `/admin/ocr-validation`**
+Nouvelle page `OCRValidationPage.tsx` accessible aux rôles `admin`, `compliance`, `backoffice_conformite` :
 
-**Hors scope Lovable (à documenter auprès de l'équipe) :**
-- UX.M1-M8 (8 tâches Mobile Flutter) — Lovable fait du React web uniquement
-- UX.C1-C8 (8 tâches Portail Client B2C) — plateforme volontairement repositionnée B2B only (décision mémoire projet)
+**KPIs en haut (4 cartes) :**
+- Total scans (période)
+- Authenticité OK (vert)
+- Suspicieux (orange)
+- À réviser (rouge)
 
-### Stratégie d'implémentation recommandée
+**Filtres :**
+- PeriodFilter, type document, statut authenticité, statut révision, recherche par nom client
 
-**Sprint 1 — MVP Compliance & Commercial (1-2j)**
-- DSAR Admin Interface (export/anonymisation/rectification)
-- Page Commissions détaillée broker
-- Fiche produit enrichie (drawer depuis ProductSelectionStep)
+**Tableau principal :**
+| Date | Agent | Client/Prospect | Document | Confiance | Authenticité | Statut révision | Actions |
 
-**Sprint 2 — Documents & OCR (1j)**
-- Template visuel PDF (HTML éditeur déjà en place → créer template "Devis SACI")
-- Écran validation OCR Regula (Dialog dédié)
+**Drawer de détail (clic ligne) :**
+- Aperçu image document à gauche
+- Champs extraits à droite (lecture seule)
+- Score de confiance par champ (badge couleur)
+- Indicateur authenticité Regula (🛡️ Authentique / ⚠️ Suspect / ❌ Falsifié)
+- Détails techniques (MRZ, anomalies détectées)
+- Boutons conformité : **[✓ Valider]** / **[✗ Rejeter + bloquer KYC]** / **Ajouter note**
 
-**Sprint 3 — Claims V2 (1-2j)**
-- Kanban sinistres (`AdminClaimsKanban`)
-- Dashboard SLA CIMA avec alertes
+**4. Intégration sidebar admin**
+Ajouter entrée "Validation OCR" dans `AdminSidebar` sous le groupe "Conformité" (à côté de Conformité KYC et Audit).
 
-**Sprint 4 — Marketing (1-2j)**
-- Module création campagne multi-canal
-- Dashboard performance campagnes
+**5. Lien retour KYC**
+Quand conformité rejette un scan → marquer `screening_blocked = true` sur la fiche KYC concernée + créer entrée audit log.
 
-**Sprint 5 — LOT 2 Analytics & IA (2-3j)**
-- BI Funnel + NPS avancé
-- Data Observatory
-- Cross-sell NBO/NBA temps réel
-- SME Club, LMS, Lead Gen landing
+### Fichiers impactés
 
-### Questions avant de démarrer
+**Création :**
+- Migration DB : table `ocr_scan_results` + RLS + index
+- `src/pages/admin/OCRValidationPage.tsx`
+- `src/components/admin/ocr/OCRScansTable.tsx`
+- `src/components/admin/ocr/OCRDetailDrawer.tsx`
+- `src/components/admin/ocr/OCRAuthenticityBadge.tsx`
 
-1. **Priorité** : commence-t-on par le **Sprint 1 (DSAR + Commissions + Fiche produit)** comme bloc MVP P0, ou tu préfères attaquer une feature précise ?
-2. **Mobile & Portail B2C** : je confirme auprès de ton équipe que ces 16 tâches sont hors scope Lovable (Flutter) et décision produit (B2B only) ?
-3. **Découpage** : chaque Sprint = un plan dédié séparé pour garder les livraisons atomiques et testables ?
+**Modification :**
+- `supabase/functions/ocr-identity/index.ts` (ajout score authenticité + persistence)
+- `supabase/functions/ocr-vehicle-registration/index.ts` (idem)
+- `src/App.tsx` (route `/admin/ocr-validation`)
+- `src/components/admin/AdminSidebar.tsx` (entrée menu)
 
-<lov-actions>
-<lov-suggestion message="Démarre le Sprint 1 : DSAR Admin + page Commissions détaillée + Fiche produit enrichie">Démarrer Sprint 1 MVP</lov-suggestion>
-<lov-suggestion message="Attaque en priorité la DSAR Admin (export données client, anonymisation, rectification) conformité Loi CI 2013-450">DSAR en priorité</lov-suggestion>
-<lov-suggestion message="Implémente le module Claims V2 : kanban assignation sinistres + dashboard SLA CIMA avec alertes >48h">Claims V2 Kanban + SLA</lov-suggestion>
-<lov-suggestion message="Crée le module Marketing complet : création campagne multi-canal Email/SMS/WhatsApp + dashboard performance">Module Marketing</lov-suggestion>
-<lov-suggestion message="Ajoute un template 'Devis SACI' par défaut dans l'éditeur HTML de documents avec logo et couleurs de marque">Template PDF Devis SACI</lov-suggestion>
-</lov-actions>
+### Notes techniques
+- **Aucun impact** sur `ClientIdentificationStep`, `LeadKYCSection`, `ClientKYCSection`, `ClaimOCRUploader` côté UX agent.
+- Score d'authenticité simulé via prompt enrichi à Gemini (analyse cohérence MRZ, qualité image, détection altérations) — pas d'intégration Regula réelle (mock IA crédible).
+- Permission RBAC dédiée : `ocr.validate_authenticity` rattachée aux rôles admin/compliance/backoffice_conformite.
+

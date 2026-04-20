@@ -64,12 +64,17 @@ export function OCRDetailDrawer({ scan, open, onClose, onReviewed }: Props) {
 
       // If rejected, block KYC on the related entity
       if (decision === "rejected") {
-        const table = scan.entity_type === "client" ? "client_kyc_compliance" : "lead_kyc_compliance";
-        const idCol = scan.entity_type === "client" ? "client_id" : "lead_id";
-        await supabase
-          .from(table)
-          .update({ screening_blocked: true })
-          .eq(idCol, scan.entity_id);
+        if (scan.entity_type === "client") {
+          await supabase
+            .from("client_kyc_compliance")
+            .update({ screening_blocked: true })
+            .eq("client_id", scan.entity_id);
+        } else {
+          await supabase
+            .from("lead_kyc_compliance")
+            .update({ screening_blocked: true })
+            .eq("lead_id", scan.entity_id);
+        }
 
         await supabase.from("audit_logs").insert({
           action: "ocr_scan_rejected",

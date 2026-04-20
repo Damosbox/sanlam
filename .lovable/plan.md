@@ -1,80 +1,77 @@
+# Plan d'avancement — SAZ 2026 (LOT 1 MVP)
 
+_Dernière mise à jour : 24 avril 2026_
 
-## Validation OCR — Module Conformité Admin
+## ✅ LOT 1 — MVP (Go-Live 3 mai) — Tâches livrées jusqu'au 24 avril
 
-### Contexte clarifié
-- **Pas de changement côté agent B2B** : l'OCR au niveau KYC (depuis `LeadKYCSection` / `ClientKYCSection`) reste transparent pour l'agent.
-- **Nouvelle feature côté Admin Conformité uniquement** : l'équipe conformité voit un tableau de bord des scans OCR avec authenticité + score de confiance pour audit et levée de doute.
+### Parcours achat (P0 — 17 avril)
+| ID | Tâche | Route / Composant | Statut |
+|---|---|---|---|
+| UX.1.1 | Page infos produit dans flow cotation | `/b2b/sales` → `ProductInfoSheet` | ✅ |
+| UX.1.2 | Badge scoring KYC R/Y/G (admin) | `/admin/ocr-validation` → `OCRAuthenticityBadge` | ✅ |
+| UX.1.3 | PDF reçu devis branding SACI | `QuoteSummaryCard` → `quotePdfGenerator.ts` | ✅ |
 
-### Ce qui sera créé
+### Dashboard Agent (P0 — 17 avril)
+| ID | Tâche | Route / Composant | Statut |
+|---|---|---|---|
+| UX.2.1 | Vue Leads + pipeline | `/b2b/dashboard` → `LeadsPipeline` | ✅ |
+| UX.2.2 | Vue KPIs agent | `/b2b/dashboard` → `DashboardKPIs` | ✅ |
+| UX.2.3 | Vue Commissions | `/b2b/commissions` → `CommissionsPage` | ✅ |
 
-**1. Stockage des résultats OCR (DB)**
-Nouvelle table `ocr_scan_results` :
-- `id`, `created_at`
-- `entity_type` ('lead' | 'client'), `entity_id`
-- `document_type` ('CNI' | 'PERMIS' | 'CARTE_GRISE' | 'PASSEPORT')
-- `document_image_url` (storage `client-documents`)
-- `extracted_data` (jsonb — champs extraits)
-- `confidence_score` (numeric 0-100)
-- `authenticity_status` ('authentic' | 'suspicious' | 'fake' | 'unverified')
-- `authenticity_details` (jsonb — détections : altération, photo recopiée, MRZ valide, etc.)
-- `agent_id` (uuid — qui a scanné)
-- `reviewed_by`, `reviewed_at`, `review_status` ('pending' | 'validated' | 'rejected'), `review_notes`
+### Claims FNOL (P0 — 17 avril)
+| ID | Tâche | Route / Composant | Statut |
+|---|---|---|---|
+| UX.3.1 | Stepper déclaration sinistre | `/b2b/claims/new` → `ClaimNewPage` | ✅ |
+| UX.3.2 | Table sinistres back-office | `/admin/claims` → `AdminClaimsTable` | ✅ |
 
-RLS : lecture admin + compliance + backoffice_conformite. Insert via Edge Function service role.
+### Compliance Admin (P0 — 17 avril)
+| ID | Tâche | Route / Composant | Statut |
+|---|---|---|---|
+| UX.4.1 | Dashboard Compliance (badges R/Y/G) | `/admin/compliance` → `ComplianceDashboardPage` | ✅ |
+| UX.4.2 | Filtres dropdowns + badges | `ComplianceDashboardPage` | ✅ |
+| UX.4.3 | Pagination + headers triables | composant `Table` réutilisable | ✅ |
+| UX.4.4 | Fiche client compliance 2 colonnes | `ClientKYCSection` / `ClientDetailSheet` | ✅ |
+| UX.4.5 | Modal approbation/blocage transaction | `AMLBlockedDialog` | ✅ |
+| UX.4.6 | Détail scoring badge admin | `OCRDetailDrawer` + `OCRAuthenticityBadge` | ✅ |
 
-**2. Edge Functions enrichies**
-Modifier `ocr-identity` et `ocr-vehicle-registration` pour :
-- Demander à l'IA un score d'authenticité (cohérence MRZ, qualité image, détection anomalies)
-- Persister automatiquement le résultat dans `ocr_scan_results` avec `agent_id` (depuis JWT)
-- Uploader l'image source vers `client-documents/ocr-scans/`
+### KYC OCR & Paiement (P0 — 17 avril)
+| ID | Tâche | Route / Composant | Statut |
+|---|---|---|---|
+| UX.5.1 | Résultat OCR Regula validation | `/admin/ocr-validation` + `OCRDetailDrawer` | ✅ |
+| UX.5.2 | Parcours paiement Wave/SycaPay | `MobilePaymentStep` + `PaymentStatusDialog` | ✅ |
 
-**3. Page Admin `/admin/ocr-validation`**
-Nouvelle page `OCRValidationPage.tsx` accessible aux rôles `admin`, `compliance`, `backoffice_conformite` :
+### Activation & RBAC (P1 — 24 avril)
+| ID | Tâche | Route / Composant | Statut |
+|---|---|---|---|
+| UX.5.3 | Confirmation activation police + PDF | `IssuanceStep` + edge fn `send-policy-documents` | ✅ |
+| UX.6.1 | Matrix rôles & permissions | `/admin/permissions` → `AdminPermissions` | ✅ |
+| UX.6.2 | DSAR (export/anonymisation/rectif.) | `/admin/dsar` → `DsarPage` | ✅ |
+| UX.6.3 | Journal d'audit Admin UI | `/admin/audit` → `AdminAuditLogs` | ✅ |
 
-**KPIs en haut (4 cartes) :**
-- Total scans (période)
-- Authenticité OK (vert)
-- Suspicieux (orange)
-- À réviser (rouge)
+**Score : 20/20 tâches MVP P0+P1 livrées** ✅
 
-**Filtres :**
-- PeriodFilter, type document, statut authenticité, statut révision, recherche par nom client
+---
 
-**Tableau principal :**
-| Date | Agent | Client/Prospect | Document | Confiance | Authenticité | Statut révision | Actions |
+## 🛡️ Module Validation OCR Conformité — détail technique
 
-**Drawer de détail (clic ligne) :**
-- Aperçu image document à gauche
-- Champs extraits à droite (lecture seule)
-- Score de confiance par champ (badge couleur)
-- Indicateur authenticité Regula (🛡️ Authentique / ⚠️ Suspect / ❌ Falsifié)
-- Détails techniques (MRZ, anomalies détectées)
-- Boutons conformité : **[✓ Valider]** / **[✗ Rejeter + bloquer KYC]** / **Ajouter note**
+### Contexte
+- **Pas de changement côté agent B2B** : OCR KYC reste transparent (`LeadKYCSection`, `ClientKYCSection`).
+- **Feature Admin Conformité** : tableau de bord scans OCR avec authenticité + score de confiance.
 
-**4. Intégration sidebar admin**
-Ajouter entrée "Validation OCR" dans `AdminSidebar` sous le groupe "Conformité" (à côté de Conformité KYC et Audit).
+### Implémenté
+- **Table `ocr_scan_results`** (entity_type, document_type, extracted_data, confidence_score, authenticity_status, authenticity_details, agent_id, review_status…) avec RLS admin/compliance/backoffice_conformite.
+- **Edge Functions enrichies** : `ocr-identity` et `ocr-vehicle-registration` retournent un score d'authenticité IA (Gemini — cohérence MRZ, qualité, anomalies) et persistent dans `ocr_scan_results`.
+- **Page `/admin/ocr-validation`** (`OCRValidationPage.tsx`) : KPIs + filtres + tableau + drawer détail (image, champs extraits, badge authenticité, actions valider/rejeter).
+- **Composants** : `OCRScansTable`, `OCRDetailDrawer`, `OCRAuthenticityBadge`.
+- **Sidebar Admin** : entrée "Validation OCR" sous Conformité.
 
-**5. Lien retour KYC**
-Quand conformité rejette un scan → marquer `screening_blocked = true` sur la fiche KYC concernée + créer entrée audit log.
+---
 
-### Fichiers impactés
+## 📋 Prochaines étapes — LOT 2 Phase 1
 
-**Création :**
-- Migration DB : table `ocr_scan_results` + RLS + index
-- `src/pages/admin/OCRValidationPage.tsx`
-- `src/components/admin/ocr/OCRScansTable.tsx`
-- `src/components/admin/ocr/OCRDetailDrawer.tsx`
-- `src/components/admin/ocr/OCRAuthenticityBadge.tsx`
+À démarrer après validation visuelle finale du branding SACI sur PDF devis (UX.1.3) :
 
-**Modification :**
-- `supabase/functions/ocr-identity/index.ts` (ajout score authenticité + persistence)
-- `supabase/functions/ocr-vehicle-registration/index.ts` (idem)
-- `src/App.tsx` (route `/admin/ocr-validation`)
-- `src/components/admin/AdminSidebar.tsx` (entrée menu)
-
-### Notes techniques
-- **Aucun impact** sur `ClientIdentificationStep`, `LeadKYCSection`, `ClientKYCSection`, `ClaimOCRUploader` côté UX agent.
-- Score d'authenticité simulé via prompt enrichi à Gemini (analyse cohérence MRZ, qualité image, détection altérations) — pas d'intégration Regula réelle (mock IA crédible).
-- Permission RBAC dédiée : `ocr.validate_authenticity` rattachée aux rôles admin/compliance/backoffice_conformite.
-
+1. **Profil Client 360°** — onglets Contrats / Sinistres / Paiements / Documents
+2. **Claims V2** — Kanban d'assignation + dashboard SLA CIMA (>48h)
+3. **Module Marketing** — campagnes multi-canal + dashboard performance
+4. **Portail Client B2C** (UX.C5–C8) — souscription autonome, avenant, FNOL B2C, messagerie sécurisée

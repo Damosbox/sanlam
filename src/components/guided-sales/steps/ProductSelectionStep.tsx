@@ -1,11 +1,13 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Car, Shield, Construction, Heart, Home, Plane, Umbrella } from "lucide-react";
+import { Car, Shield, Construction, Heart, Home, Plane, Umbrella, Info } from "lucide-react";
 import { GuidedSalesState, ProductCategory, SelectedProductType } from "../types";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ProductInfoSheet } from "../product-info/ProductInfoSheet";
 
 interface ProductSelectionStepProps {
   state: GuidedSalesState;
@@ -20,9 +22,10 @@ interface ProductCardProps {
   onSelect: () => void;
   disabled?: boolean;
   comingSoon?: boolean;
+  onShowInfo?: () => void;
 }
 
-const ProductCard = ({ icon, title, description, onSelect, disabled, comingSoon }: ProductCardProps) => (
+const ProductCard = ({ icon, title, description, onSelect, disabled, comingSoon, onShowInfo }: ProductCardProps) => (
   <Card className="bg-blue-50 dark:bg-blue-950/30 border-0 hover:shadow-lg transition-all duration-300 group h-full">
     <CardContent className="p-6 flex flex-col items-center text-center gap-4 h-full">
       <div className="w-16 h-16 rounded-full bg-white dark:bg-background flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
@@ -38,13 +41,17 @@ const ProductCard = ({ icon, title, description, onSelect, disabled, comingSoon 
           <span>Parcours en construction</span>
         </div>
       ) : (
-        <Button 
-          onClick={onSelect} 
-          disabled={disabled}
-          className="w-full mt-auto"
-        >
-          Démarrer le devis
-        </Button>
+        <div className="w-full mt-auto space-y-2">
+          {onShowInfo && (
+            <Button variant="outline" size="sm" onClick={onShowInfo} className="w-full">
+              <Info className="h-3.5 w-3.5 mr-1.5" />
+              En savoir plus
+            </Button>
+          )}
+          <Button onClick={onSelect} disabled={disabled} className="w-full">
+            Démarrer le devis
+          </Button>
+        </div>
       )}
     </CardContent>
   </Card>
@@ -67,6 +74,7 @@ const getIconForProduct = (productType: string | null, category: string) => {
 };
 
 export const ProductSelectionStep = ({ state, onUpdate, onNext }: ProductSelectionStepProps) => {
+  const [infoProduct, setInfoProduct] = useState<{ type: string; category: ProductCategory } | null>(null);
   const { data: dbProducts, isLoading } = useQuery({
     queryKey: ["products-active"],
     queryFn: async () => {
@@ -108,6 +116,11 @@ export const ProductSelectionStep = ({ state, onUpdate, onNext }: ProductSelecti
         p.product_type ?? p.id
       )}
       comingSoon={!FLOW_ENABLED_PRODUCTS.has(p.product_type ?? "")}
+      onShowInfo={
+        FLOW_ENABLED_PRODUCTS.has(p.product_type ?? "")
+          ? () => setInfoProduct({ type: p.product_type!, category: isNonVie(p.category) ? "non-vie" : "vie" })
+          : undefined
+      }
     />
   );
 
@@ -135,6 +148,7 @@ export const ProductSelectionStep = ({ state, onUpdate, onNext }: ProductSelecti
                 title="Assurance Auto"
                 description="Assurance automobile tous risques ou responsabilité civile pour véhicules particuliers et professionnels"
                 onSelect={() => handleSelectProduct("non-vie", "auto")}
+                onShowInfo={() => setInfoProduct({ type: "auto", category: "non-vie" })}
               />
             )}
             {isLoading && <Skeleton className="h-64 rounded-lg" />}
@@ -151,6 +165,7 @@ export const ProductSelectionStep = ({ state, onUpdate, onNext }: ProductSelecti
                 title="Pack Obsèques"
                 description="Garantit le versement d'un capital défini en cas de décès pour couvrir les frais funéraires"
                 onSelect={() => handleSelectProduct("vie", "pack_obseques")}
+                onShowInfo={() => setInfoProduct({ type: "pack_obseques", category: "vie" })}
               />
             )}
             {isLoading && <Skeleton className="h-64 rounded-lg" />}
@@ -158,6 +173,13 @@ export const ProductSelectionStep = ({ state, onUpdate, onNext }: ProductSelecti
           </div>
         </TabsContent>
       </Tabs>
+
+      <ProductInfoSheet
+        open={!!infoProduct}
+        onClose={() => setInfoProduct(null)}
+        productType={infoProduct?.type ?? null}
+        onSelect={() => infoProduct && handleSelectProduct(infoProduct.category, infoProduct.type as SelectedProductType)}
+      />
     </div>
   );
 };

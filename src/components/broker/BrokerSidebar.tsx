@@ -29,6 +29,7 @@ import {
   Megaphone,
   Sparkles,
   FileSearch,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -196,6 +197,7 @@ export function BrokerSidebar() {
       label: "Performances",
       items: [
         { title: "Statistiques", url: "/b2b/stats", icon: PieChart },
+        { title: "Commissions", url: "/b2b/commissions", icon: Wallet },
         { title: "Rapports", url: "/b2b/reports", icon: FileBarChart, disabled: true },
       ],
     },

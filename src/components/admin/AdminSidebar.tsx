@@ -4,7 +4,7 @@ import {
   LayoutDashboard, FileText, TrendingUp, Users, KeyRound, ScrollText, Trophy,
   ClipboardList, Brain, Shield, Database, Settings, Briefcase, Newspaper,
   UserCheck, Package, Calculator, Variable, PieChart, ArrowRightLeft,
-  ShieldCheck, Target, AlertTriangle, ChevronDown,
+  ShieldCheck, Target, AlertTriangle, ChevronDown, Lock,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -131,6 +131,7 @@ export function AdminSidebar() {
       { title: "Administrateurs", url: "/admin/users/admins", icon: UserCheck, badge: badges.newAdmins },
       { title: "Permissions", url: "/admin/permissions", icon: KeyRound },
       { title: "Audit", url: "/admin/audit", icon: ScrollText },
+      { title: "DSAR / RGPD", url: "/admin/dsar", icon: Lock },
     ]},
     { key: "commercial", label: "Pilotage — Commercial", items: [
       { title: "Conversions", url: "/admin/conversions", icon: ArrowRightLeft },

@@ -1503,6 +1503,72 @@ export type Database = {
         }
         Relationships: []
       }
+      ocr_scan_results: {
+        Row: {
+          agent_id: string | null
+          agent_name: string | null
+          authenticity_details: Json | null
+          authenticity_score: number | null
+          authenticity_status: string
+          confidence_score: number
+          created_at: string
+          document_image_url: string | null
+          document_type: string
+          entity_id: string
+          entity_name: string | null
+          entity_type: string
+          extracted_data: Json
+          id: string
+          review_notes: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          agent_id?: string | null
+          agent_name?: string | null
+          authenticity_details?: Json | null
+          authenticity_score?: number | null
+          authenticity_status?: string
+          confidence_score?: number
+          created_at?: string
+          document_image_url?: string | null
+          document_type: string
+          entity_id: string
+          entity_name?: string | null
+          entity_type: string
+          extracted_data?: Json
+          id?: string
+          review_notes?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string | null
+          agent_name?: string | null
+          authenticity_details?: Json | null
+          authenticity_score?: number | null
+          authenticity_status?: string
+          confidence_score?: number
+          created_at?: string
+          document_image_url?: string | null
+          document_type?: string
+          entity_id?: string
+          entity_name?: string | null
+          entity_type?: string
+          extracted_data?: Json
+          id?: string
+          review_notes?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       otp_verifications: {
         Row: {
           broker_id: string

@@ -1,123 +1,95 @@
-# Plan d'avancement — SAZ 2026 (LOT 1 MVP)
 
-_Dernière mise à jour : 24 avril 2026_
 
-## ✅ LOT 1 — MVP (Go-Live 3 mai) — Tâches livrées jusqu'au 24 avril
+## Vue Admin « Drill-down par Agent »
 
-### Parcours achat (P0 — 17 avril)
+### Principe
+Chaque page agent (`/b2b/*`) existe déjà en version **agrégée** côté admin. Il manque le **drill-down** : sélectionner un agent et voir **sa vue exacte** (read-only, impersonation lecture). Cela évite de dupliquer les composants.
 
-| ID     | Tâche                                 | Route / Composant                                | Statut | Notes                                                                    |
-| ------ | ------------------------------------- | ------------------------------------------------ | ------ | ------------------------------------------------------------------------ |
-| UX.1.1 | Page infos produit dans flow cotation | `/b2b/sales` → `ProductInfoSheet`                | ✅     | Sheet latéral avec détails produit, couvertures et exclusions            |
-| UX.1.2 | Badge scoring KYC R/Y/G (admin)       | `/admin/ocr-validation` → `OCRAuthenticityBadge` | ✅     | Badge coloré selon score authenticité (Rouge <70, Jaune 70-85, Vert >85) |
-| UX.1.3 | PDF reçu devis branding SACI          | `QuoteSummaryCard` → `quotePdfGenerator.ts`      | ✅     | PDF généré côté client avec logo SACI, couleurs institutionnelles        |
+### Architecture proposée
 
-### Dashboard Agent (P0 — 17 avril)
+**1 hub + 6 onglets** sous une seule route dynamique :
 
-| ID     | Tâche                | Route / Composant                      | Statut | Notes                                                                  |
-| ------ | -------------------- | -------------------------------------- | ------ | ---------------------------------------------------------------------- |
-| UX.2.1 | Vue Leads + pipeline | `/b2b/dashboard` → `LeadsPipeline`     | ✅     | Tableau des leads avec statuts (Nouveau, Contacté, Qualifié, Converti) |
-| UX.2.2 | Vue KPIs agent       | `/b2b/dashboard` → `DashboardKPIs`     | ✅     | KPIs dynamiques : cotations, conversions, revenus, taux de conversion  |
-| UX.2.3 | Vue Commissions      | `/b2b/commissions` → `CommissionsPage` | ✅     | Suivi des commissions par statut (En attente, Payée, Prévue)           |
+```
+/admin/agents/:agentId  →  AgentDetailPage (hub avec tabs)
+  ├─ Tab "Vue d'ensemble"   → KPIs agent (UX.2.2)
+  ├─ Tab "Prospects"        → Pipeline leads agent (UX.2.1)
+  ├─ Tab "Portefeuille"     → Clients + polices agent
+  ├─ Tab "Cotations"        → Devis PDF générés (UX.1.3)
+  ├─ Tab "Commissions"      → Solde + historique (UX.2.3)
+  └─ Tab "Activité"         → Timeline actions (souscriptions, sinistres)
+```
 
-### Claims FNOL (P0 — 17 avril)
+### Point d'entrée : liste d'agents cliquable
 
-| ID     | Tâche                        | Route / Composant                    | Statut | Notes                                                                        |
-| ------ | ---------------------------- | ------------------------------------ | ------ | ---------------------------------------------------------------------------- |
-| UX.3.1 | Stepper déclaration sinistre | `/b2b/claims/new` → `ClaimNewPage`   | ✅     | 6 étapes : infos, dommages, lieu/date, photos/OCR, description, confirmation |
-| UX.3.2 | Table sinistres back-office  | `/admin/claims` → `AdminClaimsTable` | ✅     | Gestion des sinistres avec filtres, pagination et actions d'assignation      |
+La page existante **`/admin/agents-portfolio`** devient le **point d'entrée** : chaque ligne du tableau devient cliquable → navigue vers `/admin/agents/:agentId`.
 
-### Compliance Admin (P0 — 17 avril)
+### Mapping UX ↔ Route Admin
 
-| ID     | Tâche                                 | Route / Composant                               | Statut | Notes                                                                  |
-| ------ | ------------------------------------- | ----------------------------------------------- | ------ | ---------------------------------------------------------------------- |
-| UX.4.1 | Dashboard Compliance (badges R/Y/G)   | `/admin/compliance` → `ComplianceDashboardPage` | ✅     | Vue synthétique des risques RML/FT avec KPIs et alertes                |
-| UX.4.2 | Filtres dropdowns + badges            | `ComplianceDashboardPage`                       | ✅     | Filtres par statut, risque, date + badges colorés par niveau de risque |
-| UX.4.3 | Pagination + headers triables         | composant `Table` réutilisable                  | ✅     | Table générique shadcn/ui avec tri, pagination et sélection            |
-| UX.4.4 | Fiche client compliance 2 colonnes    | `ClientKYCSection` / `ClientDetailSheet`        | ✅     | Onglets KYC, Documents, Notes, Historique des transactions             |
-| UX.4.5 | Modal approbation/blocage transaction | `AMLBlockedDialog`                              | ✅     | Modal de confirmation avec motif de blocage et historique              |
-| UX.4.6 | Détail scoring badge admin            | `OCRDetailDrawer` + `OCRAuthenticityBadge`      | ✅     | Drawer latéral avec image source, données extraites et score détaillé  |
+| Ref UX | Page Agent | Vue Admin drill-down |
+|---|---|---|
+| UX.1.1 | `/b2b/sales` → ProductInfoSheet | Non applicable (config produit → `/admin/products`) |
+| UX.1.2 | KYC badge sur identification | Déjà admin-only → `/admin/compliance` |
+| UX.1.3 | PDF devis à l'étape Récap | `/admin/agents/:id` → Tab Cotations (liste quotations + aperçu PDF) |
+| UX.2.1 | Pipeline leads | `/admin/agents/:id` → Tab Prospects |
+| UX.2.2 | KPIs dashboard | `/admin/agents/:id` → Tab Vue d'ensemble |
+| UX.2.3 | Commissions | `/admin/agents/:id` → Tab Commissions |
 
-### KYC OCR & Paiement (P0 — 17 avril)
+### Réutilisation composants (zero duplication)
 
-| ID     | Tâche                          | Route / Composant                           | Statut | Notes                                                               |
-| ------ | ------------------------------ | ------------------------------------------- | ------ | ------------------------------------------------------------------- |
-| UX.5.1 | Résultat OCR Regula validation | `/admin/ocr-validation` + `OCRDetailDrawer` | ✅     | Intégration Regula pour validation avancée des documents d'identité |
-| UX.5.2 | Parcours paiement Wave/SycaPay | `MobilePaymentStep` + `PaymentStatusDialog` | ✅     | Redirection vers Wave/SycaPay avec vérification statut transaction  |
+Tous les composants broker acceptent déjà un `broker_id` via `auth.uid()`. On ajoute un **prop optionnel `overrideAgentId`** pour forcer l'agent cible :
 
-### Activation & RBAC (P1 — 24 avril)
+- `<LeadsPipeline overrideAgentId={agentId} />` 
+- `<DashboardKPIs overrideAgentId={agentId} />`
+- `<CommissionsPage>` → extraire le contenu en composant `<CommissionsView agentId={...} />`
 
-| ID     | Tâche                                | Route / Composant                                | Statut | Notes                                                                 |
-| ------ | ------------------------------------ | ------------------------------------------------ | ------ | --------------------------------------------------------------------- |
-| UX.5.3 | Confirmation activation police + PDF | `IssuanceStep` + edge fn `send-policy-documents` | ✅     | Confirmation finale avec envoi automatique documents par email/SMS    |
-| UX.6.1 | Matrix rôles & permissions           | `/admin/permissions` → `AdminPermissions`        | ✅     | Matrice interactive rôles × permissions avec sauvegarde en temps réel |
-| UX.6.2 | DSAR (export/anonymisation/rectif.)  | `/admin/dsar` → `DsarPage`                       | ✅     | Gestion des demandes RGPD avec export complet et anonymisation        |
-| UX.6.3 | Journal d'audit Admin UI             | `/admin/audit` → `AdminAuditLogs`                | ✅     | Logs des actions utilisateurs avec filtres et export                  |
+Côté RLS : l'admin a déjà `has_role(auth.uid(),'admin')` sur toutes les tables concernées → aucune migration DB nécessaire.
 
-**Score : 20/20 tâches MVP P0+P1 livrées** ✅
+### Nouveaux fichiers
 
----
+```
+src/pages/admin/AgentDetailPage.tsx          (hub avec Tabs)
+src/components/admin/agent-detail/
+  ├─ AgentOverviewTab.tsx    (réutilise DashboardKPIs)
+  ├─ AgentLeadsTab.tsx       (réutilise LeadsPipeline + LeadsDataTable)
+  ├─ AgentPortfolioTab.tsx   (réutilise PortfolioDataTable)
+  ├─ AgentQuotationsTab.tsx  (nouveau : liste quotations + PDF preview)
+  ├─ AgentCommissionsTab.tsx (extrait de CommissionsPage)
+  └─ AgentActivityTab.tsx    (timeline subscriptions/claims/leads)
+```
 
-## 🔗 Routes à vérifier dans la preview
+### Fichiers modifiés
 
-Base preview : `https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app`
+- `src/App.tsx` → ajouter route `/admin/agents/:agentId`
+- `src/pages/admin/AgentsPortfolioPage.tsx` → rendre lignes cliquables (`navigate('/admin/agents/' + id)`)
+- `src/components/broker/dashboard/LeadsPipeline.tsx` → prop `overrideAgentId`
+- `src/components/broker/dashboard/DashboardKPIs.tsx` → prop `overrideAgentId`
+- `src/pages/broker/CommissionsPage.tsx` → extraire `CommissionsView` réutilisable
+- `src/components/admin/AdminSidebar.tsx` → renommer "Portefeuille Agents" en "Agents (drill-down)" pour clarifier
 
-### B2B (espace Agent — login broker requis)
+### Header commun de la page détail
 
-| Route                                                                                                                              | Vérifie                                                                                                        |
-| ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| [`/b2b/dashboard`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/b2b/dashboard)                             | UX.2.1 + UX.2.2 — KPIs agent + pipeline leads                                                                  |
-| [`/b2b/sales`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/b2b/sales)                                     | UX.1.1 (infos produit) + UX.1.3 (PDF devis SACI) + UX.5.2 (paiement Wave/SycaPay) + UX.5.3 (activation police) |
-| [`/b2b/claims/new`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/b2b/claims/new)                           | UX.3.1 — Stepper FNOL                                                                                          |
-| [`/b2b/commissions`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/b2b/commissions)                         | UX.2.3 — Vue commissions                                                                                       |
-| [`/b2b/portfolio?tab=prospects`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/b2b/portfolio?tab=prospects) | UX.2.1 — Liste leads                                                                                           |
-| [`/b2b/portfolio?tab=clients`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/b2b/portfolio?tab=clients)     | UX.4.4 — Fiche client compliance (clic ligne)                                                                  |
+```
+┌─────────────────────────────────────────────────────┐
+│ ← Retour  │  👤 Jean Dupont  [Badge Courtier]       │
+│           │  jean@sanlam.ci · +225 07 12 34 56 78   │
+│           │  [Action: Envoyer message] [Voir audit] │
+├─────────────────────────────────────────────────────┤
+│ [Vue][Prospects][Portefeuille][Cotations][Comm.]... │
+└─────────────────────────────────────────────────────┘
+```
 
-### Admin (login admin / compliance requis)
+Filtre période global (`PeriodFilter`) en haut, partagé entre tous les onglets via state local.
 
-| Route                                                                                                                | Vérifie                                                              |
-| -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| [`/admin/dashboard`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/admin/dashboard)           | Dashboard admin global                                               |
-| [`/admin/compliance`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/admin/compliance)         | UX.4.1 + UX.4.2 + UX.4.3 — Dashboard compliance, filtres, pagination |
-| [`/admin/ocr-validation`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/admin/ocr-validation) | UX.1.2 + UX.4.6 + UX.5.1 — Badges authenticité OCR + drawer détail   |
-| [`/admin/claims`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/admin/claims)                 | UX.3.2 — Table sinistres back-office                                 |
-| [`/admin/permissions`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/admin/permissions)       | UX.6.1 — Matrix RBAC rôles/permissions                               |
-| [`/admin/dsar`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/admin/dsar)                     | UX.6.2 — DSAR (export, anonymisation, rectification)                 |
-| [`/admin/audit`](https://id-preview--cfcba7d1-b75c-43d1-a193-797ef9d8fba2.lovable.app/admin/audit)                   | UX.6.3 — Journal d'audit                                             |
+### Avantages
 
-### Modal/Composant à valider en contexte
+1. **Source unique** : vue agent = vue admin drill-down (même composants)
+2. **Pas de divergence UX** : l'admin voit exactement ce que l'agent voit
+3. **Scalable** : nouveau tab broker = prop `overrideAgentId` + intégration
+4. **Traçabilité** : ajout possible d'un `audit_logs` à l'ouverture (`admin_viewed_agent`)
+5. **Compatible RLS existante** (rôle admin déjà global)
 
-| Élément                     | Comment l'ouvrir                                                     |
-| --------------------------- | -------------------------------------------------------------------- |
-| `AMLBlockedDialog` (UX.4.5) | `/admin/compliance` ou fiche client → action "Bloquer/Approuver KYC" |
-| `OCRDetailDrawer` (UX.5.1)  | `/admin/ocr-validation` → clic sur une ligne du tableau              |
-| `ProductInfoSheet` (UX.1.1) | `/b2b/sales` → étape produit → bouton ℹ️                             |
-| PDF devis SACI (UX.1.3)     | `/b2b/sales` → étape récap → bouton "Télécharger devis PDF"          |
+### Limitations assumées
 
----
+- **Read-only** : l'admin ne peut pas agir au nom de l'agent (pas d'impersonation writes). Actions admin passent par les pages admin dédiées (`/admin/users/partners` pour désactivation, etc.)
+- **UX.1.1** (ProductInfoSheet) n'a pas de drill-down agent — c'est une config produit globale
 
-## 🛡️ Module Validation OCR Conformité — détail technique
-
-### Contexte
-
-- **Pas de changement côté agent B2B** : OCR KYC reste transparent (`LeadKYCSection`, `ClientKYCSection`).
-- **Feature Admin Conformité** : tableau de bord scans OCR avec authenticité + score de confiance.
-
-### Implémenté
-
-- **Table `ocr_scan_results`** (entity_type, document_type, extracted_data, confidence_score, authenticity_status, authenticity_details, agent_id, review_status…) avec RLS admin/compliance/backoffice_conformite.
-- **Edge Functions enrichies** : `ocr-identity` et `ocr-vehicle-registration` retournent un score d'authenticité IA (Gemini — cohérence MRZ, qualité, anomalies) et persistent dans `ocr_scan_results`.
-- **Page `/admin/ocr-validation`** (`OCRValidationPage.tsx`) : KPIs + filtres + tableau + drawer détail (image, champs extraits, badge authenticité, actions valider/rejeter).
-- **Composants** : `OCRScansTable`, `OCRDetailDrawer`, `OCRAuthenticityBadge`.
-- **Sidebar Admin** : entrée "Validation OCR" sous Conformité.
-
----
-
-## 📋 Prochaines étapes — LOT 2 Phase 1
-
-À démarrer après validation visuelle finale du branding SACI sur PDF devis (UX.1.3) :
-
-1. **Profil Client 360°** — onglets Contrats / Sinistres / Paiements / Documents
-2. **Claims V2** — Kanban d'assignation + dashboard SLA CIMA (>48h)
-3. **Module Marketing** — campagnes multi-canal + dashboard performance
-4. **Portail Client B2C** (UX.C5–C8) — souscription autonome, avenant, FNOL B2C, messagerie sécurisée

@@ -136,7 +136,7 @@ export function AdminSidebar() {
       { title: "Performance Agents", url: "/admin/agent-performance", icon: Target },
     ]},
     { key: "portfolio", label: "Pilotage — Portefeuille", items: [
-      { title: "Portefeuille Agents", url: "/admin/agents-portfolio", icon: PieChart },
+      { title: "Vue par agent", url: "/admin/agents-portfolio", icon: PieChart },
     ]},
     { key: "risk", label: "Pilotage — Risque", items: [
       { title: "Sinistralité", url: "/admin/loss-ratio", icon: AlertTriangle },

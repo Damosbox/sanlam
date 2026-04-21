@@ -5,85 +5,35 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Check, X, Shield, FileText, HelpCircle, Sparkles } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
-interface ProductInfo {
-  name: string;
-  description: string;
-  category: string;
-  guarantees: { name: string; included: boolean; description?: string }[];
-  exclusions: string[];
-  faqs: { q: string; a: string }[];
-  highlights: string[];
-  documents: string[];
-}
+type Coverage = { id?: string; label: string; name?: string; description?: string; required?: boolean };
+type Faq = { q?: string; a?: string; question?: string; answer?: string };
+type DocTpl = { id?: string; name?: string; title?: string };
 
-const PRODUCT_DATA: Record<string, ProductInfo> = {
-  auto: {
-    name: "Assurance Auto",
-    description: "Couverture complète pour véhicules particuliers et professionnels en Côte d'Ivoire, conforme aux exigences ASACI et CIMA.",
-    category: "Non-Vie",
-    highlights: [
-      "5 formules adaptées (Tiers Simple à Tous Risques)",
-      "Attestation jaune ASACI dématérialisée",
-      "Assistance dépannage 24/7 incluse selon formule",
-      "Indemnisation accélérée < 30 jours",
-    ],
-    guarantees: [
-      { name: "Responsabilité Civile", included: true, description: "Dommages causés aux tiers (obligatoire)" },
-      { name: "Défense Recours", included: true, description: "Protection juridique en cas de litige" },
-      { name: "Vol & Incendie", included: true, description: "À partir de la formule Tiers Complet" },
-      { name: "Bris de glace", included: true },
-      { name: "Dommages Tous Accidents", included: true, description: "Formule Tous Risques uniquement" },
-      { name: "Assistance 0 km", included: true, description: "Dépannage depuis le domicile" },
-      { name: "Conducteur (corporel)", included: true, description: "Indemnisation du conducteur responsable" },
-    ],
-    exclusions: [
-      "Conduite sous emprise d'alcool ou stupéfiants",
-      "Défaut de permis valide",
-      "Compétitions sportives non déclarées",
-      "Transport de matières dangereuses sans déclaration",
-      "Sinistres antérieurs à la souscription",
-    ],
-    faqs: [
-      { q: "Quel est le délai de carence ?", a: "Aucun délai de carence — la couverture débute à la prise d'effet de la police." },
-      { q: "Comment déclarer un sinistre ?", a: "Via l'application mobile, le portail web, ou par téléphone au centre de gestion sous 5 jours ouvrés." },
-      { q: "Bonus / Malus ?", a: "Système CRM CIMA : -5% par année sans sinistre (plancher 0,50), +25% par sinistre responsable (plafond 3,50)." },
-      { q: "Puis-je résilier à tout moment ?", a: "Oui, après 1 an d'engagement (loi Hamon CI), avec préavis de 1 mois." },
-    ],
-    documents: ["Conditions Générales Auto", "Tableau des garanties", "Liste des exclusions", "Procédure sinistre"],
-  },
-  pack_obseques: {
-    name: "Pack Obsèques",
-    description: "Garantie le versement d'un capital défini en cas de décès pour couvrir les frais funéraires et soulager les proches.",
-    category: "Vie",
-    highlights: [
-      "Capital garanti versé sous 72h",
-      "Pas de questionnaire médical < 60 ans",
-      "Cotisation viagère ou temporaire",
-      "Bénéficiaires libres avec clauses-types",
-    ],
-    guarantees: [
-      { name: "Capital décès", included: true, description: "De 500 000 à 5 000 000 FCFA selon formule" },
-      { name: "Décès accidentel — capital doublé", included: true },
-      { name: "Prise en charge totale frais obsèques", included: true, description: "Inhumation, crémation, transport corps" },
-      { name: "Assistance famille (psychologue)", included: true },
-      { name: "Conseil juridique succession", included: true },
-      { name: "Rapatriement de corps international", included: true, description: "Formule Premium" },
-    ],
-    exclusions: [
-      "Suicide durant la 1ʳᵉ année (sauf accidentel)",
-      "Décès résultant d'un acte intentionnel du bénéficiaire",
-      "Guerre ou insurrection (sauf clause spécifique)",
-      "Sports extrêmes non déclarés",
-    ],
-    faqs: [
-      { q: "Faut-il un examen médical ?", a: "Non pour les souscripteurs < 60 ans avec capital ≤ 2 000 000 FCFA. Au-delà, questionnaire simple." },
-      { q: "Quand le capital est-il versé ?", a: "Sous 72h après réception de l'acte de décès et de la pièce d'identité du bénéficiaire." },
-      { q: "Puis-je modifier les bénéficiaires ?", a: "Oui, à tout moment via le portail ou en agence, par avenant signé." },
-      { q: "Quelle est la durée minimale ?", a: "La police est renouvelable annuellement, sans durée minimale d'engagement après la 1ʳᵉ année." },
-    ],
-    documents: ["Notice d'information", "Conditions Générales Vie", "Clause bénéficiaire-type", "Tableau des cotisations"],
-  },
+/**
+ * Parse exclusions from free-text `terms` field.
+ * Looks for a block starting with "Exclusions" / "Ne sont pas couverts" and
+ * extracts the following bullet/line items.
+ */
+const parseExclusionsFromTerms = (terms: string | null | undefined): string[] => {
+  if (!terms) return [];
+  const lines = terms.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const startIdx = lines.findIndex((l) =>
+    /^(exclusions?|ne sont pas couverts?|ce qui n'est pas couvert)/i.test(l)
+  );
+  if (startIdx === -1) return [];
+  const items: string[] = [];
+  for (let i = startIdx + 1; i < lines.length; i++) {
+    const line = lines[i];
+    // Stop at next section header
+    if (/^[A-ZÉÈÀ][^.]{0,80}:$/.test(line) && !line.startsWith("-") && !line.startsWith("•")) break;
+    const cleaned = line.replace(/^[-•*–]\s*/, "").trim();
+    if (cleaned) items.push(cleaned);
+  }
+  return items;
 };
 
 interface ProductInfoSheetProps {
@@ -94,33 +44,67 @@ interface ProductInfoSheetProps {
 }
 
 export const ProductInfoSheet = ({ open, onClose, productType, onSelect }: ProductInfoSheetProps) => {
-  const product = productType ? PRODUCT_DATA[productType] : null;
-  if (!product) return null;
+  const { data: product, isLoading } = useQuery({
+    queryKey: ["product-info-sheet", productType],
+    enabled: !!productType && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, name, description, category, coverages, faqs, terms, document_templates")
+        .eq("product_type", productType!)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  if (!open) return null;
+
+  const coverages: Coverage[] = Array.isArray(product?.coverages) ? (product!.coverages as Coverage[]) : [];
+  const faqsRaw: Faq[] = Array.isArray(product?.faqs) ? (product!.faqs as Faq[]) : [];
+  const docsRaw: DocTpl[] = Array.isArray(product?.document_templates) ? (product!.document_templates as DocTpl[]) : [];
+  const exclusions = parseExclusionsFromTerms(product?.terms);
+  // Highlights = required coverages (auto-derived from the product engine)
+  const highlights = coverages.filter((c) => c.required).map((c) => c.label || c.name || "").filter(Boolean);
+  const categoryLabel = product?.category === "vie" ? "Vie" : product?.category === "non-vie" ? "Non-Vie" : product?.category ?? "";
 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+        {isLoading || !product ? (
+          <div className="space-y-4 mt-4">
+            <Skeleton className="h-6 w-24" />
+            <Skeleton className="h-8 w-3/4" />
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-40 w-full" />
+          </div>
+        ) : (
+        <>
         <SheetHeader className="space-y-3">
           <div className="flex items-center gap-2">
-            <Badge variant="secondary">{product.category}</Badge>
+            {categoryLabel && <Badge variant="secondary">{categoryLabel}</Badge>}
             <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
               <Sparkles className="h-3 w-3 mr-1" />
               Conforme CIMA
             </Badge>
           </div>
           <SheetTitle className="text-2xl">{product.name}</SheetTitle>
-          <SheetDescription className="text-base">{product.description}</SheetDescription>
+          {product.description && (
+            <SheetDescription className="text-base">{product.description}</SheetDescription>
+          )}
         </SheetHeader>
 
         <div className="mt-6 space-y-4">
+          {highlights.length > 0 && (
           <Card className="bg-primary/5 border-primary/20">
             <CardContent className="p-4 space-y-2">
               <h3 className="font-semibold text-sm flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />
-                Points forts
+                Garanties incluses
               </h3>
               <ul className="space-y-1.5">
-                {product.highlights.map((h, i) => (
+                {highlights.map((h, i) => (
                   <li key={i} className="text-sm flex items-start gap-2">
                     <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                     <span>{h}</span>
@@ -129,6 +113,7 @@ export const ProductInfoSheet = ({ open, onClose, productType, onSelect }: Produ
               </ul>
             </CardContent>
           </Card>
+          )}
 
           <Tabs defaultValue="guarantees" className="w-full">
             <TabsList className="grid w-full grid-cols-4">
@@ -139,49 +124,87 @@ export const ProductInfoSheet = ({ open, onClose, productType, onSelect }: Produ
             </TabsList>
 
             <TabsContent value="guarantees" className="space-y-2 mt-4">
-              {product.guarantees.map((g, i) => (
-                <div key={i} className="flex items-start gap-3 p-3 border rounded-lg">
-                  <div className={`p-1.5 rounded-full mt-0.5 ${g.included ? "bg-emerald-500/10" : "bg-muted"}`}>
-                    {g.included ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <X className="h-3.5 w-3.5 text-muted-foreground" />}
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-medium text-sm">{g.name}</div>
-                    {g.description && <div className="text-xs text-muted-foreground mt-0.5">{g.description}</div>}
-                  </div>
-                </div>
-              ))}
+              {coverages.length === 0 ? (
+                <p className="text-sm text-muted-foreground p-4 text-center">
+                  Aucune garantie configurée pour ce produit.
+                </p>
+              ) : (
+                coverages.map((g, i) => {
+                  const name = g.label || g.name || "—";
+                  return (
+                    <div key={g.id ?? i} className="flex items-start gap-3 p-3 border rounded-lg">
+                      <div className="p-1.5 rounded-full mt-0.5 bg-emerald-500/10">
+                        <Check className="h-3.5 w-3.5 text-emerald-600" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-sm flex items-center gap-2">
+                          {name}
+                          {g.required && <Badge variant="outline" className="text-[10px]">Obligatoire</Badge>}
+                        </div>
+                        {g.description && <div className="text-xs text-muted-foreground mt-0.5">{g.description}</div>}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </TabsContent>
 
             <TabsContent value="exclusions" className="mt-4">
-              <ul className="space-y-2">
-                {product.exclusions.map((e, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
-                    <X className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
-                    <span>{e}</span>
-                  </li>
-                ))}
-              </ul>
+              {exclusions.length === 0 ? (
+                <p className="text-sm text-muted-foreground p-4 text-center">
+                  Aucune exclusion renseignée. Consultez les Conditions Générales du produit.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {exclusions.map((e, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
+                      <X className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+                      <span>{e}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </TabsContent>
 
             <TabsContent value="faq" className="mt-4">
-              <Accordion type="single" collapsible className="w-full">
-                {product.faqs.map((f, i) => (
-                  <AccordionItem key={i} value={`item-${i}`}>
-                    <AccordionTrigger className="text-left text-sm">{f.q}</AccordionTrigger>
-                    <AccordionContent className="text-sm text-muted-foreground">{f.a}</AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
+              {faqsRaw.length === 0 ? (
+                <p className="text-sm text-muted-foreground p-4 text-center">
+                  Aucune question fréquente renseignée pour ce produit.
+                </p>
+              ) : (
+                <Accordion type="single" collapsible className="w-full">
+                  {faqsRaw.map((f, i) => {
+                    const q = f.q || f.question || "";
+                    const a = f.a || f.answer || "";
+                    if (!q) return null;
+                    return (
+                      <AccordionItem key={i} value={`item-${i}`}>
+                        <AccordionTrigger className="text-left text-sm">{q}</AccordionTrigger>
+                        <AccordionContent className="text-sm text-muted-foreground">{a}</AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
+                </Accordion>
+              )}
             </TabsContent>
 
             <TabsContent value="docs" className="space-y-2 mt-4">
-              {product.documents.map((d, i) => (
-                <button key={i} className="w-full flex items-center gap-3 p-3 border rounded-lg hover:bg-muted transition-colors text-left">
-                  <FileText className="h-4 w-4 text-primary" />
-                  <span className="text-sm flex-1">{d}</span>
-                  <Badge variant="outline" className="text-xs">PDF</Badge>
-                </button>
-              ))}
+              {docsRaw.length === 0 ? (
+                <p className="text-sm text-muted-foreground p-4 text-center">
+                  Aucun document associé à ce produit.
+                </p>
+              ) : (
+                docsRaw.map((d, i) => {
+                  const label = d.name || d.title || `Document ${i + 1}`;
+                  return (
+                    <div key={d.id ?? i} className="w-full flex items-center gap-3 p-3 border rounded-lg">
+                      <FileText className="h-4 w-4 text-primary" />
+                      <span className="text-sm flex-1">{label}</span>
+                      <Badge variant="outline" className="text-xs">PDF</Badge>
+                    </div>
+                  );
+                })
+              )}
             </TabsContent>
           </Tabs>
 
@@ -194,6 +217,8 @@ export const ProductInfoSheet = ({ open, onClose, productType, onSelect }: Produ
             </div>
           )}
         </div>
+        </>
+        )}
       </SheetContent>
     </Sheet>
   );

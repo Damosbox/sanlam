@@ -37,7 +37,12 @@ const STATUS_CONFIG = {
   paid: { label: "Payée", className: "bg-emerald-500/10 text-emerald-700 border-emerald-200" },
 };
 
-export default function CommissionsPage() {
+interface CommissionsViewProps {
+  agentId?: string;
+  hideHeader?: boolean;
+}
+
+export function CommissionsView({ agentId, hideHeader }: CommissionsViewProps = {}) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [productFilter, setProductFilter] = useState<string>("all");
@@ -80,6 +85,7 @@ export default function CommissionsPage() {
 
   return (
     <div className="space-y-6">
+      {!hideHeader && (
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
@@ -95,6 +101,7 @@ export default function CommissionsPage() {
           Exporter CSV
         </Button>
       </div>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border-l-4 border-l-emerald-500">
@@ -230,4 +237,8 @@ export default function CommissionsPage() {
       </Card>
     </div>
   );
+}
+
+export default function CommissionsPage() {
+  return <CommissionsView />;
 }

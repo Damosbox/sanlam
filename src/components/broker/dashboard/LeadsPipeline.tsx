@@ -26,9 +26,10 @@ const statusConfig: Record<LeadStatus, { label: string; color: string }> = {
 
 interface LeadsPipelineProps {
   dateRange?: { from: Date; to: Date };
+  overrideAgentId?: string;
 }
 
-export const LeadsPipeline = ({ dateRange }: LeadsPipelineProps) => {
+export const LeadsPipeline = ({ dateRange, overrideAgentId }: LeadsPipelineProps) => {
   const navigate = useNavigate();
   const [stats, setStats] = useState<PipelineStats>({
     nouveau: 0,
@@ -41,17 +42,21 @@ export const LeadsPipeline = ({ dateRange }: LeadsPipelineProps) => {
 
   useEffect(() => {
     fetchPipelineStats();
-  }, [dateRange]);
+  }, [dateRange, overrideAgentId]);
 
   const fetchPipelineStats = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      let agentId = overrideAgentId;
+      if (!agentId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        agentId = user.id;
+      }
 
       let query = supabase
         .from("leads")
         .select("status")
-        .eq("assigned_broker_id", user.id);
+        .eq("assigned_broker_id", agentId);
 
       if (dateRange) {
         query = query

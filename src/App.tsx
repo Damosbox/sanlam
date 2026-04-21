@@ -68,6 +68,7 @@ import AdminBrokerNewsPage from "./pages/admin/BrokerNewsPage";
 import AdminCalcRulesPage from "./pages/admin/CalcRulesPage";
 import AdminCalcVariablesPage from "./pages/admin/CalcVariablesPage";
 import AdminAgentsPortfolioPage from "./pages/admin/AgentsPortfolioPage";
+import AdminAgentDetailPage from "./pages/admin/AgentDetailPage";
 import AdminConversionsPage from "./pages/admin/ConversionsPage";
 import AdminComplianceDashboardPage from "./pages/admin/ComplianceDashboardPage";
 import AdminAgentPerformancePage from "./pages/admin/AgentPerformancePage";
@@ -177,6 +178,7 @@ const App = () => (
             <Route path="data" element={<AdminTestDataPage />} />
             <Route path="broker-news" element={<AdminBrokerNewsPage />} />
             <Route path="agents-portfolio" element={<AdminAgentsPortfolioPage />} />
+            <Route path="agents/:agentId" element={<AdminAgentDetailPage />} />
             <Route path="conversions" element={<AdminConversionsPage />} />
             <Route path="agent-performance" element={<AdminAgentPerformancePage />} />
             <Route path="loss-ratio" element={<AdminLossRatioPage />} />

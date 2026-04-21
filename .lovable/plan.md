@@ -5,11 +5,11 @@ _Dernière mise à jour : 24 avril 2026_
 ## ✅ LOT 1 — MVP (Go-Live 3 mai) — Tâches livrées jusqu'au 24 avril
 
 ### Parcours achat (P0 — 17 avril)
-| ID | Tâche | Route / Composant | Statut |
-|---|---|---|---|
-| UX.1.1 | Page infos produit dans flow cotation | `/b2b/sales` → `ProductInfoSheet` | ✅ |
-| UX.1.2 | Badge scoring KYC R/Y/G (admin) | `/admin/ocr-validation` → `OCRAuthenticityBadge` | ✅ |
-| UX.1.3 | PDF reçu devis branding SACI | `QuoteSummaryCard` → `quotePdfGenerator.ts` | ✅ |
+| ID | Tâche | Route / Composant | Statut | Notes |
+|---|---|---|---|---|
+| UX.1.1 | Page infos produit dans flow cotation | `/b2b/sales` → `ProductInfoSheet` | ✅ | Sheet latéral avec détails produit, couvertures et exclusions |
+| UX.1.2 | Badge scoring KYC R/Y/G (admin) | `/admin/ocr-validation` → `OCRAuthenticityBadge` | ✅ | Badge coloré selon score authenticité (Rouge <70, Jaune 70-85, Vert >85) |
+| UX.1.3 | PDF reçu devis branding SACI | `QuoteSummaryCard` → `quotePdfGenerator.ts` | ✅ | PDF généré côté client avec logo SACI, couleurs institutionnelles |
 
 ### Dashboard Agent (P0 — 17 avril)
 | ID | Tâche | Route / Composant | Statut |

@@ -12,11 +12,11 @@ _Dernière mise à jour : 24 avril 2026_
 | UX.1.3 | PDF reçu devis branding SACI | `QuoteSummaryCard` → `quotePdfGenerator.ts` | ✅ | PDF généré côté client avec logo SACI, couleurs institutionnelles |
 
 ### Dashboard Agent (P0 — 17 avril)
-| ID | Tâche | Route / Composant | Statut |
-|---|---|---|---|
-| UX.2.1 | Vue Leads + pipeline | `/b2b/dashboard` → `LeadsPipeline` | ✅ |
-| UX.2.2 | Vue KPIs agent | `/b2b/dashboard` → `DashboardKPIs` | ✅ |
-| UX.2.3 | Vue Commissions | `/b2b/commissions` → `CommissionsPage` | ✅ |
+| ID | Tâche | Route / Composant | Statut | Notes |
+|---|---|---|---|---|
+| UX.2.1 | Vue Leads + pipeline | `/b2b/dashboard` → `LeadsPipeline` | ✅ | Tableau des leads avec statuts (Nouveau, Contacté, Qualifié, Converti) |
+| UX.2.2 | Vue KPIs agent | `/b2b/dashboard` → `DashboardKPIs` | ✅ | KPIs dynamiques : cotations, conversions, revenus, taux de conversion |
+| UX.2.3 | Vue Commissions | `/b2b/commissions` → `CommissionsPage` | ✅ | Suivi des commissions par statut (En attente, Payée, Prévue) |
 
 ### Claims FNOL (P0 — 17 avril)
 | ID | Tâche | Route / Composant | Statut |

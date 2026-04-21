@@ -6,11 +6,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, Users, TrendingUp, Briefcase, UserCheck, Download } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { PeriodFilter, computeDateRange, DateRange } from "@/components/broker/dashboard/PeriodFilter";
 import { formatFCFA } from "@/utils/formatCurrency";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { TopBottomAgents } from "@/components/admin/TopBottomAgents";
 import { exportToCSV } from "@/utils/exportCsv";
+import { useToast } from "@/hooks/use-toast";
 
 interface AgentPortfolio {
   id: string;
@@ -33,9 +35,11 @@ const PARTNER_TYPE_LABELS: Record<string, string> = {
 
 export default function AgentsPortfolioPage() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [agents, setAgents] = useState<AgentPortfolio[]>([]);
   const [monthlyCA, setMonthlyCA] = useState<MonthlyCA[]>([]);
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>(computeDateRange("fiscal_year"));
 
   useEffect(() => { fetchAgents(); }, [dateRange]);
@@ -83,6 +87,20 @@ export default function AgentsPortfolioPage() {
     })), "portefeuille-agents");
   };
 
+  const handleGenerateMockAgents = async () => {
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-mock-agents');
+      if (error || data?.success === false) throw new Error(data?.error || error?.message || "Erreur");
+      toast({ title: "✅ Agents générés", description: data.message });
+      await fetchAgents();
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Erreur", description: err.message });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   if (loading) return <div className="flex items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   return (
@@ -93,6 +111,10 @@ export default function AgentsPortfolioPage() {
           <p className="text-muted-foreground">Vue consolidée du portefeuille et chiffre d'affaires par agent</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleGenerateMockAgents} disabled={generating}>
+            {generating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
+            Générer agents fictifs
+          </Button>
           <Button variant="outline" size="sm" onClick={handleExport}><Download className="h-4 w-4 mr-1" />CSV</Button>
           <PeriodFilter onPeriodChange={setDateRange} />
         </div>

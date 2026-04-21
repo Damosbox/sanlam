@@ -126,9 +126,7 @@ export function AdminSidebar() {
       { title: "Souscriptions", url: "/admin/subscriptions", icon: TrendingUp },
     ]},
     { key: "access", label: "Accès & Utilisateurs", items: [
-      { title: "Clients", url: "/admin/users/clients", icon: Users, badge: badges.newClients },
-      { title: "Agents", url: "/admin/users/partners", icon: Briefcase, badge: badges.newPartners },
-      { title: "Administrateurs", url: "/admin/users/admins", icon: UserCheck, badge: badges.newAdmins },
+      { title: "Utilisateurs", url: "/admin/users", icon: Users, badge: badges.newClients + badges.newPartners + badges.newAdmins },
       { title: "Permissions", url: "/admin/permissions", icon: KeyRound },
       { title: "Audit", url: "/admin/audit", icon: ScrollText },
       { title: "DSAR / RGPD", url: "/admin/dsar", icon: Lock },

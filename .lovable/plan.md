@@ -19,34 +19,34 @@ _Dernière mise à jour : 24 avril 2026_
 | UX.2.3 | Vue Commissions | `/b2b/commissions` → `CommissionsPage` | ✅ | Suivi des commissions par statut (En attente, Payée, Prévue) |
 
 ### Claims FNOL (P0 — 17 avril)
-| ID | Tâche | Route / Composant | Statut |
-|---|---|---|---|
-| UX.3.1 | Stepper déclaration sinistre | `/b2b/claims/new` → `ClaimNewPage` | ✅ |
-| UX.3.2 | Table sinistres back-office | `/admin/claims` → `AdminClaimsTable` | ✅ |
+| ID | Tâche | Route / Composant | Statut | Notes |
+|---|---|---|---|---|
+| UX.3.1 | Stepper déclaration sinistre | `/b2b/claims/new` → `ClaimNewPage` | ✅ | 6 étapes : infos, dommages, lieu/date, photos/OCR, description, confirmation |
+| UX.3.2 | Table sinistres back-office | `/admin/claims` → `AdminClaimsTable` | ✅ | Gestion des sinistres avec filtres, pagination et actions d'assignation |
 
 ### Compliance Admin (P0 — 17 avril)
-| ID | Tâche | Route / Composant | Statut |
-|---|---|---|---|
-| UX.4.1 | Dashboard Compliance (badges R/Y/G) | `/admin/compliance` → `ComplianceDashboardPage` | ✅ |
-| UX.4.2 | Filtres dropdowns + badges | `ComplianceDashboardPage` | ✅ |
-| UX.4.3 | Pagination + headers triables | composant `Table` réutilisable | ✅ |
-| UX.4.4 | Fiche client compliance 2 colonnes | `ClientKYCSection` / `ClientDetailSheet` | ✅ |
-| UX.4.5 | Modal approbation/blocage transaction | `AMLBlockedDialog` | ✅ |
-| UX.4.6 | Détail scoring badge admin | `OCRDetailDrawer` + `OCRAuthenticityBadge` | ✅ |
+| ID | Tâche | Route / Composant | Statut | Notes |
+|---|---|---|---|---|
+| UX.4.1 | Dashboard Compliance (badges R/Y/G) | `/admin/compliance` → `ComplianceDashboardPage` | ✅ | Vue synthétique des risques RML/FT avec KPIs et alertes |
+| UX.4.2 | Filtres dropdowns + badges | `ComplianceDashboardPage` | ✅ | Filtres par statut, risque, date + badges colorés par niveau de risque |
+| UX.4.3 | Pagination + headers triables | composant `Table` réutilisable | ✅ | Table générique shadcn/ui avec tri, pagination et sélection |
+| UX.4.4 | Fiche client compliance 2 colonnes | `ClientKYCSection` / `ClientDetailSheet` | ✅ | Onglets KYC, Documents, Notes, Historique des transactions |
+| UX.4.5 | Modal approbation/blocage transaction | `AMLBlockedDialog` | ✅ | Modal de confirmation avec motif de blocage et historique |
+| UX.4.6 | Détail scoring badge admin | `OCRDetailDrawer` + `OCRAuthenticityBadge` | ✅ | Drawer latéral avec image source, données extraites et score détaillé |
 
 ### KYC OCR & Paiement (P0 — 17 avril)
-| ID | Tâche | Route / Composant | Statut |
-|---|---|---|---|
-| UX.5.1 | Résultat OCR Regula validation | `/admin/ocr-validation` + `OCRDetailDrawer` | ✅ |
-| UX.5.2 | Parcours paiement Wave/SycaPay | `MobilePaymentStep` + `PaymentStatusDialog` | ✅ |
+| ID | Tâche | Route / Composant | Statut | Notes |
+|---|---|---|---|---|
+| UX.5.1 | Résultat OCR Regula validation | `/admin/ocr-validation` + `OCRDetailDrawer` | ✅ | Intégration Regula pour validation avancée des documents d'identité |
+| UX.5.2 | Parcours paiement Wave/SycaPay | `MobilePaymentStep` + `PaymentStatusDialog` | ✅ | Redirection vers Wave/SycaPay avec vérification statut transaction |
 
 ### Activation & RBAC (P1 — 24 avril)
-| ID | Tâche | Route / Composant | Statut |
-|---|---|---|---|
-| UX.5.3 | Confirmation activation police + PDF | `IssuanceStep` + edge fn `send-policy-documents` | ✅ |
-| UX.6.1 | Matrix rôles & permissions | `/admin/permissions` → `AdminPermissions` | ✅ |
-| UX.6.2 | DSAR (export/anonymisation/rectif.) | `/admin/dsar` → `DsarPage` | ✅ |
-| UX.6.3 | Journal d'audit Admin UI | `/admin/audit` → `AdminAuditLogs` | ✅ |
+| ID | Tâche | Route / Composant | Statut | Notes |
+|---|---|---|---|---|
+| UX.5.3 | Confirmation activation police + PDF | `IssuanceStep` + edge fn `send-policy-documents` | ✅ | Confirmation finale avec envoi automatique documents par email/SMS |
+| UX.6.1 | Matrix rôles & permissions | `/admin/permissions` → `AdminPermissions` | ✅ | Matrice interactive rôles × permissions avec sauvegarde en temps réel |
+| UX.6.2 | DSAR (export/anonymisation/rectif.) | `/admin/dsar` → `DsarPage` | ✅ | Gestion des demandes RGPD avec export complet et anonymisation |
+| UX.6.3 | Journal d'audit Admin UI | `/admin/audit` → `AdminAuditLogs` | ✅ | Logs des actions utilisateurs avec filtres et export |
 
 **Score : 20/20 tâches MVP P0+P1 livrées** ✅
 

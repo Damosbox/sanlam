@@ -21,6 +21,8 @@ const LEAD_NAMES = [
 
 const LEAD_STATUSES = ['new', 'contacted', 'qualified', 'proposal', 'won', 'lost'];
 const PRODUCTS = ['Assurance Auto', 'Pack Obsèques'];
+const CLAIM_TYPES = ['auto', 'health', 'home', 'life'];
+const CLAIM_STATUSES = ['pending', 'in_review', 'approved', 'rejected'];
 
 function rand<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
 function randInt(min: number, max: number): number { return Math.floor(Math.random() * (max - min + 1)) + min; }
@@ -61,6 +63,10 @@ serve(async (req) => {
     }
 
     const results: any[] = [];
+
+    // Fetch one active product id (for subscriptions)
+    const { data: prodData } = await supabaseAdmin.from('products').select('id').eq('is_active', true).limit(1);
+    const defaultProductId = prodData?.[0]?.id || null;
 
     for (const agent of MOCK_AGENTS) {
       try {
@@ -135,12 +141,92 @@ serve(async (req) => {
         }
         await supabaseAdmin.from('quotations').insert(quotesToInsert);
 
+        // Create 3-5 client profiles + broker_clients link + active subscriptions (portfolio)
+        const clientCount = randInt(3, 5);
+        let createdClients = 0;
+        let createdSubs = 0;
+        let createdClaims = 0;
+        const clientIds: string[] = [];
+
+        for (let c = 0; c < clientCount; c++) {
+          const [fn, ln] = rand(LEAD_NAMES);
+          const cleanLn = ln.toLowerCase().replace(/'/g, '');
+          const clientEmail = `${fn.toLowerCase()}.${cleanLn}.${randInt(1000,9999)}@client.test.ci`;
+          try {
+            const { data: newClient, error: cErr } = await supabaseAdmin.auth.admin.createUser({
+              email: clientEmail,
+              password: 'Test1234!',
+              email_confirm: true,
+              user_metadata: { first_name: fn, last_name: ln, display_name: `${fn} ${ln}` },
+            });
+            if (cErr || !newClient?.user) continue;
+            const clientId = newClient.user.id;
+            clientIds.push(clientId);
+            await new Promise(r => setTimeout(r, 200));
+
+            // Profile update + customer role
+            await supabaseAdmin.from('profiles').update({
+              first_name: fn, last_name: ln, display_name: `${fn} ${ln}`,
+              phone: `+225 0${randInt(1,9)} ${randInt(10,99)} ${randInt(10,99)} ${randInt(10,99)} ${randInt(10,99)}`,
+            }).eq('id', clientId);
+            await supabaseAdmin.from('user_roles').delete().eq('user_id', clientId);
+            await supabaseAdmin.from('user_roles').insert({ user_id: clientId, role: 'customer' });
+
+            // Link to broker
+            await supabaseAdmin.from('broker_clients').insert({
+              broker_id: agentId, client_id: clientId, assigned_by: userData.user.id,
+            });
+            createdClients++;
+
+            // Create 1 active subscription
+            if (defaultProductId) {
+              const startDate = new Date(Date.now() - randInt(30, 300) * 24 * 3600 * 1000);
+              const endDate = new Date(startDate.getTime() + 365 * 24 * 3600 * 1000);
+              const { data: sub } = await supabaseAdmin.from('subscriptions').insert({
+                user_id: clientId,
+                product_id: defaultProductId,
+                policy_number: `POL-${Date.now().toString().slice(-6)}-${randInt(100,999)}`,
+                status: 'active',
+                monthly_premium: randInt(15000, 80000),
+                start_date: startDate.toISOString(),
+                end_date: endDate.toISOString(),
+                assigned_broker_id: agentId,
+                payment_method: rand(['card', 'mobile_money', 'bank_transfer']),
+                renewal_status: rand(['pending', 'renewed', 'pending']),
+                contact_status: rand(['contacted', 'pending', 'unreachable']),
+              }).select('id').single();
+              if (sub) createdSubs++;
+
+              // 30% chance to add a claim (activity)
+              if (Math.random() < 0.3 && sub) {
+                await supabaseAdmin.from('claims').insert({
+                  user_id: clientId,
+                  policy_id: sub.id,
+                  claim_type: rand(CLAIM_TYPES),
+                  status: rand(CLAIM_STATUSES),
+                  description: 'Sinistre fictif généré pour démonstration',
+                  cost_estimation: randInt(50000, 500000),
+                  incident_date: new Date(Date.now() - randInt(1, 60) * 24 * 3600 * 1000).toISOString(),
+                  assigned_broker_id: agentId,
+                  location: rand(['Abidjan', 'Bouaké', 'Yamoussoukro', 'San-Pédro']),
+                });
+                createdClaims++;
+              }
+            }
+          } catch (e) {
+            console.error('client error', e);
+          }
+        }
+
         results.push({
           email: agent.email,
           name: `${agent.firstName} ${agent.lastName}`,
           agentId,
           leadsCreated: leadCount,
           quotesCreated: quoteCount,
+          clientsCreated: createdClients,
+          subscriptionsCreated: createdSubs,
+          claimsCreated: createdClaims,
           success: true,
         });
       } catch (err: any) {

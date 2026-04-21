@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -31,6 +32,7 @@ const PARTNER_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function AgentsPortfolioPage() {
+  const navigate = useNavigate();
   const [agents, setAgents] = useState<AgentPortfolio[]>([]);
   const [monthlyCA, setMonthlyCA] = useState<MonthlyCA[]>([]);
   const [loading, setLoading] = useState(true);
@@ -125,7 +127,7 @@ export default function AgentsPortfolioPage() {
             <TableHeader><TableRow><TableHead>Agent</TableHead><TableHead>Type</TableHead><TableHead className="text-center">Clients</TableHead><TableHead className="text-center">Prospects</TableHead><TableHead className="text-center">Polices actives</TableHead><TableHead className="text-right">CA (primes)</TableHead></TableRow></TableHeader>
             <TableBody>
               {agents.map((agent) => (
-                <TableRow key={agent.id}>
+                <TableRow key={agent.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/admin/agents/${agent.id}`)}>
                   <TableCell><div><p className="font-medium">{agent.first_name} {agent.last_name}</p><p className="text-xs text-muted-foreground">{agent.email}</p></div></TableCell>
                   <TableCell><Badge variant="outline">{PARTNER_TYPE_LABELS[agent.partner_type || ""] || "—"}</Badge></TableCell>
                   <TableCell className="text-center font-medium">{agent.clientCount}</TableCell>

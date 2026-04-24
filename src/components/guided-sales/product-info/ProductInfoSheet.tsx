@@ -4,37 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Check, X, Shield, FileText, HelpCircle, Sparkles } from "lucide-react";
+import { Check, Shield, HelpCircle, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type Coverage = { id?: string; label: string; name?: string; description?: string; required?: boolean };
 type Faq = { q?: string; a?: string; question?: string; answer?: string };
-type DocTpl = { id?: string; name?: string; title?: string };
-
-/**
- * Parse exclusions from free-text `terms` field.
- * Looks for a block starting with "Exclusions" / "Ne sont pas couverts" and
- * extracts the following bullet/line items.
- */
-const parseExclusionsFromTerms = (terms: string | null | undefined): string[] => {
-  if (!terms) return [];
-  const lines = terms.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-  const startIdx = lines.findIndex((l) =>
-    /^(exclusions?|ne sont pas couverts?|ce qui n'est pas couvert)/i.test(l)
-  );
-  if (startIdx === -1) return [];
-  const items: string[] = [];
-  for (let i = startIdx + 1; i < lines.length; i++) {
-    const line = lines[i];
-    // Stop at next section header
-    if (/^[A-ZÉÈÀ][^.]{0,80}:$/.test(line) && !line.startsWith("-") && !line.startsWith("•")) break;
-    const cleaned = line.replace(/^[-•*–]\s*/, "").trim();
-    if (cleaned) items.push(cleaned);
-  }
-  return items;
-};
 
 interface ProductInfoSheetProps {
   open: boolean;
@@ -50,7 +26,7 @@ export const ProductInfoSheet = ({ open, onClose, productType, onSelect }: Produ
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, description, category, coverages, faqs, terms, document_templates")
+        .select("id, name, description, category, coverages, faqs")
         .eq("product_type", productType!)
         .eq("is_active", true)
         .maybeSingle();
@@ -63,8 +39,6 @@ export const ProductInfoSheet = ({ open, onClose, productType, onSelect }: Produ
 
   const coverages: Coverage[] = Array.isArray(product?.coverages) ? (product!.coverages as Coverage[]) : [];
   const faqsRaw: Faq[] = Array.isArray(product?.faqs) ? (product!.faqs as Faq[]) : [];
-  const docsRaw: DocTpl[] = Array.isArray(product?.document_templates) ? (product!.document_templates as DocTpl[]) : [];
-  const exclusions = parseExclusionsFromTerms(product?.terms);
   // Highlights = required coverages (auto-derived from the product engine)
   const highlights = coverages.filter((c) => c.required).map((c) => c.label || c.name || "").filter(Boolean);
   const categoryLabel = product?.category === "vie" ? "Vie" : product?.category === "non-vie" ? "Non-Vie" : product?.category ?? "";
@@ -116,11 +90,9 @@ export const ProductInfoSheet = ({ open, onClose, productType, onSelect }: Produ
           )}
 
           <Tabs defaultValue="guarantees" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="guarantees"><Shield className="h-3.5 w-3.5 mr-1" />Garanties</TabsTrigger>
-              <TabsTrigger value="exclusions"><X className="h-3.5 w-3.5 mr-1" />Exclusions</TabsTrigger>
               <TabsTrigger value="faq"><HelpCircle className="h-3.5 w-3.5 mr-1" />FAQ</TabsTrigger>
-              <TabsTrigger value="docs"><FileText className="h-3.5 w-3.5 mr-1" />Docs</TabsTrigger>
             </TabsList>
 
             <TabsContent value="guarantees" className="space-y-2 mt-4">
@@ -149,23 +121,6 @@ export const ProductInfoSheet = ({ open, onClose, productType, onSelect }: Produ
               )}
             </TabsContent>
 
-            <TabsContent value="exclusions" className="mt-4">
-              {exclusions.length === 0 ? (
-                <p className="text-sm text-muted-foreground p-4 text-center">
-                  Aucune exclusion renseignée. Consultez les Conditions Générales du produit.
-                </p>
-              ) : (
-                <ul className="space-y-2">
-                  {exclusions.map((e, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
-                      <X className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
-                      <span>{e}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </TabsContent>
-
             <TabsContent value="faq" className="mt-4">
               {faqsRaw.length === 0 ? (
                 <p className="text-sm text-muted-foreground p-4 text-center">
@@ -185,25 +140,6 @@ export const ProductInfoSheet = ({ open, onClose, productType, onSelect }: Produ
                     );
                   })}
                 </Accordion>
-              )}
-            </TabsContent>
-
-            <TabsContent value="docs" className="space-y-2 mt-4">
-              {docsRaw.length === 0 ? (
-                <p className="text-sm text-muted-foreground p-4 text-center">
-                  Aucun document associé à ce produit.
-                </p>
-              ) : (
-                docsRaw.map((d, i) => {
-                  const label = d.name || d.title || `Document ${i + 1}`;
-                  return (
-                    <div key={d.id ?? i} className="w-full flex items-center gap-3 p-3 border rounded-lg">
-                      <FileText className="h-4 w-4 text-primary" />
-                      <span className="text-sm flex-1">{label}</span>
-                      <Badge variant="outline" className="text-xs">PDF</Badge>
-                    </div>
-                  );
-                })
               )}
             </TabsContent>
           </Tabs>

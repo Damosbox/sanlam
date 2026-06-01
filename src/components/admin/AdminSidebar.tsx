@@ -164,15 +164,15 @@ export function AdminSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="sidebar-admin border-r">
-      <SidebarHeader className="border-b p-4">
+      <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <Shield className="h-4 w-4 text-primary-foreground" />
+          <div className="h-8 w-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
+            <Shield className="h-4 w-4 text-sidebar-primary-foreground" />
           </div>
           {!collapsed && (
             <div>
-              <p className="font-semibold text-sm">Admin Panel</p>
-              <p className="text-xs text-muted-foreground">Sanlam Assurance</p>
+              <p className="font-semibold text-sm text-sidebar-foreground">Console Admin</p>
+              <p className="text-xs text-sidebar-foreground/60">Sanlam Allianz</p>
             </div>
           )}
         </div>
@@ -189,7 +189,7 @@ export function AdminSidebar() {
         {groups.map((g) => renderCollapsibleGroup(g.key, g.label, g.items))}
       </SidebarContent>
 
-      <SidebarFooter className="border-t p-4">
+      <SidebarFooter className="border-t border-sidebar-border p-4">
         <LogoutButton />
       </SidebarFooter>
     </Sidebar>

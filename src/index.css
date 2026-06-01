@@ -164,6 +164,21 @@
   .transition-base {
     transition: var(--transition-base);
   }
+
+  /* Admin sidebar scope — remaps the shadcn sidebar tokens to the
+     dark Sanlam navy palette so the admin space is visually distinct
+     from the broker space without touching the sidebar component. */
+  .sidebar-admin,
+  .sidebar-admin [data-sidebar="sidebar"] {
+    --sidebar-background: var(--sidebar-admin-background);
+    --sidebar-foreground: var(--sidebar-admin-foreground);
+    --sidebar-primary: var(--sidebar-admin-primary);
+    --sidebar-primary-foreground: var(--sidebar-admin-primary-foreground);
+    --sidebar-accent: var(--sidebar-admin-accent);
+    --sidebar-accent-foreground: var(--sidebar-admin-accent-foreground);
+    --sidebar-border: var(--sidebar-admin-border);
+    --sidebar-ring: var(--sidebar-admin-ring);
+  }
   
   .transition-smooth {
     transition: var(--transition-smooth);

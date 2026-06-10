@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, FileText, Share2, FolderOpen, ArrowLeft, Send, Download, Home, Heart, Car } from "lucide-react";
+import { CheckCircle2, FileText, Share2, FolderOpen, ArrowLeft, Send, Download, Home, Heart, Car, Sparkles, ArrowRight } from "lucide-react";
 import { GuidedSalesState } from "../types";
 import { toast } from "sonner";
 import { DocumentResendDialog } from "@/components/policies/DocumentResendDialog";
@@ -167,13 +167,18 @@ export const IssuanceStep = ({ state, onReset, upsellAccepted }: IssuanceStepPro
       {/* Cross-selling */}
       <Card>
         <CardContent className="pt-6">
-          <h3 className="font-semibold mb-1">Découvrez nos autres produits</h3>
-          <p className="text-sm text-muted-foreground mb-4">Complétez la protection de votre client</p>
+          <div className="flex items-center gap-2 mb-1">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <h3 className="font-semibold">Boostez votre commission</h3>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Profitez de l'élan de la souscription pour proposer une offre complémentaire
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {crossSellProducts.map((product) => {
               const Icon = product.icon;
               return (
-                <div key={product.id} className="rounded-lg border p-4 hover:bg-muted/50 transition-colors space-y-3">
+                <div key={product.id} className="rounded-lg border p-4 hover:border-primary/40 hover:bg-primary/5 transition-colors space-y-3">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                       <Icon className="h-5 w-5 text-primary" />
@@ -184,8 +189,9 @@ export const IssuanceStep = ({ state, onReset, upsellAccepted }: IssuanceStepPro
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground">{product.description}</p>
-                  <Button variant="outline" size="sm" className="w-full" onClick={() => handleCrossSell(product.product)}>
-                    En savoir plus
+                  <Button size="sm" className="w-full group gap-1.5" onClick={() => handleCrossSell(product.product)}>
+                    Proposer maintenant
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Button>
                 </div>
               );

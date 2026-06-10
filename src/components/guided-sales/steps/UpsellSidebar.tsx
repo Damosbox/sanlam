@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Home, Heart, Car } from "lucide-react";
+import { Home, Heart, Car, Sparkles, ArrowRight } from "lucide-react";
 import { GuidedSalesState, SelectedProductType } from "../types";
 import { useNavigate } from "react-router-dom";
 
@@ -66,13 +66,18 @@ export const UpsellSidebar = ({ state }: CrossSellSidebarProps) => {
   return (
     <Card className="sticky top-20">
       <CardContent className="pt-6">
-        <h3 className="font-semibold mb-1">Découvrez nos autres produits</h3>
-        <p className="text-sm text-muted-foreground mb-4">Complétez la protection de votre client</p>
+        <div className="flex items-center gap-2 mb-1">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <h3 className="font-semibold">Boostez votre commission</h3>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Proposez une offre complémentaire et augmentez la valeur du client
+        </p>
         <div className="space-y-4">
           {products.map((product) => {
             const Icon = product.icon;
             return (
-              <div key={product.id} className="rounded-lg border p-4 hover:bg-muted/50 transition-colors space-y-3">
+              <div key={product.id} className="rounded-lg border p-4 hover:border-primary/40 hover:bg-primary/5 transition-colors space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                     <Icon className="h-5 w-5 text-primary" />
@@ -83,8 +88,13 @@ export const UpsellSidebar = ({ state }: CrossSellSidebarProps) => {
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground">{product.description}</p>
-                <Button variant="outline" size="sm" className="w-full" onClick={() => handleCrossSell(product.product)}>
-                  En savoir plus
+                <Button
+                  size="sm"
+                  className="w-full group gap-1.5"
+                  onClick={() => handleCrossSell(product.product)}
+                >
+                  Proposer maintenant
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </div>
             );

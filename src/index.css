@@ -70,14 +70,14 @@
        on the <Sidebar> element. Keeps the Sanlam blue accent. */
     /* Lighter navy — softer contrast, easier on the eyes
        while keeping clear differentiation from the broker sidebar. */
-    --sidebar-admin-background: 210 30% 97%;
-    --sidebar-admin-foreground: 212 65% 14%;
-    --sidebar-admin-primary: 203 100% 36%;
-    --sidebar-admin-primary-foreground: 0 0% 100%;
-    --sidebar-admin-accent: 203 85% 88%;
-    --sidebar-admin-accent-foreground: 212 100% 20%;
-    --sidebar-admin-border: 212 35% 78%;
-    --sidebar-admin-ring: 203 100% 36%;
+    --sidebar-admin-background: 203 100% 39%;
+    --sidebar-admin-foreground: 0 0% 100%;
+    --sidebar-admin-primary: 0 0% 100%;
+    --sidebar-admin-primary-foreground: 203 100% 25%;
+    --sidebar-admin-accent: 203 100% 32%;
+    --sidebar-admin-accent-foreground: 0 0% 100%;
+    --sidebar-admin-border: 203 60% 55%;
+    --sidebar-admin-ring: 0 0% 100%;
     
     /* Gradients */
     --gradient-activated: linear-gradient(135deg, hsl(var(--sanlam-blue)), hsl(var(--allianz-blue)));

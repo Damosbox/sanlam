@@ -1676,6 +1676,143 @@ export type Database = {
           },
         ]
       }
+      pricing_adjustment_approvals: {
+        Row: {
+          adjustment_type: string
+          adjustment_unit: string
+          adjustment_value: number
+          approver_id: string | null
+          client_name: string
+          context: Json
+          created_at: string
+          decided_at: string | null
+          decision_reason: string | null
+          id: string
+          impact_fcfa: number
+          product_id: string | null
+          product_name: string
+          requested_by: string
+          source: string
+          status: string
+          subscription_id: string | null
+          updated_at: string
+          vehicle_value_fcfa: number | null
+        }
+        Insert: {
+          adjustment_type: string
+          adjustment_unit?: string
+          adjustment_value: number
+          approver_id?: string | null
+          client_name: string
+          context?: Json
+          created_at?: string
+          decided_at?: string | null
+          decision_reason?: string | null
+          id?: string
+          impact_fcfa?: number
+          product_id?: string | null
+          product_name: string
+          requested_by: string
+          source: string
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+          vehicle_value_fcfa?: number | null
+        }
+        Update: {
+          adjustment_type?: string
+          adjustment_unit?: string
+          adjustment_value?: number
+          approver_id?: string | null
+          client_name?: string
+          context?: Json
+          created_at?: string
+          decided_at?: string | null
+          decision_reason?: string | null
+          id?: string
+          impact_fcfa?: number
+          product_id?: string | null
+          product_name?: string
+          requested_by?: string
+          source?: string
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+          vehicle_value_fcfa?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_adjustment_approvals_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pricing_adjustments_history: {
+        Row: {
+          adjustment_type: string
+          adjustment_unit: string
+          adjustment_value: number
+          applied_at: string
+          applied_by: string
+          approval_id: string | null
+          context: Json
+          created_at: string
+          id: string
+          impact_fcfa: number
+          product_id: string | null
+          source: string
+          subscription_id: string | null
+        }
+        Insert: {
+          adjustment_type: string
+          adjustment_unit?: string
+          adjustment_value: number
+          applied_at?: string
+          applied_by: string
+          approval_id?: string | null
+          context?: Json
+          created_at?: string
+          id?: string
+          impact_fcfa?: number
+          product_id?: string | null
+          source: string
+          subscription_id?: string | null
+        }
+        Update: {
+          adjustment_type?: string
+          adjustment_unit?: string
+          adjustment_value?: number
+          applied_at?: string
+          applied_by?: string
+          approval_id?: string | null
+          context?: Json
+          created_at?: string
+          id?: string
+          impact_fcfa?: number
+          product_id?: string | null
+          source?: string
+          subscription_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_adjustments_history_approval_id_fkey"
+            columns: ["approval_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_adjustment_approvals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pricing_adjustments_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_calc_rules: {
         Row: {
           calc_rule_id: string
@@ -1856,6 +1993,7 @@ export type Database = {
           optional_products: string[] | null
           payment_methods: Json | null
           periodicity: string[] | null
+          pricing_adjustments: Json
           product_code: string | null
           product_type: string | null
           questionnaires: Json | null
@@ -1889,6 +2027,7 @@ export type Database = {
           optional_products?: string[] | null
           payment_methods?: Json | null
           periodicity?: string[] | null
+          pricing_adjustments?: Json
           product_code?: string | null
           product_type?: string | null
           questionnaires?: Json | null
@@ -1922,6 +2061,7 @@ export type Database = {
           optional_products?: string[] | null
           payment_methods?: Json | null
           periodicity?: string[] | null
+          pricing_adjustments?: Json
           product_code?: string | null
           product_type?: string | null
           questionnaires?: Json | null

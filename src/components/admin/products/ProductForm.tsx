@@ -63,6 +63,7 @@ export interface ProductFormData {
   claims_config: any;
   discounts: any[];
   questionnaires: any[];
+  pricing_adjustments: any;
 }
 
 const defaultFormData: ProductFormData = {
@@ -101,6 +102,11 @@ const defaultFormData: ProductFormData = {
   claims_config: {},
   discounts: [],
   questionnaires: [],
+  pricing_adjustments: {
+    reduction_souscription: { enabled: false, roles: [], max_percentage: 0, type: "percentage" },
+    bonus_malus_renouvellement: { enabled: false, roles: [], max_bonus: 0, max_malus: 0, cumul_with_commercial: false },
+    approval: { required: false, threshold_fcfa: 75000000, validator_roles: ["admin"] },
+  },
 };
 
 interface StepDef {
@@ -161,6 +167,7 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
         claims_config: product.claims_config || {},
         discounts: product.discounts || [],
         questionnaires: product.questionnaires || [],
+        pricing_adjustments: (product as any).pricing_adjustments || defaultFormData.pricing_adjustments,
       };
     }
     return defaultFormData;
@@ -235,6 +242,7 @@ export function ProductForm({ product, isNew }: ProductFormProps) {
         claims_config: data.claims_config,
         discounts: data.discounts,
         questionnaires: data.questionnaires,
+        pricing_adjustments: data.pricing_adjustments,
       };
 
       if (!data.productId) {

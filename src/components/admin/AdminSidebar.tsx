@@ -89,10 +89,10 @@ export function AdminSidebar() {
         onClick={() => handleNavigation(item.url)}
         isActive={isActive(item.url)}
         tooltip={item.title}
-        className="group cursor-pointer relative transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-semibold data-[active=true]:shadow-sm data-[active=true]:before:absolute data-[active=true]:before:left-0 data-[active=true]:before:top-1.5 data-[active=true]:before:bottom-1.5 data-[active=true]:before:w-1 data-[active=true]:before:rounded-r data-[active=true]:before:bg-sidebar-primary"
+        className="cursor-pointer relative transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-semibold data-[active=true]:shadow-sm data-[active=true]:before:absolute data-[active=true]:before:left-0 data-[active=true]:before:top-1.5 data-[active=true]:before:bottom-1.5 data-[active=true]:before:w-1 data-[active=true]:before:rounded-r data-[active=true]:before:bg-sidebar-primary"
       >
         <item.icon
-          className={`h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-3 ${
+          className={`h-5 w-5 shrink-0 transition-transform duration-200 group-hover/menu-item:scale-110 group-hover/menu-item:-rotate-3 ${
             isActive(item.url) ? "text-sidebar-primary scale-110" : ""
           }`}
         />

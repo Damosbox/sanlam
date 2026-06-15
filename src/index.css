@@ -65,19 +65,16 @@
     --sidebar-border: 214 32% 91%;
     --sidebar-ring: 203 100% 39%;
 
-    /* Admin sidebar override — dark navy Sanlam to differentiate
-       from the light Broker (B2B) sidebar. Apply via .sidebar-admin
-       on the <Sidebar> element. Keeps the Sanlam blue accent. */
-    /* Lighter navy — softer contrast, easier on the eyes
-       while keeping clear differentiation from the broker sidebar. */
-    --sidebar-admin-background: 203 100% 39%;
-    --sidebar-admin-foreground: 0 0% 100%;
-    --sidebar-admin-primary: 0 0% 100%;
-    --sidebar-admin-primary-foreground: 203 100% 25%;
-    --sidebar-admin-accent: 203 100% 32%;
-    --sidebar-admin-accent-foreground: 0 0% 100%;
-    --sidebar-admin-border: 203 60% 55%;
-    --sidebar-admin-ring: 0 0% 100%;
+    /* Admin sidebar override — deep Allianz/Sanlam navy with WCAG AA/AAA
+       contrast for menu text, labels, hover and active states. */
+    --sidebar-admin-background: 212 100% 13%;
+    --sidebar-admin-foreground: 210 40% 98%;
+    --sidebar-admin-primary: 42 100% 49%;
+    --sidebar-admin-primary-foreground: 212 100% 13%;
+    --sidebar-admin-accent: 203 100% 24%;
+    --sidebar-admin-accent-foreground: 210 40% 98%;
+    --sidebar-admin-border: 203 80% 32%;
+    --sidebar-admin-ring: 42 100% 49%;
     
     /* Gradients */
     --gradient-activated: linear-gradient(135deg, hsl(var(--sanlam-blue)), hsl(var(--allianz-blue)));

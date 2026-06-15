@@ -12,11 +12,11 @@ interface AnimatedIconProps {
 }
 
 /**
- * Wraps a Lucide icon and replays a "draw-on" animation (stroke-dashoffset
- * from full length → 0) on every mouseenter of the closest sidebar menu
- * button. Each path of the SVG is animated individually so the trace appears
- * stroke by stroke. After completion the inline styles are cleared so the
- * icon returns to its crisp default rendering.
+ * Wraps a Lucide icon and plays a subtle "burst" animation on every
+ * mouseenter of the closest interactive parent. Each sub-shape of the SVG
+ * translates slightly away from the icon's center (then springs back),
+ * giving the impression that the icon's pieces gently separate without
+ * ever disappearing.
  */
 export function AnimatedIcon({
   icon: Icon,
@@ -30,38 +30,74 @@ export function AnimatedIcon({
     if (!wrapper) return;
     const trigger =
       (wrapper.closest(triggerSelector) as HTMLElement | null) ?? wrapper;
+    let animating = false;
 
     const onEnter = () => {
+      if (animating) return;
       const svg = wrapper.querySelector("svg");
       if (!svg) return;
       const shapes = svg.querySelectorAll<SVGGeometryElement>(
         "path, line, polyline, polygon, circle, rect, ellipse"
       );
-      shapes.forEach((shape, idx) => {
-        let length = 0;
+      if (!shapes.length) return;
+      // Viewbox center (Lucide icons are 24x24 with the visual centre at 12,12)
+      const vb = svg.viewBox?.baseVal;
+      const cx = vb && vb.width ? vb.x + vb.width / 2 : 12;
+      const cy = vb && vb.height ? vb.y + vb.height / 2 : 12;
+      // Distance to translate each shape outward, in SVG user units.
+      const SPREAD = 1.6;
+
+      animating = true;
+      shapes.forEach((shape) => {
+        shape.style.transformBox = "fill-box";
+        shape.style.transformOrigin = "center";
+      });
+
+      const animations = Array.from(shapes).map((shape, idx) => {
+        // Compute the shape's centre in SVG coordinates.
+        let bx = cx;
+        let by = cy;
         try {
-          length = shape.getTotalLength();
+          const b = shape.getBBox();
+          bx = b.x + b.width / 2;
+          by = b.y + b.height / 2;
         } catch {
-          length = 0;
+          /* noop */
         }
-        if (!length || !Number.isFinite(length)) return;
+        let dx = bx - cx;
+        let dy = by - cy;
+        const len = Math.hypot(dx, dy);
+        if (len < 0.001) {
+          // Shape sits dead-centre — push it on a deterministic diagonal so
+          // it still participates in the burst instead of staying frozen.
+          const angle = (idx / shapes.length) * Math.PI * 2;
+          dx = Math.cos(angle);
+          dy = Math.sin(angle);
+        } else {
+          dx /= len;
+          dy /= len;
+        }
+        const tx = +(dx * SPREAD).toFixed(3);
+        const ty = +(dy * SPREAD).toFixed(3);
 
-        shape.style.strokeDasharray = `${length}`;
-        shape.style.strokeDashoffset = `${length}`;
-
-        animate(
+        return animate(
           shape,
-          { strokeDashoffset: [length, 0] },
+          { transform: ["translate(0px, 0px)", `translate(${tx}px, ${ty}px)`, "translate(0px, 0px)"] },
           {
-            duration: 0.18,
-            delay: idx * 0.02,
-            ease: [0.65, 0, 0.35, 1],
+            duration: 0.45,
+            delay: idx * 0.025,
+            ease: [0.34, 1.56, 0.64, 1],
           }
-        ).then(() => {
-          // Clear inline styles so the icon renders crisply at rest.
-          shape.style.strokeDasharray = "";
-          shape.style.strokeDashoffset = "";
+        );
+      });
+
+      Promise.all(animations.map((a) => a.finished ?? a)).finally(() => {
+        shapes.forEach((shape) => {
+          shape.style.transform = "";
+          shape.style.transformBox = "";
+          shape.style.transformOrigin = "";
         });
+        animating = false;
       });
     };
 

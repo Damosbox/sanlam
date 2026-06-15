@@ -13,6 +13,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import LogoutButton from "@/components/LogoutButton";
+import { AnimatedIcon } from "@/components/ui/animated-icon";
 
 interface BadgeCounts {
   pendingClaims: number;
@@ -91,9 +92,10 @@ export function AdminSidebar() {
         tooltip={item.title}
         className="cursor-pointer relative text-sidebar-foreground transition-all duration-200 hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-semibold data-[active=true]:shadow-sm data-[active=true]:before:absolute data-[active=true]:before:left-0 data-[active=true]:before:top-1.5 data-[active=true]:before:bottom-1.5 data-[active=true]:before:w-1 data-[active=true]:before:rounded-r data-[active=true]:before:bg-sidebar-primary"
       >
-        <item.icon
-          className={`h-5 w-5 shrink-0 text-current transition-transform duration-200 group-hover/menu-item:scale-110 group-hover/menu-item:-rotate-3 ${
-            isActive(item.url) ? "text-sidebar-primary scale-110" : ""
+        <AnimatedIcon
+          icon={item.icon}
+          className={`h-5 w-5 shrink-0 text-current transition-colors duration-200 ${
+            isActive(item.url) ? "text-sidebar-primary" : ""
           }`}
         />
         {!collapsed && <span className="flex-1">{item.title}</span>}

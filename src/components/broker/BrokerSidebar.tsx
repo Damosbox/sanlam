@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { AnimatedIcon } from "@/components/ui/animated-icon";
 
 interface BadgeCounts {
   newLeads: number;
@@ -231,10 +232,11 @@ export function BrokerSidebar() {
         )}
       >
         <div className="relative">
-          <item.icon
+          <AnimatedIcon
+            icon={item.icon}
             className={cn(
-              "h-5 w-5 shrink-0 transition-transform duration-200 group-hover/menu-item:scale-110 group-hover/menu-item:-rotate-3",
-              isActive(item.url) && "text-primary scale-110"
+              "h-5 w-5 shrink-0 transition-colors duration-200",
+              isActive(item.url) && "text-primary"
             )}
           />
           {collapsed && item.badge && (

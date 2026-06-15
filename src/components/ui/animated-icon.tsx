@@ -1,8 +1,8 @@
-import { ComponentType, useEffect, useRef } from "react";
+import { ElementType, useEffect, useRef, createElement } from "react";
 import { animate } from "motion";
 
 interface AnimatedIconProps {
-  icon: ComponentType<{ className?: string }>;
+  icon: ElementType;
   className?: string;
   /**
    * Optional CSS selector for the parent element whose hover triggers the
@@ -71,7 +71,7 @@ export function AnimatedIcon({
 
   return (
     <span ref={wrapperRef} className="inline-flex shrink-0">
-      <Icon className={className} />
+      {createElement(Icon, { className })}
     </span>
   );
 }

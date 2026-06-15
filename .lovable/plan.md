@@ -1,85 +1,60 @@
-## Refactor Renouvellements — Admin + Broker
+# Onglet « Approbations en attente » — Admin
 
-Aligner les pages Renouvellement (Admin et Broker) sur les 3 captures fournies. UI uniquement, mêmes composants partagés, périmètre de données différencié.
+Ajout d'un onglet dédié dans les deux pages Admin existantes (Renouvellements + Souscriptions) pour traiter les demandes d'approbation (réduction souscription > seuil, bonus/malus renouvellement > seuil, valeur véhicule > 75M FCFA).
 
-### 1. Nouveau layout de page (partagé)
+UI uniquement — données mockées pour l'instant (la table `pricing_adjustment_approvals` sera créée dans un second temps avec le reste du mécanisme tarifaire).
 
-Header sobre :
-- Icône `RefreshCw` dans pastille `bg-primary/10`
-- Titre "Renouvellements" + sous-titre "Pipeline, suivi et import des renouvellements"
-- Pas de KPI cards, pas de toggles Contact/Statut, pas de `ProductSelector`, pas de `PeriodFilter`
+## Pages modifiées
 
-### 2. Bloc "Importer des renouvellements" (placeholder UI)
+### 1. `/admin/renewals` — `src/pages/admin/RenewalsPage.tsx`
+Refonte avec composant `Tabs` (shadcn) :
+- **Onglet « Pipeline »** : contenu actuel (`RenewalsImportCard` + `RenewalsPipelineCard`)
+- **Onglet « Approbations en attente »** : nouveau composant `ApprovalsTable` filtré sur `source = 'renewal'`, avec badge compteur sur le titre de l'onglet
 
-Carte avec :
-- Titre + description "Chargez le fichier Excel produit par le système cœur d'assurance (.xlsx ou .xls)."
-- Bouton secondaire "Télécharger le modèle" en haut à droite (génère un .xlsx vide côté client via `xlsx`/`exceljs` déjà présent, ou simple toast "Modèle téléchargé" si lib absente)
-- Dropzone pointillée : icône upload + "Glissez votre fichier ici ou cliquez pour sélectionner" + "Formats acceptés : .xlsx, .xls — Taille max : 10 Mo"
-- Bouton pleine largeur "Lancer l'import" (disabled tant qu'aucun fichier valide n'est sélectionné)
-- À la soumission : toast `success` "Import simulé — X lignes détectées" (aucune écriture DB pour l'instant)
+### 2. `/admin/subscriptions` — `src/pages/admin/SubscriptionsPage.tsx`
+Même refonte :
+- **Onglet « Souscriptions »** : `AdminSubscriptionsTable` actuel
+- **Onglet « Approbations en attente »** : `ApprovalsTable` filtré sur `source = 'subscription'`, avec badge compteur
 
-### 3. Bloc "Pipeline des Renouvellements" (refactor)
+## Nouveau composant partagé
 
-Header de carte :
-- Titre "Pipeline des Renouvellements"
-- Barre de filtres : `Input` recherche ("Rechercher par client, branche, police"), `Select` "Agence" (Toutes + liste distincte issue des contrats), `Select` "Statut" (Tous / À renouveler / Notifié / Renouvelé / Expiré)
-- À droite : compteur "N affichés · page X" + bouton primaire **"Renouveler (N)"** (disabled si aucune ligne cochée)
+`src/components/admin/approvals/ApprovalsTable.tsx`
 
-Tableau refactor (`RenewalPipelineTable`) :
-- Colonne checkbox en tête (sélection globale) + checkbox par ligne
-- Colonnes : Client (nom + téléphone en sous-ligne) · Produit (badge) · Agence · Police · Échéance (date + badge Expiré/Urgent) · Prime · Statut · Actions
-- Actions par ligne : icône `Phone` + icône `MessageCircle` (WhatsApp) uniquement (suppression du menu `MoreHorizontal` complexe pour matcher la capture)
-- Suppression des colonnes "Contact" et "Statut dropdown" (remplacées par une seule colonne Statut lecture-seule basée sur `renewal_status`)
+**Props** : `source: 'renewal' | 'subscription'`
 
-### 4. Modal de confirmation "Notification de renouvellement"
+**Colonnes** :
+Demandeur · Client · Produit · Type (Réduction / Bonus / Malus) · Montant impacté (FCFA) · Valeur véhicule (FCFA) · Date demande · Statut · Actions
 
-Déclenché par le bouton "Renouveler (N)" :
-- Titre : "Notification de renouvellement"
-- Corps : "{N} Contrat(s) sera/seront notifié(s) pour renouvellement. Confirmer ?"
-- Boutons : "Annuler" (outline) / "Confirmer" (primary)
-- À la confirmation : toast `success` "{N} notification(s) envoyée(s)" + reset de la sélection (**mockup — aucune écriture DB**)
+**Filtres header** :
+- Statut : `En attente` (défaut) / `Approuvée` / `Refusée` / `Toutes`
+- Recherche libre (client, demandeur)
 
-### 5. Page Admin (création)
+**Actions par ligne (statut `En attente` uniquement)** :
+- Bouton **Approuver** (vert) — confirmation simple via `AlertDialog`
+- Bouton **Refuser** (rouge) — ouvre `Dialog` avec `Textarea` motif **obligatoire** (min 10 caractères)
 
-- Nouveau fichier `src/pages/admin/RenewalsPage.tsx` (sans préfixe `Admin` pour cohérence avec les autres)
-- Route `renewals` ajoutée dans le bloc `/admin` de `src/App.tsx`
-- Entrée sidebar Admin : "Renouvellements" dans la section "Opérations", icône `RefreshCw`, juste après "Souscriptions" (cf. capture)
-- Périmètre **global** : requête sans filtre `assigned_broker_id`, peut filtrer par agence
+Pour les lignes déjà traitées : affichage du décideur + motif (hover/tooltip), pas d'actions.
 
-### 6. Page Broker (refactor)
+**État** : `useState` local avec données mockées (5–8 lignes par source mélangeant les 3 statuts) — les handlers `onApprove`/`onReject` modifient l'état local et affichent un `toast` de confirmation. Aucun appel réseau.
 
-- `src/pages/broker/RenewalsPage.tsx` réécrite avec le même layout
-- Périmètre conservé : `assigned_broker_id = user.id`
-- Suppression du `KPI_CARDS`, de `ProductSelector`, `PeriodFilter`, `RenewalStatusToggles`
+## Détails techniques
 
-### 7. Mutualisation
+- Pattern `Tabs` identique à celui déjà utilisé ailleurs dans l'app (shadcn `tabs.tsx`)
+- Format FCFA via `formatFCFA` (utilitaire existant)
+- Mock data centralisée dans `src/components/admin/approvals/mockApprovals.ts` pour pouvoir réutiliser entre les deux pages et préparer le branchement Supabase futur
+- Badge compteur : petit `Badge` shadcn `variant="secondary"` à côté du label d'onglet, affichant le nombre de demandes `En attente`
+- Sidebar Admin **non modifiée** (pas de page `/admin/approvals` dédiée, conformément à ta décision de fusionner)
 
-Pour éviter la duplication, extraire :
-- `src/components/renewals/RenewalsImportCard.tsx` (bloc import)
-- `src/components/renewals/RenewalsPipelineCard.tsx` (titre + filtres + bouton bulk + table + modal)
-- `src/components/renewals/RenewalsBulkNotifyDialog.tsx` (modal de confirmation)
-- Refactor de `RenewalPipelineTable` pour accepter `scope: "broker" | "admin"`, `selectedIds`/`onSelectionChange`, et exposer la liste filtrée vers le parent (pour le compteur)
+## Hors périmètre
 
-### Détails techniques
+- Création de la table `pricing_adjustment_approvals` (sera faite avec la migration du mécanisme tarifaire complet)
+- Branchement réel des actions Approuver/Refuser sur la BDD
+- Notifications email au demandeur
+- Audit logs
 
-```text
-src/
-├── components/renewals/
-│   ├── RenewalsImportCard.tsx          (nouveau)
-│   ├── RenewalsPipelineCard.tsx        (nouveau)
-│   └── RenewalsBulkNotifyDialog.tsx    (nouveau)
-├── components/policies/
-│   └── RenewalPipelineTable.tsx        (refactor : checkbox, scope, props sélection)
-├── pages/admin/
-│   └── RenewalsPage.tsx                (nouveau)
-├── pages/broker/
-│   └── RenewalsPage.tsx                (réécriture)
-├── components/admin/AdminSidebar.tsx   (ajout entrée Renouvellements)
-└── App.tsx                             (ajout route /admin/renewals)
-```
+## Ordre d'implémentation
 
-Hors scope :
-- Logique réelle d'import Excel (placeholder UI uniquement)
-- Logique réelle d'envoi de notifications (mockup uniquement)
-- Modification du schéma DB
-- Stats / KPIs (reste accessible via `/b2b/stats`)
+1. `mockApprovals.ts` (types + données)
+2. `ApprovalsTable.tsx` (table + dialogs Approuver/Refuser)
+3. Refonte `RenewalsPage.tsx` avec `Tabs`
+4. Refonte `SubscriptionsPage.tsx` avec `Tabs`

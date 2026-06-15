@@ -1,9 +1,8 @@
-import { useEffect, useRef } from "react";
+import { ComponentType, useEffect, useRef } from "react";
 import { animate } from "motion";
-import type { LucideIcon } from "lucide-react";
 
 interface AnimatedIconProps {
-  icon: LucideIcon;
+  icon: ComponentType<{ className?: string }>;
   className?: string;
   /**
    * Optional CSS selector for the parent element whose hover triggers the

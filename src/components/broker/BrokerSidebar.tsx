@@ -222,14 +222,21 @@ export function BrokerSidebar() {
     <SidebarMenuItem key={item.title}>
       <SidebarMenuButton
         onClick={() => !item.disabled && handleNavigation(item.url)}
+        tooltip={item.title}
         className={cn(
-          "w-full justify-start gap-3 transition-all duration-200",
-          isActive(item.url) && "bg-primary/10 text-primary font-medium border-l-2 border-primary",
+          "group w-full justify-start gap-3 transition-all duration-200 relative",
+          isActive(item.url) &&
+            "bg-primary/10 text-primary font-semibold shadow-sm before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-1 before:rounded-r before:bg-primary",
           item.disabled && "opacity-50 cursor-not-allowed"
         )}
       >
         <div className="relative">
-          <item.icon className={cn("h-4 w-4", isActive(item.url) && "text-primary")} />
+          <item.icon
+            className={cn(
+              "h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-3",
+              isActive(item.url) && "text-primary scale-110"
+            )}
+          />
           {collapsed && item.badge && (
             <span className="absolute -top-1 -right-1 w-2 h-2 bg-destructive rounded-full animate-pulse" />
           )}

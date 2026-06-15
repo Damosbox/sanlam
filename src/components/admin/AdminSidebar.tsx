@@ -85,8 +85,17 @@ export function AdminSidebar() {
 
   const renderMenuItem = (item: { title: string; url: string; icon: React.ElementType; badge?: number }) => (
     <SidebarMenuItem key={item.url}>
-      <SidebarMenuButton onClick={() => handleNavigation(item.url)} isActive={isActive(item.url)} tooltip={collapsed ? item.title : undefined} className="cursor-pointer">
-        <item.icon className="h-4 w-4" />
+      <SidebarMenuButton
+        onClick={() => handleNavigation(item.url)}
+        isActive={isActive(item.url)}
+        tooltip={item.title}
+        className="group cursor-pointer relative transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:font-semibold data-[active=true]:shadow-sm data-[active=true]:before:absolute data-[active=true]:before:left-0 data-[active=true]:before:top-1.5 data-[active=true]:before:bottom-1.5 data-[active=true]:before:w-1 data-[active=true]:before:rounded-r data-[active=true]:before:bg-sidebar-primary"
+      >
+        <item.icon
+          className={`h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-3 ${
+            isActive(item.url) ? "text-sidebar-primary scale-110" : ""
+          }`}
+        />
         {!collapsed && <span className="flex-1">{item.title}</span>}
         {item.badge && item.badge > 0 && (
           <span className="ml-auto inline-flex items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground min-w-[18px]">{item.badge}</span>

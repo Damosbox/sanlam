@@ -325,9 +325,9 @@ export function GeneralInfoTab({ formData, updateField, errors = {} }: GeneralIn
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Réductions & Bonus</Label>
+                <Label>Ajustements tarifaires</Label>
                 <p className="text-sm text-muted-foreground">
-                  Activer les réductions et bonus pour ce produit
+                  Activer les réductions à la souscription et bonus/malus au renouvellement
                 </p>
               </div>
               <Switch

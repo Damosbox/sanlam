@@ -122,7 +122,7 @@ const ALL_STEPS: StepDef[] = [
   { id: "documents", label: "Documents" },
   { id: "sales", label: "Ventes croisées" },
   { id: "faqs", label: "FAQs" },
-  { id: "discounts", label: "Réductions", condition: (d) => d.discounts_enabled },
+  { id: "discounts", label: "Ajustements", condition: (d) => d.discounts_enabled },
   { id: "questionnaires", label: "Questionnaires", condition: (d) => d.medical_questionnaire_enabled },
   { id: "claims-config", label: "Sinistres", condition: (d) => d.has_claims },
   { id: "beneficiaries", label: "Bénéficiaires", condition: (d) => d.category === "vie" },

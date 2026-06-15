@@ -53,8 +53,8 @@ export function AnimatedIcon({
           shape,
           { strokeDashoffset: [length, 0] },
           {
-            duration: 0.55,
-            delay: idx * 0.06,
+            duration: 0.28,
+            delay: idx * 0.03,
             ease: [0.65, 0, 0.35, 1],
           }
         ).then(() => {

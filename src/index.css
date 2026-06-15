@@ -187,6 +187,18 @@
   .sidebar-admin [data-sidebar="menu-button"][data-active="true"] {
     color: hsl(var(--sidebar-accent-foreground));
   }
+
+  .sidebar-admin [data-sidebar="footer"] button {
+    background: transparent;
+    border-color: hsl(var(--sidebar-border));
+    color: hsl(var(--sidebar-foreground));
+  }
+
+  .sidebar-admin [data-sidebar="footer"] button:hover {
+    background: hsl(var(--sidebar-accent));
+    border-color: hsl(var(--sidebar-primary));
+    color: hsl(var(--sidebar-accent-foreground));
+  }
   
   .transition-smooth {
     transition: var(--transition-smooth);

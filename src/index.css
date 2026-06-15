@@ -127,7 +127,6 @@
   html {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--muted-foreground) / 0.25) transparent;
- erves-color: hsl(var(--muted-foreground) / 0.25) transparent;
   }
 
   body {

@@ -40,6 +40,7 @@ import ClaimNewPage from "./pages/broker/ClaimNewPage";
 import PoliciesPage from "./pages/broker/PoliciesPage";
 import RenewalStatsPage from "./pages/broker/RenewalStatsPage";
 import RenewalsPage from "./pages/broker/RenewalsPage";
+import AdminRenewalsPage from "./pages/admin/RenewalsPage";
 import AnalysisPage from "./pages/broker/AnalysisPage";
 import NewsPage from "./pages/broker/NewsPage";
 import ReportsPage from "./pages/broker/ReportsPage";
@@ -158,6 +159,7 @@ const App = () => (
             <Route path="dashboard" element={<AdminDashboardPage />} />
             <Route path="claims" element={<AdminClaimsPage />} />
             <Route path="subscriptions" element={<AdminSubscriptionsPage />} />
+            <Route path="renewals" element={<AdminRenewalsPage />} />
             <Route path="users" element={<AdminUsersPage />} />
             <Route path="users/clients" element={<Navigate to="/admin/users?tab=clients" replace />} />
             <Route path="users/partners" element={<Navigate to="/admin/users?tab=partners" replace />} />

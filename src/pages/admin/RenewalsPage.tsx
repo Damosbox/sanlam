@@ -2,7 +2,7 @@ import { RefreshCw } from "lucide-react";
 import { RenewalsImportCard } from "@/components/renewals/RenewalsImportCard";
 import { RenewalsPipelineCard } from "@/components/renewals/RenewalsPipelineCard";
 
-export default function RenewalsPage() {
+export default function AdminRenewalsPage() {
   return (
     <div className="space-y-6 max-w-7xl animate-fade-in">
       <div className="flex items-center gap-3">
@@ -18,7 +18,7 @@ export default function RenewalsPage() {
       </div>
 
       <RenewalsImportCard />
-      <RenewalsPipelineCard scope="broker" />
+      <RenewalsPipelineCard scope="admin" />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import {
   LayoutDashboard, FileText, TrendingUp, Users, KeyRound, ScrollText, Trophy,
   ClipboardList, Brain, Shield, Database, Settings, Briefcase, Newspaper,
   UserCheck, Package, Calculator, Variable, PieChart, ArrowRightLeft,
-  ShieldCheck, Target, AlertTriangle, ChevronDown, Lock, ScanSearch,
+  ShieldCheck, Target, AlertTriangle, ChevronDown, Lock, ScanSearch, RefreshCw,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -135,6 +135,7 @@ export function AdminSidebar() {
     { key: "operations", label: "Opérations", items: [
       { title: "Sinistres", url: "/admin/claims", icon: FileText, badge: badges.pendingClaims },
       { title: "Souscriptions", url: "/admin/subscriptions", icon: TrendingUp },
+      { title: "Renouvellements", url: "/admin/renewals", icon: RefreshCw },
     ]},
     { key: "access", label: "Accès & Utilisateurs", items: [
       { title: "Utilisateurs", url: "/admin/users", icon: Users, badge: badges.newClients + badges.newPartners + badges.newAdmins },

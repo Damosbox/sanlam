@@ -1,95 +1,85 @@
+## Refactor Renouvellements — Admin + Broker
 
+Aligner les pages Renouvellement (Admin et Broker) sur les 3 captures fournies. UI uniquement, mêmes composants partagés, périmètre de données différencié.
 
-## Vue Admin « Drill-down par Agent »
+### 1. Nouveau layout de page (partagé)
 
-### Principe
-Chaque page agent (`/b2b/*`) existe déjà en version **agrégée** côté admin. Il manque le **drill-down** : sélectionner un agent et voir **sa vue exacte** (read-only, impersonation lecture). Cela évite de dupliquer les composants.
+Header sobre :
+- Icône `RefreshCw` dans pastille `bg-primary/10`
+- Titre "Renouvellements" + sous-titre "Pipeline, suivi et import des renouvellements"
+- Pas de KPI cards, pas de toggles Contact/Statut, pas de `ProductSelector`, pas de `PeriodFilter`
 
-### Architecture proposée
+### 2. Bloc "Importer des renouvellements" (placeholder UI)
 
-**1 hub + 6 onglets** sous une seule route dynamique :
+Carte avec :
+- Titre + description "Chargez le fichier Excel produit par le système cœur d'assurance (.xlsx ou .xls)."
+- Bouton secondaire "Télécharger le modèle" en haut à droite (génère un .xlsx vide côté client via `xlsx`/`exceljs` déjà présent, ou simple toast "Modèle téléchargé" si lib absente)
+- Dropzone pointillée : icône upload + "Glissez votre fichier ici ou cliquez pour sélectionner" + "Formats acceptés : .xlsx, .xls — Taille max : 10 Mo"
+- Bouton pleine largeur "Lancer l'import" (disabled tant qu'aucun fichier valide n'est sélectionné)
+- À la soumission : toast `success` "Import simulé — X lignes détectées" (aucune écriture DB pour l'instant)
 
+### 3. Bloc "Pipeline des Renouvellements" (refactor)
+
+Header de carte :
+- Titre "Pipeline des Renouvellements"
+- Barre de filtres : `Input` recherche ("Rechercher par client, branche, police"), `Select` "Agence" (Toutes + liste distincte issue des contrats), `Select` "Statut" (Tous / À renouveler / Notifié / Renouvelé / Expiré)
+- À droite : compteur "N affichés · page X" + bouton primaire **"Renouveler (N)"** (disabled si aucune ligne cochée)
+
+Tableau refactor (`RenewalPipelineTable`) :
+- Colonne checkbox en tête (sélection globale) + checkbox par ligne
+- Colonnes : Client (nom + téléphone en sous-ligne) · Produit (badge) · Agence · Police · Échéance (date + badge Expiré/Urgent) · Prime · Statut · Actions
+- Actions par ligne : icône `Phone` + icône `MessageCircle` (WhatsApp) uniquement (suppression du menu `MoreHorizontal` complexe pour matcher la capture)
+- Suppression des colonnes "Contact" et "Statut dropdown" (remplacées par une seule colonne Statut lecture-seule basée sur `renewal_status`)
+
+### 4. Modal de confirmation "Notification de renouvellement"
+
+Déclenché par le bouton "Renouveler (N)" :
+- Titre : "Notification de renouvellement"
+- Corps : "{N} Contrat(s) sera/seront notifié(s) pour renouvellement. Confirmer ?"
+- Boutons : "Annuler" (outline) / "Confirmer" (primary)
+- À la confirmation : toast `success` "{N} notification(s) envoyée(s)" + reset de la sélection (**mockup — aucune écriture DB**)
+
+### 5. Page Admin (création)
+
+- Nouveau fichier `src/pages/admin/RenewalsPage.tsx` (sans préfixe `Admin` pour cohérence avec les autres)
+- Route `renewals` ajoutée dans le bloc `/admin` de `src/App.tsx`
+- Entrée sidebar Admin : "Renouvellements" dans la section "Opérations", icône `RefreshCw`, juste après "Souscriptions" (cf. capture)
+- Périmètre **global** : requête sans filtre `assigned_broker_id`, peut filtrer par agence
+
+### 6. Page Broker (refactor)
+
+- `src/pages/broker/RenewalsPage.tsx` réécrite avec le même layout
+- Périmètre conservé : `assigned_broker_id = user.id`
+- Suppression du `KPI_CARDS`, de `ProductSelector`, `PeriodFilter`, `RenewalStatusToggles`
+
+### 7. Mutualisation
+
+Pour éviter la duplication, extraire :
+- `src/components/renewals/RenewalsImportCard.tsx` (bloc import)
+- `src/components/renewals/RenewalsPipelineCard.tsx` (titre + filtres + bouton bulk + table + modal)
+- `src/components/renewals/RenewalsBulkNotifyDialog.tsx` (modal de confirmation)
+- Refactor de `RenewalPipelineTable` pour accepter `scope: "broker" | "admin"`, `selectedIds`/`onSelectionChange`, et exposer la liste filtrée vers le parent (pour le compteur)
+
+### Détails techniques
+
+```text
+src/
+├── components/renewals/
+│   ├── RenewalsImportCard.tsx          (nouveau)
+│   ├── RenewalsPipelineCard.tsx        (nouveau)
+│   └── RenewalsBulkNotifyDialog.tsx    (nouveau)
+├── components/policies/
+│   └── RenewalPipelineTable.tsx        (refactor : checkbox, scope, props sélection)
+├── pages/admin/
+│   └── RenewalsPage.tsx                (nouveau)
+├── pages/broker/
+│   └── RenewalsPage.tsx                (réécriture)
+├── components/admin/AdminSidebar.tsx   (ajout entrée Renouvellements)
+└── App.tsx                             (ajout route /admin/renewals)
 ```
-/admin/agents/:agentId  →  AgentDetailPage (hub avec tabs)
-  ├─ Tab "Vue d'ensemble"   → KPIs agent (UX.2.2)
-  ├─ Tab "Prospects"        → Pipeline leads agent (UX.2.1)
-  ├─ Tab "Portefeuille"     → Clients + polices agent
-  ├─ Tab "Cotations"        → Devis PDF générés (UX.1.3)
-  ├─ Tab "Commissions"      → Solde + historique (UX.2.3)
-  └─ Tab "Activité"         → Timeline actions (souscriptions, sinistres)
-```
 
-### Point d'entrée : liste d'agents cliquable
-
-La page existante **`/admin/agents-portfolio`** devient le **point d'entrée** : chaque ligne du tableau devient cliquable → navigue vers `/admin/agents/:agentId`.
-
-### Mapping UX ↔ Route Admin
-
-| Ref UX | Page Agent | Vue Admin drill-down |
-|---|---|---|
-| UX.1.1 | `/b2b/sales` → ProductInfoSheet | Non applicable (config produit → `/admin/products`) |
-| UX.1.2 | KYC badge sur identification | Déjà admin-only → `/admin/compliance` |
-| UX.1.3 | PDF devis à l'étape Récap | `/admin/agents/:id` → Tab Cotations (liste quotations + aperçu PDF) |
-| UX.2.1 | Pipeline leads | `/admin/agents/:id` → Tab Prospects |
-| UX.2.2 | KPIs dashboard | `/admin/agents/:id` → Tab Vue d'ensemble |
-| UX.2.3 | Commissions | `/admin/agents/:id` → Tab Commissions |
-
-### Réutilisation composants (zero duplication)
-
-Tous les composants broker acceptent déjà un `broker_id` via `auth.uid()`. On ajoute un **prop optionnel `overrideAgentId`** pour forcer l'agent cible :
-
-- `<LeadsPipeline overrideAgentId={agentId} />` 
-- `<DashboardKPIs overrideAgentId={agentId} />`
-- `<CommissionsPage>` → extraire le contenu en composant `<CommissionsView agentId={...} />`
-
-Côté RLS : l'admin a déjà `has_role(auth.uid(),'admin')` sur toutes les tables concernées → aucune migration DB nécessaire.
-
-### Nouveaux fichiers
-
-```
-src/pages/admin/AgentDetailPage.tsx          (hub avec Tabs)
-src/components/admin/agent-detail/
-  ├─ AgentOverviewTab.tsx    (réutilise DashboardKPIs)
-  ├─ AgentLeadsTab.tsx       (réutilise LeadsPipeline + LeadsDataTable)
-  ├─ AgentPortfolioTab.tsx   (réutilise PortfolioDataTable)
-  ├─ AgentQuotationsTab.tsx  (nouveau : liste quotations + PDF preview)
-  ├─ AgentCommissionsTab.tsx (extrait de CommissionsPage)
-  └─ AgentActivityTab.tsx    (timeline subscriptions/claims/leads)
-```
-
-### Fichiers modifiés
-
-- `src/App.tsx` → ajouter route `/admin/agents/:agentId`
-- `src/pages/admin/AgentsPortfolioPage.tsx` → rendre lignes cliquables (`navigate('/admin/agents/' + id)`)
-- `src/components/broker/dashboard/LeadsPipeline.tsx` → prop `overrideAgentId`
-- `src/components/broker/dashboard/DashboardKPIs.tsx` → prop `overrideAgentId`
-- `src/pages/broker/CommissionsPage.tsx` → extraire `CommissionsView` réutilisable
-- `src/components/admin/AdminSidebar.tsx` → renommer "Portefeuille Agents" en "Agents (drill-down)" pour clarifier
-
-### Header commun de la page détail
-
-```
-┌─────────────────────────────────────────────────────┐
-│ ← Retour  │  👤 Jean Dupont  [Badge Courtier]       │
-│           │  jean@sanlam.ci · +225 07 12 34 56 78   │
-│           │  [Action: Envoyer message] [Voir audit] │
-├─────────────────────────────────────────────────────┤
-│ [Vue][Prospects][Portefeuille][Cotations][Comm.]... │
-└─────────────────────────────────────────────────────┘
-```
-
-Filtre période global (`PeriodFilter`) en haut, partagé entre tous les onglets via state local.
-
-### Avantages
-
-1. **Source unique** : vue agent = vue admin drill-down (même composants)
-2. **Pas de divergence UX** : l'admin voit exactement ce que l'agent voit
-3. **Scalable** : nouveau tab broker = prop `overrideAgentId` + intégration
-4. **Traçabilité** : ajout possible d'un `audit_logs` à l'ouverture (`admin_viewed_agent`)
-5. **Compatible RLS existante** (rôle admin déjà global)
-
-### Limitations assumées
-
-- **Read-only** : l'admin ne peut pas agir au nom de l'agent (pas d'impersonation writes). Actions admin passent par les pages admin dédiées (`/admin/users/partners` pour désactivation, etc.)
-- **UX.1.1** (ProductInfoSheet) n'a pas de drill-down agent — c'est une config produit globale
-
+Hors scope :
+- Logique réelle d'import Excel (placeholder UI uniquement)
+- Logique réelle d'envoi de notifications (mockup uniquement)
+- Modification du schéma DB
+- Stats / KPIs (reste accessible via `/b2b/stats`)

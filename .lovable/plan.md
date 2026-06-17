@@ -1,60 +1,74 @@
-# Onglet « Approbations en attente » — Admin
+## Objectif
 
-Ajout d'un onglet dédié dans les deux pages Admin existantes (Renouvellements + Souscriptions) pour traiter les demandes d'approbation (réduction souscription > seuil, bonus/malus renouvellement > seuil, valeur véhicule > 75M FCFA).
+Recentrer les ajustements tarifaires sur des seuils en **%**, clarifier que l'approbation côté **Souscription** concerne la **Réduction** et celle côté **Renouvellement** concerne le **Bonus/Malus**, enrichir le pipeline Renouvellement (sinistres + scoring) et intégrer le bonus/malus au moment de la notification.
 
-UI uniquement — données mockées pour l'instant (la table `pricing_adjustment_approvals` sera créée dans un second temps avec le reste du mécanisme tarifaire).
+---
 
-## Pages modifiées
+## 1. Onglet "Ajustements" produit (`DiscountsTab.tsx`)
 
-### 1. `/admin/renewals` — `src/pages/admin/RenewalsPage.tsx`
-Refonte avec composant `Tabs` (shadcn) :
-- **Onglet « Pipeline »** : contenu actuel (`RenewalsImportCard` + `RenewalsPipelineCard`)
-- **Onglet « Approbations en attente »** : nouveau composant `ApprovalsTable` filtré sur `source = 'renewal'`, avec badge compteur sur le titre de l'onglet
+**Workflow d'approbation — passer en % et dédoubler les seuils**
 
-### 2. `/admin/subscriptions` — `src/pages/admin/SubscriptionsPage.tsx`
-Même refonte :
-- **Onglet « Souscriptions »** : `AdminSubscriptionsTable` actuel
-- **Onglet « Approbations en attente »** : `ApprovalsTable` filtré sur `source = 'subscription'`, avec badge compteur
+- Supprimer `threshold_fcfa`.
+- Ajouter deux seuils en % :
+  - `threshold_reduction_pct` → approbation pour la **Réduction Souscription**.
+  - `threshold_bonus_malus_pct` → approbation pour le **Bonus/Malus Renouvellement**.
+- Inputs 0–100, libellés explicites, conserver `validator_roles`.
 
-## Nouveau composant partagé
+```text
+approval: {
+  required: boolean
+  threshold_reduction_pct: number   // %
+  threshold_bonus_malus_pct: number // %
+  validator_roles: string[]
+}
+```
 
-`src/components/admin/approvals/ApprovalsTable.tsx`
+Bonus/Malus et Réduction Souscription restent inchangés (déjà en %).
 
-**Props** : `source: 'renewal' | 'subscription'`
+---
 
-**Colonnes** :
-Demandeur · Client · Produit · Type (Réduction / Bonus / Malus) · Montant impacté (FCFA) · Valeur véhicule (FCFA) · Date demande · Statut · Actions
+## 2. Page Souscriptions (`SubscriptionsPage.tsx`)
 
-**Filtres header** :
-- Statut : `En attente` (défaut) / `Approuvée` / `Refusée` / `Toutes`
-- Recherche libre (client, demandeur)
+- **Conserver** l'onglet "Approbations en attente" : il concerne uniquement les demandes de **Réduction Souscription** qui dépassent `threshold_reduction_pct`.
+- Renommer l'onglet en **"Approbations Réduction"** pour lever l'ambiguïté.
+- La table `ApprovalsTable source="subscription"` filtre déjà sur ce flux.
 
-**Actions par ligne (statut `En attente` uniquement)** :
-- Bouton **Approuver** (vert) — confirmation simple via `AlertDialog`
-- Bouton **Refuser** (rouge) — ouvre `Dialog` avec `Textarea` motif **obligatoire** (min 10 caractères)
+---
 
-Pour les lignes déjà traitées : affichage du décideur + motif (hover/tooltip), pas d'actions.
+## 3. Pipeline Renouvellements (`RenewalsPipelineCard.tsx`)
 
-**État** : `useState` local avec données mockées (5–8 lignes par source mélangeant les 3 statuts) — les handlers `onApprove`/`onReject` modifient l'état local et affichent un `toast` de confirmation. Aucun appel réseau.
+Deux colonnes dérivées en plus dans la table :
 
-## Détails techniques
+- **Sinistres** : compteur `claims` du client/contrat, affiché en badge (`0`, `2 sinistres`).
+- **Scoring** : note `/100` + pastille couleur, lue depuis `client_scores`. Le score guide le bonus/malus (score haut → bonus suggéré, score bas → malus suggéré).
 
-- Pattern `Tabs` identique à celui déjà utilisé ailleurs dans l'app (shadcn `tabs.tsx`)
-- Format FCFA via `formatFCFA` (utilitaire existant)
-- Mock data centralisée dans `src/components/admin/approvals/mockApprovals.ts` pour pouvoir réutiliser entre les deux pages et préparer le branchement Supabase futur
-- Badge compteur : petit `Badge` shadcn `variant="secondary"` à côté du label d'onglet, affichant le nombre de demandes `En attente`
-- Sidebar Admin **non modifiée** (pas de page `/admin/approvals` dédiée, conformément à ta décision de fusionner)
+Récupération via joins additionnels dans `useQuery` (`claims(count)`, `client_scores`).
 
-## Hors périmètre
+---
 
-- Création de la table `pricing_adjustment_approvals` (sera faite avec la migration du mécanisme tarifaire complet)
-- Branchement réel des actions Approuver/Refuser sur la BDD
-- Notifications email au demandeur
-- Audit logs
+## 4. Dialog "Notification de renouvellement" (`RenewalsBulkNotifyDialog.tsx`)
 
-## Ordre d'implémentation
+Ajouter un champ **Bonus/Malus appliqué (%)** :
 
-1. `mockApprovals.ts` (types + données)
-2. `ApprovalsTable.tsx` (table + dialogs Approuver/Refuser)
-3. Refonte `RenewalsPage.tsx` avec `Tabs`
-4. Refonte `SubscriptionsPage.tsx` avec `Tabs`
+- Slider/Input `-max_malus … +max_bonus` (bornes du produit).
+- Valeur suggérée par défaut depuis le scoring du contrat sélectionné.
+- Si `|valeur| > approval.threshold_bonus_malus_pct` → bannière "Cette opération sera soumise à approbation" et création d'une demande dans `pricing_adjustment_approvals` (`source = 'renewal'`, `adjustment_pct`) au lieu d'envoyer la notification.
+- Sinon, **Confirmer** envoie la notification avec le % choisi.
+
+`RenewalsPipelineCard` transmet le % au `onConfirm` et l'applique aux contrats sélectionnés.
+
+---
+
+## 5. Détails techniques
+
+- `pricing_adjustments` reste un `jsonb` sur `products` — pas de migration. Defaults mis à jour, lecture défensive : si `threshold_fcfa` est présent dans l'ancien JSON, il est ignoré.
+- `pricing_adjustment_approvals` : insertion depuis le dialog renouvellement avec `source = 'renewal'`.
+
+---
+
+## Fichiers touchés
+
+- `src/components/admin/products/tabs/DiscountsTab.tsx` — refonte Workflow d'approbation (2 seuils %).
+- `src/pages/admin/SubscriptionsPage.tsx` — renommage de l'onglet en "Approbations Réduction" (pas de suppression).
+- `src/components/renewals/RenewalsPipelineCard.tsx` — colonnes Sinistres + Scoring, transmission du % au dialog.
+- `src/components/renewals/RenewalsBulkNotifyDialog.tsx` — sélecteur Bonus/Malus + déclenchement conditionnel de l'approbation.

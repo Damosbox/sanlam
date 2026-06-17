@@ -30,7 +30,8 @@ export interface PricingAdjustmentsConfig {
   };
   approval: {
     required: boolean;
-    threshold_fcfa: number;
+    threshold_reduction_pct: number;
+    threshold_bonus_malus_pct: number;
     validator_roles: string[];
   };
 }
@@ -38,7 +39,7 @@ export interface PricingAdjustmentsConfig {
 export const DEFAULT_PRICING_ADJUSTMENTS: PricingAdjustmentsConfig = {
   reduction_souscription: { enabled: false, roles: [], max_percentage: 0, type: "percentage" },
   bonus_malus_renouvellement: { enabled: false, roles: [], max_bonus: 0, max_malus: 0, cumul_with_commercial: false },
-  approval: { required: false, threshold_fcfa: 75000000, validator_roles: ["admin"] },
+  approval: { required: false, threshold_reduction_pct: 10, threshold_bonus_malus_pct: 10, validator_roles: ["admin"] },
 };
 
 const ROLE_OPTIONS = [
@@ -278,18 +279,39 @@ export function DiscountsTab({ formData, updateField }: DiscountsTabProps) {
         </CardHeader>
         {a.required && (
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Seuil de déclenchement (FCFA)</Label>
-              <Input
-                type="number"
-                min={0}
-                step={1000000}
-                value={a.threshold_fcfa}
-                onChange={(e) => update("approval", { threshold_fcfa: Math.max(0, +e.target.value || 0) })}
-              />
-              <p className="text-xs text-muted-foreground">
-                Toute demande d'ajustement sur un contrat dont la valeur véhicule dépasse ce seuil sera soumise à validation.
-              </p>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Seuil Réduction Souscription (%)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={a.threshold_reduction_pct}
+                  onChange={(e) =>
+                    update("approval", { threshold_reduction_pct: Math.max(0, Math.min(100, +e.target.value || 0)) })
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  Toute réduction à la souscription au-delà de ce % sera soumise à validation.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>Seuil Bonus/Malus Renouvellement (%)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={a.threshold_bonus_malus_pct}
+                  onChange={(e) =>
+                    update("approval", { threshold_bonus_malus_pct: Math.max(0, Math.min(100, +e.target.value || 0)) })
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  Tout bonus ou malus au renouvellement dépassant ce % sera soumis à validation.
+                </p>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Rôles validateurs</Label>

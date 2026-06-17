@@ -40,8 +40,12 @@ export function RenewalsBulkNotifyDialog({
     if (open) setAdjustment(suggestedAdjustment);
   }, [open, suggestedAdjustment]);
 
-  const min = -Math.abs(maxBonus);
-  const max = Math.abs(maxMalus);
+  // Fallback bounds when product has no bonus/malus configuration,
+  // so the operator can still apply an adjustment from the dialog.
+  const effMaxBonus = maxBonus > 0 ? maxBonus : 50;
+  const effMaxMalus = maxMalus > 0 ? maxMalus : 50;
+  const min = -Math.abs(effMaxBonus);
+  const max = Math.abs(effMaxMalus);
   const clamped = Math.max(min, Math.min(max, adjustment));
   const needsApproval = approvalThreshold > 0 && Math.abs(clamped) > approvalThreshold;
 
@@ -55,8 +59,7 @@ export function RenewalsBulkNotifyDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {(maxBonus > 0 || maxMalus > 0) && (
-          <div className="space-y-2 py-2">
+        <div className="space-y-2 py-2">
             <Label htmlFor="bm-adjustment">Bonus / Malus appliqué (%)</Label>
             <div className="flex items-center gap-3">
               <Input
@@ -70,7 +73,7 @@ export function RenewalsBulkNotifyDialog({
                 className="w-28"
               />
               <span className="text-xs text-muted-foreground">
-                Bonus jusqu'à {maxBonus}% · Malus jusqu'à {maxMalus}%
+                Bonus jusqu'à {effMaxBonus}% · Malus jusqu'à {effMaxMalus}%
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -84,8 +87,7 @@ export function RenewalsBulkNotifyDialog({
                 </span>
               </div>
             )}
-          </div>
-        )}
+        </div>
 
         <DialogFooter className="gap-2 sm:gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>

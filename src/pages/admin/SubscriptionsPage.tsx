@@ -18,7 +18,7 @@ export default function SubscriptionsPage() {
         <TabsList>
           <TabsTrigger value="subscriptions">Souscriptions</TabsTrigger>
           <TabsTrigger value="approvals" className="gap-2">
-            Approbations en attente
+            Approbations Réduction
             {pendingCount > 0 && (
               <Badge variant="secondary" className="h-5 px-1.5">
                 {pendingCount}

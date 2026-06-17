@@ -28,6 +28,8 @@ interface Props {
 
 interface RenewalRow {
   id: string;
+  user_id: string | null;
+  product_id: string | null;
   client_name: string;
   client_phone: string | null;
   product_name: string;
@@ -38,6 +40,9 @@ interface RenewalRow {
   premium: number;
   renewal_status: string | null;
   days_until_expiry: number;
+  claims_count: number;
+  score_global: number | null;
+  pricing_adjustments: any;
 }
 
 const STATUS_OPTIONS = [
@@ -64,17 +69,38 @@ export function RenewalsPipelineCard({ scope }: Props) {
       if (!user) return [];
       let q = supabase
         .from("subscriptions")
-        .select(`*, products (name, category), profiles:user_id (id, display_name, email, phone)`)
+        .select(`*, products (name, category, pricing_adjustments), profiles:user_id (id, display_name, email, phone)`)
         .order("end_date", { ascending: true });
       if (scope === "broker") q = q.eq("assigned_broker_id", user.id);
       const { data, error } = await q;
       if (error) throw error;
+
+      const userIds = Array.from(new Set((data ?? []).map((s: any) => s.user_id).filter(Boolean)));
+      const [claimsRes, scoresRes] = await Promise.all([
+        userIds.length
+          ? supabase.from("claims").select("user_id").in("user_id", userIds)
+          : Promise.resolve({ data: [] as any[], error: null }),
+        userIds.length
+          ? supabase.from("client_scores").select("client_id, score_global").in("client_id", userIds)
+          : Promise.resolve({ data: [] as any[], error: null }),
+      ]);
+      const claimsByUser = new Map<string, number>();
+      (claimsRes.data ?? []).forEach((c: any) => {
+        claimsByUser.set(c.user_id, (claimsByUser.get(c.user_id) ?? 0) + 1);
+      });
+      const scoreByUser = new Map<string, number>();
+      (scoresRes.data ?? []).forEach((s: any) => {
+        scoreByUser.set(s.client_id, Number(s.score_global));
+      });
+
       const now = new Date();
       return (data ?? []).map((s: any) => {
         const profile = s.profiles ?? {};
         const product = s.products ?? {};
         return {
           id: s.id,
+          user_id: s.user_id ?? null,
+          product_id: s.product_id ?? null,
           client_name: profile.display_name || "Client",
           client_phone: profile.phone ?? null,
           product_name: product.name || "Produit",
@@ -85,6 +111,9 @@ export function RenewalsPipelineCard({ scope }: Props) {
           premium: Number(s.monthly_premium ?? 0) * 12,
           renewal_status: s.renewal_status,
           days_until_expiry: differenceInDays(new Date(s.end_date), now),
+          claims_count: claimsByUser.get(s.user_id) ?? 0,
+          score_global: scoreByUser.has(s.user_id) ? scoreByUser.get(s.user_id)! : null,
+          pricing_adjustments: product.pricing_adjustments ?? null,
         };
       });
     },
@@ -130,11 +159,71 @@ export function RenewalsPipelineCard({ scope }: Props) {
     }
   };
 
-  const handleConfirm = () => {
+  const selectedRows = useMemo(
+    () => filtered.filter((r) => selected[r.id]),
+    [filtered, selected],
+  );
+
+  // Suggest a default bonus/malus based on the average score of selected contracts.
+  // High score → bonus (negative %), low score → malus (positive %).
+  const suggestedAdjustment = useMemo(() => {
+    const scored = selectedRows.filter((r) => r.score_global != null);
+    if (!scored.length) return 0;
+    const avg = scored.reduce((sum, r) => sum + (r.score_global ?? 0), 0) / scored.length;
+    if (avg >= 75) return -10;
+    if (avg >= 50) return -5;
+    if (avg >= 25) return 5;
+    return 10;
+  }, [selectedRows]);
+
+  // Use the most restrictive product config across the selection.
+  const adjustmentConfig = useMemo(() => {
+    let maxBonus = 0;
+    let maxMalus = 0;
+    let threshold = 0;
+    selectedRows.forEach((r) => {
+      const pa = r.pricing_adjustments ?? {};
+      const bm = pa.bonus_malus_renouvellement ?? {};
+      const app = pa.approval ?? {};
+      maxBonus = Math.max(maxBonus, Number(bm.max_bonus ?? 0));
+      maxMalus = Math.max(maxMalus, Number(bm.max_malus ?? 0));
+      threshold = Math.max(threshold, Number(app.threshold_bonus_malus_pct ?? 0));
+    });
+    return { maxBonus, maxMalus, threshold };
+  }, [selectedRows]);
+
+  const handleConfirm = async (adjustmentPct: number, needsApproval: boolean) => {
     const n = selectedIds.length;
     setConfirmOpen(false);
+    if (needsApproval) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const rowsToInsert = selectedRows.map((r) => ({
+          source: "renewal",
+          subscription_id: r.id,
+          product_id: r.product_id,
+          requested_by: user?.id ?? null,
+          client_name: r.client_name,
+          product_name: r.product_name,
+          adjustment_type: adjustmentPct >= 0 ? "malus" : "bonus",
+          adjustment_value: Math.abs(adjustmentPct),
+          adjustment_unit: "percentage",
+          status: "pending",
+          context: { adjustment_pct: adjustmentPct },
+        }));
+        const { error } = await supabase.from("pricing_adjustment_approvals").insert(rowsToInsert as any);
+        if (error) throw error;
+        toast.success(`${n} demande${n > 1 ? "s" : ""} d'approbation créée${n > 1 ? "s" : ""}`);
+      } catch (e: any) {
+        toast.error(e.message ?? "Erreur lors de la création des approbations");
+        return;
+      }
+    } else {
+      toast.success(
+        `${n} notification${n > 1 ? "s" : ""} envoyée${n > 1 ? "s" : ""}${adjustmentPct !== 0 ? ` (${adjustmentPct > 0 ? "+" : ""}${adjustmentPct}%)` : ""}`,
+      );
+    }
     setSelected({});
-    toast.success(`${n} notification${n > 1 ? "s" : ""} envoyée${n > 1 ? "s" : ""}`);
   };
 
   const handleCall = (phone: string | null) => {
@@ -155,6 +244,16 @@ export function RenewalsPipelineCard({ scope }: Props) {
     if (eff === "notified") return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">Notifié</Badge>;
     if (isExpired) return <Badge className="bg-foreground text-background hover:bg-foreground">Expiré</Badge>;
     return <Badge variant="outline">—</Badge>;
+  };
+
+  const scorePill = (score: number | null) => {
+    if (score == null) return <span className="text-xs text-muted-foreground">—</span>;
+    const color =
+      score >= 75 ? "bg-emerald-100 text-emerald-700" :
+      score >= 50 ? "bg-blue-100 text-blue-700" :
+      score >= 25 ? "bg-amber-100 text-amber-700" :
+                    "bg-red-100 text-red-700";
+    return <Badge className={cn(color, "hover:" + color)}>{Math.round(score)}/100</Badge>;
   };
 
   return (
@@ -241,6 +340,8 @@ export function RenewalsPipelineCard({ scope }: Props) {
                   <TableHead className="hidden md:table-cell">Police</TableHead>
                   <TableHead className="hidden lg:table-cell">Échéance</TableHead>
                   <TableHead className="hidden lg:table-cell text-right">Prime</TableHead>
+                  <TableHead className="hidden md:table-cell">Sinistres</TableHead>
+                  <TableHead className="hidden md:table-cell">Scoring</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -289,6 +390,20 @@ export function RenewalsPipelineCard({ scope }: Props) {
                       <TableCell className="hidden lg:table-cell py-3 text-right text-sm font-medium">
                         {formatFCFA(r.premium)}
                       </TableCell>
+                      <TableCell className="hidden md:table-cell py-3">
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-xs",
+                            r.claims_count > 0 && "border-amber-300 text-amber-700",
+                          )}
+                        >
+                          {r.claims_count} sinistre{r.claims_count > 1 ? "s" : ""}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell py-3">
+                        {scorePill(r.score_global)}
+                      </TableCell>
                       <TableCell className="py-3">{statusBadge(r)}</TableCell>
                       <TableCell className="py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
@@ -323,6 +438,10 @@ export function RenewalsPipelineCard({ scope }: Props) {
         onOpenChange={setConfirmOpen}
         count={selectedIds.length}
         onConfirm={handleConfirm}
+        maxBonus={adjustmentConfig.maxBonus}
+        maxMalus={adjustmentConfig.maxMalus}
+        approvalThreshold={adjustmentConfig.threshold}
+        suggestedAdjustment={suggestedAdjustment}
       />
     </Card>
   );

@@ -157,6 +157,7 @@ export function AdminSidebar() {
     ]},
     { key: "engagement", label: "Engagement", items: [
       { title: "Fidélité", url: "/admin/loyalty", icon: Trophy },
+      { title: "Scoring client", url: "/admin/scoring", icon: Trophy },
       { title: "Enquêtes", url: "/admin/surveys", icon: ClipboardList },
     ]},
     { key: "config", label: "Configuration", items: [

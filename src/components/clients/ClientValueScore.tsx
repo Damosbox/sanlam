@@ -28,6 +28,9 @@ import {
 } from "@/components/ui/tooltip";
 import { useClientScore, useRecalcClientScore } from "@/hooks/useClientScore";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { User } from "@supabase/supabase-js";
 import {
   VF_NIVEAU_LABEL,
   VF_FIELD_LABELS,
@@ -70,7 +73,11 @@ const CRITERIA = [
 export const ClientValueScore = ({ clientId, compact = false }: ClientValueScoreProps) => {
   const { data: score, isLoading, error, refetch } = useClientScore(clientId);
   const recalc = useRecalcClientScore();
-  const { role } = useUserRole();
+  const [user, setUser] = useState<User | null>(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data.user ?? null));
+  }, []);
+  const { role } = useUserRole(user);
   const [actionOpen, setActionOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
 

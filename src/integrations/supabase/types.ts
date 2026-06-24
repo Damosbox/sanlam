@@ -710,6 +710,20 @@ export type Database = {
           score_responsabilite: number | null
           score_sinistre: number | null
           updated_at: string | null
+          vf_is_partial: boolean | null
+          vf_kyc_flag: boolean | null
+          vf_last_recalc_source: string | null
+          vf_manual_override: boolean | null
+          vf_missing_fields: string[] | null
+          vf_niveau: string | null
+          vf_override_approved_by: string | null
+          vf_override_reason: string | null
+          vf_score_action_ponctuelle: number | null
+          vf_score_anciennete: number | null
+          vf_score_global: number | null
+          vf_score_multi_equipements: number | null
+          vf_score_prime: number | null
+          vf_score_sinistre: number | null
         }
         Insert: {
           calculated_at?: string | null
@@ -729,6 +743,20 @@ export type Database = {
           score_responsabilite?: number | null
           score_sinistre?: number | null
           updated_at?: string | null
+          vf_is_partial?: boolean | null
+          vf_kyc_flag?: boolean | null
+          vf_last_recalc_source?: string | null
+          vf_manual_override?: boolean | null
+          vf_missing_fields?: string[] | null
+          vf_niveau?: string | null
+          vf_override_approved_by?: string | null
+          vf_override_reason?: string | null
+          vf_score_action_ponctuelle?: number | null
+          vf_score_anciennete?: number | null
+          vf_score_global?: number | null
+          vf_score_multi_equipements?: number | null
+          vf_score_prime?: number | null
+          vf_score_sinistre?: number | null
         }
         Update: {
           calculated_at?: string | null
@@ -748,6 +776,20 @@ export type Database = {
           score_responsabilite?: number | null
           score_sinistre?: number | null
           updated_at?: string | null
+          vf_is_partial?: boolean | null
+          vf_kyc_flag?: boolean | null
+          vf_last_recalc_source?: string | null
+          vf_manual_override?: boolean | null
+          vf_missing_fields?: string[] | null
+          vf_niveau?: string | null
+          vf_override_approved_by?: string | null
+          vf_override_reason?: string | null
+          vf_score_action_ponctuelle?: number | null
+          vf_score_anciennete?: number | null
+          vf_score_global?: number | null
+          vf_score_multi_equipements?: number | null
+          vf_score_prime?: number | null
+          vf_score_sinistre?: number | null
         }
         Relationships: [
           {
@@ -2250,6 +2292,144 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      scoring_actions_ponctuelles: {
+        Row: {
+          agent_id: string | null
+          client_id: string
+          created_at: string
+          id: string
+          note: string | null
+          points: number
+          type: string
+        }
+        Insert: {
+          agent_id?: string | null
+          client_id: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          points: number
+          type: string
+        }
+        Update: {
+          agent_id?: string | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          points?: number
+          type?: string
+        }
+        Relationships: []
+      }
+      scoring_history: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          niveau_after: string | null
+          niveau_before: string | null
+          score_after: number | null
+          score_before: number | null
+          trigger: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          niveau_after?: string | null
+          niveau_before?: string | null
+          score_after?: number | null
+          score_before?: number | null
+          trigger: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          niveau_after?: string | null
+          niveau_before?: string | null
+          score_after?: number | null
+          score_before?: number | null
+          trigger?: string
+        }
+        Relationships: []
+      }
+      scoring_job_runs: {
+        Row: {
+          clients_processed: number | null
+          duration_ms: number | null
+          error_log: Json | null
+          errors_count: number | null
+          finished_at: string | null
+          id: string
+          started_at: string
+          status: string
+          trigger: string
+        }
+        Insert: {
+          clients_processed?: number | null
+          duration_ms?: number | null
+          error_log?: Json | null
+          errors_count?: number | null
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          trigger?: string
+        }
+        Update: {
+          clients_processed?: number | null
+          duration_ms?: number | null
+          error_log?: Json | null
+          errors_count?: number | null
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          trigger?: string
+        }
+        Relationships: []
+      }
+      scoring_manual_override_requests: {
+        Row: {
+          approver_comment: string | null
+          approver_id: string | null
+          client_id: string
+          created_at: string
+          decided_at: string | null
+          id: string
+          justification: string
+          requested_by: string
+          requested_score: number
+          status: string
+        }
+        Insert: {
+          approver_comment?: string | null
+          approver_id?: string | null
+          client_id: string
+          created_at?: string
+          decided_at?: string | null
+          id?: string
+          justification: string
+          requested_by: string
+          requested_score: number
+          status?: string
+        }
+        Update: {
+          approver_comment?: string | null
+          approver_id?: string | null
+          client_id?: string
+          created_at?: string
+          decided_at?: string | null
+          id?: string
+          justification?: string
+          requested_by?: string
+          requested_score?: number
+          status?: string
+        }
+        Relationships: []
       }
       subscriptions: {
         Row: {

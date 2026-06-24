@@ -1,0 +1,138 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle, Play, RefreshCw } from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { toast } from "sonner";
+
+export function ScoringJobMonitor() {
+  const qc = useQueryClient();
+
+  const { data: runs, isLoading, refetch } = useQuery({
+    queryKey: ["scoring-job-runs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("scoring_job_runs")
+        .select("*")
+        .order("started_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const launch = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke(
+        "score-monthly-recalc",
+        { body: {} },
+      );
+      if (error) throw error;
+      return data as { run_id: string; processed: number; errors_count: number };
+    },
+    onSuccess: (data) => {
+      toast.success(
+        `Job terminé : ${data.processed} clients traités, ${data.errors_count} erreur(s).`,
+      );
+      qc.invalidateQueries({ queryKey: ["scoring-job-runs"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const lastRun = runs?.[0];
+  const lastError = lastRun?.status === "error";
+
+  return (
+    <div className="space-y-4">
+      {lastError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Le dernier job de recalcul s'est terminé en erreur ({lastRun?.errors_count} erreur(s)).
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-base">Job de recalcul mensuel</CardTitle>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isLoading}>
+              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+              Rafraîchir
+            </Button>
+            <Button size="sm" onClick={() => launch.mutate()} disabled={launch.isPending}>
+              <Play className="h-3.5 w-3.5 mr-1.5" />
+              {launch.isPending ? "Exécution…" : "Lancer maintenant"}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Démarré</TableHead>
+                <TableHead>Déclencheur</TableHead>
+                <TableHead>Statut</TableHead>
+                <TableHead className="text-right">Clients</TableHead>
+                <TableHead className="text-right">Erreurs</TableHead>
+                <TableHead className="text-right">Durée</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(!runs || runs.length === 0) && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                    Aucune exécution enregistrée.
+                  </TableCell>
+                </TableRow>
+              )}
+              {runs?.map((r: any) => (
+                <TableRow key={r.id}>
+                  <TableCell className="text-xs">
+                    {format(new Date(r.started_at), "d MMM yyyy HH:mm", { locale: fr })}
+                  </TableCell>
+                  <TableCell className="text-xs">{r.trigger}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={
+                        r.status === "success"
+                          ? "default"
+                          : r.status === "error"
+                          ? "destructive"
+                          : "secondary"
+                      }
+                    >
+                      {r.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right text-xs font-mono">
+                    {r.clients_processed ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-right text-xs font-mono">
+                    {r.errors_count ?? 0}
+                  </TableCell>
+                  <TableCell className="text-right text-xs font-mono">
+                    {r.duration_ms ? `${(r.duration_ms / 1000).toFixed(1)} s` : "—"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

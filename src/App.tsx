@@ -41,6 +41,7 @@ import PoliciesPage from "./pages/broker/PoliciesPage";
 import RenewalStatsPage from "./pages/broker/RenewalStatsPage";
 import RenewalsPage from "./pages/broker/RenewalsPage";
 import AdminRenewalsPage from "./pages/admin/RenewalsPage";
+import AdminScoringPage from "./pages/admin/ScoringPage";
 import AnalysisPage from "./pages/broker/AnalysisPage";
 import NewsPage from "./pages/broker/NewsPage";
 import ReportsPage from "./pages/broker/ReportsPage";
@@ -188,6 +189,7 @@ const App = () => (
             <Route path="dsar" element={<DsarPage />} />
             <Route path="ocr-validation" element={<OCRValidationPage />} />
             <Route path="dev/payment-aml" element={<PaymentAmlDemoPage />} />
+            <Route path="scoring" element={<AdminScoringPage />} />
           </Route>
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

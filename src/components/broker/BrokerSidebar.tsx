@@ -270,8 +270,11 @@ export function BrokerSidebar() {
   );
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/50 z-50">
-      <SidebarHeader className="p-3 sm:p-4 border-b border-border/50 bg-primary-foreground">
+    <Sidebar
+      collapsible="icon"
+      className="border-r-2 border-border/70 shadow-[1px_0_0_0_hsl(var(--border)/0.4)] z-50"
+    >
+      <SidebarHeader className="p-3 sm:p-4 border-b border-border/50 bg-[hsl(var(--sidebar-broker))]">
         <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
           <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
             <Sparkles className="h-4 w-4 text-primary" />
@@ -285,7 +288,7 @@ export function BrokerSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="py-4 bg-primary-foreground">
+      <SidebarContent className="py-4 bg-[hsl(var(--sidebar-broker))]">
         {navigationGroups.map((group, groupIndex) => (
           <SidebarGroup key={group.label}>
             {groupIndex > 0 && (
@@ -300,7 +303,7 @@ export function BrokerSidebar() {
         ))}
       </SidebarContent>
 
-      <SidebarFooter className="p-4 border-t border-border/50 bg-primary-foreground">
+      <SidebarFooter className="p-4 border-t border-border/50 bg-[hsl(var(--sidebar-broker))]">
         {!collapsed && (
           <div className="text-xs text-muted-foreground text-center">
             v2.1 • Navigation Pro

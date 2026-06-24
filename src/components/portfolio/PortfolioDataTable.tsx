@@ -9,11 +9,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Phone, MessageCircle, Mail, MoreHorizontal, Eye, UserCheck, Clock, Inbox, ShoppingCart, Star } from "lucide-react";
+import { Phone, MessageCircle, Mail, MoreHorizontal, Eye, UserCheck, Clock, Inbox, ShoppingCart } from "lucide-react";
 import { LeadStatusBadge } from "@/components/leads/LeadStatusBadge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ScoreDetailPopover } from "./ScoreDetailPopover";
+import { ClientValueScore } from "@/components/clients/ClientValueScore";
 
 export interface PortfolioItem {
   id: string;
@@ -40,16 +41,6 @@ interface PortfolioDataTableProps {
   density?: "compact" | "standard";
   onSelectItem: (item: PortfolioItem) => void;
 }
-
-// Simulate value score calculation based on activity
-const calculateMockScore = (item: PortfolioItem): { score: number; classe: number } => {
-  // Clients get score based on subscriptions and claims
-  const subsScore = Math.min((item.subscriptionsCount || 0) * 15, 40);
-  const claimsPenalty = Math.min((item.claimsCount || 0) * 5, 20);
-  const baseScore = 50 + subsScore - claimsPenalty + Math.random() * 20;
-  const score = Math.min(100, Math.max(10, Math.round(baseScore)));
-  return { score, classe: Math.ceil(score / 20) };
-};
 
 export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }: PortfolioDataTableProps) => {
   const navigate = useNavigate();
@@ -133,10 +124,6 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }
           </TableHeader>
           <TableBody>
             {items.map((item) => {
-              const mockScore = calculateMockScore(item);
-              const itemScore = item.valueScore ?? mockScore.score;
-              const itemClass = item.valueClass ?? mockScore.classe;
-              
               return (
                 <TableRow 
                   key={item.id} 
@@ -169,31 +156,7 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }
                   {/* Score Column */}
                   <TableCell className={`hidden sm:table-cell ${rowPadding} text-center`}>
                     {item.type === "client" ? (
-                      <ScoreDetailPopover
-                        score={itemScore}
-                        classe={itemClass}
-                        clientId={item.id}
-                        clientType={item.type}
-                      >
-                        <button className="inline-flex flex-col items-center gap-0.5 cursor-pointer hover:opacity-80 transition-opacity">
-                          <div className="flex">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={cn(
-                                  "h-3 w-3",
-                                  i < itemClass 
-                                    ? "text-amber-500 fill-amber-500" 
-                                    : "text-muted-foreground/20"
-                                )}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-[10px] font-medium text-muted-foreground">
-                            {itemScore}/100
-                          </span>
-                        </button>
-                      </ScoreDetailPopover>
+                      <ClientValueScore clientId={item.id} compact />
                     ) : (
                       <span className="text-muted-foreground text-xs">—</span>
                     )}

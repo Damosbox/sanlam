@@ -188,6 +188,7 @@ const App = () => (
             <Route path="dsar" element={<DsarPage />} />
             <Route path="ocr-validation" element={<OCRValidationPage />} />
             <Route path="dev/payment-aml" element={<PaymentAmlDemoPage />} />
+            <Route path="scoring" element={<AdminScoringPage />} />
           </Route>
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

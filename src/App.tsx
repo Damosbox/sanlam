@@ -41,6 +41,7 @@ import PoliciesPage from "./pages/broker/PoliciesPage";
 import RenewalStatsPage from "./pages/broker/RenewalStatsPage";
 import RenewalsPage from "./pages/broker/RenewalsPage";
 import AdminRenewalsPage from "./pages/admin/RenewalsPage";
+import AdminScoringPage from "./pages/admin/ScoringPage";
 import AnalysisPage from "./pages/broker/AnalysisPage";
 import NewsPage from "./pages/broker/NewsPage";
 import ReportsPage from "./pages/broker/ReportsPage";

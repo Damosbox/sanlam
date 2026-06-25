@@ -122,12 +122,12 @@ export function BrokerAIChatWidget() {
         <Button
           size="icon"
           className={cn(
-            "fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg",
+            "fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 h-11 w-11 sm:h-14 sm:w-14 rounded-full shadow-lg",
             "bg-primary hover:bg-primary/90 text-primary-foreground",
             "transition-all duration-300 hover:scale-110"
           )}
         >
-          <Bot className="h-6 w-6" />
+          <Bot className="h-5 w-5 sm:h-6 sm:w-6" />
         </Button>
       </SheetTrigger>
 

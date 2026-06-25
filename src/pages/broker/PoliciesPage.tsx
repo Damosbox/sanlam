@@ -110,38 +110,36 @@ export default function PoliciesPage() {
       </CardHeader>
       <CardContent className="px-0 sm:px-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4 flex-wrap h-auto gap-1">
-            <TabsTrigger value="policies" className="gap-2">
-              <FolderOpen className="h-4 w-4" />
-              <span className="hidden sm:inline">Polices</span>
-              <span className="sm:hidden">Pol.</span>
-            </TabsTrigger>
-            <TabsTrigger value="quotations" className="gap-2">
-              <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Cotations</span>
-              <span className="sm:hidden">Cot.</span>
-            </TabsTrigger>
-            <TabsTrigger value="renewals" className="gap-2">
-              <Calendar className="h-4 w-4" />
-              <span className="hidden sm:inline">Renouvellements</span>
-              <span className="sm:hidden">Renouv.</span>
-              {renewalsCount > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs bg-amber-50 text-amber-700">
-                  {renewalsCount}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="gap-2">
-              <Clock className="h-4 w-4" />
-              <span className="hidden sm:inline">En attente</span>
-              <span className="sm:hidden">Att.</span>
-              {pendingCount > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
-                  {pendingCount}
-                </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
+          <div className="-mx-3 sm:mx-0 mb-4 overflow-x-auto scrollbar-none">
+            <TabsList className="inline-flex w-max gap-1 px-3 sm:px-0">
+              <TabsTrigger value="policies" className="gap-2 whitespace-nowrap">
+                <FolderOpen className="h-4 w-4" />
+                <span>Polices</span>
+              </TabsTrigger>
+              <TabsTrigger value="quotations" className="gap-2 whitespace-nowrap">
+                <FileText className="h-4 w-4" />
+                <span>Cotations</span>
+              </TabsTrigger>
+              <TabsTrigger value="renewals" className="gap-2 whitespace-nowrap">
+                <Calendar className="h-4 w-4" />
+                <span>Renouvellements</span>
+                {renewalsCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs bg-amber-50 text-amber-700">
+                    {renewalsCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="pending" className="gap-2 whitespace-nowrap">
+                <Clock className="h-4 w-4" />
+                <span>En attente</span>
+                {pendingCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                    {pendingCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+          </div>
           
           <TabsContent value="policies">
             <BrokerSubscriptions />

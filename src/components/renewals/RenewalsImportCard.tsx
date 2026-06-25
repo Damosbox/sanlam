@@ -90,17 +90,17 @@ export function RenewalsImportCard() {
             handleFile(e.dataTransfer.files?.[0] ?? null);
           }}
           className={cn(
-            "w-full border-2 border-dashed rounded-lg px-6 py-10 text-center transition-colors",
+            "w-full border-2 border-dashed rounded-lg px-4 py-5 sm:px-6 sm:py-10 text-center transition-colors",
             "hover:bg-muted/40",
             dragOver ? "border-primary bg-primary/5" : "border-border",
           )}
         >
-          <Upload className="h-7 w-7 mx-auto mb-2 text-muted-foreground" />
+          <Upload className="h-6 w-6 sm:h-7 sm:w-7 mx-auto mb-1.5 sm:mb-2 text-muted-foreground" />
           <p className="text-sm text-foreground">
-            {file ? file.name : "Glissez votre fichier ici ou cliquez pour sélectionner"}
+            {file ? file.name : "Glissez ou cliquez pour sélectionner"}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Formats acceptés : .xlsx, .xls — Taille max : {MAX_MB} Mo
+            .xlsx, .xls · max {MAX_MB} Mo
           </p>
         </button>
         <input

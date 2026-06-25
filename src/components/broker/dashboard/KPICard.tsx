@@ -2,6 +2,8 @@ import { LucideIcon, ArrowUpRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { formatFCFACompact } from "@/utils/formatCurrency";
 
 interface KPICardProps {
   icon: LucideIcon;
@@ -13,6 +15,18 @@ interface KPICardProps {
 }
 
 export const KPICard = ({ icon: Icon, label, value, link, highlight, trend }: KPICardProps) => {
+  const isMobile = useIsMobile();
+
+  // Auto-compact long FCFA strings on mobile to avoid truncation
+  const displayValue = (() => {
+    if (!isMobile || typeof value !== "string") return value;
+    const match = value.match(/^([\d\s.,]+)\s*FCFA$/);
+    if (!match) return value;
+    const num = Number(match[1].replace(/\s/g, "").replace(",", "."));
+    if (!Number.isFinite(num)) return value;
+    return formatFCFACompact(num);
+  })();
+
   const content = (
     <Card
       className={cn(
@@ -28,11 +42,11 @@ export const KPICard = ({ icon: Icon, label, value, link, highlight, trend }: KP
           </p>
           <p
             className={cn(
-              "text-base sm:text-xl font-bold tracking-tight truncate",
+              "text-sm sm:text-xl font-bold tracking-tight truncate",
               highlight ? "text-primary" : "text-foreground"
             )}
           >
-            {value}
+            {displayValue}
           </p>
           {trend && (
             <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5 truncate">

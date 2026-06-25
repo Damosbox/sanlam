@@ -272,7 +272,7 @@ export function BrokerSidebar() {
   return (
     <Sidebar
       collapsible="icon"
-      className="z-50 [&_[data-sidebar=sidebar]]:border-r-[14px] [&_[data-sidebar=sidebar]]:border-r-primary/80"
+      className="border-r-2 border-border/70 shadow-[1px_0_0_0_hsl(var(--border)/0.4)] z-50"
     >
       <SidebarHeader className="p-3 sm:p-4 border-b border-border/50 bg-[hsl(var(--sidebar-broker))]">
         <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>

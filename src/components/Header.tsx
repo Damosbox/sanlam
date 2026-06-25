@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import LogoutButton from "./LogoutButton";
 import sanlamLogo from "@/assets/logo_sanlam.svg";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -63,18 +64,21 @@ export const Header = () => {
   // If inside platform, show minimal header
   if (isInsidePlatform) {
     return (
-      <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-        <div className="container flex h-16 items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
-            <img src={sanlamLogo} alt="Sanlam Allianz" className="h-8 w-auto sm:h-10" />
-          </Link>
+      <header className="sticky top-0 z-30 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <div className="flex h-16 items-center justify-between gap-3 px-3 sm:px-6 w-full">
+          <div className="flex items-center gap-2 min-w-0">
+            <SidebarTrigger className="-ml-1" />
+            <Link to="/" className="flex items-center gap-3">
+              <img src={sanlamLogo} alt="Sanlam Allianz" className="h-8 w-auto sm:h-10" />
+            </Link>
+          </div>
 
           <div className="flex items-center gap-4">
             <a href="tel:+2252720259700" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
               <Phone className="w-4 h-4" />
               <span className="hidden sm:inline">(+225) 27 20 25 97 00</span>
             </a>
-            
+
             {user && <LogoutButton />}
           </div>
         </div>

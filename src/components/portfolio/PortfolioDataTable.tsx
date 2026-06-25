@@ -113,7 +113,7 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }
             <TableRow className="bg-muted/50 hover:bg-muted/50">
               <TableHead className="w-[200px]">Nom</TableHead>
               <TableHead className="hidden sm:table-cell w-[80px] text-center">Score</TableHead>
-              <TableHead>Contact</TableHead>
+              <TableHead className="hidden sm:table-cell">Contact</TableHead>
               <TableHead className="hidden md:table-cell">Type</TableHead>
               <TableHead className="hidden lg:table-cell text-center">Cotations</TableHead>
               <TableHead className="hidden lg:table-cell text-center">Contrats</TableHead>
@@ -163,10 +163,10 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }
                   </TableCell>
                   
                   {/* Contact Column */}
-                  <TableCell className={`${rowPadding} ${textSize}`}>
+                  <TableCell className={`hidden sm:table-cell ${rowPadding} ${textSize}`}>
                     <div className="space-y-0.5">
                       <p>{item.phone || "—"}</p>
-                      <p className="text-xs text-muted-foreground truncate max-w-[150px]">{item.email || ""}</p>
+                      <p className="text-xs text-muted-foreground truncate max-w-[180px]">{item.email || ""}</p>
                     </div>
                   </TableCell>
                   

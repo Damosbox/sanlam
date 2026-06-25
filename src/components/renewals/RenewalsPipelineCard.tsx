@@ -264,7 +264,7 @@ export function RenewalsPipelineCard({ scope }: Props) {
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-3">
           <div className="flex flex-1 flex-wrap items-center gap-2">
-            <div className="relative flex-1 min-w-[220px] max-w-sm">
+            <div className="relative flex-1 min-w-full sm:min-w-[220px] sm:max-w-sm">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 value={search}
@@ -273,10 +273,10 @@ export function RenewalsPipelineCard({ scope }: Props) {
                 className="pl-8 h-9 rounded-full"
               />
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
               <span className="text-xs text-muted-foreground">Agence</span>
               <Select value={agence} onValueChange={setAgence}>
-                <SelectTrigger className="h-9 w-[160px]">
+                <SelectTrigger className="h-9 flex-1 sm:w-[160px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -287,10 +287,10 @@ export function RenewalsPipelineCard({ scope }: Props) {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
               <span className="text-xs text-muted-foreground">Statut</span>
               <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className="h-9 w-[150px]">
+                <SelectTrigger className="h-9 flex-1 sm:w-[150px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -301,18 +301,18 @@ export function RenewalsPipelineCard({ scope }: Props) {
               </Select>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-2 sm:gap-3">
+            <span className="text-xs text-muted-foreground whitespace-nowrap text-center sm:text-left">
+              {filtered.length} affichés · page 1
+            </span>
             <Button
               disabled={selectedIds.length === 0}
               onClick={() => setConfirmOpen(true)}
-              className="gap-2"
+              className="gap-2 w-full sm:w-auto"
             >
               <RefreshCw className="h-4 w-4" />
               Renouveler ({selectedIds.length})
             </Button>
-            <span className="text-xs text-muted-foreground whitespace-nowrap">
-              {filtered.length} affichés · page 1
-            </span>
           </div>
         </div>
       </CardHeader>

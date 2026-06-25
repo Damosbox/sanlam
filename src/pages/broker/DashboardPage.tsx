@@ -87,7 +87,7 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="space-y-4 max-w-6xl animate-fade-in px-1 sm:px-0">
+    <div className="space-y-4 w-full animate-fade-in px-1 sm:px-0">
       {/* ROW 0: Header + Quick Actions */}
       <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-start sm:justify-between">
         <DashboardHeader 

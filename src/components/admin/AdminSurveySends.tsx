@@ -6,6 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Clock, CheckCircle, Mail, Eye, XCircle, RefreshCw } from "lucide-react";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 interface SurveySend {
   id: string;
@@ -68,6 +70,12 @@ export const AdminSurveySends = () => {
     return <div className="text-center py-8">Chargement...</div>;
   }
 
+  const list = sends ?? [];
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    list,
+    { storageKey: "admin-survey-sends" },
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -92,7 +100,7 @@ export const AdminSurveySends = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sends?.map((send) => (
+              {pageItems.map((send) => (
                 <TableRow key={send.id}>
                   <TableCell className="font-medium">
                     {send.survey_templates?.name || "-"}
@@ -137,6 +145,16 @@ export const AdminSurveySends = () => {
           </Table>
         </CardContent>
       </Card>
+      {list.length > 0 && (
+        <DataTablePagination
+          page={page}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          setPage={setPage}
+          setPageSize={setPageSize}
+          itemLabel="envoi"
+        />
+      )}
     </div>
   );
 };

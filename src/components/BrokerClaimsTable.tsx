@@ -37,6 +37,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ProductSelector, ProductType, PRODUCTS } from "@/components/broker/dashboard/ProductSelector";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 
@@ -173,6 +175,10 @@ export const BrokerClaimsTable = () => {
   }, [claims, searchQuery, selectedProduct, statusFilter]);
 
   const hasActiveFilters = searchQuery !== "" || selectedProduct !== "all" || statusFilter !== "all";
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    filteredClaims,
+    { storageKey: "broker-claims" },
+  );
 
   const handleResetFilters = () => {
     setSearchQuery("");
@@ -465,7 +471,7 @@ export const BrokerClaimsTable = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredClaims.map((claim) => (
+              pageItems.map((claim) => (
                 <TableRow key={claim.id}>
                   <TableCell>
                     <div>

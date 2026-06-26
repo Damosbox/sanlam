@@ -327,7 +327,7 @@ export const AdminClaimsTable = () => {
                 <TableCell>
                   <div className="flex items-center gap-2">
                     {claim.assigned_broker_id ? (
-                      <Badge variant="secondary">{getBrokerName(claim)}</Badge>
+                      <Badge variant="secondary">{getBrokerBadge(claim)}</Badge>
                     ) : (
                       <Badge variant="outline" className="text-orange-500 border-orange-500">
                         Non assigné

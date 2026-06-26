@@ -6,9 +6,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle,
-  Award,
-  Medal,
-  Trophy,
   RefreshCw,
   Plus,
   ChevronDown,
@@ -43,6 +40,7 @@ import { ScoringActionDialog } from "./ScoringActionDialog";
 import { ScoringHistoryList } from "./ScoringHistoryList";
 import { ManualOverrideRequestDialog } from "@/components/admin/scoring/ManualOverrideRequestDialog";
 import { Pencil } from "lucide-react";
+import { MedalIcon } from "./MedalIcon";
 
 interface ClientValueScoreProps {
   clientId: string;
@@ -50,18 +48,11 @@ interface ClientValueScoreProps {
   compact?: boolean;
 }
 
-const NIVEAU_ICON: Record<VfNiveau, typeof Trophy> = {
-  bronze: Medal,
-  argent: Medal,
-  or: Award,
-  platine: Trophy,
-};
-
 const NIVEAU_COLOR: Record<VfNiveau, string> = {
-  bronze: "text-amber-700 bg-amber-50 border-amber-200",
-  argent: "text-slate-700 bg-slate-100 border-slate-300",
-  or: "text-yellow-700 bg-yellow-50 border-yellow-300",
-  platine: "text-cyan-700 bg-cyan-50 border-cyan-300",
+  bronze: "text-amber-800 bg-amber-50/80 border-amber-300/70",
+  argent: "text-slate-700 bg-slate-100/80 border-slate-300",
+  or: "text-yellow-800 bg-yellow-50/90 border-yellow-400/70",
+  platine: "text-cyan-800 bg-cyan-50/80 border-cyan-300",
 };
 
 const MEDAL_TIERS: { niveau: VfNiveau; range: string; points: string }[] = [
@@ -91,7 +82,6 @@ const MedalTooltipContent = ({
     </div>
     <div className="space-y-1.5">
       {MEDAL_TIERS.map((tier) => {
-        const Icon = NIVEAU_ICON[tier.niveau];
         const isCurrent = current === tier.niveau;
         return (
           <div
@@ -103,7 +93,7 @@ const MedalTooltipContent = ({
             )}
           >
             <span className="flex items-center gap-1.5 font-medium">
-              <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+              <MedalIcon niveau={tier.niveau} size={14} />
               {VF_NIVEAU_LABEL[tier.niveau]}
             </span>
             <span className="font-mono text-[11px]">{tier.range}</span>

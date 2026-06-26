@@ -94,6 +94,7 @@ export default function ClientsPage() {
       "clients-sanlam",
       ["Créé le", "Prénom", "Nom", "Email", "Téléphone", "Statut", "Agent", "Canal", "Dernière connexion", "Polices", "Sinistres"],
       filtered.map((r) => [
+        csvDate(r.created_at),
         r.first_name ?? "",
         r.last_name ?? "",
         r.email ?? "",
@@ -104,7 +105,6 @@ export default function ClientsPage() {
         csvDate(r.last_sign_in_at),
         r.policies_count,
         r.claims_count,
-        csvDate(r.created_at),
       ]),
     );
   };

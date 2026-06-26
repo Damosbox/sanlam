@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 interface ProductsListProps {
   categoryFilter: string;

@@ -1,12 +1,12 @@
 import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScanSearch, ShieldCheck, ShieldAlert, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { OCRScansTable } from "@/components/admin/ocr/OCRScansTable";
 import { OCRDetailDrawer } from "@/components/admin/ocr/OCRDetailDrawer";
 import { toast } from "sonner";
+import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
+import { exportToCsv, csvDate } from "@/lib/export-csv";
 
 interface OCRScan {
   id: string;
@@ -37,6 +37,7 @@ export default function OCRValidationPage() {
   const [docTypeFilter, setDocTypeFilter] = useState<string>("all");
   const [authFilter, setAuthFilter] = useState<string>("all");
   const [reviewFilter, setReviewFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("date_desc");
 
   const fetchScans = async () => {
     setLoading(true);
@@ -57,14 +58,35 @@ export default function OCRValidationPage() {
   useEffect(() => { fetchScans(); }, []);
 
   const filtered = useMemo(() => {
-    return scans.filter((s) => {
+    const arr = scans.filter((s) => {
       if (docTypeFilter !== "all" && s.document_type !== docTypeFilter) return false;
       if (authFilter !== "all" && s.authenticity_status !== authFilter) return false;
       if (reviewFilter !== "all" && s.review_status !== reviewFilter) return false;
       if (search && !`${s.entity_name ?? ""} ${s.agent_name ?? ""}`.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [scans, search, docTypeFilter, authFilter, reviewFilter]);
+    return [...arr].sort((a, b) => {
+      switch (sortBy) {
+        case "date_asc": return +new Date(a.created_at) - +new Date(b.created_at);
+        case "conf_desc": return b.confidence_score - a.confidence_score;
+        case "conf_asc": return a.confidence_score - b.confidence_score;
+        case "date_desc":
+        default: return +new Date(b.created_at) - +new Date(a.created_at);
+      }
+    });
+  }, [scans, search, docTypeFilter, authFilter, reviewFilter, sortBy]);
+
+  const exportCSV = () => {
+    exportToCsv(
+      "ocr-scans",
+      ["Date", "Agent", "Entité", "Type entité", "Document", "Confiance %", "Authenticité", "Révision"],
+      filtered.map((s) => [
+        csvDate(s.created_at), s.agent_name ?? "", s.entity_name ?? "",
+        s.entity_type, s.document_type, Math.round(s.confidence_score),
+        s.authenticity_status, s.review_status,
+      ]),
+    );
+  };
 
   const kpis = useMemo(() => ({
     total: filtered.length,
@@ -132,46 +154,51 @@ export default function OCRValidationPage() {
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-6 grid gap-3 md:grid-cols-4">
-          <Input
-            placeholder="Rechercher client/agent…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <Select value={docTypeFilter} onValueChange={setDocTypeFilter}>
-            <SelectTrigger><SelectValue placeholder="Type document" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous documents</SelectItem>
-              <SelectItem value="CNI">CNI</SelectItem>
-              <SelectItem value="PASSEPORT">Passeport</SelectItem>
-              <SelectItem value="PERMIS">Permis</SelectItem>
-              <SelectItem value="CARTE_CONSULAIRE">Carte consulaire</SelectItem>
-              <SelectItem value="CARTE_GRISE">Carte grise</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={authFilter} onValueChange={setAuthFilter}>
-            <SelectTrigger><SelectValue placeholder="Authenticité" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Toutes</SelectItem>
-              <SelectItem value="authentic">Authentique</SelectItem>
-              <SelectItem value="suspicious">Suspect</SelectItem>
-              <SelectItem value="fake">Falsifié</SelectItem>
-              <SelectItem value="unverified">Non vérifié</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={reviewFilter} onValueChange={setReviewFilter}>
-            <SelectTrigger><SelectValue placeholder="Révision" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Toutes</SelectItem>
-              <SelectItem value="pending">En attente</SelectItem>
-              <SelectItem value="validated">Validé</SelectItem>
-              <SelectItem value="rejected">Rejeté</SelectItem>
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
+      <DataTableToolbar
+        search={{ value: search, onChange: setSearch, placeholder: "Rechercher client / agent..." }}
+        filters={[
+          {
+            id: "doc", label: "Type doc", value: docTypeFilter, onChange: setDocTypeFilter,
+            options: [
+              { value: "all", label: "Tous documents" },
+              { value: "CNI", label: "CNI" },
+              { value: "PASSEPORT", label: "Passeport" },
+              { value: "PERMIS", label: "Permis" },
+              { value: "CARTE_CONSULAIRE", label: "Carte consulaire" },
+              { value: "CARTE_GRISE", label: "Carte grise" },
+            ],
+          },
+          {
+            id: "auth", label: "Authenticité", value: authFilter, onChange: setAuthFilter,
+            options: [
+              { value: "all", label: "Toute authenticité" },
+              { value: "authentic", label: "Authentique" },
+              { value: "suspicious", label: "Suspect" },
+              { value: "fake", label: "Falsifié" },
+              { value: "unverified", label: "Non vérifié" },
+            ],
+          },
+          {
+            id: "review", label: "Statut", value: reviewFilter, onChange: setReviewFilter,
+            options: [
+              { value: "all", label: "Tout statut" },
+              { value: "pending", label: "En attente" },
+              { value: "validated", label: "Validé" },
+              { value: "rejected", label: "Rejeté" },
+            ],
+          },
+        ]}
+        sort={{
+          value: sortBy, onChange: setSortBy,
+          options: [
+            { value: "date_desc", label: "Plus récents" },
+            { value: "date_asc", label: "Plus anciens" },
+            { value: "conf_desc", label: "Confiance ↓" },
+            { value: "conf_asc", label: "Confiance ↑" },
+          ],
+        }}
+        onExport={exportCSV}
+      />
 
       <OCRScansTable scans={filtered} loading={loading} onRowClick={handleRowClick} />
 

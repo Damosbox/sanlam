@@ -133,6 +133,12 @@ export const FormTemplatesListTable = ({ onEdit }: FormTemplatesListTableProps) 
     return totalSteps;
   };
 
+  const templatesList = templates ?? [];
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    templatesList,
+    { storageKey: "admin-form-templates" },
+  );
+
   if (isLoading) {
     return (
       <Card>
@@ -173,7 +179,7 @@ export const FormTemplatesListTable = ({ onEdit }: FormTemplatesListTableProps) 
             </TableRow>
           </TableHeader>
           <TableBody>
-            {templates.map((template) => (
+            {pageItems.map((template) => (
               <TableRow key={template.id}>
                 <TableCell className="font-medium">{template.name}</TableCell>
                 <TableCell>
@@ -253,6 +259,16 @@ export const FormTemplatesListTable = ({ onEdit }: FormTemplatesListTableProps) 
             ))}
           </TableBody>
         </Table>
+        <div className="mt-4">
+          <DataTablePagination
+            page={page}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            setPage={setPage}
+            setPageSize={setPageSize}
+            itemLabel="formulaire"
+          />
+        </div>
       </CardContent>
     </Card>
   );

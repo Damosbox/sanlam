@@ -1,36 +1,36 @@
-## Nouvelle vue « Clients Sanlam » (Admin > Opérations)
+## Diversification des paliers + redesign des médailles
 
-### 1. Navigation
-- `src/components/admin/AdminSidebar.tsx` : ajouter l'item **Clients Sanlam** dans le groupe **Opérations** → route `/admin/clients` (icône `Users`).
-- `src/App.tsx` : enregistrer la route protégée (rôles `admin`, `backoffice_conformite`, `backoffice_crc`).
+### 1. Données mockées — 3 paliers distincts
+Migration SQL ciblant les 3 clients de démo (`marie.dupont@test.com`, `jean.kouassi@test.com`, `fatou.diallo@test.com`) :
 
-### 2. Page `src/pages/admin/ClientsPage.tsx`
-Tableau unifié agrégeant 3 sources :
+- `marie.dupont` → niveau **Bronze**, `vf_score_global = 15`
+- `jean.kouassi` → niveau **Argent**, `vf_score_global = 50`
+- `fatou.diallo` → niveau **Or**, `vf_score_global = 72`
 
-| Source | Détection | Statut compte |
-|---|---|---|
-| Profile + souscription | `profiles` ∩ `subscriptions` | Client Sanlam (compte actif) |
-| Profile sans souscription | `profiles` seul | Utilisateur |
-| Lead converti sans profile | `leads.status='converti'` sans `profiles` correspondant | Client Sanlam (sans compte) |
+UPDATE sur `client_scores` joint à `profiles.email`. Met aussi à jour `vf_niveau` et `calculated_at` pour cohérence.
 
-### 3. Colonnes du tableau
-- Prénom · Nom · Email · Téléphone
-- **Type** : badge (Client actif / Utilisateur / Client sans compte)
-- **Agent rattaché** : via `broker_clients.broker_id` ou `leads.assigned_broker_id` → résolu en nom depuis `profiles`
-- Nb polices · Nb sinistres
-- Date création
-- Action « Voir détails » → ouvre `ClientDetailSheet` (profile) ou `LeadDetailSheet` (lead sans compte)
+### 2. Redesign des médailles (composant dédié)
+Nouveau fichier `src/components/clients/MedalIcon.tsx` : SVG inline distinctif par palier (médaille avec ruban + reflet métallique), différentié visuellement :
 
-### 4. Filtres & KPIs
-- Barre de recherche (nom, email, téléphone)
-- Filtres : Type compte (Tous / Avec compte / Sans compte), Agent rattaché
-- Badges KPI : Total clients · Avec compte · Sans compte · Sans agent
+| Niveau | Métal | Ruban | Reflet |
+|---|---|---|---|
+| Bronze | dégradé cuivre `#cd7f32 → #8b4513` | rouge-brun | étoile centrale |
+| Argent | dégradé argent `#e8e8e8 → #9ca3af` | bleu nuit | demi-laurier |
+| Or | dégradé or `#fde047 → #b45309` | bleu royal | couronne de laurier complète |
+| Platine | dégradé platine `#ecfeff → #06b6d4` | violet | diamant central |
 
-### 5. Données
-- Hook `src/hooks/useAdminClients.ts` : 3 requêtes parallèles (`profiles`, `leads converti sans profile`, `broker_clients`) puis fusion côté client. Réutilise les hooks existants `useClients`/`useLeads` si compatibles.
-- Pas de migration SQL nécessaire (utilise tables existantes).
+- Composant unique avec prop `niveau` et `size`.
+- Variants HSL alignés sur les tokens existants (pas de hardcode en composants).
+- Remplace `Medal/Award/Trophy` dans `NIVEAU_ICON` de `ClientValueScore.tsx` (vue compacte + vue détaillée + tooltip).
+
+### 3. Score au survol — à l'intérieur du badge
+Dans la vue compacte de `ClientValueScore.tsx` :
+- **Supprimer** le `<span>` externe affichant `+15/100`.
+- Badge passe en `group` : par défaut affiche `<MedalIcon /> Bronze`, au hover bascule sur `<MedalIcon /> +15/100` (transition `opacity` + largeur fixe pour éviter saut de mise en page).
+- Le tooltip détaillé (paliers Bronze/Argent/Or) reste déclenché par le même hover, désormais cohérent : pastille = palier au repos, score en immersion au survol, paliers détaillés en tooltip.
+- L'attribut `aria-label` du badge conserve `"Bronze — score +15 sur 100"` pour l'accessibilité.
 
 ### Détails techniques
-- Fusion en mémoire avec clé `email` pour éviter doublons profile/lead.
-- Pagination client-side (50 lignes) avec `react-table` déjà utilisé ailleurs.
-- Export CSV ajouté en bouton secondaire.
+- Pas de changement de schéma DB.
+- Migration idempotente (UPDATE … WHERE email IN …).
+- `MedalIcon` rendu via SVG (pas de dépendance image), réutilisable ailleurs (notification renouvellement, tooltip, fiche client).

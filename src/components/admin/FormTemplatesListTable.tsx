@@ -8,6 +8,8 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Edit, Trash2, Copy } from "lucide-react";
 import { parseFormStructure } from "@/components/admin/form-builder";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 interface FormTemplatesListTableProps {
   onEdit: (formId: string) => void;

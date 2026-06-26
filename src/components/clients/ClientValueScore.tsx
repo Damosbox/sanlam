@@ -200,26 +200,12 @@ export const ClientValueScore = ({ clientId, compact = false }: ClientValueScore
                 variant="outline"
                 aria-label={`${niveau ? VF_NIVEAU_LABEL[niveau] : "—"} — score ${scoreGlobal > 0 ? "+" : ""}${scoreGlobal} sur 100`}
                 className={cn(
-                  "group/medal relative text-xs gap-1.5 pl-1.5 pr-2 py-0.5 overflow-hidden transition-colors",
+                  "text-xs gap-1.5 pl-1.5 pr-2 py-0.5 transition-colors",
                   niveau && NIVEAU_COLOR[niveau],
                 )}
               >
                 <MedalIcon niveau={niveauForIcon} size={16} className="shrink-0" />
-                {/* Label par défaut */}
-                <span className="transition-opacity duration-150 group-hover/medal:opacity-0">
-                  {niveau ? VF_NIVEAU_LABEL[niveau] : "—"}
-                </span>
-                {/* Score au hover, superposé pour garder la largeur */}
-                <span
-                  className={cn(
-                    "absolute inset-0 flex items-center justify-center gap-1.5 font-mono font-semibold opacity-0 transition-opacity duration-150 group-hover/medal:opacity-100",
-                    isNegative && "text-destructive",
-                  )}
-                >
-                  <MedalIcon niveau={niveauForIcon} size={14} className="shrink-0" />
-                  {scoreGlobal > 0 ? "+" : ""}
-                  {scoreGlobal}/100
-                </span>
+                <span>{niveau ? VF_NIVEAU_LABEL[niveau] : "—"}</span>
               </Badge>
               {score?.vf_is_partial && (
                 <Badge variant="outline" className="text-[10px]">Partiel</Badge>

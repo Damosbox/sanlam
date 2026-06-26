@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Eye, DollarSign, UserPlus, FileText } from "lucide-react";
+import { CheckCircle, XCircle, Eye, DollarSign, UserPlus, FileText, Download, ArrowUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
@@ -70,6 +70,8 @@ export const AdminClaimsTable = () => {
   const [showCostDialog, setShowCostDialog] = useState(false);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [filterUnassigned, setFilterUnassigned] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("incident_desc");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -259,11 +261,60 @@ export const AdminClaimsTable = () => {
     return broker?.display_name || broker?.email || "Courtier assigné";
   };
 
-  const filteredClaims = filterUnassigned 
-    ? claims.filter(c => !c.assigned_broker_id) 
-    : claims;
+  const filteredClaims = claims
+    .filter((c) => (filterUnassigned ? !c.assigned_broker_id : true))
+    .filter((c) => (statusFilter === "all" ? true : c.status === statusFilter));
+
+  const sortedClaims = [...filteredClaims].sort((a, b) => {
+    const dateA = (d: string | null) => (d ? new Date(d).getTime() : 0);
+    switch (sortBy) {
+      case "incident_desc":
+        return dateA(b.incident_date) - dateA(a.incident_date);
+      case "incident_asc":
+        return dateA(a.incident_date) - dateA(b.incident_date);
+      case "created_desc":
+        return dateA(b.created_at) - dateA(a.created_at);
+      case "created_asc":
+        return dateA(a.created_at) - dateA(b.created_at);
+      case "cost_desc":
+        return (b.cost_estimation ?? 0) - (a.cost_estimation ?? 0);
+      case "cost_asc":
+        return (a.cost_estimation ?? 0) - (b.cost_estimation ?? 0);
+      default:
+        return 0;
+    }
+  });
+
+  const exportCSV = () => {
+    const headers = ["Utilisateur", "Email", "Type", "Police", "Date incident", "Date création", "Statut", "Courtier", "Estimation (FCFA)"];
+    const rows = sortedClaims.map((c) => {
+      const broker = brokers.find((b) => b.id === c.assigned_broker_id);
+      return [
+        c.profiles?.display_name ?? "",
+        c.profiles?.email ?? "",
+        c.claim_type,
+        c.policy_id,
+        c.incident_date ? new Date(c.incident_date).toLocaleDateString() : "",
+        c.created_at ? new Date(c.created_at).toLocaleDateString() : "",
+        c.status,
+        broker?.display_name ?? broker?.email ?? (c.assigned_broker_id ? "" : "Non assigné"),
+        c.cost_estimation ?? "",
+      ];
+    });
+    const csv = [headers, ...rows]
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `sinistres_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
-    filteredClaims,
+    sortedClaims,
     { storageKey: "admin-claims" },
   );
 
@@ -273,20 +324,49 @@ export const AdminClaimsTable = () => {
 
   return (
     <>
-      <div className="mb-4 flex items-center gap-4">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Statut" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les statuts</SelectItem>
+            <SelectItem value="Draft">Brouillon</SelectItem>
+            <SelectItem value="Submitted">Soumis</SelectItem>
+            <SelectItem value="Reviewed">Examiné</SelectItem>
+            <SelectItem value="Approved">Approuvé</SelectItem>
+            <SelectItem value="Rejected">Rejeté</SelectItem>
+            <SelectItem value="Closed">Clôturé</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="w-[220px]">
+            <ArrowUpDown className="w-4 h-4 mr-2" />
+            <SelectValue placeholder="Trier par" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="incident_desc">Sinistre le plus récent</SelectItem>
+            <SelectItem value="incident_asc">Sinistre le plus ancien</SelectItem>
+            <SelectItem value="created_desc">Date de création (récent)</SelectItem>
+            <SelectItem value="created_asc">Date de création (ancien)</SelectItem>
+            <SelectItem value="cost_desc">Estimation décroissante</SelectItem>
+            <SelectItem value="cost_asc">Estimation croissante</SelectItem>
+          </SelectContent>
+        </Select>
         <Button
           variant={filterUnassigned ? "default" : "outline"}
           size="sm"
           onClick={() => setFilterUnassigned(!filterUnassigned)}
         >
           <UserPlus className="w-4 h-4 mr-2" />
-          {filterUnassigned ? "Afficher tous" : "Non assignés uniquement"}
+          {filterUnassigned ? "Afficher tous" : "Non assignés"}
         </Button>
-        {filterUnassigned && (
-          <span className="text-sm text-muted-foreground">
-            {filteredClaims.length} sinistre(s) non assigné(s)
-          </span>
-        )}
+        <div className="ml-auto">
+          <Button variant="outline" size="sm" onClick={exportCSV}>
+            <Download className="w-4 h-4 mr-2" />
+            Exporter CSV
+          </Button>
+        </div>
       </div>
       
       <div className="rounded-lg border bg-card">

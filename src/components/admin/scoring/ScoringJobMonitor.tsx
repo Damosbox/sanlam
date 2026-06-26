@@ -16,6 +16,16 @@ import { AlertTriangle, Play, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
+import { ScoringCoverageCard } from "./ScoringCoverageCard";
+import { ScoringCronSchedule } from "./ScoringCronSchedule";
+
+const TRIGGER_LABEL: Record<string, string> = {
+  manual: "Manuel",
+  cron_daily: "Cron quotidien",
+  cron_weekly: "Cron hebdo",
+  cron_monthly: "Cron mensuel",
+  monthly_job: "Manuel (legacy)",
+};
 
 export function ScoringJobMonitor() {
   const qc = useQueryClient();
@@ -56,6 +66,9 @@ export function ScoringJobMonitor() {
 
   return (
     <div className="space-y-4">
+      <ScoringCoverageCard />
+      <ScoringCronSchedule />
+
       {lastError && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
@@ -67,7 +80,7 @@ export function ScoringJobMonitor() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-base">Job de recalcul mensuel</CardTitle>
+          <CardTitle className="text-base">Historique des exécutions</CardTitle>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isLoading}>
               <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
@@ -87,6 +100,7 @@ export function ScoringJobMonitor() {
                 <TableHead>Déclencheur</TableHead>
                 <TableHead>Statut</TableHead>
                 <TableHead className="text-right">Clients</TableHead>
+                <TableHead className="text-right">Non scorés</TableHead>
                 <TableHead className="text-right">Erreurs</TableHead>
                 <TableHead className="text-right">Durée</TableHead>
               </TableRow>
@@ -94,7 +108,7 @@ export function ScoringJobMonitor() {
             <TableBody>
               {(!runs || runs.length === 0) && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-6">
                     Aucune exécution enregistrée.
                   </TableCell>
                 </TableRow>
@@ -104,7 +118,9 @@ export function ScoringJobMonitor() {
                   <TableCell className="text-xs">
                     {format(new Date(r.started_at), "d MMM yyyy HH:mm", { locale: fr })}
                   </TableCell>
-                  <TableCell className="text-xs">{r.trigger}</TableCell>
+                  <TableCell className="text-xs">
+                    {TRIGGER_LABEL[r.trigger] ?? r.trigger}
+                  </TableCell>
                   <TableCell>
                     <Badge
                       variant={
@@ -120,6 +136,18 @@ export function ScoringJobMonitor() {
                   </TableCell>
                   <TableCell className="text-right text-xs font-mono">
                     {r.clients_processed ?? "—"}
+                    {r.clients_total != null && (
+                      <span className="text-muted-foreground"> / {r.clients_total}</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right text-xs font-mono">
+                    {r.clients_unscored != null ? (
+                      <span className={r.clients_unscored > 0 ? "text-destructive" : ""}>
+                        {r.clients_unscored}
+                      </span>
+                    ) : (
+                      "—"
+                    )}
                   </TableCell>
                   <TableCell className="text-right text-xs font-mono">
                     {r.errors_count ?? 0}

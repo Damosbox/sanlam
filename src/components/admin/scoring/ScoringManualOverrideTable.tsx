@@ -84,9 +84,6 @@ export function ScoringManualOverrideTable() {
     [all],
   );
 
-  const pendingPg = usePagination(pending, { storageKey: "score-overrides-pending" });
-  const historyPg = usePagination(history, { storageKey: "score-overrides-history" });
-
   const userIds = useMemo(() => {
     const ids = new Set<string>();
     (all ?? []).forEach((r) => {
@@ -126,6 +123,9 @@ export function ScoringManualOverrideTable() {
       .sort(sortFn),
     [rawHistory, statusFilter, search, sortBy, profiles],
   );
+
+  const pendingPg = usePagination(pending, { storageKey: "score-overrides-pending" });
+  const historyPg = usePagination(history, { storageKey: "score-overrides-history" });
 
   const nameOf = (id: string | null | undefined) => {
     if (!id) return "—";

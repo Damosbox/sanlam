@@ -70,11 +70,25 @@ const MEDAL_TIERS: { niveau: VfNiveau; range: string; points: string }[] = [
   { niveau: "or", range: "65 → 79", points: "+25 pts depuis Argent" },
 ];
 
-const MedalTooltipContent = ({ current }: { current: VfNiveau | null }) => (
+const MedalTooltipContent = ({
+  current,
+  scoreGlobal,
+}: {
+  current: VfNiveau | null;
+  scoreGlobal?: number;
+}) => (
   <div className="space-y-2 p-1 min-w-[200px]">
-    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-      Paliers de fidélité
-    </p>
+    <div className="flex items-center justify-between gap-3">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        Paliers de fidélité
+      </p>
+      {typeof scoreGlobal === "number" && (
+        <span className="text-[11px] font-mono font-semibold text-foreground">
+          {scoreGlobal > 0 ? "+" : ""}
+          {scoreGlobal}/100
+        </span>
+      )}
+    </div>
     <div className="space-y-1.5">
       {MEDAL_TIERS.map((tier) => {
         const Icon = NIVEAU_ICON[tier.niveau];
@@ -188,40 +202,40 @@ export const ClientValueScore = ({ clientId, compact = false }: ClientValueScore
   // ===== Compact view (portfolio table / inline) =====
   if (compact) {
     return (
-      <div className="flex items-center gap-2">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-2 cursor-help">
               <Badge
                 variant="outline"
                 className={cn(
-                  "text-xs gap-1 cursor-help",
+                  "text-xs gap-1",
                   niveau && NIVEAU_COLOR[niveau],
                 )}
               >
                 <NiveauIcon className="h-3 w-3" aria-hidden="true" />
                 {niveau ? VF_NIVEAU_LABEL[niveau] : "—"}
               </Badge>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="bg-popover text-popover-foreground">
-              <MedalTooltipContent current={niveau} />
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        <span
-          className={cn(
-            "text-xs font-mono font-semibold",
-            isNegative && "text-destructive",
-          )}
-          aria-label={`Score ${scoreGlobal} sur 100`}
-        >
-          {scoreGlobal > 0 ? "+" : ""}
-          {scoreGlobal}/100
-        </span>
-        {score?.vf_is_partial && (
-          <Badge variant="outline" className="text-[10px]">Partiel</Badge>
-        )}
-      </div>
+              <span
+                className={cn(
+                  "text-xs font-mono font-semibold",
+                  isNegative && "text-destructive",
+                )}
+                aria-label={`Score ${scoreGlobal} sur 100`}
+              >
+                {scoreGlobal > 0 ? "+" : ""}
+                {scoreGlobal}/100
+              </span>
+              {score?.vf_is_partial && (
+                <Badge variant="outline" className="text-[10px]">Partiel</Badge>
+              )}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="bg-popover text-popover-foreground border shadow-md">
+            <MedalTooltipContent current={niveau} scoreGlobal={scoreGlobal} />
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   }
 
@@ -264,8 +278,8 @@ export const ClientValueScore = ({ clientId, compact = false }: ClientValueScore
                       {niveau ? VF_NIVEAU_LABEL[niveau] : "—"}
                     </Badge>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="bg-popover text-popover-foreground">
-                    <MedalTooltipContent current={niveau} />
+                  <TooltipContent side="bottom" className="bg-popover text-popover-foreground border shadow-md">
+                    <MedalTooltipContent current={niveau} scoreGlobal={scoreGlobal} />
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

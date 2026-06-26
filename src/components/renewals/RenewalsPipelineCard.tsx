@@ -19,6 +19,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { formatFCFA } from "@/utils/formatCurrency";
 import { RenewalsBulkNotifyDialog } from "./RenewalsBulkNotifyDialog";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 type Scope = "broker" | "admin";
 

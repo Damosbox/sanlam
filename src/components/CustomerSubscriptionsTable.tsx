@@ -379,18 +379,6 @@ export const CustomerSubscriptionsTable = () => {
             </TableBody>
           </Table>
         </div>
-        {viewMode === 'table' && (
-          <div className="mt-2">
-            <DataTablePagination
-              page={page}
-              pageSize={pageSize}
-              totalItems={totalItems}
-              setPage={setPage}
-              setPageSize={setPageSize}
-              itemLabel="police"
-            />
-          </div>
-        )}
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {pageItems.map((sub) => (
@@ -440,6 +428,16 @@ export const CustomerSubscriptionsTable = () => {
             </Card>
           ))}
         </div>
+      )}
+      {viewMode === 'table' && (
+        <DataTablePagination
+          page={page}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          setPage={setPage}
+          setPageSize={setPageSize}
+          itemLabel="police"
+        />
       )}
 
       {/* Details Dialog */}

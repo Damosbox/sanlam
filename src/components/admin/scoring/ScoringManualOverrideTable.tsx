@@ -75,6 +75,29 @@ export function ScoringManualOverrideTable() {
   const { data: all, isLoading } = useManualOverrideRequests("all");
   const decide = useDecideManualOverride();
 
+  const rawPending = useMemo(
+    () => (all ?? []).filter((r) => r.status === "pending"),
+    [all],
+  );
+  const rawHistory = useMemo(
+    () => (all ?? []).filter((r) => r.status !== "pending"),
+    [all],
+  );
+
+  const pendingPg = usePagination(pending, { storageKey: "score-overrides-pending" });
+  const historyPg = usePagination(history, { storageKey: "score-overrides-history" });
+
+  const userIds = useMemo(() => {
+    const ids = new Set<string>();
+    (all ?? []).forEach((r) => {
+      ids.add(r.requested_by);
+      ids.add(r.client_id);
+      if (r.approver_id) ids.add(r.approver_id);
+    });
+    return Array.from(ids);
+  }, [all]);
+  const { data: profiles } = useProfilesBrief(userIds);
+
   const matchSearch = (r: ManualOverrideRequest) => {
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
@@ -93,30 +116,16 @@ export function ScoringManualOverrideTable() {
   };
 
   const pending = useMemo(
-    () => (all ?? []).filter((r) => r.status === "pending").filter(matchSearch).sort(sortFn),
-    [all, search, sortBy, profiles],
+    () => rawPending.filter(matchSearch).sort(sortFn),
+    [rawPending, search, sortBy, profiles],
   );
   const history = useMemo(
-    () => (all ?? []).filter((r) => r.status !== "pending")
+    () => rawHistory
       .filter((r) => statusFilter === "all" || r.status === statusFilter)
       .filter(matchSearch)
       .sort(sortFn),
-    [all, statusFilter, search, sortBy, profiles],
+    [rawHistory, statusFilter, search, sortBy, profiles],
   );
-
-  const pendingPg = usePagination(pending, { storageKey: "score-overrides-pending" });
-  const historyPg = usePagination(history, { storageKey: "score-overrides-history" });
-
-  const userIds = useMemo(() => {
-    const ids = new Set<string>();
-    (all ?? []).forEach((r) => {
-      ids.add(r.requested_by);
-      ids.add(r.client_id);
-      if (r.approver_id) ids.add(r.approver_id);
-    });
-    return Array.from(ids);
-  }, [all]);
-  const { data: profiles } = useProfilesBrief(userIds);
 
   const nameOf = (id: string | null | undefined) => {
     if (!id) return "—";

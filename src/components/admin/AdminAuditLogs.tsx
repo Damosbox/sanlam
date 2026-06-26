@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, FileText, RefreshCw, Download, Search, Clock, User } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 interface AuditLog {
   id: string;
@@ -223,7 +225,7 @@ export const AdminAuditLogs = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredLogs.map((log) => (
+                  pageItems.map((log) => (
                     <TableRow key={log.id}>
                       <TableCell className="text-sm">
                         {format(new Date(log.created_at), "dd MMM yyyy HH:mm", {
@@ -257,10 +259,16 @@ export const AdminAuditLogs = () => {
               </TableBody>
             </Table>
           </div>
-
-          <p className="text-sm text-muted-foreground mt-4">
-            Affichage des {filteredLogs.length} derniers événements (max 100)
-          </p>
+          <div className="mt-4">
+            <DataTablePagination
+              page={page}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              setPage={setPage}
+              setPageSize={setPageSize}
+              itemLabel="événement"
+            />
+          </div>
         </CardContent>
       </Card>
     </div>

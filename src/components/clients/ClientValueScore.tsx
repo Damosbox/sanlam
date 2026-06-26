@@ -59,6 +59,7 @@ const MEDAL_TIERS: { niveau: VfNiveau; range: string; points: string }[] = [
   { niveau: "bronze", range: "-5 → 39", points: "Palier d'entrée" },
   { niveau: "argent", range: "40 → 64", points: "+40 pts depuis Bronze" },
   { niveau: "or", range: "65 → 79", points: "+25 pts depuis Argent" },
+  { niveau: "platine", range: "80 → 100", points: "+15 pts depuis Or" },
 ];
 
 const MedalTooltipContent = ({

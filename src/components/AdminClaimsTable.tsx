@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 interface Claim {
   id: string;
@@ -260,6 +262,10 @@ export const AdminClaimsTable = () => {
   const filteredClaims = filterUnassigned 
     ? claims.filter(c => !c.assigned_broker_id) 
     : claims;
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    filteredClaims,
+    { storageKey: "admin-claims" },
+  );
 
   if (loading) {
     return <div className="text-center py-8">Chargement...</div>;
@@ -298,7 +304,7 @@ export const AdminClaimsTable = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredClaims.map((claim) => (
+            {pageItems.map((claim) => (
               <TableRow key={claim.id}>
                 <TableCell>
                   <div>
@@ -404,6 +410,14 @@ export const AdminClaimsTable = () => {
           </TableBody>
         </Table>
       </div>
+      <DataTablePagination
+        page={page}
+        pageSize={pageSize}
+        totalItems={totalItems}
+        setPage={setPage}
+        setPageSize={setPageSize}
+        itemLabel="sinistre"
+      />
 
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">

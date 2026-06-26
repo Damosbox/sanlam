@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentTemplateEditor } from "./DocumentTemplateEditor";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 interface Template {
   id: string;
@@ -102,6 +104,10 @@ export function DocumentTemplatesList() {
   }
 
   const filtered = filterCategory === "all" ? templates : templates.filter((t) => (t.category || t.type) === filterCategory);
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    filtered,
+    { storageKey: "admin-document-templates" },
+  );
 
   return (
     <div className="space-y-4">
@@ -138,7 +144,7 @@ export function DocumentTemplatesList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((t) => (
+              {pageItems.map((t) => (
                 <TableRow key={t.id}>
                   <TableCell>
                     <div>
@@ -166,6 +172,16 @@ export function DocumentTemplatesList() {
             </TableBody>
           </Table>
         </div>
+      )}
+      {filtered.length > 0 && (
+        <DataTablePagination
+          page={page}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          setPage={setPage}
+          setPageSize={setPageSize}
+          itemLabel="template"
+        />
       )}
     </div>
   );

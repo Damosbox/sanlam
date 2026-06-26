@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, differenceInDays } from "date-fns";
-import { MessageCircle, RefreshCw, Calendar } from "lucide-react";
+import { Send, RefreshCw, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -516,12 +516,12 @@ export function RenewalsPipelineCard({ scope }: Props) {
                           </Button>
                           <Button
                             variant="outline" size="sm"
-                            className="h-8 gap-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border-emerald-200"
+                            className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border-emerald-200"
                             onClick={() => handleWhatsApp(r)}
-                            aria-label="Notifier via WhatsApp"
+                            aria-label="Envoyer la notification au client"
+                            title="Envoyer la notification au client"
                           >
-                            <MessageCircle className="h-3.5 w-3.5" />
-                            <span className="hidden md:inline">WhatsApp</span>
+                            <Send className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </TableCell>

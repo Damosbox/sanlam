@@ -2359,6 +2359,8 @@ export type Database = {
       scoring_job_runs: {
         Row: {
           clients_processed: number | null
+          clients_total: number | null
+          clients_unscored: number | null
           duration_ms: number | null
           error_log: Json | null
           errors_count: number | null
@@ -2370,6 +2372,8 @@ export type Database = {
         }
         Insert: {
           clients_processed?: number | null
+          clients_total?: number | null
+          clients_unscored?: number | null
           duration_ms?: number | null
           error_log?: Json | null
           errors_count?: number | null
@@ -2381,6 +2385,8 @@ export type Database = {
         }
         Update: {
           clients_processed?: number | null
+          clients_total?: number | null
+          clients_unscored?: number | null
           duration_ms?: number | null
           error_log?: Json | null
           errors_count?: number | null

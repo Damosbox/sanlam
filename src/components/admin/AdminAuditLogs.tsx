@@ -120,6 +120,11 @@ export const AdminAuditLogs = () => {
     return matchesSearch && matchesAction && matchesResource;
   });
 
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    filteredLogs,
+    { storageKey: "admin-audit-logs" },
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">

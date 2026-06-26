@@ -21,6 +21,8 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatFCFA } from "@/utils/formatCurrency";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 interface Subscription {
   id: string;
@@ -158,6 +160,10 @@ export const AdminSubscriptionsTable = () => {
   const filteredSubscriptions = showUnassignedOnly
     ? subscriptions.filter((s) => !s.assigned_broker_id)
     : subscriptions;
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    filteredSubscriptions,
+    { storageKey: "admin-subscriptions" },
+  );
 
   if (loading) {
     return <div>Chargement...</div>;
@@ -195,7 +201,7 @@ export const AdminSubscriptionsTable = () => {
               </TableCell>
             </TableRow>
           ) : (
-            filteredSubscriptions.map((subscription) => (
+            pageItems.map((subscription) => (
               <TableRow key={subscription.id}>
                 <TableCell>
                   <div className="flex flex-col">
@@ -245,6 +251,14 @@ export const AdminSubscriptionsTable = () => {
           )}
         </TableBody>
       </Table>
+      <DataTablePagination
+        page={page}
+        pageSize={pageSize}
+        totalItems={totalItems}
+        setPage={setPage}
+        setPageSize={setPageSize}
+        itemLabel="souscription"
+      />
     </div>
   );
 };

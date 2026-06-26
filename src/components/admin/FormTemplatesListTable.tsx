@@ -8,6 +8,8 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Edit, Trash2, Copy } from "lucide-react";
 import { parseFormStructure } from "@/components/admin/form-builder";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 interface FormTemplatesListTableProps {
   onEdit: (formId: string) => void;
@@ -131,6 +133,12 @@ export const FormTemplatesListTable = ({ onEdit }: FormTemplatesListTableProps) 
     return totalSteps;
   };
 
+  const templatesList = templates ?? [];
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    templatesList,
+    { storageKey: "admin-form-templates" },
+  );
+
   if (isLoading) {
     return (
       <Card>
@@ -171,7 +179,7 @@ export const FormTemplatesListTable = ({ onEdit }: FormTemplatesListTableProps) 
             </TableRow>
           </TableHeader>
           <TableBody>
-            {templates.map((template) => (
+            {pageItems.map((template) => (
               <TableRow key={template.id}>
                 <TableCell className="font-medium">{template.name}</TableCell>
                 <TableCell>
@@ -251,6 +259,16 @@ export const FormTemplatesListTable = ({ onEdit }: FormTemplatesListTableProps) 
             ))}
           </TableBody>
         </Table>
+        <div className="mt-4">
+          <DataTablePagination
+            page={page}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            setPage={setPage}
+            setPageSize={setPageSize}
+            itemLabel="formulaire"
+          />
+        </div>
       </CardContent>
     </Card>
   );

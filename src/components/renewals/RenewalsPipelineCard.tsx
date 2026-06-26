@@ -19,6 +19,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { formatFCFA } from "@/utils/formatCurrency";
 import { RenewalsBulkNotifyDialog } from "./RenewalsBulkNotifyDialog";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 type Scope = "broker" | "admin";
 
@@ -142,6 +144,11 @@ export function RenewalsPipelineCard({ scope }: Props) {
       return true;
     });
   }, [rows, search, agence, status]);
+
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    filtered,
+    { storageKey: `renewals-pipeline-${scope}` },
+  );
 
   const selectedIds = useMemo(
     () => filtered.map((r) => r.id).filter((id) => selected[id]),
@@ -347,7 +354,7 @@ export function RenewalsPipelineCard({ scope }: Props) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((r) => {
+                {pageItems.map((r) => {
                   const isExpired = r.days_until_expiry < 0;
                   return (
                     <TableRow
@@ -429,6 +436,18 @@ export function RenewalsPipelineCard({ scope }: Props) {
                 })}
               </TableBody>
             </Table>
+          </div>
+        )}
+        {filtered.length > 0 && (
+          <div className="mt-2 px-4 sm:px-0">
+            <DataTablePagination
+              page={page}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              setPage={setPage}
+              setPageSize={setPageSize}
+              itemLabel="contrat"
+            />
           </div>
         )}
       </CardContent>

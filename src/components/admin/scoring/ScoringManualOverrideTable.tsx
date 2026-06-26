@@ -32,6 +32,8 @@ import {
   type ManualOverrideRequest,
 } from "@/hooks/useManualOverrideRequests";
 import { exportToCSV } from "@/utils/exportCsv";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 const STATUS_LABEL: Record<ManualOverrideRequest["status"], string> = {
   pending: "En attente",
@@ -77,6 +79,9 @@ export function ScoringManualOverrideTable() {
     () => (all ?? []).filter((r) => r.status !== "pending"),
     [all],
   );
+
+  const pendingPg = usePagination(pending, { storageKey: "score-overrides-pending" });
+  const historyPg = usePagination(history, { storageKey: "score-overrides-history" });
 
   const userIds = useMemo(() => {
     const ids = new Set<string>();
@@ -194,7 +199,7 @@ export function ScoringManualOverrideTable() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {pending.map((r) => {
+                    {pendingPg.pageItems.map((r) => {
                       const isOwn = user?.id === r.requested_by;
                       return (
                         <TableRow key={r.id}>
@@ -251,6 +256,18 @@ export function ScoringManualOverrideTable() {
               )}
             </CardContent>
           </Card>
+          {pending.length > 0 && (
+            <div className="mt-2">
+              <DataTablePagination
+                page={pendingPg.page}
+                pageSize={pendingPg.pageSize}
+                totalItems={pendingPg.totalItems}
+                setPage={pendingPg.setPage}
+                setPageSize={pendingPg.setPageSize}
+                itemLabel="demande"
+              />
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="history" className="mt-4 space-y-3">
@@ -285,7 +302,7 @@ export function ScoringManualOverrideTable() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {history.map((r) => (
+                    {historyPg.pageItems.map((r) => (
                       <TableRow key={r.id}>
                         <TableCell className="whitespace-nowrap text-xs">
                           {fmtDate(r.decided_at)}
@@ -311,6 +328,16 @@ export function ScoringManualOverrideTable() {
               )}
             </CardContent>
           </Card>
+          {history.length > 0 && (
+            <DataTablePagination
+              page={historyPg.page}
+              pageSize={historyPg.pageSize}
+              totalItems={historyPg.totalItems}
+              setPage={historyPg.setPage}
+              setPageSize={historyPg.setPageSize}
+              itemLabel="décision"
+            />
+          )}
         </TabsContent>
       </Tabs>
 

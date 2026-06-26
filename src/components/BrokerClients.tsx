@@ -22,6 +22,8 @@ import {
 import { Users, UserCheck, Clock, Phone, MessageCircle, Mail, MoreHorizontal, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { ClientDetailSheet } from "./clients/ClientDetailSheet";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 interface Client {
   id: string;
@@ -167,8 +169,22 @@ export const BrokerClients = () => {
     return <div className="text-center py-8">Chargement...</div>;
   }
 
-  const renderClientTable = (clientList: Client[], showProduct = false) => (
-    <div className="rounded-lg border bg-card overflow-x-auto">
+  const PaginatedClientTable = ({
+    clientList,
+    showProduct = false,
+    storageKey,
+  }: {
+    clientList: Client[];
+    showProduct?: boolean;
+    storageKey: string;
+  }) => {
+    const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+      clientList,
+      { storageKey },
+    );
+    return (
+      <div className="space-y-2">
+        <div className="rounded-lg border bg-card overflow-x-auto">
       <Table className="min-w-[500px]">
         <TableHeader>
           <TableRow>
@@ -194,7 +210,7 @@ export const BrokerClients = () => {
               </TableCell>
             </TableRow>
           ) : (
-            clientList.map((client) => (
+            pageItems.map((client) => (
               <TableRow key={client.id}>
                 <TableCell>
                   <button
@@ -297,8 +313,18 @@ export const BrokerClients = () => {
           )}
         </TableBody>
       </Table>
-    </div>
-  );
+        </div>
+        <DataTablePagination
+          page={page}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          setPage={setPage}
+          setPageSize={setPageSize}
+          itemLabel="client"
+        />
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -319,15 +345,15 @@ export const BrokerClients = () => {
         </TabsList>
 
         <TabsContent value="all">
-          {renderClientTable(clients)}
+          <PaginatedClientTable clientList={clients} storageKey="broker-clients-all" />
         </TabsContent>
         
         <TabsContent value="active">
-          {renderClientTable(activeClients)}
+          <PaginatedClientTable clientList={activeClients} storageKey="broker-clients-active" />
         </TabsContent>
         
         <TabsContent value="pending">
-          {renderClientTable(pendingClients, true)}
+          <PaginatedClientTable clientList={pendingClients} showProduct storageKey="broker-clients-pending" />
         </TabsContent>
       </Tabs>
 

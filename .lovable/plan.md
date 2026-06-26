@@ -1,36 +1,75 @@
-## Diversification des paliers + redesign des médailles
+## Objectif
+Ajouter une pagination cohérente, **côté client, 25 lignes par défaut**, sur **tous les tableaux** de l'application (Admin, Broker, Customer).
 
-### 1. Données mockées — 3 paliers distincts
-Migration SQL ciblant les 3 clients de démo (`marie.dupont@test.com`, `jean.kouassi@test.com`, `fatou.diallo@test.com`) :
+## Pattern unifié
 
-- `marie.dupont` → niveau **Bronze**, `vf_score_global = 15`
-- `jean.kouassi` → niveau **Argent**, `vf_score_global = 50`
-- `fatou.diallo` → niveau **Or**, `vf_score_global = 72`
+Création d'un composant réutilisable + d'un hook pour éviter de dupliquer la logique 30 fois.
 
-UPDATE sur `client_scores` joint à `profiles.email`. Met aussi à jour `vf_niveau` et `calculated_at` pour cohérence.
+### 1. `src/hooks/usePagination.ts` (nouveau)
+- Entrée : `items: T[]`, `defaultPageSize = 25`.
+- Sortie : `pageItems`, `page`, `setPage`, `pageSize`, `setPageSize`, `totalPages`, `totalItems`.
+- Réinitialise automatiquement à la page 1 quand `items.length` change (ex. après un filtre/recherche).
+- Persistance optionnelle via un `storageKey` (sessionStorage) pour mémoriser le choix utilisateur sur le sélecteur de taille.
 
-### 2. Redesign des médailles (composant dédié)
-Nouveau fichier `src/components/clients/MedalIcon.tsx` : SVG inline distinctif par palier (médaille avec ruban + reflet métallique), différentié visuellement :
+### 2. `src/components/ui/data-table-pagination.tsx` (nouveau)
+- Footer standard à coller sous chaque `<Table>` :
+  - Texte d'info : « 26–50 sur 137 éléments ».
+  - Sélecteur taille de page : 10 / 25 / 50 / 100.
+  - Contrôles : ⏮ ◀ « Page 2 / 6 » ▶ ⏭ (boutons désactivés aux bornes).
+- Responsive : sur mobile (< 640 px) le sélecteur passe sous les flèches.
+- Props minimales : `page, setPage, pageSize, setPageSize, totalItems`.
 
-| Niveau | Métal | Ruban | Reflet |
-|---|---|---|---|
-| Bronze | dégradé cuivre `#cd7f32 → #8b4513` | rouge-brun | étoile centrale |
-| Argent | dégradé argent `#e8e8e8 → #9ca3af` | bleu nuit | demi-laurier |
-| Or | dégradé or `#fde047 → #b45309` | bleu royal | couronne de laurier complète |
-| Platine | dégradé platine `#ecfeff → #06b6d4` | violet | diamant central |
+## Tableaux à équiper
 
-- Composant unique avec prop `niveau` et `size`.
-- Variants HSL alignés sur les tokens existants (pas de hardcode en composants).
-- Remplace `Medal/Award/Trophy` dans `NIVEAU_ICON` de `ClientValueScore.tsx` (vue compacte + vue détaillée + tooltip).
+Périmètre exhaustif organisé par espace pour traçabilité.
 
-### 3. Score au survol — à l'intérieur du badge
-Dans la vue compacte de `ClientValueScore.tsx` :
-- **Supprimer** le `<span>` externe affichant `+15/100`.
-- Badge passe en `group` : par défaut affiche `<MedalIcon /> Bronze`, au hover bascule sur `<MedalIcon /> +15/100` (transition `opacity` + largeur fixe pour éviter saut de mise en page).
-- Le tooltip détaillé (paliers Bronze/Argent/Or) reste déclenché par le même hover, désormais cohérent : pastille = palier au repos, score en immersion au survol, paliers détaillés en tooltip.
-- L'attribut `aria-label` du badge conserve `"Bronze — score +15 sur 100"` pour l'accessibilité.
+### Admin (16)
+- `AdminSubscriptionsTable`, `AdminClaimsTable`, `AdminUsersTable`
+- `admin/AdminAuditLogs`, `admin/AdminSurveySends`
+- `admin/approvals/ApprovalsTable`
+- `admin/documents/DocumentTemplatesList`
+- `admin/ocr/OCRScansTable`
+- `admin/products/ProductsList`
+- `admin/scoring/ScoringCoverageCard` (liste non scorés), `admin/scoring/ScoringJobMonitor` (historique runs), `admin/scoring/ScoringManualOverrideTable`
+- `admin/FormTemplatesListTable`
+- `admin/agent-detail/AgentLeadsTab`, `AgentPortfolioTab`, `AgentQuotationsTab`
+- Pages tableau : `AgentPerformancePage`, `AgentsPortfolioPage`, `BrokerNewsPage`, `CalcDocsPage`, `CalcRulesPage`, `CalcVariablesPage`, `ComplianceDashboardPage`, `ConversionsPage`, `DsarPage`, `LossRatioPage`
+- `ClientsPage` : déjà paginée → on remplace son implémentation locale par le composant commun pour homogénéiser.
 
-### Détails techniques
-- Pas de changement de schéma DB.
-- Migration idempotente (UPDATE … WHERE email IN …).
-- `MedalIcon` rendu via SVG (pas de dépendance image), réutilisable ailleurs (notification renouvellement, tooltip, fiche client).
+### Broker (8)
+- `BrokerClaimsTable`, `BrokerClients`, `BrokerQuotations`, `BrokerSubscriptions`
+- `portfolio/PortfolioDataTable`
+- `policies/PendingQuotationsTable`, `policies/RenewalPipelineTable`
+- `renewals/RenewalsPipelineCard`
+- `leads/LeadsDataTable`
+- `broker/stats/ContactIndicatorsTable`
+- `broker/CommissionsPage`
+
+### Customer (1)
+- `CustomerSubscriptionsTable`
+
+### Hors périmètre (volontaire)
+- `ProductComparator` : tableau comparatif fixe ≤ 4 colonnes produit, pas de scaling.
+- `admin/CsvUserImportDialog` : preview d'import limitée par nature.
+- Cards/listes non tabulaires (LeadCards, etc.) : non concernées par la demande.
+
+## Comportements transverses
+
+- **Filtres/recherche** : tous les composants paginés appliquent les filtres **avant** la pagination ; le hook reset à la page 1 sur changement de longueur.
+- **Sélection multiple** (Approvals, Renewals, OCR) : la sélection est conservée entre pages (basée sur `id`), et la case d'en-tête ne coche que la page courante.
+- **Loading / vide** : skeleton et empty state restent affichés à la place du tableau ; le footer de pagination n'apparaît que si `totalItems > 0`.
+- **Export CSV** : continue d'exporter **toutes** les lignes filtrées, pas seulement la page courante.
+
+## Détails techniques
+
+- Utilise les composants shadcn existants `Pagination*` et `Select` (déjà présents dans `src/components/ui/pagination.tsx`).
+- Pas de dépendance ajoutée (pas de TanStack Table) — on reste sur le pattern `useState` + `slice` déjà en place.
+- Aucun changement de schéma DB.
+- Aucun changement des hooks de fetch (toujours `select *` puis filtrage/pagination en mémoire). Si un tableau dépasse plus tard 1 000 lignes, migration ciblée vers server-side au cas par cas.
+
+## Livraison
+1. Création hook + composant commun.
+2. Branchement sur les 8 tableaux Broker + Customer.
+3. Branchement sur les 16+ tableaux Admin (par lots cohérents par page pour limiter les diffs).
+4. Refactor de `ClientsPage` pour utiliser le composant commun.
+5. Vérification visuelle rapide sur 3–4 pages clés (Subscriptions Admin, Portfolio Broker, Audit Logs, Approbations).

@@ -26,6 +26,8 @@ import { UnifiedFiltersBar, StatusFilterType } from "./policies/UnifiedFiltersBa
 import { ProductType } from "./broker/dashboard/ProductSelector";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 interface Subscription {
   id: string;
@@ -164,6 +166,11 @@ export const BrokerSubscriptions = () => {
     });
     return counts;
   }, [subscriptions]);
+
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    filteredSubscriptions,
+    { storageKey: "broker-subscriptions" },
+  );
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { variant: "default" | "secondary" | "destructive"; label: string }> = {
@@ -362,7 +369,7 @@ export const BrokerSubscriptions = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredSubscriptions.map((sub) => (
+              pageItems.map((sub) => (
                 <TableRow key={sub.id}>
                   <TableCell>
                     <div>
@@ -464,6 +471,14 @@ export const BrokerSubscriptions = () => {
           </TableBody>
           </Table>
         </div>
+        <DataTablePagination
+          page={page}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          setPage={setPage}
+          setPageSize={setPageSize}
+          itemLabel="police"
+        />
 
         <PolicyDetailSheet
           policy={selectedPolicy}

@@ -13,6 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -148,6 +150,11 @@ export const PendingQuotationsTable = () => {
       (cdClient?.email || "").toLowerCase().includes(searchLower)
     );
   });
+
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    filteredQuotations,
+    { storageKey: "broker-pending-quotations" },
+  );
 
   const getExpirationBadge = (quotation: Quotation) => {
     const { valid_until: validUntil, payment_status: paymentStatus } = quotation;
@@ -336,7 +343,7 @@ export const PendingQuotationsTable = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredQuotations.map((quotation) => (
+              pageItems.map((quotation) => (
                 <TableRow key={quotation.id}>
                   <TableCell>
                     <div>
@@ -516,6 +523,17 @@ export const PendingQuotationsTable = () => {
             Total: {formatFCFA(filteredQuotations.reduce((sum, q) => sum + Number(q.premium_amount), 0))}
           </span>
         </div>
+      )}
+
+      {filteredQuotations.length > 0 && (
+        <DataTablePagination
+          page={page}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          setPage={setPage}
+          setPageSize={setPageSize}
+          itemLabel="cotation"
+        />
       )}
 
       <QuotationDetailDialog

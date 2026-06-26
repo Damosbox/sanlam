@@ -3,6 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { OCRAuthenticityBadge } from "./OCRAuthenticityBadge";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 interface OCRScan {
   id: string;
@@ -39,6 +41,11 @@ const reviewStatusConfig: Record<string, { label: string; variant: "default" | "
 };
 
 export function OCRScansTable({ scans, loading, onRowClick }: Props) {
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    scans,
+    { storageKey: "admin-ocr-scans" },
+  );
+
   if (loading) {
     return <div className="p-12 text-center text-muted-foreground">Chargement…</div>;
   }
@@ -47,7 +54,8 @@ export function OCRScansTable({ scans, loading, onRowClick }: Props) {
   }
 
   return (
-    <div className="rounded-md border">
+    <div className="space-y-2">
+      <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -61,7 +69,7 @@ export function OCRScansTable({ scans, loading, onRowClick }: Props) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {scans.map((scan) => {
+          {pageItems.map((scan) => {
             const review = reviewStatusConfig[scan.review_status] || reviewStatusConfig.pending;
             return (
               <TableRow key={scan.id} className="cursor-pointer" onClick={() => onRowClick(scan)}>
@@ -95,6 +103,15 @@ export function OCRScansTable({ scans, loading, onRowClick }: Props) {
           })}
         </TableBody>
       </Table>
+      </div>
+      <DataTablePagination
+        page={page}
+        pageSize={pageSize}
+        totalItems={totalItems}
+        setPage={setPage}
+        setPageSize={setPageSize}
+        itemLabel="scan"
+      />
     </div>
   );
 }

@@ -33,6 +33,8 @@ import type { ProductType } from "@/components/broker/dashboard/ProductSelector"
 import { RenewalStatusDropdown } from "./RenewalStatusDropdown";
 import { ChurnReasonDialog } from "./ChurnReasonDialog";
 import { RenewalDetailDialog } from "./RenewalDetailDialog";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 interface RenewalPipelineTableProps {
   selectedProduct: ProductType;
@@ -232,6 +234,11 @@ export const RenewalPipelineTable = ({
     );
   }
 
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    filteredRenewals,
+    { storageKey: "broker-renewals-pipeline" },
+  );
+
   if (filteredRenewals.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -263,7 +270,7 @@ export const RenewalPipelineTable = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredRenewals.map((renewal) => {
+            {pageItems.map((renewal) => {
               const isUrgent = renewal.days_until_expiry <= 7;
               const isOverdue = renewal.days_until_expiry < 0;
 
@@ -402,6 +409,16 @@ export const RenewalPipelineTable = ({
             })}
           </TableBody>
         </Table>
+      </div>
+      <div className="mt-2">
+        <DataTablePagination
+          page={page}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          setPage={setPage}
+          setPageSize={setPageSize}
+          itemLabel="renouvellement"
+        />
       </div>
 
       {selectedSubscription && (

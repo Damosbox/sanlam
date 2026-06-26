@@ -92,7 +92,7 @@ export default function ClientsPage() {
   const handleExport = () => {
     exportToCsv(
       "clients-sanlam",
-      ["Prénom", "Nom", "Email", "Téléphone", "Statut", "Agent", "Canal", "Dernière connexion", "Polices", "Sinistres", "Créé le"],
+      ["Créé le", "Prénom", "Nom", "Email", "Téléphone", "Statut", "Agent", "Canal", "Dernière connexion", "Polices", "Sinistres"],
       filtered.map((r) => [
         r.first_name ?? "",
         r.last_name ?? "",
@@ -194,6 +194,7 @@ export default function ClientsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="hidden lg:table-cell">Créé le</TableHead>
                   <TableHead>Nom</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead className="hidden md:table-cell">Téléphone</TableHead>
@@ -203,7 +204,6 @@ export default function ClientsPage() {
                   <TableHead className="hidden lg:table-cell">Dernière connexion</TableHead>
                   <TableHead className="text-center">Polices</TableHead>
                   <TableHead className="text-center">Sinistres</TableHead>
-                  <TableHead className="hidden lg:table-cell">Créé le</TableHead>
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -217,6 +217,9 @@ export default function ClientsPage() {
                   const name = r.display_name || [r.first_name, r.last_name].filter(Boolean).join(" ") || "—";
                   return (
                     <TableRow key={`${r.source}-${r.id}`} className="cursor-pointer" onClick={() => handleRowClick(r)}>
+                      <TableCell className="hidden lg:table-cell text-muted-foreground whitespace-nowrap">
+                        {format(new Date(r.created_at), "dd MMM yyyy", { locale: fr })}
+                      </TableCell>
                       <TableCell className="font-medium">{name}</TableCell>
                       <TableCell className="text-muted-foreground">{r.email || "—"}</TableCell>
                       <TableCell className="hidden md:table-cell text-muted-foreground">{r.phone || "—"}</TableCell>
@@ -236,9 +239,6 @@ export default function ClientsPage() {
                       </TableCell>
                       <TableCell className="text-center">{r.policies_count}</TableCell>
                       <TableCell className="text-center">{r.claims_count}</TableCell>
-                      <TableCell className="hidden lg:table-cell text-muted-foreground">
-                        {format(new Date(r.created_at), "dd MMM yyyy", { locale: fr })}
-                      </TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleRowClick(r); }}>
                           Voir

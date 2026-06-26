@@ -41,6 +41,8 @@ import {
 } from "@/lib/scoring/vfV2";
 import { ScoringActionDialog } from "./ScoringActionDialog";
 import { ScoringHistoryList } from "./ScoringHistoryList";
+import { ManualOverrideRequestDialog } from "@/components/admin/scoring/ManualOverrideRequestDialog";
+import { Pencil } from "lucide-react";
 
 interface ClientValueScoreProps {
   clientId: string;
@@ -80,12 +82,18 @@ export const ClientValueScore = ({ clientId, compact = false }: ClientValueScore
   const { role } = useUserRole(user);
   const [actionOpen, setActionOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [overrideOpen, setOverrideOpen] = useState(false);
 
   const canSeeKyc =
     role === "admin" ||
     role === "backoffice_crc" ||
     role === "backoffice_conformite" ||
     role === "compliance";
+
+  const canRequestOverride =
+    role === "admin" ||
+    role === "backoffice_crc" ||
+    role === "backoffice_conformite";
 
   if (isLoading) {
     return (
@@ -309,6 +317,16 @@ export const ClientValueScore = ({ clientId, compact = false }: ClientValueScore
               <Plus className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
               Action ponctuelle
             </Button>
+            {canRequestOverride && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setOverrideOpen(true)}
+              >
+                <Pencil className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
+                Demander modification
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -368,6 +386,16 @@ export const ClientValueScore = ({ clientId, compact = false }: ClientValueScore
         open={actionOpen}
         onOpenChange={setActionOpen}
       />
+
+      {canRequestOverride && (
+        <ManualOverrideRequestDialog
+          clientId={clientId}
+          currentScore={scoreGlobal ?? null}
+          currentNiveau={niveau}
+          open={overrideOpen}
+          onOpenChange={setOverrideOpen}
+        />
+      )}
     </div>
   );
 };

@@ -2398,9 +2398,12 @@ export type Database = {
           approver_id: string | null
           client_id: string
           created_at: string
+          current_niveau: string | null
+          current_score: number | null
           decided_at: string | null
           id: string
           justification: string
+          notified_at: string | null
           requested_by: string
           requested_score: number
           status: string
@@ -2410,9 +2413,12 @@ export type Database = {
           approver_id?: string | null
           client_id: string
           created_at?: string
+          current_niveau?: string | null
+          current_score?: number | null
           decided_at?: string | null
           id?: string
           justification: string
+          notified_at?: string | null
           requested_by: string
           requested_score: number
           status?: string
@@ -2422,9 +2428,12 @@ export type Database = {
           approver_id?: string | null
           client_id?: string
           created_at?: string
+          current_niveau?: string | null
+          current_score?: number | null
           decided_at?: string | null
           id?: string
           justification?: string
+          notified_at?: string | null
           requested_by?: string
           requested_score?: number
           status?: string

@@ -143,10 +143,6 @@ export const AdminAuditLogs = () => {
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Actualiser
               </Button>
-              <Button variant="outline" size="sm" onClick={exportLogs}>
-                <Download className="h-4 w-4 mr-2" />
-                Exporter CSV
-              </Button>
             </div>
           </div>
           <CardDescription>

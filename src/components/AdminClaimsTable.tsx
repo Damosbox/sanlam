@@ -326,29 +326,13 @@ export const AdminClaimsTable = () => {
                 <TableCell>{getStatusBadge(claim.status)}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    {!claim.assigned_broker_id && (
+                    {claim.assigned_broker_id ? (
+                      <Badge variant="secondary">{getBrokerName(claim)}</Badge>
+                    ) : (
                       <Badge variant="outline" className="text-orange-500 border-orange-500">
                         Non assigné
                       </Badge>
                     )}
-                    <Select
-                      value={claim.assigned_broker_id || "unassigned"}
-                      onValueChange={(value) =>
-                        assignBroker(claim.id, value === "unassigned" ? null : value)
-                      }
-                    >
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Non assigné" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="unassigned">Non assigné</SelectItem>
-                        {brokers.map((broker) => (
-                          <SelectItem key={broker.id} value={broker.id}>
-                            {broker.display_name || broker.email}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                   </div>
                 </TableCell>
                 <TableCell>

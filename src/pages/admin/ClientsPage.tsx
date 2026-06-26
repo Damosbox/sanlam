@@ -17,6 +17,8 @@ import { ClientDetailSheet } from "@/components/clients/ClientDetailSheet";
 import { LeadDetailSheet } from "@/components/leads/LeadDetailSheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 const STATUS_LABEL: Record<AdminClientStatus, { label: string; className: string }> = {
   active: { label: "Client Sanlam", className: "bg-emerald-100 text-emerald-700 hover:bg-emerald-100" },
@@ -24,14 +26,11 @@ const STATUS_LABEL: Record<AdminClientStatus, { label: string; className: string
   no_account: { label: "Client sans compte", className: "bg-amber-100 text-amber-700 hover:bg-amber-100" },
 };
 
-const PAGE_SIZE = 50;
-
 export default function ClientsPage() {
   const { data: rows = [], isLoading } = useAdminClients();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [brokerFilter, setBrokerFilter] = useState<string>("all");
-  const [page, setPage] = useState(1);
 
   const [selectedClient, setSelectedClient] = useState<AdminClientRow | null>(null);
   const [clientOpen, setClientOpen] = useState(false);
@@ -65,8 +64,10 @@ export default function ClientsPage() {
     });
   }, [rows, search, statusFilter, brokerFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const { pageItems: paged, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    filtered,
+    { storageKey: "admin-clients" },
+  );
 
   const counts = useMemo(() => ({
     total: rows.length,
@@ -157,11 +158,11 @@ export default function ClientsPage() {
               <Input
                 placeholder="Rechercher (nom, email, téléphone)..."
                 value={search}
-                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
               />
             </div>
-            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[200px]"><SelectValue placeholder="Statut" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous statuts</SelectItem>
@@ -170,7 +171,7 @@ export default function ClientsPage() {
                 <SelectItem value="no_broker">Sans agent</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={brokerFilter} onValueChange={(v) => { setBrokerFilter(v); setPage(1); }}>
+            <Select value={brokerFilter} onValueChange={setBrokerFilter}>
               <SelectTrigger className="w-[220px]"><SelectValue placeholder="Agent" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les agents</SelectItem>
@@ -228,17 +229,14 @@ export default function ClientsPage() {
             </Table>
           </div>
 
-          {filtered.length > PAGE_SIZE && (
-            <div className="flex items-center justify-between pt-2">
-              <p className="text-sm text-muted-foreground">
-                {filtered.length} résultats — page {page} / {totalPages}
-              </p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Précédent</Button>
-                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Suivant</Button>
-              </div>
-            </div>
-          )}
+          <DataTablePagination
+            page={page}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            setPage={setPage}
+            setPageSize={setPageSize}
+            itemLabel="client"
+          />
         </CardContent>
       </Card>
 

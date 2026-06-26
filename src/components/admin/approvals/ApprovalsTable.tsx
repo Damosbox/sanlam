@@ -29,6 +29,8 @@ import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { formatFCFA } from "@/utils/formatCurrency";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 import {
   MOCK_APPROVALS,
   type ApprovalRequest,
@@ -93,6 +95,11 @@ export function ApprovalsTable({ source }: Props) {
       })
       .sort((a, b) => +new Date(b.requestedAt) - +new Date(a.requestedAt));
   }, [items, source, statusFilter, search]);
+
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    filtered,
+    { storageKey: `approvals-${source}` },
+  );
 
   const confirmApprove = () => {
     if (!approveTarget) return;
@@ -186,7 +193,7 @@ export function ApprovalsTable({ source }: Props) {
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((r) => (
+                pageItems.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">{r.requesterName}</TableCell>
                     <TableCell>{r.clientName}</TableCell>
@@ -260,6 +267,14 @@ export function ApprovalsTable({ source }: Props) {
             </TableBody>
           </Table>
         </div>
+        <DataTablePagination
+          page={page}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          setPage={setPage}
+          setPageSize={setPageSize}
+          itemLabel="demande"
+        />
       </CardContent>
 
       <AlertDialog open={!!approveTarget} onOpenChange={(o) => !o && setApproveTarget(null)}>

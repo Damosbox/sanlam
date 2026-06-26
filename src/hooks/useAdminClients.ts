@@ -17,7 +17,31 @@ export interface AdminClientRow {
   policies_count: number;
   claims_count: number;
   created_at: string;
+  channel: "Portail Web" | "Mobile App" | "Agent" | "WhatsApp" | "Email";
+  last_sign_in_at: string | null;
 }
+
+const CHANNELS: AdminClientRow["channel"][] = [
+  "Portail Web",
+  "Mobile App",
+  "Agent",
+  "WhatsApp",
+  "Email",
+];
+
+// Deterministic mock helpers based on id hash
+const hash = (s: string) => {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+};
+const mockChannel = (id: string) => CHANNELS[hash(id) % CHANNELS.length];
+const mockLastSignIn = (id: string, createdAt: string) => {
+  const created = +new Date(createdAt);
+  const daysAgo = (hash(id) % 60) + 1;
+  const ts = Math.max(created, Date.now() - daysAgo * 86400000);
+  return new Date(ts).toISOString();
+};
 
 export const useAdminClients = () => {
   return useQuery({
@@ -99,6 +123,8 @@ export const useAdminClients = () => {
             policies_count: policies,
             claims_count: claimsByUser.get(p.id) ?? 0,
             created_at: p.created_at,
+            channel: mockChannel(p.id),
+            last_sign_in_at: mockLastSignIn(p.id, p.created_at),
           };
         });
 
@@ -123,6 +149,8 @@ export const useAdminClients = () => {
           policies_count: 0,
           claims_count: 0,
           created_at: l.created_at,
+          channel: "Agent" as const,
+          last_sign_in_at: null,
         }));
 
       return [...profileRows, ...leadRows].sort(

@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ScoreDetailPopover } from "./ScoreDetailPopover";
 import { ClientValueScore } from "@/components/clients/ClientValueScore";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 export interface PortfolioItem {
   id: string;
@@ -44,6 +46,10 @@ interface PortfolioDataTableProps {
 
 export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }: PortfolioDataTableProps) => {
   const navigate = useNavigate();
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    items,
+    { storageKey: "broker-portfolio" },
+  );
 
   const handleCall = (e: React.MouseEvent, phone: string | null) => {
     e.stopPropagation();
@@ -98,7 +104,7 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }
     return item.display_name || "N/A";
   };
 
-  if (items.length === 0) {
+  if (totalItems === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
         Aucun élément trouvé
@@ -107,7 +113,8 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }
   }
 
   return (
-    <div className="rounded-lg border bg-card overflow-x-auto">
+    <div className="space-y-2">
+      <div className="rounded-lg border bg-card overflow-x-auto">
       <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
@@ -123,7 +130,7 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }
             </TableRow>
           </TableHeader>
           <TableBody>
-            {items.map((item) => {
+            {pageItems.map((item) => {
               return (
                 <TableRow 
                   key={item.id} 
@@ -309,5 +316,14 @@ export const PortfolioDataTable = ({ items, density = "standard", onSelectItem }
           </TableBody>
         </Table>
       </div>
+      <DataTablePagination
+        page={page}
+        pageSize={pageSize}
+        totalItems={totalItems}
+        setPage={setPage}
+        setPageSize={setPageSize}
+        itemLabel="contact"
+      />
+    </div>
   );
 };

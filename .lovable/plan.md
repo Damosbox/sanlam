@@ -1,85 +1,66 @@
+# Modification manuelle du score client (workflow d'approbation)
 
-# Audit mobile B2B — Espace Courtier
+## Objectif
+Permettre au Back-office de proposer une modification du score d'un client, soumise à validation par un supérieur (admin). Couvre les 5 critères d'acceptation.
 
-Captures réalisées en 390×844 (iPhone 14) sur les 8 routes principales : Dashboard, Portefeuille, Vente, Sinistres, Polices, Renouvellements, Statistiques, Commissions.
+## Périmètre
+- Page concernée prioritairement : **Admin → Scoring** (`/admin/scoring`, onglet « Modifications manuelles ») — actuellement un placeholder « V2 ».
+- Composants partagés réutilisables depuis la fiche client (bouton « Demander modification manuelle » à côté de « Recalculer »).
 
-## Problèmes identifiés
+## Acceptance criteria → implémentation
 
-### 1. Header (présent sur 100% des pages — priorité haute)
-- Le logo `Sanlam | Allianz` mesure ~530 px → écrase tout sur 390 px, pousse le bouton Déconnexion hors champ utile.
-- 4 éléments alignés (burger, logo XL, téléphone, déconnexion) sans hiérarchie mobile.
-- Hauteur trop grande (~120 px) au détriment du contenu.
+- **AC-1 — Accès Back-office uniquement**
+  RLS déjà en place sur `scoring_manual_override_requests` (admin / backoffice_crc / backoffice_conformite). On gate aussi l'UI via `PermissionGate` + `useUserRole`. Les autres rôles voient un état vide.
 
-### 2. Tables qui débordent horizontalement
-- **Portefeuille** : colonne « Contact » coupée (`marie.dupont@te...`).
-- **Polices / Cotations / Renouvellements** : colonne Prime tronquée, scroll horizontal involontaire.
-- Pas de vue « carte » mobile alternative.
+- **AC-2 — Workflow d'approbation**
+  Création d'une demande `pending` par le Back-office (non self-approve). Un admin (rôle hiérarchique) voit l'onglet « En attente » et peut Approuver / Refuser avec commentaire. Bouton Approuver désactivé si `requested_by = auth.uid()`.
 
-### 3. Onglets `Gestion` (Polices)
-- Labels abrégés brutalement (`Pol.`, `Cot.`, `Renouv.`, `Att.`) et passent sur 2 lignes.
-- Badge `27` détaché du label « Att. ».
+- **AC-3 — Persistance**
+  À l'approbation, edge function `score-manual-override-decide` :
+  - met à jour `client_scores` : `vf_score_global = requested_score`, `vf_manual_override = true`, `vf_last_recalc_source = 'manual_override'`, recalcule `vf_niveau`
+  - écrit une ligne dans `scoring_history` (trigger `manual_override`, before/after)
+  - passe la demande en `approved` + `approver_id` + `approver_comment` + `decided_at`
 
-### 4. Dashboard
-- KPI « Mon Chiffre d'Affaires » : valeur tronquée `64 702 332 FC...`.
-- Bloc Pipeline Leads : 5 statuts compressés sans labels.
-- Le widget IA flottant masque le contenu en bas de page (boutons d'action notamment sur Renouvellements).
+- **AC-4 — Historique consultable et exportable**
+  Onglet « Historique » : table de toutes les demandes (toutes statuts), filtres statut / dates / client, bouton **Exporter CSV** via `exportToCSV`. Champs : date, client, demandeur, score avant/après, statut, approbateur, commentaire, justification.
 
-### 5. Typographie cassée sur certains titres
-- `Sélection du produit` (Vente) et `Statistiques Renouvellement` apparaissent en **police monospace de fallback** → la font display ne charge pas sur ces vues.
+- **AC-5 — Refus → restauration + notification**
+  Comme l'`UPDATE` du score n'a lieu qu'à l'approbation, le refus n'a rien à restaurer côté `client_scores`. La demande passe `rejected` + commentaire obligatoire. Toast à l'initiateur via realtime (Supabase channel sur la table filtré par `requested_by`) ; fallback : badge « Décisions reçues » au prochain chargement.
 
-### 6. Renouvellements
-- Barre d'actions `Renouveler (0) · 68 affichés · page 1/X` empilée et coupée.
-- Carte d'import très haute (zone dropzone surdimensionnée sur mobile).
+## Détails techniques
 
-### 7. Filtres
-- Période (`Année d'exercice`) et filtres Agence/Statut prennent chacun une ligne complète, beaucoup d'espace vertical perdu.
+### Migration
+Ajouter quelques colonnes manquantes à `scoring_manual_override_requests` :
+- `current_score integer` (snapshot du score au moment de la demande, pour l'historique)
+- `current_niveau text`
+- `notified_at timestamptz` (pour AC-5)
 
----
+Pas de nouvelle table.
 
-## Plan de refonte mobile (présentation seulement, pas de logique métier)
+### Edge function
+`supabase/functions/score-manual-override-decide/index.ts`
+- input : `{ request_id, decision: 'approved'|'rejected', comment }`
+- vérifie rôle admin via JWT + `has_role`
+- vérifie `requested_by !== auth.uid()`
+- sur `approved` : update `client_scores`, insert `scoring_history`
+- update la demande (statut, approver, commentaire, decided_at)
 
-### Étape 1 — Header mobile compact
-Fichier : `src/components/Header.tsx`
-- Sous 768 px : logo réduit à l'icône Sanlam (badge carré ~32 px) + texte `Sanlam Allianz` en petit.
-- Hauteur header : `h-14` au lieu de h-auto.
-- Trigger sidebar à gauche, déconnexion en icône seule à droite, téléphone repassé dans un menu kebab.
+### UI
+- `src/components/admin/scoring/ManualOverrideRequestDialog.tsx` — formulaire (nouveau score -5..100, justification ≥ 20 char), validation Zod.
+- `src/components/admin/scoring/ScoringManualOverrideTable.tsx` — réécriture : tabs « En attente » / « Historique », actions Approuver/Refuser, export CSV.
+- `src/components/clients/ClientValueScore.tsx` — bouton « Demander modification » (visible Back-office) ouvre le dialog.
+- Hook `src/hooks/useManualOverrideRequests.ts` (list + create + decide via mutation).
 
-### Étape 2 — Tables → cartes en mobile
-Composants : `PortfolioDataTable`, `RenewalPipelineTable`, `RenewalsPipelineCard`, `BrokerSubscriptions`, `PendingQuotationsTable`.
-- Au-dessous de `md` : rendu en liste de cartes (1 carte par ligne) avec champs prioritaires (Client, Produit, Prime, Statut, action).
-- Au-dessus de `md` : tables actuelles inchangées.
-- Helper partagé `ResponsiveDataView` pour ne pas dupliquer la logique.
+### Hors périmètre
+- Pas d'email transactionnel (notification = toast in-app + badge).
+- Pas de modification du moteur de scoring lui-même.
 
-### Étape 3 — Tabs horizontaux scrollables
-Fichier : `src/components/policies/UnifiedFiltersBar.tsx` + page `PoliciesPage`.
-- Conserver les labels complets (`Polices`, `Cotations`, `Renouvellements`, `Attente`).
-- Wrapper `overflow-x-auto snap-x` + onglets `whitespace-nowrap`.
-
-### Étape 4 — Dashboard mobile
-Fichier : `src/pages/broker/DashboardPage.tsx` + KPICard.
-- KPI : `text-base` mobile / `text-xl` desktop, valeurs formatées en compact (`64,7 M FCFA`) sous 480 px.
-- Pipeline Leads : labels visibles via icônes + tooltip, ou liste verticale empilée mobile.
-- AI chat widget : décalage `bottom-20` sur pages avec barre d'actions, ou bouton plus petit (`h-12 w-12`) mobile.
-
-### Étape 5 — Fix police de fallback
-Audit `index.css` + `tailwind.config.ts` : certaines pages utilisent un wrapper avec `font-mono` involontaire (ex. classes héritées sur `h1`). Identifier la cause sur `GuidedSalesPage` et `RenewalStatsPage`, corriger.
-
-### Étape 6 — Renouvellements mobile
-Fichiers : `RenewalsPipelineCard.tsx`, `RenewalsImportCard.tsx`.
-- Carte import : dropzone passe à `h-32` mobile, texte sur 1 ligne.
-- Barre d'action : bouton `Renouveler` pleine largeur, compteur sous le bouton, pagination en footer dédié.
-
-### Étape 7 — Filtres alignés en grille mobile
-- Filtres secondaires (Agence, Statut, Période) regroupés en `grid grid-cols-2 gap-2` mobile au lieu d'empilés.
-
----
-
-## Périmètre & non-objectifs
-- Zéro changement de logique métier, données, RLS, routes ou permissions.
-- Aucune création de nouvelle page.
-- Pas de modification du desktop (≥ 768 px) sauf bugs cosmétiques découverts.
-
-## Ordre proposé d'exécution
-1. Header (impact toutes pages) → 2. Tables responsive → 3. Tabs + Filtres → 4. Dashboard → 5. Renouvellements → 6. Fix font fallback.
-
-Confirme-moi si on attaque dans cet ordre, ou si tu veux prioriser le Dashboard ou les Renouvellements en premier.
+## Fichiers touchés
+```text
+migration              scoring_manual_override_requests (+3 colonnes)
+new edge fn            supabase/functions/score-manual-override-decide/index.ts
+new                    src/hooks/useManualOverrideRequests.ts
+new                    src/components/admin/scoring/ManualOverrideRequestDialog.tsx
+rewrite                src/components/admin/scoring/ScoringManualOverrideTable.tsx
+update                 src/components/clients/ClientValueScore.tsx (bouton)
+```

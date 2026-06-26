@@ -1,75 +1,93 @@
+# Homogénéisation des tableaux (filtres, tris, export)
+
 ## Objectif
-Ajouter une pagination cohérente, **côté client, 25 lignes par défaut**, sur **tous les tableaux** de l'application (Admin, Broker, Customer).
 
-## Pattern unifié
+Tous les tableaux de l'application doivent partager la **même structure de barre d'outils** au-dessus du tableau, avec des filtres et des tris **pertinents pour le domaine métier** de chaque page, et un bouton d'export CSV à droite.
 
-Création d'un composant réutilisable + d'un hook pour éviter de dupliquer la logique 30 fois.
+## 1. Composant partagé `DataTableToolbar`
 
-### 1. `src/hooks/usePagination.ts` (nouveau)
-- Entrée : `items: T[]`, `defaultPageSize = 25`.
-- Sortie : `pageItems`, `page`, `setPage`, `pageSize`, `setPageSize`, `totalPages`, `totalItems`.
-- Réinitialise automatiquement à la page 1 quand `items.length` change (ex. après un filtre/recherche).
-- Persistance optionnelle via un `storageKey` (sessionStorage) pour mémoriser le choix utilisateur sur le sélecteur de taille.
+Un seul composant réutilisable placé dans `src/components/ui/data-table-toolbar.tsx`, structuré comme suit :
 
-### 2. `src/components/ui/data-table-pagination.tsx` (nouveau)
-- Footer standard à coller sous chaque `<Table>` :
-  - Texte d'info : « 26–50 sur 137 éléments ».
-  - Sélecteur taille de page : 10 / 25 / 50 / 100.
-  - Contrôles : ⏮ ◀ « Page 2 / 6 » ▶ ⏭ (boutons désactivés aux bornes).
-- Responsive : sur mobile (< 640 px) le sélecteur passe sous les flèches.
-- Props minimales : `page, setPage, pageSize, setPageSize, totalItems`.
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ [🔍 Recherche]  [Filtre 1 ▾] [Filtre 2 ▾] [Tri ▾]   [⬇ CSV] │
+└──────────────────────────────────────────────────────────────┘
+```
 
-## Tableaux à équiper
+Props :
 
-Périmètre exhaustif organisé par espace pour traçabilité.
+- `searchPlaceholder?: string`, `searchValue`, `onSearchChange`
+- `filters`: tableau de `{ label, value, onChange, options: [{label,value}] }`
+- `sort`: `{ value, onChange, options: [{label,value}] }`
+- `onExport?: () => void`, `exportLabel?: string`
+- `extraActions?: ReactNode` (pour boutons spécifiques type "Nouveau", "Importer")
 
-### Admin (16)
-- `AdminSubscriptionsTable`, `AdminClaimsTable`, `AdminUsersTable`
-- `admin/AdminAuditLogs`, `admin/AdminSurveySends`
-- `admin/approvals/ApprovalsTable`
-- `admin/documents/DocumentTemplatesList`
-- `admin/ocr/OCRScansTable`
-- `admin/products/ProductsList`
-- `admin/scoring/ScoringCoverageCard` (liste non scorés), `admin/scoring/ScoringJobMonitor` (historique runs), `admin/scoring/ScoringManualOverrideTable`
-- `admin/FormTemplatesListTable`
-- `admin/agent-detail/AgentLeadsTab`, `AgentPortfolioTab`, `AgentQuotationsTab`
-- Pages tableau : `AgentPerformancePage`, `AgentsPortfolioPage`, `BrokerNewsPage`, `CalcDocsPage`, `CalcRulesPage`, `CalcVariablesPage`, `ComplianceDashboardPage`, `ConversionsPage`, `DsarPage`, `LossRatioPage`
-- `ClientsPage` : déjà paginée → on remplace son implémentation locale par le composant commun pour homogénéiser.
+Règles :
 
-### Broker (8)
-- `BrokerClaimsTable`, `BrokerClients`, `BrokerQuotations`, `BrokerSubscriptions`
-- `portfolio/PortfolioDataTable`
-- `policies/PendingQuotationsTable`, `policies/RenewalPipelineTable`
-- `renewals/RenewalsPipelineCard`
-- `leads/LeadsDataTable`
-- `broker/stats/ContactIndicatorsTable`
-- `broker/CommissionsPage`
+- Recherche à gauche, filtres au centre, tri juste avant l'export, **export toujours en haut à droite** (`ml-auto`).
+- Largeur des `Select` : 180–220 px.
+- Sur mobile : empilement (`flex-wrap`), export reste en dernière position.
+- Export CSV : utilitaire commun `src/lib/export-csv.ts` (BOM UTF-8, échappement guillemets, nom de fichier `{entité}_{YYYY-MM-DD}.csv`).
 
-### Customer (1)
-- `CustomerSubscriptionsTable`
+## 2. Cartographie page par page
 
-### Hors périmètre (volontaire)
-- `ProductComparator` : tableau comparatif fixe ≤ 4 colonnes produit, pas de scaling.
-- `admin/CsvUserImportDialog` : preview d'import limitée par nature.
-- Cards/listes non tabulaires (LeadCards, etc.) : non concernées par la demande.
+Pour chaque tableau identifié, voici la configuration filtres + tris.
 
-## Comportements transverses
+### Espace Admin
 
-- **Filtres/recherche** : tous les composants paginés appliquent les filtres **avant** la pagination ; le hook reset à la page 1 sur changement de longueur.
-- **Sélection multiple** (Approvals, Renewals, OCR) : la sélection est conservée entre pages (basée sur `id`), et la case d'en-tête ne coche que la page courante.
-- **Loading / vide** : skeleton et empty state restent affichés à la place du tableau ; le footer de pagination n'apparaît que si `totalItems > 0`.
-- **Export CSV** : continue d'exporter **toutes** les lignes filtrées, pas seulement la page courante.
 
-## Détails techniques
+| Page / composant                                         | Filtres                                                                 | Tris                                                                                                   | Export |
+| -------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------ |
+| **Sinistres** `AdminClaimsTable`                         | Statut, Non assignés (toggle), Type sinistre                            | Sinistre récent / ancien, Création récente / ancienne, Estimation ↓/↑, Date de déclaration de sinistre | ✓      |
+| **Souscriptions** `AdminSubscriptionsTable`              | Statut, Produit, Période (30j/90j/an)                                   | Date souscription récente / ancienne, Prime ↓/↑                                                        | ✓      |
+| **Renouvellements – Pipeline** `RenewalsPipelineCard`    | Statut renouvellement, Agence, Produit, Échéance (≤7j / ≤30j / >30j)    | Échéance la plus proche, Prime ↓, Dernière relance récente, Score ↓                                    | ✓      |
+| **Renouvellements – Approbations** `ApprovalsTable`      | Statut, Type (réduction / bonus-malus)                                  | Plus récente / ancienne, % d'ajustement ↓                                                              | ✓      |
+| **Clients Sanlam** `ClientsPage`                         | Type (client / lead), Agent rattaché, Palier scoring (Bronze/Argent/Or) | Nom A→Z, Création récente, Score ↓                                                                     | ✓      |
+| **Utilisateurs** `AdminUsersTable`                       | Rôle, Statut compte                                                     | Création récente / ancienne, Nom A→Z                                                                   | ✓      |
+| **Audit logs** `AdminAuditLogs`                          | Action, Acteur, Période                                                 | Date récente / ancienne                                                                                | ✓      |
+| **Surveys envoyés** `AdminSurveySends`                   | Canal, Statut envoi                                                     | Envoi récent / ancien, Taux réponse ↓                                                                  | ✓      |
+| **OCR scans** `OCRScansTable`                            | Type document, Statut                                                   | Date récente / ancienne, Confiance ↓                                                                   | ✓      |
+| **Produits** `ProductsList`                              | Catégorie, Statut (actif / désactivé)                                   | Nom A→Z, Mise à jour récente                                                                           | ✓      |
+| **Templates documents** `DocumentTemplatesList`          | Type, Produit                                                           | Mise à jour récente, Nom A→Z                                                                           | ✓      |
+| **Templates formulaires** `FormTemplatesListTable`       | Produit, Canal (B2B/B2C)                                                | Mise à jour récente, Nom A→Z                                                                           | ✓      |
+| **Override scoring manuel** `ScoringManualOverrideTable` | Statut demande, Demandeur                                               | Demande récente, Écart de score ↓                                                                      | ✓      |
 
-- Utilise les composants shadcn existants `Pagination*` et `Select` (déjà présents dans `src/components/ui/pagination.tsx`).
-- Pas de dépendance ajoutée (pas de TanStack Table) — on reste sur le pattern `useState` + `slice` déjà en place.
-- Aucun changement de schéma DB.
-- Aucun changement des hooks de fetch (toujours `select *` puis filtrage/pagination en mémoire). Si un tableau dépasse plus tard 1 000 lignes, migration ciblée vers server-side au cas par cas.
 
-## Livraison
-1. Création hook + composant commun.
-2. Branchement sur les 8 tableaux Broker + Customer.
-3. Branchement sur les 16+ tableaux Admin (par lots cohérents par page pour limiter les diffs).
-4. Refactor de `ClientsPage` pour utiliser le composant commun.
-5. Vérification visuelle rapide sur 3–4 pages clés (Subscriptions Admin, Portfolio Broker, Audit Logs, Approbations).
+### Espace Broker
+
+
+| Page / composant                                      | Filtres                                      | Tris                                     | Export |
+| ----------------------------------------------------- | -------------------------------------------- | ---------------------------------------- | ------ |
+| **Sinistres** `BrokerClaimsTable`                     | Statut, Type sinistre                        | Sinistre récent / ancien, Estimation ↓   | ✓      |
+| **Souscriptions** `BrokerSubscriptions`               | Statut, Produit                              | Date récente, Prime ↓                    | ✓      |
+| **Devis** `BrokerQuotations`                          | Statut, Produit, Validité (active / expirée) | Création récente, Montant ↓              | ✓      |
+| **Clients** `BrokerClients`                           | Palier scoring, Produit souscrit             | Nom A→Z, Création récente, Score ↓       | ✓      |
+| **Portefeuille** `PortfolioDataTable`                 | Produit, Statut police                       | Prime ↓, Échéance proche                 | ✓      |
+| **Leads** `LeadsDataTable`                            | Statut, Source, Produit d'intérêt            | Création récente, Dernier contact récent | ✓      |
+| **Devis en attente** `PendingQuotationsTable`         | Produit                                      | Création récente, Montant ↓              | ✓      |
+| **Pipeline renouvellement** `RenewalPipelineTable`    | Statut, Produit, Échéance                    | Échéance proche, Prime ↓                 | ✓      |
+| **Souscriptions client** `CustomerSubscriptionsTable` | Statut                                       | Date récente, Prime ↓                    | –      |
+
+
+## 3. Détails techniques
+
+- **Aucune logique métier modifiée** : seules les présentations (toolbar) et un tri/filtrage client-side sont ajoutés ou homogénéisés.
+- Tri **par défaut** : toujours le plus récent en premier (date métier la plus pertinente : sinistre, souscription, échéance, etc.).
+- L'état (`searchTerm`, `filters`, `sortBy`) reste local au composant ; pas de persistance pour ne pas surprendre les utilisateurs.
+- L'export CSV exporte **les lignes filtrées/triées actuelles** (pas seulement la page courante), avec en-têtes français cohérents avec l'UI.
+- Compatibilité conservée avec la pagination existante (`usePagination` reçoit déjà la liste filtrée/triée).
+- Mobile : toolbar passe en `flex-wrap` ; bouton export reste accessible.
+
+## 4. Mise en œuvre (ordre proposé)
+
+1. Créer `data-table-toolbar.tsx` + util `export-csv.ts`.
+2. Migrer un tableau pilote (Admin Sinistres, déjà en partie outillé) pour valider l'API.
+3. Appliquer aux tableaux Admin restants.
+4. Appliquer aux tableaux Broker.
+5. Vérifier visuellement chaque page (desktop + mobile) et l'export.
+
+## Hors périmètre
+
+- Pas de changement de schéma BDD.
+- Pas de modification des colonnes affichées (sauf si un filtre/tri révèle qu'une colonne manque, à confirmer au cas par cas).
+- Pas de sauvegarde serveur des préférences de filtres.

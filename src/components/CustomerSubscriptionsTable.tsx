@@ -45,6 +45,8 @@ import {
   List,
 } from "lucide-react";
 import { toast } from "sonner";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 interface Subscription {
   id: string;
@@ -171,6 +173,10 @@ export const CustomerSubscriptionsTable = () => {
     
     return matchesStatus && matchesCategory && matchesSearch;
   });
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    filteredSubscriptions,
+    { storageKey: "customer-subscriptions" },
+  );
 
   const handleViewDetails = (subscription: Subscription) => {
     setSelectedSubscription(subscription);
@@ -332,7 +338,7 @@ export const CustomerSubscriptionsTable = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredSubscriptions.map((sub) => (
+                pageItems.map((sub) => (
                   <TableRow key={sub.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -373,9 +379,21 @@ export const CustomerSubscriptionsTable = () => {
             </TableBody>
           </Table>
         </div>
+        {viewMode === 'table' && (
+          <div className="mt-2">
+            <DataTablePagination
+              page={page}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              setPage={setPage}
+              setPageSize={setPageSize}
+              itemLabel="police"
+            />
+          </div>
+        )}
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredSubscriptions.map((sub) => (
+          {pageItems.map((sub) => (
             <Card key={sub.id} className="hover:shadow-medium transition-base">
               <CardHeader>
                 <div className="flex items-start justify-between">

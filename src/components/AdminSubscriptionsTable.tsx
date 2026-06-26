@@ -221,31 +221,7 @@ export const AdminSubscriptionsTable = () => {
                   })}
                 </TableCell>
                 <TableCell>{getStatusBadge(subscription.status)}</TableCell>
-                <TableCell>
-                  <Select
-                    value={subscription.assigned_broker_id || "unassigned"}
-                    onValueChange={(value) =>
-                      assignBroker(
-                        subscription.id,
-                        value === "unassigned" ? null : value
-                      )
-                    }
-                  >
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="Assigner un courtier">
-                        {getBrokerBadge(subscription)}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Non assigné</SelectItem>
-                      {brokers.map((broker) => (
-                        <SelectItem key={broker.id} value={broker.id}>
-                          {broker.display_name || broker.email}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
+                <TableCell>{getBrokerBadge(subscription)}</TableCell>
               </TableRow>
             ))
           )}

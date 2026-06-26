@@ -69,14 +69,20 @@ const MedalTooltipContent = ({
   scoreGlobal?: number;
 }) => (
   <div className="space-y-2 p-1 min-w-[200px]">
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex items-center justify-between gap-3 border-b pb-2">
       <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
         Paliers de fidélité
       </p>
       {typeof scoreGlobal === "number" && (
-        <span className="text-[11px] font-mono font-semibold text-foreground">
+        <span
+          className={cn(
+            "font-mono font-bold text-base leading-none tabular-nums",
+            scoreGlobal < 0 ? "text-destructive" : "text-primary",
+          )}
+        >
           {scoreGlobal > 0 ? "+" : ""}
-          {scoreGlobal}/100
+          {scoreGlobal}
+          <span className="text-[11px] font-medium text-muted-foreground">/100</span>
         </span>
       )}
     </div>

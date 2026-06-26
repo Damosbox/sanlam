@@ -101,10 +101,20 @@ export function RenewalsPipelineCard({ scope }: Props) {
         const profile = s.profiles ?? {};
         const product = s.products ?? {};
         const effStatus = s.renewal_status ?? "pending";
-        const lastReminder =
+        let lastReminder: string | null =
           s.last_reminder_at ??
           s.notified_at ??
           (effStatus === "notified" ? s.updated_at ?? null : null);
+        // Mock: dérive une date de relance stable à partir de l'id si aucune n'existe
+        if (!lastReminder && s.id) {
+          const hash = String(s.id)
+            .split("")
+            .reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0);
+          const daysAgo = (hash % 25) + 1; // 1 à 25 jours
+          const mocked = new Date(now);
+          mocked.setDate(mocked.getDate() - daysAgo);
+          lastReminder = mocked.toISOString();
+        }
         return {
           id: s.id,
           user_id: s.user_id ?? null,

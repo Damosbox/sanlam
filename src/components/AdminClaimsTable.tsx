@@ -10,15 +10,8 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Eye, DollarSign, UserPlus, FileText, Download, ArrowUpDown } from "lucide-react";
+import { CheckCircle, XCircle, Eye, DollarSign, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +24,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePagination } from "@/hooks/usePagination";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
+import { exportToCsv, csvDate } from "@/lib/export-csv";
 
 interface Claim {
   id: string;
@@ -69,8 +64,9 @@ export const AdminClaimsTable = () => {
   const [costEstimation, setCostEstimation] = useState("");
   const [showCostDialog, setShowCostDialog] = useState(false);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
-  const [filterUnassigned, setFilterUnassigned] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("incident_desc");
   const { toast } = useToast();
 
@@ -261,9 +257,21 @@ export const AdminClaimsTable = () => {
     return broker?.display_name || broker?.email || "Courtier assigné";
   };
 
+  const claimTypes = Array.from(new Set(claims.map((c) => c.claim_type).filter(Boolean)));
+
   const filteredClaims = claims
-    .filter((c) => (filterUnassigned ? !c.assigned_broker_id : true))
-    .filter((c) => (statusFilter === "all" ? true : c.status === statusFilter));
+    .filter((c) => (statusFilter === "all" ? true : c.status === statusFilter))
+    .filter((c) => (typeFilter === "all" ? true : c.claim_type === typeFilter))
+    .filter((c) => {
+      if (!searchTerm) return true;
+      const q = searchTerm.toLowerCase();
+      return (
+        (c.profiles?.display_name ?? "").toLowerCase().includes(q) ||
+        (c.profiles?.email ?? "").toLowerCase().includes(q) ||
+        (c.policy_id ?? "").toLowerCase().includes(q) ||
+        (c.claim_type ?? "").toLowerCase().includes(q)
+      );
+    });
 
   const sortedClaims = [...filteredClaims].sort((a, b) => {
     const dateA = (d: string | null) => (d ? new Date(d).getTime() : 0);
@@ -294,23 +302,14 @@ export const AdminClaimsTable = () => {
         c.profiles?.email ?? "",
         c.claim_type,
         c.policy_id,
-        c.incident_date ? new Date(c.incident_date).toLocaleDateString() : "",
-        c.created_at ? new Date(c.created_at).toLocaleDateString() : "",
+        csvDate(c.incident_date),
+        csvDate(c.created_at),
         c.status,
         broker?.display_name ?? broker?.email ?? (c.assigned_broker_id ? "" : "Non assigné"),
         c.cost_estimation ?? "",
       ];
     });
-    const csv = [headers, ...rows]
-      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
-      .join("\n");
-    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `sinistres_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    exportToCsv("sinistres", headers, rows);
   };
 
   const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
@@ -324,51 +323,54 @@ export const AdminClaimsTable = () => {
 
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Statut" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous les statuts</SelectItem>
-            <SelectItem value="Draft">Brouillon</SelectItem>
-            <SelectItem value="Submitted">Soumis</SelectItem>
-            <SelectItem value="Reviewed">Examiné</SelectItem>
-            <SelectItem value="Approved">Approuvé</SelectItem>
-            <SelectItem value="Rejected">Rejeté</SelectItem>
-            <SelectItem value="Closed">Clôturé</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={sortBy} onValueChange={setSortBy}>
-          <SelectTrigger className="w-[220px]">
-            <ArrowUpDown className="w-4 h-4 mr-2" />
-            <SelectValue placeholder="Trier par" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="incident_desc">Sinistre le plus récent</SelectItem>
-            <SelectItem value="incident_asc">Sinistre le plus ancien</SelectItem>
-            <SelectItem value="created_desc">Date de création (récent)</SelectItem>
-            <SelectItem value="created_asc">Date de création (ancien)</SelectItem>
-            <SelectItem value="cost_desc">Estimation décroissante</SelectItem>
-            <SelectItem value="cost_asc">Estimation croissante</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button
-          variant={filterUnassigned ? "default" : "outline"}
-          size="sm"
-          onClick={() => setFilterUnassigned(!filterUnassigned)}
-        >
-          <UserPlus className="w-4 h-4 mr-2" />
-          {filterUnassigned ? "Afficher tous" : "Non assignés"}
-        </Button>
-        <div className="ml-auto">
-          <Button variant="outline" size="sm" onClick={exportCSV}>
-            <Download className="w-4 h-4 mr-2" />
-            Exporter CSV
-          </Button>
-        </div>
-      </div>
-      
+      <DataTableToolbar
+        search={{
+          value: searchTerm,
+          onChange: setSearchTerm,
+          placeholder: "Rechercher client, police, type...",
+        }}
+        filters={[
+          {
+            id: "status",
+            label: "Statut",
+            value: statusFilter,
+            onChange: setStatusFilter,
+            options: [
+              { value: "all", label: "Tous les statuts" },
+              { value: "Draft", label: "Brouillon" },
+              { value: "Submitted", label: "Soumis" },
+              { value: "Reviewed", label: "Examiné" },
+              { value: "Approved", label: "Approuvé" },
+              { value: "Rejected", label: "Rejeté" },
+              { value: "Closed", label: "Clôturé" },
+            ],
+          },
+          {
+            id: "type",
+            label: "Type",
+            value: typeFilter,
+            onChange: setTypeFilter,
+            options: [
+              { value: "all", label: "Tous les types" },
+              ...claimTypes.map((t) => ({ value: t, label: t })),
+            ],
+          },
+        ]}
+        sort={{
+          value: sortBy,
+          onChange: setSortBy,
+          options: [
+            { value: "incident_desc", label: "Sinistre le plus récent" },
+            { value: "incident_asc", label: "Sinistre le plus ancien" },
+            { value: "created_desc", label: "Création récente" },
+            { value: "created_asc", label: "Création ancienne" },
+            { value: "cost_desc", label: "Estimation ↓" },
+            { value: "cost_asc", label: "Estimation ↑" },
+          ],
+        }}
+        onExport={exportCSV}
+      />
+
       <div className="rounded-lg border bg-card">
         <Table>
           <TableHeader>

@@ -15,6 +15,8 @@ import { fr } from "date-fns/locale";
 import { formatFCFA } from "@/utils/formatCurrency";
 import { usePagination } from "@/hooks/usePagination";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
+import { exportToCsv, csvDate } from "@/lib/export-csv";
 
 interface Subscription {
   id: string;
@@ -43,6 +45,10 @@ export const AdminSubscriptionsTable = () => {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [brokers, setBrokers] = useState<Broker[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [productFilter, setProductFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("date_desc");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -148,9 +154,62 @@ export const AdminSubscriptionsTable = () => {
     );
   };
 
-  const filteredSubscriptions = subscriptions;
+  const products = Array.from(
+    new Set(subscriptions.map((s) => s.products?.name).filter(Boolean) as string[]),
+  );
+
+  const filteredSubscriptions = subscriptions
+    .filter((s) => (statusFilter === "all" ? true : s.status === statusFilter))
+    .filter((s) => (productFilter === "all" ? true : s.products?.name === productFilter))
+    .filter((s) => {
+      if (!searchTerm) return true;
+      const q = searchTerm.toLowerCase();
+      return (
+        (s.profiles?.display_name ?? "").toLowerCase().includes(q) ||
+        (s.profiles?.email ?? "").toLowerCase().includes(q) ||
+        (s.policy_number ?? "").toLowerCase().includes(q)
+      );
+    });
+
+  const sortedSubscriptions = [...filteredSubscriptions].sort((a, b) => {
+    const t = (d?: string) => (d ? new Date(d).getTime() : 0);
+    switch (sortBy) {
+      case "date_desc":
+        return t(b.start_date) - t(a.start_date);
+      case "date_asc":
+        return t(a.start_date) - t(b.start_date);
+      case "premium_desc":
+        return (b.monthly_premium ?? 0) - (a.monthly_premium ?? 0);
+      case "premium_asc":
+        return (a.monthly_premium ?? 0) - (b.monthly_premium ?? 0);
+      default:
+        return 0;
+    }
+  });
+
+  const exportCSV = () => {
+    const headers = ["Client", "Email", "Produit", "Police", "Prime", "Date début", "Statut", "Courtier"];
+    exportToCsv(
+      "souscriptions",
+      headers,
+      sortedSubscriptions.map((s) => {
+        const broker = brokers.find((b) => b.id === s.assigned_broker_id);
+        return [
+          s.profiles?.display_name ?? "",
+          s.profiles?.email ?? "",
+          s.products?.name ?? "",
+          s.policy_number,
+          s.monthly_premium,
+          csvDate(s.start_date),
+          s.status,
+          broker?.display_name ?? broker?.email ?? "Non assigné",
+        ];
+      }),
+    );
+  };
+
   const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
-    filteredSubscriptions,
+    sortedSubscriptions,
     { storageKey: "admin-subscriptions" },
   );
 
@@ -160,6 +219,48 @@ export const AdminSubscriptionsTable = () => {
 
   return (
     <div className="space-y-4">
+      <DataTableToolbar
+        search={{
+          value: searchTerm,
+          onChange: setSearchTerm,
+          placeholder: "Rechercher client, police...",
+        }}
+        filters={[
+          {
+            id: "status",
+            label: "Statut",
+            value: statusFilter,
+            onChange: setStatusFilter,
+            options: [
+              { value: "all", label: "Tous les statuts" },
+              { value: "active", label: "Active" },
+              { value: "cancelled", label: "Annulée" },
+              { value: "expired", label: "Expirée" },
+            ],
+          },
+          {
+            id: "product",
+            label: "Produit",
+            value: productFilter,
+            onChange: setProductFilter,
+            options: [
+              { value: "all", label: "Tous les produits" },
+              ...products.map((p) => ({ value: p, label: p })),
+            ],
+          },
+        ]}
+        sort={{
+          value: sortBy,
+          onChange: setSortBy,
+          options: [
+            { value: "date_desc", label: "Date la plus récente" },
+            { value: "date_asc", label: "Date la plus ancienne" },
+            { value: "premium_desc", label: "Prime ↓" },
+            { value: "premium_asc", label: "Prime ↑" },
+          ],
+        }}
+        onExport={exportCSV}
+      />
       <Table>
         <TableHeader>
           <TableRow>
@@ -173,7 +274,7 @@ export const AdminSubscriptionsTable = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredSubscriptions.length === 0 ? (
+          {sortedSubscriptions.length === 0 ? (
             <TableRow>
               <TableCell colSpan={7} className="text-center">
                 Aucune souscription trouvée

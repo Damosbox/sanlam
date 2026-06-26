@@ -67,7 +67,7 @@ export const AdminSurveySends = () => {
   };
 
   if (isLoading) {
-    return <div className="text-center py-8">Chargement...</div>;
+    // hook placement handled below
   }
 
   const list = sends ?? [];
@@ -75,6 +75,10 @@ export const AdminSurveySends = () => {
     list,
     { storageKey: "admin-survey-sends" },
   );
+
+  if (isLoading) {
+    return <div className="text-center py-8">Chargement...</div>;
+  }
 
   return (
     <div className="space-y-4">

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, differenceInDays } from "date-fns";
-import { Phone, MessageCircle, RefreshCw, Calendar } from "lucide-react";
+import { MessageCircle, RefreshCw, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -299,14 +299,21 @@ export function RenewalsPipelineCard({ scope }: Props) {
     setSelected({});
   };
 
-  const handleCall = (phone: string | null) => {
-    if (phone) window.open(`tel:${phone}`);
-    else toast.error("Aucun numéro disponible");
+  const handleRenew = (r: RenewalRow) => {
+    setSelected({ [r.id]: true });
+    setConfirmOpen(true);
   };
 
-  const handleWhatsApp = (phone: string | null) => {
-    if (phone) window.open(`https://wa.me/${phone.replace(/\D/g, "")}`, "_blank");
-    else toast.error("Aucun numéro disponible");
+  const handleWhatsApp = (r: RenewalRow) => {
+    if (!r.client_phone) {
+      toast.error("Aucun numéro disponible");
+      return;
+    }
+    const msg = encodeURIComponent(
+      `Bonjour ${r.client_name}, votre contrat ${r.policy_number} (${r.product_name}) arrive à échéance le ${format(new Date(r.end_date), "dd/MM/yyyy")}. Souhaitez-vous procéder au renouvellement ?`,
+    );
+    window.open(`https://wa.me/${r.client_phone.replace(/\D/g, "")}?text=${msg}`, "_blank");
+    toast.success("Notification WhatsApp ouverte");
   };
 
   const statusBadge = (r: RenewalRow) => {
@@ -500,19 +507,21 @@ export function RenewalsPipelineCard({ scope }: Props) {
                       <TableCell className="py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button
-                            variant="ghost" size="icon" className="h-8 w-8"
-                            onClick={() => handleCall(r.client_phone)}
-                            aria-label="Appeler"
+                            variant="outline" size="sm" className="h-8 gap-1"
+                            onClick={() => handleRenew(r)}
+                            aria-label="Renouveler"
                           >
-                            <Phone className="h-4 w-4" />
+                            <RefreshCw className="h-3.5 w-3.5" />
+                            <span className="hidden md:inline">Renouveler</span>
                           </Button>
                           <Button
-                            variant="ghost" size="icon"
-                            className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                            onClick={() => handleWhatsApp(r.client_phone)}
-                            aria-label="WhatsApp"
+                            variant="outline" size="sm"
+                            className="h-8 gap-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border-emerald-200"
+                            onClick={() => handleWhatsApp(r)}
+                            aria-label="Notifier via WhatsApp"
                           >
-                            <MessageCircle className="h-4 w-4" />
+                            <MessageCircle className="h-3.5 w-3.5" />
+                            <span className="hidden md:inline">WhatsApp</span>
                           </Button>
                         </div>
                       </TableCell>

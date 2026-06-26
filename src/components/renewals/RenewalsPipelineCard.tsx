@@ -45,6 +45,7 @@ interface RenewalRow {
   claims_count: number;
   score_global: number | null;
   pricing_adjustments: any;
+  last_reminder_at: string | null;
 }
 
 const STATUS_OPTIONS = [
@@ -99,6 +100,11 @@ export function RenewalsPipelineCard({ scope }: Props) {
       return (data ?? []).map((s: any) => {
         const profile = s.profiles ?? {};
         const product = s.products ?? {};
+        const effStatus = s.renewal_status ?? "pending";
+        const lastReminder =
+          s.last_reminder_at ??
+          s.notified_at ??
+          (effStatus === "notified" ? s.updated_at ?? null : null);
         return {
           id: s.id,
           user_id: s.user_id ?? null,
@@ -116,6 +122,7 @@ export function RenewalsPipelineCard({ scope }: Props) {
           claims_count: claimsByUser.get(s.user_id) ?? 0,
           score_global: scoreByUser.has(s.user_id) ? scoreByUser.get(s.user_id)! : null,
           pricing_adjustments: product.pricing_adjustments ?? null,
+          last_reminder_at: lastReminder,
         };
       });
     },
@@ -350,6 +357,7 @@ export function RenewalsPipelineCard({ scope }: Props) {
                   <TableHead className="hidden md:table-cell">Sinistres</TableHead>
                   <TableHead className="hidden md:table-cell">Scoring</TableHead>
                   <TableHead>Statut</TableHead>
+                  <TableHead className="hidden lg:table-cell">Dernière relance</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -405,6 +413,11 @@ export function RenewalsPipelineCard({ scope }: Props) {
                         {scorePill(r.score_global)}
                       </TableCell>
                       <TableCell className="py-3">{statusBadge(r)}</TableCell>
+                      <TableCell className="hidden lg:table-cell py-3 text-sm">
+                        {r.last_reminder_at
+                          ? format(new Date(r.last_reminder_at), "dd/MM/yy")
+                          : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
                       <TableCell className="py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button

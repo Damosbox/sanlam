@@ -99,6 +99,12 @@ export function ProductsList({ categoryFilter, statusFilter }: ProductsListProps
     },
   });
 
+  const productList = products ?? [];
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    productList,
+    { storageKey: "admin-products-list" },
+  );
+
   if (isLoading) {
     return <div className="text-center py-8 text-muted-foreground">Chargement...</div>;
   }
@@ -128,7 +134,7 @@ export function ProductsList({ categoryFilter, statusFilter }: ProductsListProps
             </TableRow>
           </TableHeader>
           <TableBody>
-            {products.map((product) => (
+            {pageItems.map((product) => (
               <TableRow
                 key={product.id}
                 className="cursor-pointer"
@@ -198,6 +204,16 @@ export function ProductsList({ categoryFilter, statusFilter }: ProductsListProps
             ))}
           </TableBody>
         </Table>
+      </div>
+      <div className="mt-2">
+        <DataTablePagination
+          page={page}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          setPage={setPage}
+          setPageSize={setPageSize}
+          itemLabel="produit"
+        />
       </div>
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

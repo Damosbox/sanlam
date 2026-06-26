@@ -190,13 +190,12 @@ export const AdminSubscriptionsTable = () => {
             <TableHead>Date de début</TableHead>
             <TableHead>Statut</TableHead>
             <TableHead>Courtier</TableHead>
-            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filteredSubscriptions.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className="text-center">
+              <TableCell colSpan={7} className="text-center">
                 Aucune souscription trouvée
               </TableCell>
             </TableRow>
@@ -222,7 +221,6 @@ export const AdminSubscriptionsTable = () => {
                   })}
                 </TableCell>
                 <TableCell>{getStatusBadge(subscription.status)}</TableCell>
-                <TableCell>{getBrokerBadge(subscription)}</TableCell>
                 <TableCell>
                   <Select
                     value={subscription.assigned_broker_id || "unassigned"}
@@ -233,8 +231,10 @@ export const AdminSubscriptionsTable = () => {
                       )
                     }
                   >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Assigner un courtier" />
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Assigner un courtier">
+                        {getBrokerBadge(subscription)}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="unassigned">Non assigné</SelectItem>

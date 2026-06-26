@@ -1,10 +1,9 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, differenceInDays } from "date-fns";
-import { Phone, MessageCircle, RefreshCw, Search, Calendar } from "lucide-react";
+import { Phone, MessageCircle, RefreshCw, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -12,15 +11,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { formatFCFA } from "@/utils/formatCurrency";
 import { RenewalsBulkNotifyDialog } from "./RenewalsBulkNotifyDialog";
 import { usePagination } from "@/hooks/usePagination";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
+import { exportToCsv, csvDate } from "@/lib/export-csv";
 
 type Scope = "broker" | "admin";
 
@@ -62,6 +60,9 @@ export function RenewalsPipelineCard({ scope }: Props) {
   const [search, setSearch] = useState("");
   const [agence, setAgence] = useState<string>("all");
   const [status, setStatus] = useState<string>("all");
+  const [productFilter, setProductFilter] = useState<string>("all");
+  const [echeance, setEcheance] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("expiry_asc");
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -143,10 +144,21 @@ export function RenewalsPipelineCard({ scope }: Props) {
     return Array.from(set);
   }, [rows]);
 
+  const products = useMemo(() => {
+    return Array.from(new Set(rows.map((r) => r.product_name).filter(Boolean)));
+  }, [rows]);
+
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
-    return rows.filter((r) => {
+    const arr = rows.filter((r) => {
       if (agence !== "all" && r.agence !== agence) return false;
+      if (productFilter !== "all" && r.product_name !== productFilter) return false;
+      if (echeance !== "all") {
+        const d = r.days_until_expiry;
+        if (echeance === "lt7" && !(d >= 0 && d <= 7)) return false;
+        if (echeance === "lt30" && !(d >= 0 && d <= 30)) return false;
+        if (echeance === "gt30" && !(d > 30)) return false;
+      }
       if (status !== "all") {
         const isExpired = r.days_until_expiry < 0;
         const eff = r.renewal_status ?? "pending";
@@ -160,7 +172,44 @@ export function RenewalsPipelineCard({ scope }: Props) {
       }
       return true;
     });
-  }, [rows, search, agence, status]);
+    return [...arr].sort((a, b) => {
+      switch (sortBy) {
+        case "expiry_desc":
+          return b.days_until_expiry - a.days_until_expiry;
+        case "premium_desc":
+          return b.premium - a.premium;
+        case "reminder_desc":
+          return (
+            +new Date(b.last_reminder_at ?? 0) - +new Date(a.last_reminder_at ?? 0)
+          );
+        case "score_desc":
+          return (b.score_global ?? -1) - (a.score_global ?? -1);
+        case "expiry_asc":
+        default:
+          return a.days_until_expiry - b.days_until_expiry;
+      }
+    });
+  }, [rows, search, agence, productFilter, echeance, status, sortBy]);
+
+  const exportCSV = () => {
+    exportToCsv(
+      `renouvellements-${scope}`,
+      ["Client", "Téléphone", "Produit", "Agence", "Police", "Échéance", "Prime", "Sinistres", "Score", "Statut", "Dernière relance"],
+      filtered.map((r) => [
+        r.client_name,
+        r.client_phone ?? "",
+        r.product_name,
+        r.agence,
+        r.policy_number,
+        csvDate(r.end_date),
+        r.premium,
+        r.claims_count,
+        r.score_global ?? "",
+        r.renewal_status ?? "pending",
+        csvDate(r.last_reminder_at),
+      ]),
+    );
+  };
 
   const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
     filtered,
@@ -286,58 +335,78 @@ export function RenewalsPipelineCard({ scope }: Props) {
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <CardTitle className="text-base font-semibold">Pipeline des Renouvellements</CardTitle>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-3">
-          <div className="flex flex-1 flex-wrap items-center gap-2">
-            <div className="relative flex-1 min-w-full sm:min-w-[220px] sm:max-w-sm">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Rechercher par client, branche, police"
-                className="pl-8 h-9 rounded-full"
-              />
-            </div>
-            <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
-              <span className="text-xs text-muted-foreground">Agence</span>
-              <Select value={agence} onValueChange={setAgence}>
-                <SelectTrigger className="h-9 flex-1 sm:w-[160px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Toutes</SelectItem>
-                  {agences.map((a) => (
-                    <SelectItem key={a} value={a}>{a}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
-              <span className="text-xs text-muted-foreground">Statut</span>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className="h-9 flex-1 sm:w-[150px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-2 sm:gap-3">
-            <span className="text-xs text-muted-foreground whitespace-nowrap text-center sm:text-left">
-              {filtered.length} affichés · page 1
-            </span>
-            <Button
-              disabled={selectedIds.length === 0}
-              onClick={() => setConfirmOpen(true)}
-              className="gap-2 w-full sm:w-auto"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Renouveler ({selectedIds.length})
-            </Button>
-          </div>
+        <div className="mt-3">
+          <DataTableToolbar
+            search={{
+              value: search,
+              onChange: setSearch,
+              placeholder: "Rechercher client, branche, police...",
+            }}
+            filters={[
+              {
+                id: "status",
+                label: "Statut",
+                value: status,
+                onChange: setStatus,
+                options: STATUS_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
+              },
+              {
+                id: "agence",
+                label: "Agence",
+                value: agence,
+                onChange: setAgence,
+                options: [
+                  { value: "all", label: "Toutes agences" },
+                  ...agences.map((a) => ({ value: a, label: a })),
+                ],
+              },
+              {
+                id: "product",
+                label: "Produit",
+                value: productFilter,
+                onChange: setProductFilter,
+                options: [
+                  { value: "all", label: "Tous produits" },
+                  ...products.map((p) => ({ value: p, label: p })),
+                ],
+              },
+              {
+                id: "echeance",
+                label: "Échéance",
+                value: echeance,
+                onChange: setEcheance,
+                options: [
+                  { value: "all", label: "Toute échéance" },
+                  { value: "lt7", label: "≤ 7 jours" },
+                  { value: "lt30", label: "≤ 30 jours" },
+                  { value: "gt30", label: "> 30 jours" },
+                ],
+              },
+            ]}
+            sort={{
+              value: sortBy,
+              onChange: setSortBy,
+              options: [
+                { value: "expiry_asc", label: "Échéance la plus proche" },
+                { value: "expiry_desc", label: "Échéance la plus lointaine" },
+                { value: "premium_desc", label: "Prime ↓" },
+                { value: "reminder_desc", label: "Relance récente" },
+                { value: "score_desc", label: "Score ↓" },
+              ],
+            }}
+            onExport={exportCSV}
+            extraActions={
+              <Button
+                disabled={selectedIds.length === 0}
+                onClick={() => setConfirmOpen(true)}
+                className="gap-2"
+                size="sm"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Renouveler ({selectedIds.length})
+              </Button>
+            }
+          />
         </div>
       </CardHeader>
       <CardContent className="px-0 sm:px-6">

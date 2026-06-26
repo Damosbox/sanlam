@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { usePagination } from "@/hooks/usePagination";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
@@ -37,9 +37,11 @@ import { DataTablePagination } from "@/components/ui/data-table-pagination";
 interface ProductsListProps {
   categoryFilter: string;
   statusFilter: string;
+  search?: string;
+  sortBy?: string;
 }
 
-export function ProductsList({ categoryFilter, statusFilter }: ProductsListProps) {
+export function ProductsList({ categoryFilter, statusFilter, search = "", sortBy = "name_asc" }: ProductsListProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -99,7 +101,22 @@ export function ProductsList({ categoryFilter, statusFilter }: ProductsListProps
     },
   });
 
-  const productList = products ?? [];
+  const productList = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const arr = (products ?? []).filter((p: any) =>
+      !q || (p.name ?? "").toLowerCase().includes(q),
+    );
+    return [...arr].sort((a: any, b: any) => {
+      switch (sortBy) {
+        case "name_desc": return (b.name ?? "").localeCompare(a.name ?? "");
+        case "updated_desc": return +new Date(b.updated_at ?? 0) - +new Date(a.updated_at ?? 0);
+        case "updated_asc": return +new Date(a.updated_at ?? 0) - +new Date(b.updated_at ?? 0);
+        case "name_asc":
+        default: return (a.name ?? "").localeCompare(b.name ?? "");
+      }
+    });
+  }, [products, search, sortBy]);
+
   const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
     productList,
     { storageKey: "admin-products-list" },

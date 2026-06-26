@@ -90,6 +90,7 @@ export const BrokerClaimsTable = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<ProductType>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [sortBy, setSortBy] = useState<string>("date_desc");
 
   useEffect(() => {
     fetchClaims();
@@ -171,8 +172,16 @@ export const BrokerClaimsTable = () => {
       result = result.filter(claim => claim.status === statusFilter);
     }
 
-    return result;
-  }, [claims, searchQuery, selectedProduct, statusFilter]);
+    return [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "date_asc": return +new Date(a.incident_date ?? a.created_at) - +new Date(b.incident_date ?? b.created_at);
+        case "cost_desc": return (b.cost_estimation ?? 0) - (a.cost_estimation ?? 0);
+        case "cost_asc": return (a.cost_estimation ?? 0) - (b.cost_estimation ?? 0);
+        case "date_desc":
+        default: return +new Date(b.incident_date ?? b.created_at) - +new Date(a.incident_date ?? a.created_at);
+      }
+    });
+  }, [claims, searchQuery, selectedProduct, statusFilter, sortBy]);
 
   const hasActiveFilters = searchQuery !== "" || selectedProduct !== "all" || statusFilter !== "all";
   const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
@@ -414,6 +423,17 @@ export const BrokerClaimsTable = () => {
                   {option.label}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-full sm:w-[200px] h-9">
+              <SelectValue placeholder="Trier" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="date_desc">Date incident récente</SelectItem>
+              <SelectItem value="date_asc">Date incident ancienne</SelectItem>
+              <SelectItem value="cost_desc">Estimation décroissante</SelectItem>
+              <SelectItem value="cost_asc">Estimation croissante</SelectItem>
             </SelectContent>
           </Select>
         </div>

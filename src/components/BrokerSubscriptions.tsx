@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -77,6 +78,7 @@ export const BrokerSubscriptions = () => {
   const [searchValue, setSearchValue] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<ProductType>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>("all");
+  const [sortBy, setSortBy] = useState<string>("date_desc");
 
   useEffect(() => {
     fetchSubscriptions();
@@ -128,7 +130,7 @@ export const BrokerSubscriptions = () => {
 
   // Filtered subscriptions
   const filteredSubscriptions = useMemo(() => {
-    return subscriptions.filter((sub) => {
+    const filtered = subscriptions.filter((sub) => {
       // Search filter
       if (searchValue) {
         const search = searchValue.toLowerCase();
@@ -153,7 +155,16 @@ export const BrokerSubscriptions = () => {
       
       return true;
     });
-  }, [subscriptions, searchValue, selectedProduct, statusFilter]);
+    return [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "date_asc": return +new Date(a.start_date) - +new Date(b.start_date);
+        case "premium_desc": return (b.monthly_premium ?? 0) - (a.monthly_premium ?? 0);
+        case "premium_asc": return (a.monthly_premium ?? 0) - (b.monthly_premium ?? 0);
+        case "date_desc":
+        default: return +new Date(b.start_date) - +new Date(a.start_date);
+      }
+    });
+  }, [subscriptions, searchValue, selectedProduct, statusFilter, sortBy]);
 
   // Product counts for filter badges
   const productCounts = useMemo(() => {
@@ -307,6 +318,15 @@ export const BrokerSubscriptions = () => {
     <div className="space-y-4">
       {/* Export Button */}
       <div className="flex justify-end">
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="w-[180px] h-9 mr-2"><SelectValue placeholder="Trier" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="date_desc">Date récente</SelectItem>
+            <SelectItem value="date_asc">Date ancienne</SelectItem>
+            <SelectItem value="premium_desc">Prime décroissante</SelectItem>
+            <SelectItem value="premium_asc">Prime croissante</SelectItem>
+          </SelectContent>
+        </Select>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="gap-2">

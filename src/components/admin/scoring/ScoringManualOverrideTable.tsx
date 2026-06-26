@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Download, Check, X, Loader2 } from "lucide-react";
+import { Check, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -32,6 +32,7 @@ import {
   type ManualOverrideRequest,
 } from "@/hooks/useManualOverrideRequests";
 import { exportToCSV } from "@/utils/exportCsv";
+import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
 import { usePagination } from "@/hooks/usePagination";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
@@ -61,6 +62,9 @@ export function ScoringManualOverrideTable() {
     supabase.auth.getUser().then(({ data }) => setUser(data.user ?? null));
   }, []);
   const { role } = useUserRole(user);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("date_desc");
 
   const isAdmin = role === "admin";
   const isBackoffice =
@@ -71,17 +75,14 @@ export function ScoringManualOverrideTable() {
   const { data: all, isLoading } = useManualOverrideRequests("all");
   const decide = useDecideManualOverride();
 
-  const pending = useMemo(
+  const rawPending = useMemo(
     () => (all ?? []).filter((r) => r.status === "pending"),
     [all],
   );
-  const history = useMemo(
+  const rawHistory = useMemo(
     () => (all ?? []).filter((r) => r.status !== "pending"),
     [all],
   );
-
-  const pendingPg = usePagination(pending, { storageKey: "score-overrides-pending" });
-  const historyPg = usePagination(history, { storageKey: "score-overrides-history" });
 
   const userIds = useMemo(() => {
     const ids = new Set<string>();
@@ -93,6 +94,38 @@ export function ScoringManualOverrideTable() {
     return Array.from(ids);
   }, [all]);
   const { data: profiles } = useProfilesBrief(userIds);
+
+  const matchSearch = (r: ManualOverrideRequest) => {
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    const client = (profiles?.get(r.client_id)?.display_name || profiles?.get(r.client_id)?.email || "").toLowerCase();
+    const requester = (profiles?.get(r.requested_by)?.display_name || profiles?.get(r.requested_by)?.email || "").toLowerCase();
+    return client.includes(q) || requester.includes(q) || (r.justification ?? "").toLowerCase().includes(q);
+  };
+  const sortFn = (a: ManualOverrideRequest, b: ManualOverrideRequest) => {
+    switch (sortBy) {
+      case "date_asc": return +new Date(a.created_at) - +new Date(b.created_at);
+      case "delta_desc": return Math.abs((b.requested_score ?? 0) - (b.current_score ?? 0)) - Math.abs((a.requested_score ?? 0) - (a.current_score ?? 0));
+      case "delta_asc": return Math.abs((a.requested_score ?? 0) - (a.current_score ?? 0)) - Math.abs((b.requested_score ?? 0) - (b.current_score ?? 0));
+      case "date_desc":
+      default: return +new Date(b.created_at) - +new Date(a.created_at);
+    }
+  };
+
+  const pending = useMemo(
+    () => rawPending.filter(matchSearch).sort(sortFn),
+    [rawPending, search, sortBy, profiles],
+  );
+  const history = useMemo(
+    () => rawHistory
+      .filter((r) => statusFilter === "all" || r.status === statusFilter)
+      .filter(matchSearch)
+      .sort(sortFn),
+    [rawHistory, statusFilter, search, sortBy, profiles],
+  );
+
+  const pendingPg = usePagination(pending, { storageKey: "score-overrides-pending" });
+  const historyPg = usePagination(history, { storageKey: "score-overrides-history" });
 
   const nameOf = (id: string | null | undefined) => {
     if (!id) return "—";
@@ -162,6 +195,30 @@ export function ScoringManualOverrideTable() {
 
   return (
     <>
+      <DataTableToolbar
+        search={{ value: search, onChange: setSearch, placeholder: "Rechercher un client ou demandeur..." }}
+        filters={[
+          {
+            id: "status", label: "Statut", value: statusFilter, onChange: setStatusFilter,
+            options: [
+              { value: "all", label: "Tous statuts" },
+              { value: "approved", label: "Approuvée" },
+              { value: "rejected", label: "Refusée" },
+            ],
+          },
+        ]}
+        sort={{
+          value: sortBy, onChange: setSortBy,
+          options: [
+            { value: "date_desc", label: "Date récente" },
+            { value: "date_asc", label: "Date ancienne" },
+            { value: "delta_desc", label: "Delta score décroissant" },
+            { value: "delta_asc", label: "Delta score croissant" },
+          ],
+        }}
+        onExport={exportHistory}
+        className="mb-3"
+      />
       <Tabs defaultValue="pending">
         <TabsList>
           <TabsTrigger value="pending" className="gap-2">
@@ -271,17 +328,6 @@ export function ScoringManualOverrideTable() {
         </TabsContent>
 
         <TabsContent value="history" className="mt-4 space-y-3">
-          <div className="flex justify-end">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={exportHistory}
-              disabled={history.length === 0}
-            >
-              <Download className="h-3.5 w-3.5 mr-1.5" />
-              Exporter CSV
-            </Button>
-          </div>
           <Card>
             <CardContent className="p-0">
               {history.length === 0 ? (

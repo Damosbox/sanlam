@@ -1,14 +1,15 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentTemplateEditor } from "./DocumentTemplateEditor";
 import { usePagination } from "@/hooks/usePagination";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
+import { exportToCsv, csvDate } from "@/lib/export-csv";
 
 interface Template {
   id: string;
@@ -32,6 +33,8 @@ export function DocumentTemplatesList() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<string>("created_desc");
   const [editing, setEditing] = useState<Template | null>(null);
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -103,7 +106,34 @@ export function DocumentTemplatesList() {
     );
   }
 
-  const filtered = filterCategory === "all" ? templates : templates.filter((t) => (t.category || t.type) === filterCategory);
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const arr = templates.filter((t) => {
+      if (filterCategory !== "all" && (t.category || t.type) !== filterCategory) return false;
+      if (!q) return true;
+      return (t.name ?? "").toLowerCase().includes(q) || (t.description ?? "").toLowerCase().includes(q);
+    });
+    return [...arr].sort((a, b) => {
+      switch (sortBy) {
+        case "name_asc": return (a.name ?? "").localeCompare(b.name ?? "");
+        case "name_desc": return (b.name ?? "").localeCompare(a.name ?? "");
+        case "created_asc": return +new Date(a.created_at ?? 0) - +new Date(b.created_at ?? 0);
+        case "created_desc":
+        default: return +new Date(b.created_at ?? 0) - +new Date(a.created_at ?? 0);
+      }
+    });
+  }, [templates, filterCategory, search, sortBy]);
+
+  const handleExport = () => {
+    exportToCsv(
+      "document-templates",
+      ["Nom", "Description", "Catégorie", "Type", "Actif", "Créé le"],
+      filtered.map((t) => [
+        t.name ?? "", t.description ?? "", t.category ?? "", t.type ?? "",
+        t.is_active ? "Oui" : "Non", csvDate(t.created_at),
+      ]),
+    );
+  };
   const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
     filtered,
     { storageKey: "admin-document-templates" },
@@ -111,21 +141,34 @@ export function DocumentTemplatesList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Select value={filterCategory} onValueChange={setFilterCategory}>
-          <SelectTrigger className="w-48"><SelectValue placeholder="Toutes catégories" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Toutes catégories</SelectItem>
-            {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button size="sm" onClick={() => setCreating(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nouveau template
-        </Button>
-      </div>
+      <DataTableToolbar
+        search={{ value: search, onChange: setSearch, placeholder: "Rechercher un template..." }}
+        filters={[
+          {
+            id: "category", label: "Type", value: filterCategory, onChange: setFilterCategory,
+            options: [
+              { value: "all", label: "Toutes catégories" },
+              ...Object.entries(CATEGORY_LABELS).map(([k, v]) => ({ value: k, label: v })),
+            ],
+          },
+        ]}
+        sort={{
+          value: sortBy, onChange: setSortBy,
+          options: [
+            { value: "created_desc", label: "Création récente" },
+            { value: "created_asc", label: "Création ancienne" },
+            { value: "name_asc", label: "Nom A→Z" },
+            { value: "name_desc", label: "Nom Z→A" },
+          ],
+        }}
+        onExport={handleExport}
+        extraActions={
+          <Button size="sm" onClick={() => setCreating(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nouveau template
+          </Button>
+        }
+      />
 
       {loading ? (
         <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>

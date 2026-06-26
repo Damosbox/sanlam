@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +9,8 @@ import { fr } from "date-fns/locale";
 import { Clock, CheckCircle, Mail, Eye, XCircle, RefreshCw } from "lucide-react";
 import { usePagination } from "@/hooks/usePagination";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
+import { exportToCsv, csvDate } from "@/lib/export-csv";
 
 interface SurveySend {
   id: string;
@@ -39,6 +42,11 @@ const STATUS_CONFIG = {
 } as const;
 
 export const AdminSurveySends = () => {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [channelFilter, setChannelFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("sent_desc");
+
   const { data: sends, isLoading } = useQuery({
     queryKey: ["survey-sends"],
     queryFn: async () => {
@@ -71,8 +79,57 @@ export const AdminSurveySends = () => {
   }
 
   const list = sends ?? [];
+
+  const channels = useMemo(
+    () => Array.from(new Set(list.map((s) => s.send_channel).filter(Boolean))) as string[],
+    [list],
+  );
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const arr = list.filter((s) => {
+      if (statusFilter !== "all" && s.status !== statusFilter) return false;
+      if (channelFilter !== "all" && (s.send_channel ?? "") !== channelFilter) return false;
+      if (!q) return true;
+      return (
+        (s.profiles?.display_name ?? "").toLowerCase().includes(q) ||
+        (s.profiles?.email ?? "").toLowerCase().includes(q) ||
+        (s.survey_templates?.name ?? "").toLowerCase().includes(q)
+      );
+    });
+    return [...arr].sort((a, b) => {
+      const aSent = a.sent_at ? +new Date(a.sent_at) : 0;
+      const bSent = b.sent_at ? +new Date(b.sent_at) : 0;
+      switch (sortBy) {
+        case "sent_asc": return aSent - bSent;
+        case "scheduled_desc": return +new Date(b.scheduled_at) - +new Date(a.scheduled_at);
+        case "scheduled_asc": return +new Date(a.scheduled_at) - +new Date(b.scheduled_at);
+        case "sent_desc":
+        default: return bSent - aSent;
+      }
+    });
+  }, [list, search, statusFilter, channelFilter, sortBy]);
+
+  const handleExport = () => {
+    exportToCsv(
+      "envois-enquetes",
+      ["Enquête", "Destinataire", "Email", "Type", "Canal", "Statut", "Planifié", "Envoyé", "Relances"],
+      filtered.map((s) => [
+        s.survey_templates?.name ?? "",
+        s.profiles?.display_name ?? "",
+        s.profiles?.email ?? "",
+        s.recipient_type,
+        s.send_channel ?? "",
+        s.status,
+        csvDate(s.scheduled_at),
+        csvDate(s.sent_at),
+        s.reminder_count,
+      ]),
+    );
+  };
+
   const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
-    list,
+    filtered,
     { storageKey: "admin-survey-sends" },
   );
 
@@ -85,9 +142,43 @@ export const AdminSurveySends = () => {
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Historique des envois</h3>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>{sends?.length || 0} envois</span>
+          <span>{filtered.length} envois</span>
         </div>
       </div>
+
+      <DataTableToolbar
+        search={{ value: search, onChange: setSearch, placeholder: "Rechercher destinataire, enquête..." }}
+        filters={[
+          {
+            id: "status", label: "Statut envoi", value: statusFilter, onChange: setStatusFilter,
+            options: [
+              { value: "all", label: "Tous statuts" },
+              { value: "pending", label: "En attente" },
+              { value: "sent", label: "Envoyé" },
+              { value: "opened", label: "Ouvert" },
+              { value: "completed", label: "Complété" },
+              { value: "expired", label: "Expiré" },
+            ],
+          },
+          {
+            id: "channel", label: "Canal", value: channelFilter, onChange: setChannelFilter,
+            options: [
+              { value: "all", label: "Tous canaux" },
+              ...channels.map((c) => ({ value: c, label: c })),
+            ],
+          },
+        ]}
+        sort={{
+          value: sortBy, onChange: setSortBy,
+          options: [
+            { value: "sent_desc", label: "Envoi récent" },
+            { value: "sent_asc", label: "Envoi ancien" },
+            { value: "scheduled_desc", label: "Planifié récent" },
+            { value: "scheduled_asc", label: "Planifié ancien" },
+          ],
+        }}
+        onExport={handleExport}
+      />
 
       <Card>
         <CardContent className="p-0">
@@ -138,7 +229,7 @@ export const AdminSurveySends = () => {
                 </TableRow>
               ))}
 
-              {sends?.length === 0 && (
+              {filtered.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     Aucun envoi d'enquête pour le moment

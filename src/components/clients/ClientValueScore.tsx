@@ -278,8 +278,8 @@ export const ClientValueScore = ({ clientId, compact = false }: ClientValueScore
                       {niveau ? VF_NIVEAU_LABEL[niveau] : "—"}
                     </Badge>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="bg-popover text-popover-foreground">
-                    <MedalTooltipContent current={niveau} />
+                  <TooltipContent side="bottom" className="bg-popover text-popover-foreground border shadow-md">
+                    <MedalTooltipContent current={niveau} scoreGlobal={scoreGlobal} />
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

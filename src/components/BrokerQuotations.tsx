@@ -17,6 +17,8 @@ import { FileText, User, Phone, Mail, Eye } from "lucide-react";
 import { UnifiedFiltersBar } from "./policies/UnifiedFiltersBar";
 import { ProductType } from "./broker/dashboard/ProductSelector";
 import { QuotationDetailDialog } from "./policies/QuotationDetailDialog";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 // Unified quotation interface
 interface UnifiedQuotation {
@@ -282,6 +284,11 @@ export const BrokerQuotations = () => {
     return counts;
   }, [allQuotations]);
 
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    filteredQuotations,
+    { storageKey: "broker-quotations" },
+  );
+
   if (isLoading) {
     return <div className="text-center py-8">Chargement...</div>;
   }
@@ -332,7 +339,7 @@ export const BrokerQuotations = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredQuotations.map((quote) => (
+              pageItems.map((quote) => (
                 <TableRow key={quote.id}>
                   <TableCell>
                     <div>
@@ -413,6 +420,14 @@ export const BrokerQuotations = () => {
           </TableBody>
         </Table>
       </div>
+      <DataTablePagination
+        page={page}
+        pageSize={pageSize}
+        totalItems={totalItems}
+        setPage={setPage}
+        setPageSize={setPageSize}
+        itemLabel="cotation"
+      />
 
       {/* Quotation Detail Dialog */}
       {selectedQuotation && (

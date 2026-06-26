@@ -1,12 +1,8 @@
 import { useMemo, useState } from "react";
-import { Users, Search, Download, UserCheck, UserX, UserPlus } from "lucide-react";
+import { Users, UserCheck, UserX, UserPlus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -19,6 +15,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { usePagination } from "@/hooks/usePagination";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
+import { exportToCsv, csvDate } from "@/lib/export-csv";
 
 const STATUS_LABEL: Record<AdminClientStatus, { label: string; className: string }> = {
   active: { label: "Client Sanlam", className: "bg-emerald-100 text-emerald-700 hover:bg-emerald-100" },
@@ -31,6 +29,7 @@ export default function ClientsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [brokerFilter, setBrokerFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("created_desc");
 
   const [selectedClient, setSelectedClient] = useState<AdminClientRow | null>(null);
   const [clientOpen, setClientOpen] = useState(false);
@@ -46,7 +45,7 @@ export default function ClientsPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return rows.filter((r) => {
+    const arr = rows.filter((r) => {
       if (statusFilter !== "all") {
         if (statusFilter === "with" && r.status === "no_account") return false;
         if (statusFilter === "without" && r.status !== "no_account") return false;
@@ -62,7 +61,22 @@ export default function ClientsPage() {
         (r.last_name || "").toLowerCase().includes(q)
       );
     });
-  }, [rows, search, statusFilter, brokerFilter]);
+    const name = (r: AdminClientRow) =>
+      (r.display_name || [r.first_name, r.last_name].filter(Boolean).join(" ") || "").toLowerCase();
+    return [...arr].sort((a, b) => {
+      switch (sortBy) {
+        case "name_asc":
+          return name(a).localeCompare(name(b));
+        case "name_desc":
+          return name(b).localeCompare(name(a));
+        case "created_asc":
+          return +new Date(a.created_at) - +new Date(b.created_at);
+        case "created_desc":
+        default:
+          return +new Date(b.created_at) - +new Date(a.created_at);
+      }
+    });
+  }, [rows, search, statusFilter, brokerFilter, sortBy]);
 
   const { pageItems: paged, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
     filtered,
@@ -83,26 +97,21 @@ export default function ClientsPage() {
   };
 
   const handleExport = () => {
-    const headers = ["Prénom", "Nom", "Email", "Téléphone", "Statut", "Agent", "Polices", "Sinistres", "Créé le"];
-    const lines = filtered.map((r) => [
-      r.first_name ?? "",
-      r.last_name ?? "",
-      r.email ?? "",
-      r.phone ?? "",
-      STATUS_LABEL[r.status].label,
-      r.broker_name ?? "",
-      r.policies_count,
-      r.claims_count,
-      format(new Date(r.created_at), "yyyy-MM-dd"),
-    ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","));
-    const csv = [headers.join(","), ...lines].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `clients-sanlam-${format(new Date(), "yyyy-MM-dd")}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    exportToCsv(
+      "clients-sanlam",
+      ["Prénom", "Nom", "Email", "Téléphone", "Statut", "Agent", "Polices", "Sinistres", "Créé le"],
+      filtered.map((r) => [
+        r.first_name ?? "",
+        r.last_name ?? "",
+        r.email ?? "",
+        r.phone ?? "",
+        STATUS_LABEL[r.status].label,
+        r.broker_name ?? "",
+        r.policies_count,
+        r.claims_count,
+        csvDate(r.created_at),
+      ]),
+    );
   };
 
   // Fetch lead row for detail sheet on demand
@@ -138,9 +147,6 @@ export default function ClientsPage() {
             Vue unifiée de l'ensemble des clients, qu'ils disposent d'un compte ou non.
           </p>
         </div>
-        <Button variant="outline" onClick={handleExport}>
-          <Download className="h-4 w-4 mr-2" /> Exporter CSV
-        </Button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -152,35 +158,49 @@ export default function ClientsPage() {
 
       <Card>
         <CardContent className="p-4 space-y-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative flex-1 min-w-[240px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher (nom, email, téléphone)..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[200px]"><SelectValue placeholder="Statut" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous statuts</SelectItem>
-                <SelectItem value="with">Avec compte</SelectItem>
-                <SelectItem value="without">Sans compte</SelectItem>
-                <SelectItem value="no_broker">Sans agent</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={brokerFilter} onValueChange={setBrokerFilter}>
-              <SelectTrigger className="w-[220px]"><SelectValue placeholder="Agent" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les agents</SelectItem>
-                {brokers.map((b) => (
-                  <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <DataTableToolbar
+            search={{
+              value: search,
+              onChange: setSearch,
+              placeholder: "Rechercher (nom, email, téléphone)...",
+            }}
+            filters={[
+              {
+                id: "status",
+                label: "Statut",
+                value: statusFilter,
+                onChange: setStatusFilter,
+                options: [
+                  { value: "all", label: "Tous statuts" },
+                  { value: "with", label: "Avec compte" },
+                  { value: "without", label: "Sans compte" },
+                  { value: "no_broker", label: "Sans agent" },
+                ],
+              },
+              {
+                id: "broker",
+                label: "Agent",
+                value: brokerFilter,
+                onChange: setBrokerFilter,
+                options: [
+                  { value: "all", label: "Tous les agents" },
+                  ...brokers.map((b) => ({ value: b.id, label: b.name })),
+                ],
+                width: "w-[220px]",
+              },
+            ]}
+            sort={{
+              value: sortBy,
+              onChange: setSortBy,
+              options: [
+                { value: "created_desc", label: "Création récente" },
+                { value: "created_asc", label: "Création ancienne" },
+                { value: "name_asc", label: "Nom A→Z" },
+                { value: "name_desc", label: "Nom Z→A" },
+              ],
+            }}
+            onExport={handleExport}
+          />
 
           <div className="rounded-md border overflow-x-auto">
             <Table>

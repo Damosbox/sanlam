@@ -425,6 +425,17 @@ export const BrokerClaimsTable = () => {
               ))}
             </SelectContent>
           </Select>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-full sm:w-[200px] h-9">
+              <SelectValue placeholder="Trier" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="date_desc">Date incident récente</SelectItem>
+              <SelectItem value="date_asc">Date incident ancienne</SelectItem>
+              <SelectItem value="cost_desc">Estimation décroissante</SelectItem>
+              <SelectItem value="cost_asc">Estimation croissante</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Results Counter + Reset */}

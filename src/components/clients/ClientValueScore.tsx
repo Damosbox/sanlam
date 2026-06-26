@@ -64,6 +64,42 @@ const NIVEAU_COLOR: Record<VfNiveau, string> = {
   platine: "text-cyan-700 bg-cyan-50 border-cyan-300",
 };
 
+const MEDAL_TIERS: { niveau: VfNiveau; range: string; points: string }[] = [
+  { niveau: "bronze", range: "-5 → 39", points: "Palier d'entrée" },
+  { niveau: "argent", range: "40 → 64", points: "+40 pts depuis Bronze" },
+  { niveau: "or", range: "65 → 79", points: "+25 pts depuis Argent" },
+];
+
+const MedalTooltipContent = ({ current }: { current: VfNiveau | null }) => (
+  <div className="space-y-2 p-1 min-w-[200px]">
+    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+      Paliers de fidélité
+    </p>
+    <div className="space-y-1.5">
+      {MEDAL_TIERS.map((tier) => {
+        const Icon = NIVEAU_ICON[tier.niveau];
+        const isCurrent = current === tier.niveau;
+        return (
+          <div
+            key={tier.niveau}
+            className={cn(
+              "flex items-center justify-between gap-3 rounded-md border px-2 py-1.5 text-xs",
+              NIVEAU_COLOR[tier.niveau],
+              isCurrent && "ring-2 ring-primary/40",
+            )}
+          >
+            <span className="flex items-center gap-1.5 font-medium">
+              <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+              {VF_NIVEAU_LABEL[tier.niveau]}
+            </span>
+            <span className="font-mono text-[11px]">{tier.range}</span>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+);
+
 const CRITERIA = [
   { key: "vf_score_anciennete", label: "Ancienneté", max: 20 },
   { key: "vf_score_prime", label: "Prime", max: 30 },
@@ -153,13 +189,25 @@ export const ClientValueScore = ({ clientId, compact = false }: ClientValueScore
   if (compact) {
     return (
       <div className="flex items-center gap-2">
-        <Badge
-          variant="outline"
-          className={cn("text-xs gap-1", niveau && NIVEAU_COLOR[niveau])}
-        >
-          <NiveauIcon className="h-3 w-3" aria-hidden="true" />
-          {niveau ? VF_NIVEAU_LABEL[niveau] : "—"}
-        </Badge>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge
+                variant="outline"
+                className={cn(
+                  "text-xs gap-1 cursor-help",
+                  niveau && NIVEAU_COLOR[niveau],
+                )}
+              >
+                <NiveauIcon className="h-3 w-3" aria-hidden="true" />
+                {niveau ? VF_NIVEAU_LABEL[niveau] : "—"}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="bg-popover text-popover-foreground">
+              <MedalTooltipContent current={niveau} />
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         <span
           className={cn(
             "text-xs font-mono font-semibold",
@@ -202,13 +250,25 @@ export const ClientValueScore = ({ clientId, compact = false }: ClientValueScore
               </div>
             </div>
             <div className="text-right space-y-1">
-              <Badge
-                variant="outline"
-                className={cn("gap-1.5", niveau && NIVEAU_COLOR[niveau])}
-              >
-                <NiveauIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                {niveau ? VF_NIVEAU_LABEL[niveau] : "—"}
-              </Badge>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "gap-1.5 cursor-help",
+                        niveau && NIVEAU_COLOR[niveau],
+                      )}
+                    >
+                      <NiveauIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                      {niveau ? VF_NIVEAU_LABEL[niveau] : "—"}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="bg-popover text-popover-foreground">
+                    <MedalTooltipContent current={niveau} />
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               {score?.vf_is_partial && (
                 <div>
                   <Badge variant="outline" className="text-[10px] gap-1">

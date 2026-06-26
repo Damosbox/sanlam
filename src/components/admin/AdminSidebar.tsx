@@ -136,6 +136,7 @@ export function AdminSidebar() {
       { title: "Sinistres", url: "/admin/claims", icon: FileText, badge: badges.pendingClaims },
       { title: "Souscriptions", url: "/admin/subscriptions", icon: TrendingUp },
       { title: "Renouvellements", url: "/admin/renewals", icon: RefreshCw },
+      { title: "Clients Sanlam", url: "/admin/clients", icon: Users },
     ]},
     { key: "access", label: "Accès & Utilisateurs", items: [
       { title: "Utilisateurs", url: "/admin/users", icon: Users, badge: badges.newClients + badges.newPartners + badges.newAdmins },

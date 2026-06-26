@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
-import { Users, UserCheck, UserX, UserPlus } from "lucide-react";
+import { Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useAdminClients, type AdminClientRow, type AdminClientStatus } from "@/hooks/useAdminClients";
 import { ClientDetailSheet } from "@/components/clients/ClientDetailSheet";
@@ -83,13 +83,6 @@ export default function ClientsPage() {
     { storageKey: "admin-clients" },
   );
 
-  const counts = useMemo(() => ({
-    total: rows.length,
-    withAccount: rows.filter((r) => r.status !== "no_account").length,
-    withoutAccount: rows.filter((r) => r.status === "no_account").length,
-    noBroker: rows.filter((r) => !r.broker_id).length,
-  }), [rows]);
-
   const handleRowClick = (row: AdminClientRow) => {
     setSelectedClient(row);
     if (row.source === "lead") setLeadOpen(true);
@@ -99,7 +92,7 @@ export default function ClientsPage() {
   const handleExport = () => {
     exportToCsv(
       "clients-sanlam",
-      ["Prénom", "Nom", "Email", "Téléphone", "Statut", "Agent", "Polices", "Sinistres", "Créé le"],
+      ["Prénom", "Nom", "Email", "Téléphone", "Statut", "Agent", "Canal", "Dernière connexion", "Polices", "Sinistres", "Créé le"],
       filtered.map((r) => [
         r.first_name ?? "",
         r.last_name ?? "",
@@ -107,6 +100,8 @@ export default function ClientsPage() {
         r.phone ?? "",
         STATUS_LABEL[r.status].label,
         r.broker_name ?? "",
+        r.channel,
+        csvDate(r.last_sign_in_at),
         r.policies_count,
         r.claims_count,
         csvDate(r.created_at),
@@ -147,13 +142,6 @@ export default function ClientsPage() {
             Vue unifiée de l'ensemble des clients, qu'ils disposent d'un compte ou non.
           </p>
         </div>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KpiCard icon={Users} label="Total clients" value={counts.total} />
-        <KpiCard icon={UserCheck} label="Avec compte" value={counts.withAccount} accent="text-emerald-600" />
-        <KpiCard icon={UserPlus} label="Sans compte" value={counts.withoutAccount} accent="text-amber-600" />
-        <KpiCard icon={UserX} label="Sans agent" value={counts.noBroker} accent="text-red-600" />
       </div>
 
       <Card>
@@ -211,6 +199,8 @@ export default function ClientsPage() {
                   <TableHead className="hidden md:table-cell">Téléphone</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead className="hidden lg:table-cell">Agent rattaché</TableHead>
+                  <TableHead className="hidden lg:table-cell">Canal</TableHead>
+                  <TableHead className="hidden lg:table-cell">Dernière connexion</TableHead>
                   <TableHead className="text-center">Polices</TableHead>
                   <TableHead className="text-center">Sinistres</TableHead>
                   <TableHead className="hidden lg:table-cell">Créé le</TableHead>
@@ -219,9 +209,9 @@ export default function ClientsPage() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Chargement...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-8">Chargement...</TableCell></TableRow>
                 ) : paged.length === 0 ? (
-                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Aucun client trouvé.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-8">Aucun client trouvé.</TableCell></TableRow>
                 ) : paged.map((r) => {
                   const conf = STATUS_LABEL[r.status];
                   const name = r.display_name || [r.first_name, r.last_name].filter(Boolean).join(" ") || "—";
@@ -232,6 +222,18 @@ export default function ClientsPage() {
                       <TableCell className="hidden md:table-cell text-muted-foreground">{r.phone || "—"}</TableCell>
                       <TableCell><Badge className={conf.className} variant="secondary">{conf.label}</Badge></TableCell>
                       <TableCell className="hidden lg:table-cell text-muted-foreground">{r.broker_name || <span className="italic">Non rattaché</span>}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        <Badge variant="outline" className="text-xs font-normal">{r.channel}</Badge>
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell text-muted-foreground text-sm">
+                        {r.last_sign_in_at ? (
+                          <span title={format(new Date(r.last_sign_in_at), "dd MMM yyyy HH:mm", { locale: fr })}>
+                            {formatDistanceToNow(new Date(r.last_sign_in_at), { locale: fr, addSuffix: true })}
+                          </span>
+                        ) : (
+                          <span className="italic">Jamais</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-center">{r.policies_count}</TableCell>
                       <TableCell className="text-center">{r.claims_count}</TableCell>
                       <TableCell className="hidden lg:table-cell text-muted-foreground">
@@ -272,21 +274,5 @@ export default function ClientsPage() {
         onStatusChange={() => {}}
       />
     </div>
-  );
-}
-
-function KpiCard({ icon: Icon, label, value, accent }: { icon: any; label: string; value: number; accent?: string }) {
-  return (
-    <Card>
-      <CardContent className="p-4 flex items-center gap-3">
-        <div className={`h-10 w-10 rounded-lg bg-muted flex items-center justify-center ${accent || "text-foreground"}`}>
-          <Icon className="h-5 w-5" />
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="text-xl font-semibold">{value}</p>
-        </div>
-      </CardContent>
-    </Card>
   );
 }

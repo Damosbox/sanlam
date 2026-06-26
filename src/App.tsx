@@ -79,6 +79,7 @@ import PaymentAmlDemoPage from "./pages/admin/dev/PaymentAmlDemoPage";
 import DsarPage from "./pages/admin/DsarPage";
 import CommissionsPage from "./pages/broker/CommissionsPage";
 import OCRValidationPage from "./pages/admin/OCRValidationPage";
+import AdminClientsPage from "./pages/admin/ClientsPage";
 
 const queryClient = new QueryClient();
 
@@ -161,6 +162,7 @@ const App = () => (
             <Route path="claims" element={<AdminClaimsPage />} />
             <Route path="subscriptions" element={<AdminSubscriptionsPage />} />
             <Route path="renewals" element={<AdminRenewalsPage />} />
+            <Route path="clients" element={<AdminClientsPage />} />
             <Route path="users" element={<AdminUsersPage />} />
             <Route path="users/clients" element={<Navigate to="/admin/users?tab=clients" replace />} />
             <Route path="users/partners" element={<Navigate to="/admin/users?tab=partners" replace />} />

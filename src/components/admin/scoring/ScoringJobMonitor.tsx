@@ -18,6 +18,15 @@ import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import { ScoringCoverageCard } from "./ScoringCoverageCard";
 import { ScoringCronSchedule } from "./ScoringCronSchedule";
+import { useEffect, useState } from "react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+const MANUAL_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes entre 2 lancements manuels
 
 const TRIGGER_LABEL: Record<string, string> = {
   manual: "Manuel",
@@ -29,6 +38,12 @@ const TRIGGER_LABEL: Record<string, string> = {
 
 export function ScoringJobMonitor() {
   const qc = useQueryClient();
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const { data: runs, isLoading, refetch } = useQuery({
     queryKey: ["scoring-job-runs"],
@@ -45,6 +60,18 @@ export function ScoringJobMonitor() {
 
   const launch = useMutation({
     mutationFn: async () => {
+      const lastManual = runs?.find((r: any) =>
+        ["manual", "monthly_job"].includes(r.trigger),
+      );
+      if (lastManual) {
+        const elapsed = Date.now() - new Date(lastManual.started_at).getTime();
+        if (elapsed < MANUAL_COOLDOWN_MS) {
+          const wait = Math.ceil((MANUAL_COOLDOWN_MS - elapsed) / 1000);
+          throw new Error(
+            `Veuillez patienter ${wait}s avant de relancer un job manuel.`,
+          );
+        }
+      }
       const { data, error } = await supabase.functions.invoke(
         "score-monthly-recalc",
         { body: {} },
@@ -63,6 +90,22 @@ export function ScoringJobMonitor() {
 
   const lastRun = runs?.[0];
   const lastError = lastRun?.status === "error";
+
+  const lastManualRun = runs?.find((r: any) =>
+    ["manual", "monthly_job"].includes(r.trigger),
+  );
+  const cooldownRemainingMs = lastManualRun
+    ? Math.max(
+        0,
+        MANUAL_COOLDOWN_MS - (now - new Date(lastManualRun.started_at).getTime()),
+      )
+    : 0;
+  const cooldownActive = cooldownRemainingMs > 0;
+  const cooldownSeconds = Math.ceil(cooldownRemainingMs / 1000);
+  const cooldownLabel =
+    cooldownSeconds >= 60
+      ? `${Math.floor(cooldownSeconds / 60)} min ${String(cooldownSeconds % 60).padStart(2, "0")}s`
+      : `${cooldownSeconds}s`;
 
   return (
     <div className="space-y-4">
@@ -86,10 +129,31 @@ export function ScoringJobMonitor() {
               <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
               Rafraîchir
             </Button>
-            <Button size="sm" onClick={() => launch.mutate()} disabled={launch.isPending}>
-              <Play className="h-3.5 w-3.5 mr-1.5" />
-              {launch.isPending ? "Exécution…" : "Lancer maintenant"}
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Button
+                      size="sm"
+                      onClick={() => launch.mutate()}
+                      disabled={launch.isPending || cooldownActive}
+                    >
+                      <Play className="h-3.5 w-3.5 mr-1.5" />
+                      {launch.isPending
+                        ? "Exécution…"
+                        : cooldownActive
+                        ? `Disponible dans ${cooldownLabel}`
+                        : "Lancer maintenant"}
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                {cooldownActive && (
+                  <TooltipContent>
+                    Délai de sécurité de 5 min entre deux lancements manuels.
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </CardHeader>
         <CardContent>

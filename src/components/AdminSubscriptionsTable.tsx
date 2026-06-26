@@ -9,14 +9,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -51,7 +43,6 @@ export const AdminSubscriptionsTable = () => {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [brokers, setBrokers] = useState<Broker[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showUnassignedOnly, setShowUnassignedOnly] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -157,9 +148,7 @@ export const AdminSubscriptionsTable = () => {
     );
   };
 
-  const filteredSubscriptions = showUnassignedOnly
-    ? subscriptions.filter((s) => !s.assigned_broker_id)
-    : subscriptions;
+  const filteredSubscriptions = subscriptions;
   const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
     filteredSubscriptions,
     { storageKey: "admin-subscriptions" },
@@ -171,15 +160,6 @@ export const AdminSubscriptionsTable = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button
-          variant={showUnassignedOnly ? "default" : "outline"}
-          onClick={() => setShowUnassignedOnly(!showUnassignedOnly)}
-        >
-          {showUnassignedOnly ? "Voir toutes" : "Non assignées uniquement"}
-        </Button>
-      </div>
-
       <Table>
         <TableHeader>
           <TableRow>

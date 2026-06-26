@@ -22,6 +22,8 @@ import { Shield, User, Briefcase, Phone, Mail, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
 import { CsvUserImportDialog } from "@/components/admin/CsvUserImportDialog";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 type PartnerType = "agent_mandataire" | "courtier" | "agent_general" | "agent_sanlam" | "banquier" | "agent_independant";
 
@@ -106,6 +108,10 @@ export const AdminUsersTable = ({ roleFilter }: AdminUsersTableProps) => {
         return userRole === roleFilter;
       })
     : users;
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    filteredUsers,
+    { storageKey: `admin-users-${roleFilter ?? "all"}` },
+  );
 
   const updateUserRole = async (userId: string, newRole: string) => {
     try {
@@ -334,7 +340,7 @@ export const AdminUsersTable = ({ roleFilter }: AdminUsersTableProps) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsers.map((user) => {
+            {pageItems.map((user) => {
               const currentRole = user.user_roles[0]?.role || "customer";
               const isBrokerOrAdmin = currentRole === "broker" || currentRole === "admin";
               const otpEnabled = user.broker_settings?.otp_verification_enabled || false;
@@ -445,6 +451,14 @@ export const AdminUsersTable = ({ roleFilter }: AdminUsersTableProps) => {
           </TableBody>
         </Table>
       </div>
+      <DataTablePagination
+        page={page}
+        pageSize={pageSize}
+        totalItems={totalItems}
+        setPage={setPage}
+        setPageSize={setPageSize}
+        itemLabel="utilisateur"
+      />
     </div>
   );
 };

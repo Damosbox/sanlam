@@ -379,6 +379,7 @@ export const AdminClaimsTable = () => {
               <TableHead>Type</TableHead>
               <TableHead>Police</TableHead>
               <TableHead>Date incident</TableHead>
+              <TableHead>Date déclaration</TableHead>
               <TableHead>Statut</TableHead>
               <TableHead>Courtier</TableHead>
               <TableHead>Estimation</TableHead>
@@ -404,6 +405,9 @@ export const AdminClaimsTable = () => {
                   {claim.incident_date
                     ? new Date(claim.incident_date).toLocaleDateString()
                     : "N/A"}
+                </TableCell>
+                <TableCell>
+                  {new Date(claim.created_at).toLocaleDateString()}
                 </TableCell>
                 <TableCell>{getStatusBadge(claim.status)}</TableCell>
                 <TableCell>

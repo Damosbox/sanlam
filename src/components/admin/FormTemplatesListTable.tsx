@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,8 @@ import { Edit, Trash2, Copy } from "lucide-react";
 import { parseFormStructure } from "@/components/admin/form-builder";
 import { usePagination } from "@/hooks/usePagination";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
+import { exportToCsv, csvDate } from "@/lib/export-csv";
 
 interface FormTemplatesListTableProps {
   onEdit: (formId: string) => void;
@@ -17,6 +20,9 @@ interface FormTemplatesListTableProps {
 
 export const FormTemplatesListTable = ({ onEdit }: FormTemplatesListTableProps) => {
   const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [productFilter, setProductFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("updated_desc");
 
   const { data: templates, isLoading } = useQuery({
     queryKey: ["form-templates"],
@@ -133,7 +139,40 @@ export const FormTemplatesListTable = ({ onEdit }: FormTemplatesListTableProps) 
     return totalSteps;
   };
 
-  const templatesList = templates ?? [];
+  const productTypes = useMemo(
+    () => Array.from(new Set((templates ?? []).map((t: any) => t.product_type).filter(Boolean))),
+    [templates],
+  );
+
+  const templatesList = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const arr = (templates ?? []).filter((t: any) => {
+      if (productFilter !== "all" && t.product_type !== productFilter) return false;
+      if (!q) return true;
+      return (t.name ?? "").toLowerCase().includes(q);
+    });
+    return [...arr].sort((a: any, b: any) => {
+      switch (sortBy) {
+        case "name_asc": return (a.name ?? "").localeCompare(b.name ?? "");
+        case "name_desc": return (b.name ?? "").localeCompare(a.name ?? "");
+        case "updated_asc": return +new Date(a.updated_at ?? a.created_at ?? 0) - +new Date(b.updated_at ?? b.created_at ?? 0);
+        case "updated_desc":
+        default: return +new Date(b.updated_at ?? b.created_at ?? 0) - +new Date(a.updated_at ?? a.created_at ?? 0);
+      }
+    });
+  }, [templates, search, productFilter, sortBy]);
+
+  const handleExport = () => {
+    exportToCsv(
+      "form-templates",
+      ["Nom", "Catégorie", "Type", "Sous-étapes", "Actif", "Mis à jour"],
+      templatesList.map((t: any) => [
+        t.name ?? "", t.category ?? "", t.product_type ?? "",
+        getStepCount(t), t.is_active ? "Oui" : "Non", csvDate(t.updated_at ?? t.created_at),
+      ]),
+    );
+  };
+
   const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
     templatesList,
     { storageKey: "admin-form-templates" },
@@ -165,6 +204,28 @@ export const FormTemplatesListTable = ({ onEdit }: FormTemplatesListTableProps) 
         <CardTitle>Formulaires créés</CardTitle>
       </CardHeader>
       <CardContent>
+        <DataTableToolbar
+          search={{ value: search, onChange: setSearch, placeholder: "Rechercher un formulaire..." }}
+          filters={[
+            {
+              id: "product", label: "Produit", value: productFilter, onChange: setProductFilter,
+              options: [
+                { value: "all", label: "Tous produits" },
+                ...productTypes.map((p) => ({ value: p as string, label: p as string })),
+              ],
+            },
+          ]}
+          sort={{
+            value: sortBy, onChange: setSortBy,
+            options: [
+              { value: "updated_desc", label: "Mise à jour récente" },
+              { value: "updated_asc", label: "Mise à jour ancienne" },
+              { value: "name_asc", label: "Nom A→Z" },
+              { value: "name_desc", label: "Nom Z→A" },
+            ],
+          }}
+          onExport={handleExport}
+        />
         <Table>
           <TableHeader>
             <TableRow>

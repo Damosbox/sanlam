@@ -1,11 +1,9 @@
 import { useMemo, useState } from "react";
-import { Check, X, Search } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +29,8 @@ import { toast } from "sonner";
 import { formatFCFA } from "@/utils/formatCurrency";
 import { usePagination } from "@/hooks/usePagination";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
+import { exportToCsv, csvDate } from "@/lib/export-csv";
 import {
   MOCK_APPROVALS,
   type ApprovalRequest,
@@ -74,6 +74,8 @@ function formatDate(iso: string) {
 export function ApprovalsTable({ source }: Props) {
   const [items, setItems] = useState<ApprovalRequest[]>(MOCK_APPROVALS);
   const [statusFilter, setStatusFilter] = useState<ApprovalStatus | "all">("pending");
+  const [typeFilter, setTypeFilter] = useState<ApprovalType | "all">("all");
+  const [sortBy, setSortBy] = useState<string>("date_desc");
   const [search, setSearch] = useState("");
 
   const [approveTarget, setApproveTarget] = useState<ApprovalRequest | null>(null);
@@ -84,6 +86,7 @@ export function ApprovalsTable({ source }: Props) {
     return items
       .filter((i) => i.source === source)
       .filter((i) => (statusFilter === "all" ? true : i.status === statusFilter))
+      .filter((i) => (typeFilter === "all" ? true : i.type === typeFilter))
       .filter((i) => {
         if (!search.trim()) return true;
         const q = search.toLowerCase();
@@ -93,8 +96,38 @@ export function ApprovalsTable({ source }: Props) {
           i.productName.toLowerCase().includes(q)
         );
       })
-      .sort((a, b) => +new Date(b.requestedAt) - +new Date(a.requestedAt));
-  }, [items, source, statusFilter, search]);
+      .sort((a, b) => {
+        switch (sortBy) {
+          case "date_asc":
+            return +new Date(a.requestedAt) - +new Date(b.requestedAt);
+          case "impact_desc":
+            return (b.impactFcfa ?? 0) - (a.impactFcfa ?? 0);
+          case "impact_asc":
+            return (a.impactFcfa ?? 0) - (b.impactFcfa ?? 0);
+          case "date_desc":
+          default:
+            return +new Date(b.requestedAt) - +new Date(a.requestedAt);
+        }
+      });
+  }, [items, source, statusFilter, typeFilter, search, sortBy]);
+
+  const exportCSV = () => {
+    exportToCsv(
+      `approbations-${source}`,
+      ["ID", "Demandeur", "Client", "Produit", "Type", "Impact (FCFA)", "Valeur véhicule (FCFA)", "Date", "Statut"],
+      filtered.map((r) => [
+        r.id,
+        r.requesterName,
+        r.clientName,
+        r.productName,
+        TYPE_LABEL[r.type],
+        r.impactFcfa,
+        r.vehicleValueFcfa,
+        csvDate(r.requestedAt),
+        STATUS_LABEL[r.status],
+      ]),
+    );
+  };
 
   const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
     filtered,
@@ -147,28 +180,50 @@ export function ApprovalsTable({ source }: Props) {
   return (
     <Card>
       <CardContent className="p-4 sm:p-6 space-y-4">
-        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher client, demandeur, produit…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
-            <SelectTrigger className="w-full sm:w-[200px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pending">En attente</SelectItem>
-              <SelectItem value="approved">Approuvée</SelectItem>
-              <SelectItem value="rejected">Refusée</SelectItem>
-              <SelectItem value="all">Toutes</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <DataTableToolbar
+          search={{
+            value: search,
+            onChange: setSearch,
+            placeholder: "Rechercher client, demandeur, produit…",
+          }}
+          filters={[
+            {
+              id: "status",
+              label: "Statut",
+              value: statusFilter,
+              onChange: (v) => setStatusFilter(v as typeof statusFilter),
+              options: [
+                { value: "pending", label: "En attente" },
+                { value: "approved", label: "Approuvée" },
+                { value: "rejected", label: "Refusée" },
+                { value: "all", label: "Toutes" },
+              ],
+            },
+            {
+              id: "type",
+              label: "Type",
+              value: typeFilter,
+              onChange: (v) => setTypeFilter(v as typeof typeFilter),
+              options: [
+                { value: "all", label: "Tous les types" },
+                { value: "reduction", label: "Réduction" },
+                { value: "bonus", label: "Bonus" },
+                { value: "malus", label: "Malus" },
+              ],
+            },
+          ]}
+          sort={{
+            value: sortBy,
+            onChange: setSortBy,
+            options: [
+              { value: "date_desc", label: "Plus récente" },
+              { value: "date_asc", label: "Plus ancienne" },
+              { value: "impact_desc", label: "Impact ↓" },
+              { value: "impact_asc", label: "Impact ↑" },
+            ],
+          }}
+          onExport={exportCSV}
+        />
 
         <div className="rounded-md border overflow-x-auto">
           <Table>

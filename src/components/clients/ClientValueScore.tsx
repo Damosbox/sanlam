@@ -187,7 +187,7 @@ export const ClientValueScore = ({ clientId, compact = false }: ClientValueScore
   // Progress bar covers the full range [-5..100]; bar fill in % of range
   const range = VF_SCORE_MAX - VF_SCORE_MIN;
   const fillPct = ((scoreGlobal - VF_SCORE_MIN) / range) * 100;
-  const NiveauIcon = niveau ? NIVEAU_ICON[niveau] : Medal;
+  const niveauForIcon: VfNiveau = niveau ?? "bronze";
 
   // ===== Compact view (portfolio table / inline) =====
   if (compact) {
@@ -198,24 +198,29 @@ export const ClientValueScore = ({ clientId, compact = false }: ClientValueScore
             <div className="flex items-center gap-2 cursor-help">
               <Badge
                 variant="outline"
+                aria-label={`${niveau ? VF_NIVEAU_LABEL[niveau] : "—"} — score ${scoreGlobal > 0 ? "+" : ""}${scoreGlobal} sur 100`}
                 className={cn(
-                  "text-xs gap-1",
+                  "group relative text-xs gap-1.5 pl-1.5 pr-2 py-0.5 overflow-hidden transition-colors",
                   niveau && NIVEAU_COLOR[niveau],
                 )}
               >
-                <NiveauIcon className="h-3 w-3" aria-hidden="true" />
-                {niveau ? VF_NIVEAU_LABEL[niveau] : "—"}
+                <MedalIcon niveau={niveauForIcon} size={16} className="shrink-0" />
+                {/* Label par défaut */}
+                <span className="transition-opacity duration-150 group-hover:opacity-0">
+                  {niveau ? VF_NIVEAU_LABEL[niveau] : "—"}
+                </span>
+                {/* Score au hover, superposé pour garder la largeur */}
+                <span
+                  className={cn(
+                    "absolute inset-0 flex items-center justify-center gap-1.5 font-mono font-semibold opacity-0 transition-opacity duration-150 group-hover:opacity-100",
+                    isNegative && "text-destructive",
+                  )}
+                >
+                  <MedalIcon niveau={niveauForIcon} size={14} className="shrink-0" />
+                  {scoreGlobal > 0 ? "+" : ""}
+                  {scoreGlobal}/100
+                </span>
               </Badge>
-              <span
-                className={cn(
-                  "text-xs font-mono font-semibold",
-                  isNegative && "text-destructive",
-                )}
-                aria-label={`Score ${scoreGlobal} sur 100`}
-              >
-                {scoreGlobal > 0 ? "+" : ""}
-                {scoreGlobal}/100
-              </span>
               {score?.vf_is_partial && (
                 <Badge variant="outline" className="text-[10px]">Partiel</Badge>
               )}
@@ -264,7 +269,7 @@ export const ClientValueScore = ({ clientId, compact = false }: ClientValueScore
                         niveau && NIVEAU_COLOR[niveau],
                       )}
                     >
-                      <NiveauIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                      <MedalIcon niveau={niveauForIcon} size={16} />
                       {niveau ? VF_NIVEAU_LABEL[niveau] : "—"}
                     </Badge>
                   </TooltipTrigger>

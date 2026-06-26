@@ -24,6 +24,8 @@ import { CreateUserDialog } from "@/components/admin/CreateUserDialog";
 import { CsvUserImportDialog } from "@/components/admin/CsvUserImportDialog";
 import { usePagination } from "@/hooks/usePagination";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
+import { exportToCsv, csvDate } from "@/lib/export-csv";
 
 type PartnerType = "agent_mandataire" | "courtier" | "agent_general" | "agent_sanlam" | "banquier" | "agent_independant";
 
@@ -51,6 +53,9 @@ export const AdminUsersTable = ({ roleFilter }: AdminUsersTableProps) => {
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [activatingUser, setActivatingUser] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleSubFilter, setRoleSubFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("created_desc");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -101,15 +106,57 @@ export const AdminUsersTable = ({ roleFilter }: AdminUsersTableProps) => {
     }
   };
 
-  // Filter users based on roleFilter prop
-  const filteredUsers = roleFilter
-    ? users.filter((user) => {
-        const userRole = user.user_roles[0]?.role || "customer";
-        return userRole === roleFilter;
-      })
+  // Filter users based on roleFilter prop + toolbar filters
+  const baseUsers = roleFilter
+    ? users.filter((user) => (user.user_roles[0]?.role || "customer") === roleFilter)
     : users;
+  const filteredUsers = baseUsers
+    .filter((u) => {
+      if (roleSubFilter === "all") return true;
+      const r = u.user_roles[0]?.role || "customer";
+      return r === roleSubFilter;
+    })
+    .filter((u) => {
+      if (!searchTerm) return true;
+      const q = searchTerm.toLowerCase();
+      return (
+        (u.display_name ?? "").toLowerCase().includes(q) ||
+        (u.email ?? "").toLowerCase().includes(q) ||
+        (u.first_name ?? "").toLowerCase().includes(q) ||
+        (u.last_name ?? "").toLowerCase().includes(q)
+      );
+    });
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    const name = (u: UserWithRole) =>
+      ([u.first_name, u.last_name].filter(Boolean).join(" ") || u.display_name || "").toLowerCase();
+    switch (sortBy) {
+      case "created_asc":
+        return +new Date(a.created_at) - +new Date(b.created_at);
+      case "name_asc":
+        return name(a).localeCompare(name(b));
+      case "name_desc":
+        return name(b).localeCompare(name(a));
+      case "created_desc":
+      default:
+        return +new Date(b.created_at) - +new Date(a.created_at);
+    }
+  });
+  const exportCSV = () => {
+    exportToCsv(
+      "utilisateurs",
+      ["Prénom", "Nom", "Email", "Rôle", "Type partenaire", "Date création"],
+      sortedUsers.map((u) => [
+        u.first_name ?? "",
+        u.last_name ?? "",
+        u.email ?? "",
+        getRoleLabel(u.user_roles[0]?.role || "customer"),
+        getPartnerTypeLabel(u.partner_type),
+        csvDate(u.created_at),
+      ]),
+    );
+  };
   const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
-    filteredUsers,
+    sortedUsers,
     { storageKey: `admin-users-${roleFilter ?? "all"}` },
   );
 
@@ -313,10 +360,51 @@ export const AdminUsersTable = ({ roleFilter }: AdminUsersTableProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end gap-2">
-        <CsvUserImportDialog onImportComplete={fetchUsers} />
-        <CreateUserDialog onUserCreated={fetchUsers} />
-      </div>
+      <DataTableToolbar
+        search={{
+          value: searchTerm,
+          onChange: setSearchTerm,
+          placeholder: "Rechercher (nom, email)...",
+        }}
+        filters={
+          roleFilter
+            ? []
+            : [
+                {
+                  id: "role",
+                  label: "Rôle",
+                  value: roleSubFilter,
+                  onChange: setRoleSubFilter,
+                  options: [
+                    { value: "all", label: "Tous les rôles" },
+                    { value: "admin", label: "Admin" },
+                    { value: "broker", label: "Agent" },
+                    { value: "backoffice_crc", label: "BackOffice CRC" },
+                    { value: "backoffice_conformite", label: "BackOffice Conformité" },
+                    { value: "compliance", label: "Conformité" },
+                    { value: "customer", label: "Client" },
+                  ],
+                },
+              ]
+        }
+        sort={{
+          value: sortBy,
+          onChange: setSortBy,
+          options: [
+            { value: "created_desc", label: "Création récente" },
+            { value: "created_asc", label: "Création ancienne" },
+            { value: "name_asc", label: "Nom A→Z" },
+            { value: "name_desc", label: "Nom Z→A" },
+          ],
+        }}
+        onExport={exportCSV}
+        extraActions={
+          <>
+            <CsvUserImportDialog onImportComplete={fetchUsers} />
+            <CreateUserDialog onUserCreated={fetchUsers} />
+          </>
+        }
+      />
       <div className="rounded-lg border bg-card">
         <Table>
           <TableHeader>
@@ -438,7 +526,7 @@ export const AdminUsersTable = ({ roleFilter }: AdminUsersTableProps) => {
                 </TableRow>
               );
             })}
-            {filteredUsers.length === 0 && (
+            {sortedUsers.length === 0 && (
               <TableRow>
                 <TableCell 
                   colSpan={showRoleColumn ? 9 : showPartnerTypeColumn ? 7 : 6} 

@@ -383,16 +383,9 @@ export function RenewalsPipelineCard({ scope }: Props) {
                         {r.policy_number}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell py-3">
-                        <div className="flex items-center gap-2">
-                          <span className={cn("text-sm", isExpired && "text-foreground")}>
-                            {format(new Date(r.end_date), "dd/MM/yy")}
-                          </span>
-                          {isExpired && (
-                            <Badge className="bg-foreground text-background hover:bg-foreground text-[10px] px-1.5">
-                              Expiré
-                            </Badge>
-                          )}
-                        </div>
+                        <span className={cn("text-sm", isExpired && "text-foreground")}>
+                          {format(new Date(r.end_date), "dd/MM/yy")}
+                        </span>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell py-3 text-right text-sm font-medium">
                         {formatFCFA(r.premium)}

@@ -55,59 +55,28 @@ const NIVEAU_COLOR: Record<VfNiveau, string> = {
   platine: "text-cyan-800 bg-cyan-50/80 border-cyan-300",
 };
 
-const MEDAL_TIERS: { niveau: VfNiveau; range: string; points: string }[] = [
-  { niveau: "bronze", range: "-5 → 39", points: "Palier d'entrée" },
-  { niveau: "argent", range: "40 → 64", points: "+40 pts depuis Bronze" },
-  { niveau: "or", range: "65 → 79", points: "+25 pts depuis Argent" },
-  { niveau: "platine", range: "80 → 100", points: "+15 pts depuis Or" },
-];
-
 const MedalTooltipContent = ({
-  current,
   scoreGlobal,
 }: {
-  current: VfNiveau | null;
+  current?: VfNiveau | null;
   scoreGlobal?: number;
 }) => (
-  <div className="space-y-2 p-1 min-w-[200px]">
-    <div className="flex items-center justify-between gap-3 border-b pb-2">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-        Paliers de fidélité
-      </p>
-      {typeof scoreGlobal === "number" && (
+  <div className="p-2 flex items-baseline justify-center gap-1">
+    {typeof scoreGlobal === "number" ? (
+      <>
         <span
           className={cn(
-            "font-mono font-bold text-base leading-none tabular-nums",
+            "font-mono font-bold text-2xl leading-none tabular-nums",
             scoreGlobal < 0 ? "text-destructive" : "text-primary",
           )}
         >
-          {scoreGlobal > 0 ? "+" : ""}
           {scoreGlobal}
-          <span className="text-[11px] font-medium text-muted-foreground">/100</span>
         </span>
-      )}
-    </div>
-    <div className="space-y-1.5">
-      {MEDAL_TIERS.map((tier) => {
-        const isCurrent = current === tier.niveau;
-        return (
-          <div
-            key={tier.niveau}
-            className={cn(
-              "flex items-center justify-between gap-3 rounded-md border px-2 py-1.5 text-xs",
-              NIVEAU_COLOR[tier.niveau],
-              isCurrent && "ring-2 ring-primary/40",
-            )}
-          >
-            <span className="flex items-center gap-1.5 font-medium">
-              <MedalIcon niveau={tier.niveau} size={14} />
-              {VF_NIVEAU_LABEL[tier.niveau]}
-            </span>
-            <span className="font-mono text-[11px]">{tier.range}</span>
-          </div>
-        );
-      })}
-    </div>
+        <span className="text-xs font-medium text-muted-foreground">/100</span>
+      </>
+    ) : (
+      <span className="text-xs text-muted-foreground">Score indisponible</span>
+    )}
   </div>
 );
 
@@ -141,6 +110,12 @@ export const ClientValueScore = ({ clientId, compact = false }: ClientValueScore
     role === "admin" ||
     role === "backoffice_crc" ||
     role === "backoffice_conformite";
+
+  const canManageScore =
+    role === "admin" ||
+    role === "backoffice_crc" ||
+    role === "backoffice_conformite" ||
+    role === "compliance";
 
   if (isLoading) {
     return (
@@ -362,34 +337,40 @@ export const ClientValueScore = ({ clientId, compact = false }: ClientValueScore
             </p>
           ) : null}
 
-          <div className="flex flex-wrap gap-2 pt-1">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => recalc.mutate({ clientId, trigger: "manual" })}
-              disabled={recalc.isPending}
-            >
-              <RefreshCw
-                className={cn("h-3.5 w-3.5 mr-1.5", recalc.isPending && "animate-spin")}
-                aria-hidden="true"
-              />
-              Recalculer
-            </Button>
-            <Button size="sm" onClick={() => setActionOpen(true)}>
-              <Plus className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
-              Action ponctuelle
-            </Button>
-            {canRequestOverride && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setOverrideOpen(true)}
-              >
-                <Pencil className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
-                Demander modification
-              </Button>
-            )}
-          </div>
+          {(canManageScore || canRequestOverride) && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {canManageScore && (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => recalc.mutate({ clientId, trigger: "manual" })}
+                    disabled={recalc.isPending}
+                  >
+                    <RefreshCw
+                      className={cn("h-3.5 w-3.5 mr-1.5", recalc.isPending && "animate-spin")}
+                      aria-hidden="true"
+                    />
+                    Recalculer
+                  </Button>
+                  <Button size="sm" onClick={() => setActionOpen(true)}>
+                    <Plus className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
+                    Action ponctuelle
+                  </Button>
+                </>
+              )}
+              {canRequestOverride && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setOverrideOpen(true)}
+                >
+                  <Pencil className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" />
+                  Demander modification
+                </Button>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 

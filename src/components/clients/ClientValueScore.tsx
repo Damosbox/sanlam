@@ -220,7 +220,6 @@ export const ClientValueScore = ({ clientId, compact = false }: ClientValueScore
                     isNegative ? "text-destructive" : "text-primary",
                   )}
                 >
-                  {scoreGlobal > 0 ? "+" : ""}
                   {scoreGlobal}
                 </span>
                 <span className="text-lg text-muted-foreground">/ 100</span>

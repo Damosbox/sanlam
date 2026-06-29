@@ -2,6 +2,7 @@ import { Sparkles } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScoringJobMonitor } from "@/components/admin/scoring/ScoringJobMonitor";
 import { ScoringManualOverrideTable } from "@/components/admin/scoring/ScoringManualOverrideTable";
+import { ScoringTiersGuide } from "@/components/admin/scoring/ScoringTiersGuide";
 
 export default function ScoringPage() {
   return (
@@ -23,10 +24,14 @@ export default function ScoringPage() {
       <Tabs defaultValue="monitoring">
         <TabsList>
           <TabsTrigger value="monitoring">Monitoring du job</TabsTrigger>
+          <TabsTrigger value="tiers">Paliers & badges</TabsTrigger>
           <TabsTrigger value="override">Modifications manuelles</TabsTrigger>
         </TabsList>
         <TabsContent value="monitoring" className="mt-4">
           <ScoringJobMonitor />
+        </TabsContent>
+        <TabsContent value="tiers" className="mt-4">
+          <ScoringTiersGuide />
         </TabsContent>
         <TabsContent value="override" className="mt-4">
           <ScoringManualOverrideTable />

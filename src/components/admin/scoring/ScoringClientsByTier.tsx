@@ -1,16 +1,16 @@
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Search } from "lucide-react";
 import { useAdminClients } from "@/hooks/useAdminClients";
 import { MedalIcon } from "@/components/clients/MedalIcon";
 import { VF_NIVEAU_LABEL, type VfNiveau } from "@/lib/scoring/vfV2";
 import { usePagination } from "@/hooks/usePagination";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
+import { exportToCsv, csvDate } from "@/lib/export-csv";
 
 // Same deterministic mock as useClientScore (prototype only)
 function hashString(str: string): number {
@@ -47,6 +47,9 @@ export const ScoringClientsByTier = () => {
   const { data: rows = [], isLoading } = useAdminClients();
   const [search, setSearch] = useState("");
   const [tierFilter, setTierFilter] = useState<VfNiveau | "all">("all");
+  const [agentFilter, setAgentFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sort, setSort] = useState<string>("score-desc");
 
   const scored = useMemo(
     () => rows.map((r) => ({ ...r, ...scoreFor(r.id) })),
@@ -59,17 +62,46 @@ export const ScoringClientsByTier = () => {
     return c;
   }, [scored]);
 
+  const agentOptions = useMemo(() => {
+    const set = new Map<string, string>();
+    scored.forEach((r) => {
+      if (r.broker_id && r.broker_name) set.set(r.broker_id, r.broker_name);
+    });
+    return [
+      { value: "all", label: "Tous les agents" },
+      { value: "none", label: "Sans agent" },
+      ...Array.from(set.entries()).map(([value, label]) => ({ value, label })),
+    ];
+  }, [scored]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return scored
       .filter((r) => tierFilter === "all" || r.niveau === tierFilter)
       .filter((r) => {
+        if (agentFilter === "all") return true;
+        if (agentFilter === "none") return !r.broker_id;
+        return r.broker_id === agentFilter;
+      })
+      .filter((r) => statusFilter === "all" || r.status === statusFilter)
+      .filter((r) => {
         if (!q) return true;
         const name = (r.display_name || [r.first_name, r.last_name].filter(Boolean).join(" ") || "").toLowerCase();
         return name.includes(q) || (r.email || "").toLowerCase().includes(q);
       })
-      .sort((a, b) => b.score - a.score);
-  }, [scored, search, tierFilter]);
+      .sort((a, b) => {
+        const nameA = (a.display_name || [a.first_name, a.last_name].filter(Boolean).join(" ") || "").toLowerCase();
+        const nameB = (b.display_name || [b.first_name, b.last_name].filter(Boolean).join(" ") || "").toLowerCase();
+        switch (sort) {
+          case "score-asc": return a.score - b.score;
+          case "name-asc": return nameA.localeCompare(nameB);
+          case "name-desc": return nameB.localeCompare(nameA);
+          case "recent": return +new Date(b.created_at) - +new Date(a.created_at);
+          case "score-desc":
+          default: return b.score - a.score;
+        }
+      });
+  }, [scored, search, tierFilter, agentFilter, statusFilter, sort]);
 
   const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
     filtered,
@@ -77,6 +109,21 @@ export const ScoringClientsByTier = () => {
   );
 
   const tiers: VfNiveau[] = ["platine", "or", "argent", "bronze"];
+
+  const handleExport = () => {
+    exportToCsv(
+      `scoring-clients-${tierFilter}`,
+      ["Créé le", "Client", "Email", "Agent", "Palier", "Score"],
+      filtered.map((r) => [
+        csvDate(r.created_at),
+        r.display_name || [r.first_name, r.last_name].filter(Boolean).join(" ") || "",
+        r.email || "",
+        r.broker_name || "",
+        VF_NIVEAU_LABEL[r.niveau],
+        `${r.score}/100`,
+      ]),
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -102,25 +149,67 @@ export const ScoringClientsByTier = () => {
 
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <CardTitle className="text-base">
-              Clients par palier
-              {tierFilter !== "all" && (
-                <Badge variant="outline" className="ml-2">{VF_NIVEAU_LABEL[tierFilter]}</Badge>
-              )}
-            </CardTitle>
-            <div className="relative w-72 max-w-full">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Rechercher un client..."
-                className="pl-8"
-              />
-            </div>
-          </div>
+          <CardTitle className="text-base">
+            Clients par palier
+            {tierFilter !== "all" && (
+              <Badge variant="outline" className="ml-2">{VF_NIVEAU_LABEL[tierFilter]}</Badge>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          <DataTableToolbar
+            search={{
+              value: search,
+              onChange: setSearch,
+              placeholder: "Rechercher (nom, email)...",
+            }}
+            filters={[
+              {
+                id: "tier",
+                label: "Palier",
+                value: tierFilter,
+                onChange: (v) => setTierFilter(v as VfNiveau | "all"),
+                options: [
+                  { value: "all", label: "Tous les paliers" },
+                  { value: "platine", label: "Platine" },
+                  { value: "or", label: "Or" },
+                  { value: "argent", label: "Argent" },
+                  { value: "bronze", label: "Bronze" },
+                ],
+              },
+              {
+                id: "agent",
+                label: "Agent",
+                value: agentFilter,
+                onChange: setAgentFilter,
+                options: agentOptions,
+              },
+              {
+                id: "status",
+                label: "Statut",
+                value: statusFilter,
+                onChange: setStatusFilter,
+                options: [
+                  { value: "all", label: "Tous les statuts" },
+                  { value: "active", label: "Client actif" },
+                  { value: "user", label: "Utilisateur" },
+                  { value: "no_account", label: "Sans compte" },
+                ],
+              },
+            ]}
+            sort={{
+              value: sort,
+              onChange: setSort,
+              options: [
+                { value: "score-desc", label: "Score (décroissant)" },
+                { value: "score-asc", label: "Score (croissant)" },
+                { value: "name-asc", label: "Nom (A → Z)" },
+                { value: "name-desc", label: "Nom (Z → A)" },
+                { value: "recent", label: "Plus récents" },
+              ],
+            }}
+            onExport={handleExport}
+          />
           <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>

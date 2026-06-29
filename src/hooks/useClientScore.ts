@@ -18,21 +18,63 @@ export interface ClientVfScore {
   calculated_at: string | null;
 }
 
+// ⚠️ PROTOTYPE — score de fidélité 100 % mocké (déterministe par clientId).
+// Aucune lecture/écriture en base : on génère un score stable à partir d'un
+// hash du clientId pour qu'un même client garde toujours la même médaille.
+function hashString(str: string): number {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = (h << 5) - h + str.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+}
+
+function mockScoreFor(clientId: string): ClientVfScore {
+  const h = hashString(clientId);
+  // Distribution des paliers pour le prototype : bronze / argent / or / platine
+  const buckets: Array<{ niveau: ClientVfScore["vf_niveau"]; min: number; max: number }> = [
+    { niveau: "bronze", min: 15, max: 38 },
+    { niveau: "argent", min: 45, max: 62 },
+    { niveau: "or", min: 68, max: 78 },
+    { niveau: "platine", min: 82, max: 95 },
+  ];
+  const bucket = buckets[h % buckets.length];
+  const span = bucket.max - bucket.min + 1;
+  const score = bucket.min + (Math.floor(h / 7) % span);
+
+  // Sous-scores cohérents (somme ≈ score) — purement décoratifs.
+  const sa = Math.min(20, Math.max(5, Math.round(score * 0.2)));
+  const sp = Math.min(30, Math.max(5, Math.round(score * 0.3)));
+  const sm = Math.min(20, Math.max(0, Math.round(score * 0.2)));
+  const ss = score >= 60 ? 15 : score >= 40 ? 5 : 0;
+  const sap = Math.max(0, score - (sa + sp + sm + ss));
+
+  return {
+    vf_score_global: score,
+    vf_niveau: bucket.niveau,
+    vf_score_anciennete: sa,
+    vf_score_prime: sp,
+    vf_score_multi_equipements: sm,
+    vf_score_sinistre: ss,
+    vf_score_action_ponctuelle: Math.min(15, sap),
+    vf_is_partial: false,
+    vf_missing_fields: [],
+    vf_manual_override: false,
+    vf_kyc_flag: false,
+    vf_last_recalc_source: "mock",
+    calculated_at: new Date().toISOString(),
+  };
+}
+
 export function useClientScore(clientId: string | undefined) {
   return useQuery({
-    queryKey: ["client-score-vf", clientId],
+    queryKey: ["client-score-vf-mock", clientId],
     enabled: !!clientId,
+    staleTime: Infinity,
     queryFn: async (): Promise<ClientVfScore | null> => {
-      const { data, error } = await supabase
-        .from("client_scores")
-        .select(
-          "vf_score_global, vf_niveau, vf_score_anciennete, vf_score_prime, vf_score_multi_equipements, vf_score_sinistre, vf_score_action_ponctuelle, vf_is_partial, vf_missing_fields, vf_manual_override, vf_kyc_flag, vf_last_recalc_source, calculated_at",
-        )
-        .eq("client_id", clientId!)
-        .eq("product_type", "all")
-        .maybeSingle();
-      if (error) throw error;
-      return (data as any) ?? null;
+      if (!clientId) return null;
+      return mockScoreFor(clientId);
     },
   });
 }

@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScoringJobMonitor } from "@/components/admin/scoring/ScoringJobMonitor";
 import { ScoringManualOverrideTable } from "@/components/admin/scoring/ScoringManualOverrideTable";
 import { ScoringTiersGuide } from "@/components/admin/scoring/ScoringTiersGuide";
+import { ScoringClientsByTier } from "@/components/admin/scoring/ScoringClientsByTier";
 
 export default function ScoringPage() {
   return (
@@ -25,6 +26,7 @@ export default function ScoringPage() {
         <TabsList>
           <TabsTrigger value="monitoring">Monitoring du job</TabsTrigger>
           <TabsTrigger value="tiers">Paliers & badges</TabsTrigger>
+          <TabsTrigger value="clients">Clients par palier</TabsTrigger>
           <TabsTrigger value="override">Modifications manuelles</TabsTrigger>
         </TabsList>
         <TabsContent value="monitoring" className="mt-4">
@@ -32,6 +34,9 @@ export default function ScoringPage() {
         </TabsContent>
         <TabsContent value="tiers" className="mt-4">
           <ScoringTiersGuide />
+        </TabsContent>
+        <TabsContent value="clients" className="mt-4">
+          <ScoringClientsByTier />
         </TabsContent>
         <TabsContent value="override" className="mt-4">
           <ScoringManualOverrideTable />

@@ -111,14 +111,18 @@ export const ScoringClientsByTier = () => {
   const tiers: VfNiveau[] = ["platine", "or", "argent", "bronze"];
 
   const handleExport = () => {
-    exportToCsv(`scoring-clients-${tierFilter}.csv`, filtered, [
-      { header: "Créé le", value: (r) => csvDate(r.created_at) },
-      { header: "Client", value: (r) => r.display_name || [r.first_name, r.last_name].filter(Boolean).join(" ") || "" },
-      { header: "Email", value: (r) => r.email || "" },
-      { header: "Agent", value: (r) => r.broker_name || "" },
-      { header: "Palier", value: (r) => VF_NIVEAU_LABEL[r.niveau] },
-      { header: "Score", value: (r) => `${r.score}/100` },
-    ]);
+    exportToCsv(
+      `scoring-clients-${tierFilter}`,
+      ["Créé le", "Client", "Email", "Agent", "Palier", "Score"],
+      filtered.map((r) => [
+        csvDate(r.created_at),
+        r.display_name || [r.first_name, r.last_name].filter(Boolean).join(" ") || "",
+        r.email || "",
+        r.broker_name || "",
+        VF_NIVEAU_LABEL[r.niveau],
+        `${r.score}/100`,
+      ]),
+    );
   };
 
   return (

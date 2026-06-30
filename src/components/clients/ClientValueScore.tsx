@@ -41,6 +41,7 @@ import { ScoringHistoryList } from "./ScoringHistoryList";
 import { ManualOverrideRequestDialog } from "@/components/admin/scoring/ManualOverrideRequestDialog";
 import { Pencil } from "lucide-react";
 import { MedalIcon } from "./MedalIcon";
+import { useLocation } from "react-router-dom";
 
 interface ClientValueScoreProps {
   clientId: string;
@@ -96,6 +97,8 @@ export const ClientValueScore = ({ clientId, compact = false }: ClientValueScore
     supabase.auth.getUser().then(({ data }) => setUser(data.user ?? null));
   }, []);
   const { role } = useUserRole(user);
+  const location = useLocation();
+  const isB2B = location.pathname.startsWith("/b2b");
   const [actionOpen, setActionOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [overrideOpen, setOverrideOpen] = useState(false);
@@ -112,10 +115,10 @@ export const ClientValueScore = ({ clientId, compact = false }: ClientValueScore
     role === "backoffice_conformite";
 
   const canManageScore =
-    role === "admin" ||
-    role === "backoffice_crc" ||
-    role === "backoffice_conformite" ||
-    role === "compliance";
+    !isB2B &&
+    (role === "admin" ||
+      role === "backoffice_crc" ||
+      role === "backoffice_conformite");
 
   if (isLoading) {
     return (

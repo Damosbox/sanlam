@@ -22,11 +22,7 @@ const TIERS: Tier[] = [
     min: 0,
     max: 39,
     tagline: "Client en démarrage de relation",
-    perks: [
-      "Suivi standard et communications commerciales",
-      "Aucune remise automatique au renouvellement",
-      "Cible prioritaire pour montée en gamme",
-    ],
+    perks: ["Cadeaux basiques"],
     color: "from-amber-100 to-amber-50 border-amber-200",
   },
   {
@@ -36,11 +32,7 @@ const TIERS: Tier[] = [
     min: 40,
     max: 64,
     tagline: "Client fidèle, relation établie",
-    perks: [
-      "Accès aux offres multi-équipement",
-      "Bonus de renouvellement jusqu'à 3 %",
-      "Notifications prioritaires WhatsApp",
-    ],
+    perks: ["Remise 5 %"],
     color: "from-zinc-100 to-zinc-50 border-zinc-200",
   },
   {
@@ -50,11 +42,7 @@ const TIERS: Tier[] = [
     min: 65,
     max: 79,
     tagline: "Client à forte valeur",
-    perks: [
-      "Bonus de renouvellement jusqu'à 7 %",
-      "Traitement sinistre accéléré",
-      "Invitations événements partenaires",
-    ],
+    perks: ["Remise 10 %", "Conseiller dédié"],
     color: "from-yellow-100 to-yellow-50 border-yellow-200",
   },
   {
@@ -64,11 +52,7 @@ const TIERS: Tier[] = [
     min: 80,
     max: 100,
     tagline: "Client VIP, ambassadeur",
-    perks: [
-      "Bonus de renouvellement jusqu'à 12 %",
-      "Conseiller dédié et hotline prioritaire",
-      "Cadeaux fidélité annuels",
-    ],
+    perks: ["Renouvellement offert", "Remise 25 %"],
     color: "from-cyan-100 to-cyan-50 border-cyan-200",
   },
 ];
@@ -80,10 +64,10 @@ export function ScoringTiersGuide() {
         <CardHeader>
           <CardTitle className="text-base">Comment fonctionnent les paliers ?</CardTitle>
           <CardDescription>
-            Chaque client reçoit un score sur 100 (moteur VF_v2) basé sur l'ancienneté, la prime
-            cumulée, le multi-équipement et la sinistralité. Le score le place automatiquement
-            dans l'un des 4 paliers ci-dessous, qui déterminent les avantages au renouvellement
-            et le niveau de service associé.
+            Chaque client reçoit un score (moteur VF_v2) basé sur l'ancienneté, la prime cumulée,
+            le multi-équipement et la sinistralité. Plage totale : <strong>-5 à 100</strong>
+            (scores négatifs autorisés pour les clients à risque). Le score place automatiquement
+            le client dans l'un des 4 paliers ci-dessous.
           </CardDescription>
         </CardHeader>
       </Card>

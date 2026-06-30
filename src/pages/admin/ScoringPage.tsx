@@ -22,21 +22,21 @@ export default function ScoringPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="monitoring">
+      <Tabs defaultValue="tiers">
         <TabsList>
-          <TabsTrigger value="monitoring">Monitoring du job</TabsTrigger>
           <TabsTrigger value="tiers">Paliers & badges</TabsTrigger>
           <TabsTrigger value="clients">Clients par palier</TabsTrigger>
+          <TabsTrigger value="monitoring">Monitoring du job</TabsTrigger>
           <TabsTrigger value="override">Modifications manuelles</TabsTrigger>
         </TabsList>
-        <TabsContent value="monitoring" className="mt-4">
-          <ScoringJobMonitor />
-        </TabsContent>
         <TabsContent value="tiers" className="mt-4">
           <ScoringTiersGuide />
         </TabsContent>
         <TabsContent value="clients" className="mt-4">
           <ScoringClientsByTier />
+        </TabsContent>
+        <TabsContent value="monitoring" className="mt-4">
+          <ScoringJobMonitor />
         </TabsContent>
         <TabsContent value="override" className="mt-4">
           <ScoringManualOverrideTable />

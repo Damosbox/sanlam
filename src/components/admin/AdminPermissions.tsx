@@ -20,12 +20,18 @@ interface RolePermission {
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrateur",
-  broker: "Courtier",
+  backoffice_conformite: "BO Conformité",
+  backoffice_crc: "BO CRC",
+  compliance: "Conformité",
+  broker: "Agent",
   customer: "Client",
 };
 
 const ROLE_COLORS: Record<string, string> = {
   admin: "bg-red-500",
+  backoffice_conformite: "bg-violet-500",
+  backoffice_crc: "bg-orange-500",
+  compliance: "bg-purple-500",
   broker: "bg-blue-500",
   customer: "bg-green-500",
 };
@@ -47,7 +53,7 @@ export const AdminPermissions = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
 
-  const roles: Array<"admin" | "broker" | "customer"> = ["admin", "broker", "customer"];
+  const roles: Array<"admin" | "backoffice_conformite" | "backoffice_crc" | "compliance" | "broker" | "customer"> = ["admin", "backoffice_conformite", "backoffice_crc", "compliance", "broker", "customer"];
 
   useEffect(() => {
     fetchData();
@@ -79,7 +85,7 @@ export const AdminPermissions = () => {
     );
   };
 
-  const togglePermission = async (role: "admin" | "broker" | "customer", permissionId: string) => {
+  const togglePermission = async (role: string, permissionId: string) => {
     const key = `${role}-${permissionId}`;
     setUpdating(key);
 
@@ -90,7 +96,7 @@ export const AdminPermissions = () => {
         const { error } = await supabase
           .from("role_permissions")
           .delete()
-          .eq("role", role)
+          .eq("role", role as any)
           .eq("permission_id", permissionId);
 
         if (error) throw error;
@@ -104,7 +110,7 @@ export const AdminPermissions = () => {
       } else {
         const { data, error } = await supabase
           .from("role_permissions")
-          .insert({ role: role, permission_id: permissionId })
+          .insert({ role: role as any, permission_id: permissionId })
           .select()
           .single();
 

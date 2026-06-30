@@ -78,7 +78,6 @@ const PLAN_COVERAGES: Record<PlanTier, string[]> = {
   medium_plus: ["recours_anticipe", "incendie", "vol", "vol_accessoires", "brisGlaces"],
   evolution: ["recours_anticipe", "incendie", "vol", "vol_accessoires", "brisGlaces", "dommages"],
   evolution_plus: ["recours_anticipe", "incendie", "vol", "vol_accessoires", "brisGlaces", "tiersCollision"],
-  supreme: ["recours_anticipe", "incendie", "vol", "vol_accessoires", "brisGlaces", "dommages"],
 };
 
 // Constantes fiscales CIMA
@@ -103,12 +102,12 @@ const FRACTIONNEMENT_COEFFICIENTS: Record<ContractPeriodicity, number> = {
 const FGA_RATE = 0.02;           // 2% du RC (Responsabilité Civile)
 const CEDEAO_FEE = 1000;         // Carte brune CEDEAO: 1 000 FCFA
 
-// Tarifs d'assistance
+// Tarifs d'assistance (barème Excel mars 2026)
 const ASSISTANCE_PRICES: Record<string, number> = {
   "avantage": 0,       // Gratuit
-  "confort": 43510,    // 43 510 FCFA
-  "relax": 62975,      // 62 975 FCFA
-  "liberte": 91600,    // 91 600 FCFA
+  "confort": 38000,    // 38 000 FCFA
+  "relax": 55000,      // 55 000 FCFA
+  "liberte": 80000,    // 80 000 FCFA
 };
 
 const getFiscalPowerRange = (power: number): string => {

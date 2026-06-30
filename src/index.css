@@ -64,6 +64,21 @@
     --sidebar-accent-foreground: 207 17% 25%;
     --sidebar-border: 214 32% 91%;
     --sidebar-ring: 203 100% 39%;
+
+    /* Broker sidebar surface — very light tinted off-white, a touch darker
+       than the page background to subtly detach the nav from content. */
+    --sidebar-broker: 220 22% 96.5%;
+
+    /* Admin sidebar override — deep Allianz/Sanlam navy with WCAG AA/AAA
+       contrast for menu text, labels, hover and active states. */
+    --sidebar-admin-background: 212 100% 13%;
+    --sidebar-admin-foreground: 210 40% 98%;
+    --sidebar-admin-primary: 42 100% 49%;
+    --sidebar-admin-primary-foreground: 212 100% 13%;
+    --sidebar-admin-accent: 203 100% 24%;
+    --sidebar-admin-accent-foreground: 210 40% 98%;
+    --sidebar-admin-border: 203 80% 32%;
+    --sidebar-admin-ring: 42 100% 49%;
     
     /* Gradients */
     --gradient-activated: linear-gradient(135deg, hsl(var(--sanlam-blue)), hsl(var(--allianz-blue)));
@@ -105,6 +120,8 @@
     --border: 207 17% 25%;
     --input: 207 17% 25%;
     --ring: 203 100% 45%;
+
+    --sidebar-broker: 207 17% 17%;
   }
 }
 
@@ -113,11 +130,16 @@
     @apply border-border;
   }
 
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.25) transparent;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: 'Allianz Neo', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   }
-  
+
   h1, h2, h3, h4, h5, h6 {
     font-weight: 700;
     letter-spacing: -0.02em;
@@ -152,6 +174,42 @@
   .transition-base {
     transition: var(--transition-base);
   }
+
+  /* Admin sidebar scope — remaps the shadcn sidebar tokens to the
+     dark Sanlam navy palette so the admin space is visually distinct
+     from the broker space without touching the sidebar component. */
+  .sidebar-admin,
+  .sidebar-admin [data-sidebar="sidebar"] {
+    --sidebar-background: var(--sidebar-admin-background);
+    --sidebar-foreground: var(--sidebar-admin-foreground);
+    --sidebar-primary: var(--sidebar-admin-primary);
+    --sidebar-primary-foreground: var(--sidebar-admin-primary-foreground);
+    --sidebar-accent: var(--sidebar-admin-accent);
+    --sidebar-accent-foreground: var(--sidebar-admin-accent-foreground);
+    --sidebar-border: var(--sidebar-admin-border);
+    --sidebar-ring: var(--sidebar-admin-ring);
+  }
+
+  .sidebar-admin [data-sidebar="menu-button"] {
+    color: hsl(var(--sidebar-foreground));
+  }
+
+  .sidebar-admin [data-sidebar="menu-button"]:hover,
+  .sidebar-admin [data-sidebar="menu-button"][data-active="true"] {
+    color: hsl(var(--sidebar-accent-foreground));
+  }
+
+  .sidebar-admin [data-sidebar="footer"] button {
+    background: transparent;
+    border-color: hsl(var(--sidebar-border));
+    color: hsl(var(--sidebar-foreground));
+  }
+
+  .sidebar-admin [data-sidebar="footer"] button:hover {
+    background: hsl(var(--sidebar-accent));
+    border-color: hsl(var(--sidebar-primary));
+    color: hsl(var(--sidebar-accent-foreground));
+  }
   
   .transition-smooth {
     transition: var(--transition-smooth);
@@ -162,5 +220,23 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+
+  /* ── Ultra-minimal scrollbar ── */
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.25);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.4);
   }
 }

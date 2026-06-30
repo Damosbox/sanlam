@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ import { FormSubStepEditor } from "./FormSubStepEditor";
 import { FormFieldLibrary, FieldConfig, FieldType } from "../FormFieldLibrary";
 import { FormFieldEditor } from "../FormFieldEditor";
 import type { CalcRuleParameter } from "../calc-rules/types";
+import { OCR_KEYS_BY_TYPE, OcrDocumentType, getDefaultFieldType, getDefaultSelectOptions } from "@/constants/ocrDocumentKeys";
 
 interface FormPhaseEditorProps {
   structure: FormStructure;
@@ -206,6 +207,61 @@ export function FormPhaseEditor({ structure, onChange, productId }: FormPhaseEdi
     setSelectedFieldId(newField.id);
   };
 
+  // Handle OCR selection changes — auto-generate/remove fields AND update file field mappings atomically
+  const handleOcrSelectionChange = useCallback((documentType: OcrDocumentType, selectedKeys: string[], fileFieldId: string) => {
+    if (!currentPhase || !selectedStepId) return;
+
+    const step = currentPhase.steps.find((s) => s.id === selectedStepId);
+    if (!step || step.type !== "fields") return;
+
+    const existingFields = step.fields || [];
+    const selectedSet = new Set(selectedKeys);
+
+    // Remove OCR fields that are no longer selected
+    const filteredFields = existingFields.filter(
+      (f) => f.sourceType !== "ocr" || !f.ocrDataKey || selectedSet.has(f.ocrDataKey)
+    );
+
+    // Update the file field's ocrConfig.mappings in the same update
+    const updatedFields = filteredFields.map((f) => {
+      if (f.id === fileFieldId && f.ocrConfig) {
+        return {
+          ...f,
+          ocrConfig: {
+            ...f.ocrConfig,
+            mappings: selectedKeys.map((k) => ({ ocrKey: k })),
+          },
+        };
+      }
+      return f;
+    });
+
+    // Add new OCR fields that don't exist yet
+    const existingOcrKeys = new Set(updatedFields.filter((f) => f.sourceType === "ocr" && f.ocrDataKey).map((f) => f.ocrDataKey!));
+    const keys = OCR_KEYS_BY_TYPE[documentType] || [];
+    const newFields: FieldConfig[] = selectedKeys
+      .filter((k) => !existingOcrKeys.has(k))
+      .map((k) => {
+        const keyDef = keys.find((kd) => kd.key === k);
+        const fieldType = getDefaultFieldType(k);
+        const options = getDefaultSelectOptions(k);
+        return {
+          id: `ocr_${k}`,
+          type: fieldType,
+          label: keyDef?.label || k,
+          required: false,
+          locked: true,
+          sourceType: "ocr" as const,
+          ocrDataKey: k,
+          ...(options ? { options } : {}),
+        };
+      });
+
+    updateSubStep(activePhase, selectedStepId, {
+      fields: [...updatedFields, ...newFields],
+    });
+  }, [currentPhase, selectedStepId, activePhase]);
+
   const getDefaultLabel = (type: FieldType): string => {
     const labels: Record<FieldType, string> = {
       text: "Champ texte",
@@ -239,21 +295,32 @@ export function FormPhaseEditor({ structure, onChange, productId }: FormPhaseEdi
     });
   };
 
-  // Supprimer un champ
+  // Supprimer un champ (+ cascade delete OCR children if it's a file field)
   const removeField = (fieldId: string) => {
     if (!currentPhase || !selectedStepId) return;
-    // Don't allow removing locked fields
     const field = displayFields?.find((f) => f.id === fieldId);
-    if (field?.locked) return;
+    // Don't allow removing calc-rule locked fields (OCR locked fields can be removed)
+    if (field?.locked && field?.sourceType !== "ocr") return;
 
     const step = currentPhase.steps.find((s) => s.id === selectedStepId);
     if (!step || !step.fields) return;
 
+    // If it's a file field with OCR, also remove all its OCR child fields
+    let fieldsToRemove = new Set([fieldId]);
+    if (field?.type === "file" && field.isOcr && field.ocrConfig?.mappings) {
+      const ocrKeys = field.ocrConfig.mappings.map((m: any) => m.ocrKey);
+      step.fields.forEach((f) => {
+        if (f.sourceType === "ocr" && f.ocrDataKey && ocrKeys.includes(f.ocrDataKey)) {
+          fieldsToRemove.add(f.id);
+        }
+      });
+    }
+
     updateSubStep(activePhase, selectedStepId, {
-      fields: step.fields.filter((f) => f.id !== fieldId),
+      fields: step.fields.filter((f) => !fieldsToRemove.has(f.id)),
     });
 
-    if (selectedFieldId === fieldId) {
+    if (fieldsToRemove.has(selectedFieldId || "")) {
       setSelectedFieldId(null);
     }
   };
@@ -414,7 +481,7 @@ export function FormPhaseEditor({ structure, onChange, productId }: FormPhaseEdi
       </div>
 
       {/* Éditeur principal */}
-      <div className="col-span-6 border rounded-lg overflow-hidden">
+      <div className="col-span-5 border rounded-lg overflow-hidden">
         <div className="bg-muted/50 p-3 border-b flex items-center justify-between">
           <div className="flex items-center gap-2">
             {currentPhase && getPhaseIcon(currentPhase.id)}
@@ -452,15 +519,15 @@ export function FormPhaseEditor({ structure, onChange, productId }: FormPhaseEdi
       </div>
 
       {/* Panneau de droite - Bibliothèque ou Éditeur de champ */}
-      <div className="col-span-3 space-y-4">
+      <div className="col-span-4 space-y-4">
         {/* Bibliothèque de champs (visible si étape de type "fields") */}
         {currentStep?.type === "fields" && (
-          <Card className="h-[280px]">
+          <Card className="h-[260px]">
             <CardHeader className="py-3">
               <CardTitle className="text-sm">Bibliothèque de champs</CardTitle>
             </CardHeader>
             <CardContent className="p-2">
-              <ScrollArea className="h-[200px]">
+              <ScrollArea className="h-[180px]">
                 <FormFieldLibrary onAddField={addFieldToStep} />
               </ScrollArea>
             </CardContent>
@@ -468,17 +535,18 @@ export function FormPhaseEditor({ structure, onChange, productId }: FormPhaseEdi
         )}
 
         {/* Éditeur de champ */}
-        <Card className={currentStep?.type === "fields" ? "h-[300px]" : "h-[580px]"}>
+        <Card className={currentStep?.type === "fields" ? "h-[320px]" : "h-[580px]"}>
           <CardHeader className="py-3">
             <CardTitle className="text-sm">Configuration</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <ScrollArea className={currentStep?.type === "fields" ? "h-[240px]" : "h-[520px]"}>
+            <ScrollArea className={currentStep?.type === "fields" ? "h-[260px]" : "h-[520px]"}>
               {currentField ? (
                 <FormFieldEditor
                   field={currentField}
                   onUpdate={updateField}
                   onDelete={() => removeField(currentField.id)}
+                  onOcrSelectionChange={handleOcrSelectionChange}
                 />
               ) : (
                 <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">

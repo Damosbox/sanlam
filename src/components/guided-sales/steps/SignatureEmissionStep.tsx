@@ -1,10 +1,13 @@
 import { useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   FileText, 
@@ -23,7 +26,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { GuidedSalesState, PlanTier, ContractPeriodicity } from "../types";
-import { formatFCFA, formatFCFADecimal } from "@/utils/formatCurrency";
+import { formatFCFA } from "@/utils/formatCurrency";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -40,13 +43,12 @@ interface SignatureEmissionStepProps {
 // --- Shared helpers ---
 
 const planNames: Record<PlanTier, string> = {
-  mini: "MINI",
-  basic: "BASIC",
-  medium: "MEDIUM",
-  medium_plus: "MEDIUM+",
-  evolution: "EVOLUTION",
-  evolution_plus: "EVOLUTION+",
-  supreme: "SUPRÊME",
+  mini: "TIERS SIMPLE",
+  basic: "TIERS SIMPLE AMÉLIORÉ",
+  medium: "TIERS COMPLET",
+  medium_plus: "TIERS COMPLET",
+  evolution: "TOUT RISQUE",
+  evolution_plus: "TIERCE COLLISION",
 };
 
 const periodicityLabels: Record<ContractPeriodicity, string> = {
@@ -80,7 +82,6 @@ const guaranteesByPlan: Record<PlanTier, string[]> = {
   medium_plus: ["RC", "Défense Recours", "IC/IPT", "Avance sur recours", "Incendie", "Vol", "Vol à main armée", "Vol accessoires", "Bris de glaces"],
   evolution: ["RC", "Défense Recours", "IC/IPT", "Avance sur recours", "Incendie", "Vol", "Vol accessoires", "Bris de glaces", "Tierce complète plafonnée"],
   evolution_plus: ["RC", "Défense Recours", "IC/IPT", "Avance sur recours", "Incendie", "Vol", "Vol accessoires", "Bris de glaces", "Tierce collision plafonnée"],
-  supreme: ["RC", "Défense Recours", "IC/IPT", "Avance sur recours (gratuit)", "Incendie", "Vol", "Vol accessoires", "Bris de glaces (gratuit)", "Tierce complète non plafonnée"],
 };
 
 const cityLabels: Record<string, string> = {
@@ -156,9 +157,36 @@ export const SignatureEmissionStep = ({
   onNext,
   onEditStep,
 }: SignatureEmissionStepProps) => {
-  const { calculatedPremium, binding, needsAnalysis, subscription, coverage, productSelection, packObsequesData } = state;
+  const { calculatedPremium, binding, needsAnalysis, subscription, coverage, productSelection, packObsequesData, clientIdentification } = state;
   const isObseques = productSelection.selectedProduct === "pack_obseques";
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Check screening_blocked status
+  const contactId = clientIdentification.linkedContactId;
+  const contactType = clientIdentification.linkedContactType;
+  
+  const { data: screeningBlocked } = useQuery({
+    queryKey: ["screening-blocked", contactId, contactType],
+    queryFn: async () => {
+      if (!contactId) return false;
+      if (contactType === "prospect") {
+        const { data } = await supabase
+          .from("lead_kyc_compliance")
+          .select("screening_blocked")
+          .eq("lead_id", contactId)
+          .maybeSingle();
+        return data?.screening_blocked || false;
+      } else {
+        const { data } = await supabase
+          .from("client_kyc_compliance")
+          .select("screening_blocked")
+          .eq("client_id", contactId)
+          .maybeSingle();
+        return data?.screening_blocked || false;
+      }
+    },
+    enabled: !!contactId,
+  });
 
   const handleSign = () => {
     onUpdateBinding({ signatureCompleted: true, signatureData: "signature-data-mock" });
@@ -176,7 +204,7 @@ export const SignatureEmissionStep = ({
     onUpdateBinding({ signatureCompleted: false, signatureData: undefined });
   };
 
-  const canProceed = binding.acceptTerms && binding.acceptDataSharing && binding.signatureCompleted;
+  const canProceed = binding.acceptTerms && binding.acceptDataSharing && binding.signatureCompleted && !screeningBlocked;
 
   const policyPrefix = isObseques ? "OBSEQ" : "AUTO";
   const documents = isObseques
@@ -189,6 +217,15 @@ export const SignatureEmissionStep = ({
   // --- Main view: Global Recap + Validation + Signature ---
   return (
     <div className="space-y-6">
+      {/* Screening blocked alert */}
+      {screeningBlocked && (
+        <Alert variant="destructive">
+          <AlertDescription className="font-medium">
+            SanlamAllianz reviendra vers le client afin de compléter la transaction ou mettre à jour des informations sur sa fiche.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div>
         <h1 className="text-2xl font-bold text-foreground">Récapitulatif global & Signature</h1>
         <p className="text-muted-foreground mt-1">
@@ -336,17 +373,17 @@ export const SignatureEmissionStep = ({
           <h3 className="font-semibold text-lg mb-4">Décompte de prime</h3>
           
           <div className="space-y-2 text-sm">
-            <PremiumLine label="Prime Nette" value={formatFCFADecimal(calculatedPremium.primeNette)} tooltip={tooltips.primeNette} />
-            <PremiumLine label="Frais d'accessoires" value={formatFCFADecimal(calculatedPremium.fraisAccessoires)} tooltip={tooltips.fraisAccessoires} />
-            <PremiumLine label="Taxes (14,5%)" value={formatFCFADecimal(calculatedPremium.taxes)} tooltip={tooltips.taxes} />
+            <PremiumLine label="Prime Nette" value={formatFCFA(calculatedPremium.primeNette)} tooltip={tooltips.primeNette} />
+            <PremiumLine label="Frais d'accessoires" value={formatFCFA(calculatedPremium.fraisAccessoires)} tooltip={tooltips.fraisAccessoires} />
+            <PremiumLine label="Taxes (14,5%)" value={formatFCFA(calculatedPremium.taxes)} tooltip={tooltips.taxes} />
           </div>
 
           <Separator className="my-3" />
 
           <div className="space-y-2 text-sm">
-            <PremiumLine label="Prime TTC" value={formatFCFADecimal(calculatedPremium.primeTTC)} tooltip={tooltips.primeTTC} isBold />
-            <PremiumLine label="FGA" value={formatFCFADecimal(calculatedPremium.fga)} tooltip={tooltips.fga} />
-            <PremiumLine label="Carte Brune CEDEAO" value={formatFCFADecimal(calculatedPremium.cedeao)} tooltip={tooltips.cedeao} />
+            <PremiumLine label="Prime TTC" value={formatFCFA(calculatedPremium.primeTTC)} tooltip={tooltips.primeTTC} isBold />
+            <PremiumLine label="FGA" value={formatFCFA(calculatedPremium.fga)} tooltip={tooltips.fga} />
+            <PremiumLine label="Carte Brune CEDEAO" value={formatFCFA(calculatedPremium.cedeao)} tooltip={tooltips.cedeao} />
           </div>
 
           <Separator className="my-3" />

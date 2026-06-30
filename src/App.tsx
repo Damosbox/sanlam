@@ -40,6 +40,8 @@ import ClaimNewPage from "./pages/broker/ClaimNewPage";
 import PoliciesPage from "./pages/broker/PoliciesPage";
 import RenewalStatsPage from "./pages/broker/RenewalStatsPage";
 import RenewalsPage from "./pages/broker/RenewalsPage";
+import AdminRenewalsPage from "./pages/admin/RenewalsPage";
+import AdminScoringPage from "./pages/admin/ScoringPage";
 import AnalysisPage from "./pages/broker/AnalysisPage";
 import NewsPage from "./pages/broker/NewsPage";
 import ReportsPage from "./pages/broker/ReportsPage";
@@ -51,9 +53,7 @@ import { AdminLayout } from "./layouts/AdminLayout";
 import AdminDashboardPage from "./pages/admin/DashboardPage";
 import AdminClaimsPage from "./pages/admin/ClaimsPage";
 import AdminSubscriptionsPage from "./pages/admin/SubscriptionsPage";
-import AdminUsersClientsPage from "./pages/admin/UsersClientsPage";
-import AdminUsersPartnersPage from "./pages/admin/UsersPartnersPage";
-import AdminUsersAdminsPage from "./pages/admin/UsersAdminsPage";
+import AdminUsersPage from "./pages/admin/UsersPage";
 import AdminPermissionsPage from "./pages/admin/PermissionsPage";
 import AdminAuditPage from "./pages/admin/AuditPage";
 import AdminLoyaltyPage from "./pages/admin/LoyaltyPage";
@@ -67,6 +67,19 @@ import AdminTestDataPage from "./pages/admin/TestDataPage";
 import AdminBrokerNewsPage from "./pages/admin/BrokerNewsPage";
 import AdminCalcRulesPage from "./pages/admin/CalcRulesPage";
 import AdminCalcVariablesPage from "./pages/admin/CalcVariablesPage";
+import AdminAgentsPortfolioPage from "./pages/admin/AgentsPortfolioPage";
+import AdminAgentDetailPage from "./pages/admin/AgentDetailPage";
+import AdminConversionsPage from "./pages/admin/ConversionsPage";
+import AdminComplianceDashboardPage from "./pages/admin/ComplianceDashboardPage";
+import AdminAgentPerformancePage from "./pages/admin/AgentPerformancePage";
+import AdminLossRatioPage from "./pages/admin/LossRatioPage";
+import AdminCalcDocsPage from "./pages/admin/CalcDocsPage";
+import AdminDocumentTemplatesPage from "./pages/admin/DocumentTemplatesPage";
+import PaymentAmlDemoPage from "./pages/admin/dev/PaymentAmlDemoPage";
+import DsarPage from "./pages/admin/DsarPage";
+import CommissionsPage from "./pages/broker/CommissionsPage";
+import OCRValidationPage from "./pages/admin/OCRValidationPage";
+import AdminClientsPage from "./pages/admin/ClientsPage";
 
 const queryClient = new QueryClient();
 
@@ -135,11 +148,12 @@ const App = () => (
             <Route path="messages" element={<MessagesPage />} />
             <Route path="news" element={<NewsPage />} />
             <Route path="campaigns" element={<CampaignsPage />} />
+            <Route path="commissions" element={<CommissionsPage />} />
           </Route>
 
           {/* Admin Routes with Sidebar Layout */}
           <Route path="/admin" element={
-            <RoleProtectedRoute allowedRoles={["admin"]}>
+            <RoleProtectedRoute allowedRoles={["admin", "backoffice_crc", "backoffice_conformite"]}>
               <AdminLayout />
             </RoleProtectedRoute>
           }>
@@ -147,10 +161,12 @@ const App = () => (
             <Route path="dashboard" element={<AdminDashboardPage />} />
             <Route path="claims" element={<AdminClaimsPage />} />
             <Route path="subscriptions" element={<AdminSubscriptionsPage />} />
-            <Route path="users" element={<Navigate to="users/clients" replace />} />
-            <Route path="users/clients" element={<AdminUsersClientsPage />} />
-            <Route path="users/partners" element={<AdminUsersPartnersPage />} />
-            <Route path="users/admins" element={<AdminUsersAdminsPage />} />
+            <Route path="renewals" element={<AdminRenewalsPage />} />
+            <Route path="clients" element={<AdminClientsPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="users/clients" element={<Navigate to="/admin/users?tab=clients" replace />} />
+            <Route path="users/partners" element={<Navigate to="/admin/users?tab=partners" replace />} />
+            <Route path="users/admins" element={<Navigate to="/admin/users?tab=admins" replace />} />
             <Route path="permissions" element={<AdminPermissionsPage />} />
             <Route path="audit" element={<AdminAuditPage />} />
             <Route path="loyalty" element={<AdminLoyaltyPage />} />
@@ -164,6 +180,18 @@ const App = () => (
             <Route path="competitive" element={<AdminCompetitivePage />} />
             <Route path="data" element={<AdminTestDataPage />} />
             <Route path="broker-news" element={<AdminBrokerNewsPage />} />
+            <Route path="agents-portfolio" element={<AdminAgentsPortfolioPage />} />
+            <Route path="agents/:agentId" element={<AdminAgentDetailPage />} />
+            <Route path="conversions" element={<AdminConversionsPage />} />
+            <Route path="agent-performance" element={<AdminAgentPerformancePage />} />
+            <Route path="loss-ratio" element={<AdminLossRatioPage />} />
+            <Route path="compliance" element={<AdminComplianceDashboardPage />} />
+            <Route path="calc-docs" element={<AdminCalcDocsPage />} />
+            <Route path="document-templates" element={<AdminDocumentTemplatesPage />} />
+            <Route path="dsar" element={<DsarPage />} />
+            <Route path="ocr-validation" element={<OCRValidationPage />} />
+            <Route path="dev/payment-aml" element={<PaymentAmlDemoPage />} />
+            <Route path="scoring" element={<AdminScoringPage />} />
           </Route>
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

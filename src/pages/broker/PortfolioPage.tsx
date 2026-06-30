@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,6 +56,7 @@ export default function PortfolioPage() {
   };
   const [viewDensity, setViewDensity] = useState<ViewDensity>("standard");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<string>("name_asc");
 
   // Lead states
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -224,8 +226,17 @@ export default function PortfolioPage() {
         item.product_interest?.toLowerCase().includes(query)
       );
     }
-    return result;
-  }, [portfolioItems, activeTab, searchQuery]);
+    const sorted = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "name_desc": return (b.display_name ?? "").localeCompare(a.display_name ?? "");
+        case "score_desc": return (b.valueScore ?? 0) - (a.valueScore ?? 0);
+        case "score_asc": return (a.valueScore ?? 0) - (b.valueScore ?? 0);
+        case "name_asc":
+        default: return (a.display_name ?? "").localeCompare(b.display_name ?? "");
+      }
+    });
+    return sorted;
+  }, [portfolioItems, activeTab, searchQuery, sortBy]);
 
   // Counts
   const counts = useMemo(() => ({
@@ -394,6 +405,17 @@ export default function PortfolioPage() {
             />
           </div>
           <div className="flex items-center gap-2">
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[180px] h-9">
+                <SelectValue placeholder="Trier par" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name_asc">Nom A→Z</SelectItem>
+                <SelectItem value="name_desc">Nom Z→A</SelectItem>
+                <SelectItem value="score_desc">Score décroissant</SelectItem>
+                <SelectItem value="score_asc">Score croissant</SelectItem>
+              </SelectContent>
+            </Select>
             {/* Export Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

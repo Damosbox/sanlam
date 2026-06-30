@@ -3,16 +3,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { GuidedSalesState, PackObsequesData, PackObsequesFormula, AdhesionType, TitleType, GenderType, ViePeriodicite } from "../types";
-import { ChevronLeft, ChevronRight, Shield, Calculator, Check, Save, Send } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shield, Calculator, Check, Save, Send, Loader2, ShieldCheck, ShieldAlert } from "lucide-react";
+import { CameraUploadButton } from "@/components/ui/CameraUploadButton";
 import { formatFCFA } from "@/utils/formatCurrency";
-import { calculatePackObsequesPremium, getPeriodicPremium } from "@/utils/packObsequesPremiumCalculator";
+import { calculatePackObsequesPremium, getPeriodicPremium, MAX_AGE_PRINCIPAL } from "@/utils/packObsequesPremiumCalculator";
 import { toast } from "sonner";
 import { QuotationSaveDialog } from "../QuotationSaveDialog";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
+
 
 interface PackObsequesSimulationStepProps {
   state: GuidedSalesState;
@@ -47,6 +52,8 @@ export const PackObsequesSimulationStep = ({
   const subStep = subStepLocal;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<"save" | "send">("save");
+  const [isOCRProcessing, setIsOCRProcessing] = useState(false);
+  const [screeningStatus, setScreeningStatus] = useState<"idle" | "processing" | "ok" | "blocked">("idle");
   
   const data = state.packObsequesData!;
   const simulationCalculated = state.simulationCalculated;
@@ -105,22 +112,88 @@ export const PackObsequesSimulationStep = ({
     const digits = phone.replace(/\D/g, "");
     return digits.length >= 10 && digits.length <= 15;
   };
-  const isAgeValid = (dateStr: string) => {
-    if (!dateStr) return false;
+  const getAge = (dateStr: string) => {
+    if (!dateStr) return 0;
     const birth = new Date(dateStr);
     const today = new Date();
     let age = today.getFullYear() - birth.getFullYear();
     const m = today.getMonth() - birth.getMonth();
     if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-    return age >= 18;
+    return age;
+  };
+  const isAgeValid = (dateStr: string) => {
+    const age = getAge(dateStr);
+    return age >= 18 && age <= MAX_AGE_PRINCIPAL;
   };
   const getMaxBirthDate = () => {
     const d = new Date();
     d.setFullYear(d.getFullYear() - 18);
     return d.toISOString().split("T")[0];
   };
-  const isSubStep3Valid = data.lastName && data.firstName && data.phone && isPhoneValid(data.phone) && data.birthDate && isAgeValid(data.birthDate);
+  const getMinBirthDate = () => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - MAX_AGE_PRINCIPAL);
+    return d.toISOString().split("T")[0];
+  };
+  const isSubStep3Valid = data.lastName && data.firstName && data.phone && isPhoneValid(data.phone) && data.birthDate && isAgeValid(data.birthDate) && screeningStatus !== "blocked";
   const isSubStep4Valid = data.email && data.gender && data.title && data.birthPlace;
+
+  const handleSimOCRUpload = async (file: File) => {
+    setIsOCRProcessing(true);
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data: result, error } = await supabase.functions.invoke("ocr-identity", {
+        body: { imageBase64: base64 },
+      });
+      if (error) throw error;
+
+      if (result?.extracted) {
+        const ext = result.extracted;
+        const updates: Partial<PackObsequesData> = {};
+        const filledFields: string[] = [];
+        if (ext.lastName) { updates.lastName = ext.lastName; filledFields.push("Nom"); }
+        if (ext.firstName) { updates.firstName = ext.firstName; filledFields.push("Prénom"); }
+        if (ext.birthDate) { updates.birthDate = ext.birthDate; filledFields.push("Date naissance"); }
+        onUpdate(updates);
+
+        if (filledFields.length > 0) {
+          toast.success(`Pièce analysée ! Champs pré-remplis : ${filledFields.join(", ")}`, { duration: 5000 });
+        }
+
+        // Chain LCB-FT screening
+        if (ext.firstName && ext.lastName) {
+          setScreeningStatus("processing");
+          try {
+            const { data: screening, error: screenErr } = await supabase.functions.invoke("screen-ppe", {
+              body: {
+                clientId: "guided-sales-temp",
+                entityType: "lead",
+                firstName: ext.firstName,
+                lastName: ext.lastName,
+              },
+            });
+            if (screenErr) throw screenErr;
+            setScreeningStatus(screening?.result?.screeningBlocked ? "blocked" : "ok");
+          } catch {
+            setScreeningStatus("ok");
+          }
+        }
+      } else {
+        toast.warning("Impossible d'extraire les données du document.");
+      }
+    } catch (err) {
+      console.error("OCR error:", err);
+      toast.error("Erreur lors de l'analyse du document");
+    } finally {
+      setIsOCRProcessing(false);
+    }
+  };
 
   // Render sub-step 1: Option, Formule & Type
   const renderSubStep1 = () => (
@@ -388,9 +461,55 @@ export const PackObsequesSimulationStep = ({
         <CardTitle className="text-lg">Assuré principal (1/2)</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* OCR Scanner - FIRST BLOCK */}
+        <div className="space-y-2">
+          <Label className="font-medium">📄 Scanner une pièce d'identité</Label>
+          {isOCRProcessing ? (
+            <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <div>
+                <p className="text-sm font-medium">Analyse en cours...</p>
+                <p className="text-xs text-muted-foreground">Extraction des données d'identité</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Scannez la pièce pour pré-remplir les champs ci-dessous</p>
+              <CameraUploadButton
+                id="ocr-simulation-step3"
+                onFileSelected={handleSimOCRUpload}
+                disabled={isOCRProcessing}
+                uploadLabel="Uploader"
+                cameraLabel="Scanner"
+              />
+            </div>
+          )}
+          {screeningStatus === "processing" && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Vérification de conformité...
+            </div>
+          )}
+          {screeningStatus === "ok" && (
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <ShieldCheck className="h-3 w-3 mr-1" />
+              Conformité validée
+            </Badge>
+          )}
+          {screeningStatus === "blocked" && (
+            <Alert variant="destructive">
+              <ShieldAlert className="h-4 w-4" />
+              <AlertTitle>Souscription impossible</AlertTitle>
+              <AlertDescription>
+                Un contrôle de conformité empêche la poursuite. Contactez votre responsable.
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+
         {/* 1. Nom */}
         <div className="space-y-2">
-          <Label>1. Nom *</Label>
+          <Label>1. Nom * {data.lastName && <span className="text-xs text-muted-foreground italic">(pré-rempli)</span>}</Label>
           <Input
             value={data.lastName}
             onChange={(e) => onUpdate({ lastName: e.target.value })}
@@ -400,7 +519,7 @@ export const PackObsequesSimulationStep = ({
 
         {/* 2. Prénom */}
         <div className="space-y-2">
-          <Label>2. Prénom *</Label>
+          <Label>2. Prénom * {data.firstName && <span className="text-xs text-muted-foreground italic">(pré-rempli)</span>}</Label>
           <Input
             value={data.firstName}
             onChange={(e) => onUpdate({ firstName: e.target.value })}
@@ -423,16 +542,20 @@ export const PackObsequesSimulationStep = ({
         </div>
 
         {/* 4. Date de naissance */}
-        <div className="space-y-2">
-          <Label>4. Date de naissance *</Label>
-          <Input
-            type="date"
-            value={data.birthDate}
-            max={getMaxBirthDate()}
-            onChange={(e) => onUpdate({ birthDate: e.target.value })}
-          />
-          {data.birthDate && !isAgeValid(data.birthDate) && (
-            <p className="text-xs text-destructive">L'assuré doit avoir au moins 18 ans</p>
+         <div className="space-y-2">
+           <Label>4. Date de naissance *</Label>
+           <Input
+             type="date"
+             value={data.birthDate}
+             min={getMinBirthDate()}
+             max={getMaxBirthDate()}
+             onChange={(e) => onUpdate({ birthDate: e.target.value })}
+           />
+           {data.birthDate && getAge(data.birthDate) < 18 && (
+             <p className="text-xs text-destructive">L'assuré doit avoir au moins 18 ans</p>
+           )}
+           {data.birthDate && getAge(data.birthDate) > MAX_AGE_PRINCIPAL && (
+             <p className="text-xs text-destructive">L'assuré ne peut pas dépasser {MAX_AGE_PRINCIPAL} ans</p>
           )}
         </div>
 
@@ -538,37 +661,15 @@ export const PackObsequesSimulationStep = ({
           </div>
 
           <div className="flex flex-col gap-3 pt-4">
-            {!simulationCalculated && (
-              <Button 
-                onClick={handleCalculate} 
-                disabled={!isSubStep4Valid || isCalculating}
-                className="w-full gap-2"
-                size="lg"
-              >
-                {isCalculating ? (
-                  <>
-                    <Calculator className="h-4 w-4 animate-spin" />
-                    Calcul en cours...
-                  </>
-                ) : (
-                  <>
-                    <Calculator className="h-4 w-4" />
-                    Calculer la prime
-                  </>
-                )}
-              </Button>
-            )}
-
-            {simulationCalculated && (
-              <Button 
-                onClick={() => setSubStep(5)}
-                className="w-full gap-2"
-                size="lg"
-              >
-                Voir le récapitulatif
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            )}
+            <Button 
+              onClick={() => setSubStep(5)}
+              disabled={!isSubStep4Valid}
+              className="w-full gap-2"
+              size="lg"
+            >
+              Voir le récapitulatif
+              <ChevronRight className="h-4 w-4" />
+            </Button>
             
             <Button variant="outline" onClick={goToPrevSubStep} className="gap-2">
               <ChevronLeft className="h-4 w-4" />
@@ -586,38 +687,20 @@ export const PackObsequesSimulationStep = ({
     const periodicPremium = getPeriodicPremium(breakdown.primeTotale, data.periodicity);
     const premierePrime = periodicPremium + breakdown.fraisAccessoires;
 
+    const SectionEditButton = ({ targetStep }: { targetStep: 1 | 2 | 3 | 4 | 5 }) => (
+      <Button variant="ghost" size="sm" onClick={() => setSubStep(targetStep)} className="gap-1.5 text-muted-foreground hover:text-primary">
+        <ChevronLeft className="h-3.5 w-3.5" />
+        Modifier
+      </Button>
+    );
+
     return (
       <div className="space-y-4">
-        {/* Section 1 — Détail sur la prime */}
-        <Card className="border-primary/20 bg-primary/5">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Check className="h-5 w-5 text-primary" />
-              1. Détail sur la prime
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center border-b border-primary/10 pb-2">
-                <span className="text-sm font-semibold">Première prime</span>
-                <span className="text-lg font-bold text-primary">{formatFCFA(premierePrime)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Prime Périodique nette</span>
-                <span className="font-medium">{formatFCFA(periodicPremium)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Frais d'adhésion</span>
-                <span className="font-medium">{formatFCFA(breakdown.fraisAccessoires)}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Section 2 — Détails sur les capitaux */}
+        {/* Section — Détails sur les capitaux (always visible) */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">2. Détails sur les capitaux</CardTitle>
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <CardTitle className="text-lg">{simulationCalculated ? "2." : "1."} Détails sur les capitaux</CardTitle>
+            <SectionEditButton targetStep={1} />
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm">
@@ -645,10 +728,11 @@ export const PackObsequesSimulationStep = ({
           </CardContent>
         </Card>
 
-        {/* Section 3 — Données de simulation */}
+        {/* Section — Données de simulation (always visible) */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">3. Données de simulation</CardTitle>
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <CardTitle className="text-lg">{simulationCalculated ? "3." : "2."} Données de simulation</CardTitle>
+            <SectionEditButton targetStep={1} />
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm">
@@ -696,32 +780,84 @@ export const PackObsequesSimulationStep = ({
           </CardContent>
         </Card>
 
-        {/* Actions: Sauvegarder / Envoyer / Souscrire */}
-        <div className="flex flex-col sm:flex-row gap-3">
+        {/* Calculer la prime button (before calculation) */}
+        {!simulationCalculated && (
           <Button 
-            variant="outline" 
-            onClick={() => { setDialogMode("save"); setDialogOpen(true); }}
-            className="gap-2 flex-1"
+            onClick={handleCalculate} 
+            disabled={isCalculating}
+            className="w-full gap-2"
+            size="lg"
           >
-            <Save className="h-4 w-4" />
-            Sauvegarder
+            {isCalculating ? (
+              <>
+                <Calculator className="h-4 w-4 animate-spin" />
+                Calcul en cours...
+              </>
+            ) : (
+              <>
+                <Calculator className="h-4 w-4" />
+                Calculer la prime
+              </>
+            )}
           </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => { setDialogMode("send"); setDialogOpen(true); }}
-            className="gap-2 flex-1"
-          >
-            <Send className="h-4 w-4" />
-            Envoyer
-          </Button>
-          <Button 
-            onClick={onNext}
-            className="gap-2 flex-1"
-          >
-            SOUSCRIRE
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+        )}
+
+        {/* Section — Détail sur la prime (only after calculation) */}
+        {simulationCalculated && (
+          <>
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Check className="h-5 w-5 text-primary" />
+                  1. Détail sur la prime
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center border-b border-primary/10 pb-2">
+                    <span className="text-sm font-semibold">Première prime</span>
+                    <span className="text-lg font-bold text-primary">{formatFCFA(premierePrime)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Prime Périodique nette</span>
+                    <span className="font-medium">{formatFCFA(periodicPremium)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Frais d'adhésion</span>
+                    <span className="font-medium">{formatFCFA(breakdown.fraisAccessoires)}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Actions: Sauvegarder / Envoyer / Souscrire */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => { setDialogMode("save"); setDialogOpen(true); }}
+                className="gap-2 flex-1"
+              >
+                <Save className="h-4 w-4" />
+                Sauvegarder
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => { setDialogMode("send"); setDialogOpen(true); }}
+                className="gap-2 flex-1"
+              >
+                <Send className="h-4 w-4" />
+                Envoyer
+              </Button>
+              <Button 
+                onClick={onNext}
+                className="gap-2 flex-1"
+              >
+                SOUSCRIRE
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </>
+        )}
 
         <Button variant="outline" onClick={goToPrevSubStep} className="gap-2 w-full">
           <ChevronLeft className="h-4 w-4" />

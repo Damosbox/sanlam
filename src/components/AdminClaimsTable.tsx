@@ -10,15 +10,8 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Eye, DollarSign, UserPlus, FileText } from "lucide-react";
+import { CheckCircle, XCircle, Eye, DollarSign, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +22,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
+import { exportToCsv, csvDate } from "@/lib/export-csv";
 
 interface Claim {
   id: string;
@@ -67,7 +64,10 @@ export const AdminClaimsTable = () => {
   const [costEstimation, setCostEstimation] = useState("");
   const [showCostDialog, setShowCostDialog] = useState(false);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
-  const [filterUnassigned, setFilterUnassigned] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("incident_desc");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -257,9 +257,65 @@ export const AdminClaimsTable = () => {
     return broker?.display_name || broker?.email || "Courtier assigné";
   };
 
-  const filteredClaims = filterUnassigned 
-    ? claims.filter(c => !c.assigned_broker_id) 
-    : claims;
+  const claimTypes = Array.from(new Set(claims.map((c) => c.claim_type).filter(Boolean)));
+
+  const filteredClaims = claims
+    .filter((c) => (statusFilter === "all" ? true : c.status === statusFilter))
+    .filter((c) => (typeFilter === "all" ? true : c.claim_type === typeFilter))
+    .filter((c) => {
+      if (!searchTerm) return true;
+      const q = searchTerm.toLowerCase();
+      return (
+        (c.profiles?.display_name ?? "").toLowerCase().includes(q) ||
+        (c.profiles?.email ?? "").toLowerCase().includes(q) ||
+        (c.policy_id ?? "").toLowerCase().includes(q) ||
+        (c.claim_type ?? "").toLowerCase().includes(q)
+      );
+    });
+
+  const sortedClaims = [...filteredClaims].sort((a, b) => {
+    const dateA = (d: string | null) => (d ? new Date(d).getTime() : 0);
+    switch (sortBy) {
+      case "incident_desc":
+        return dateA(b.incident_date) - dateA(a.incident_date);
+      case "incident_asc":
+        return dateA(a.incident_date) - dateA(b.incident_date);
+      case "created_desc":
+        return dateA(b.created_at) - dateA(a.created_at);
+      case "created_asc":
+        return dateA(a.created_at) - dateA(b.created_at);
+      case "cost_desc":
+        return (b.cost_estimation ?? 0) - (a.cost_estimation ?? 0);
+      case "cost_asc":
+        return (a.cost_estimation ?? 0) - (b.cost_estimation ?? 0);
+      default:
+        return 0;
+    }
+  });
+
+  const exportCSV = () => {
+    const headers = ["Utilisateur", "Email", "Type", "Police", "Date incident", "Date création", "Statut", "Courtier", "Estimation (FCFA)"];
+    const rows = sortedClaims.map((c) => {
+      const broker = brokers.find((b) => b.id === c.assigned_broker_id);
+      return [
+        c.profiles?.display_name ?? "",
+        c.profiles?.email ?? "",
+        c.claim_type,
+        c.policy_id,
+        csvDate(c.incident_date),
+        csvDate(c.created_at),
+        c.status,
+        broker?.display_name ?? broker?.email ?? (c.assigned_broker_id ? "" : "Non assigné"),
+        c.cost_estimation ?? "",
+      ];
+    });
+    exportToCsv("sinistres", headers, rows);
+  };
+
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    sortedClaims,
+    { storageKey: "admin-claims" },
+  );
 
   if (loading) {
     return <div className="text-center py-8">Chargement...</div>;
@@ -267,22 +323,54 @@ export const AdminClaimsTable = () => {
 
   return (
     <>
-      <div className="mb-4 flex items-center gap-4">
-        <Button
-          variant={filterUnassigned ? "default" : "outline"}
-          size="sm"
-          onClick={() => setFilterUnassigned(!filterUnassigned)}
-        >
-          <UserPlus className="w-4 h-4 mr-2" />
-          {filterUnassigned ? "Afficher tous" : "Non assignés uniquement"}
-        </Button>
-        {filterUnassigned && (
-          <span className="text-sm text-muted-foreground">
-            {filteredClaims.length} sinistre(s) non assigné(s)
-          </span>
-        )}
-      </div>
-      
+      <DataTableToolbar
+        search={{
+          value: searchTerm,
+          onChange: setSearchTerm,
+          placeholder: "Rechercher client, police, type...",
+        }}
+        filters={[
+          {
+            id: "status",
+            label: "Statut",
+            value: statusFilter,
+            onChange: setStatusFilter,
+            options: [
+              { value: "all", label: "Tous les statuts" },
+              { value: "Draft", label: "Brouillon" },
+              { value: "Submitted", label: "Soumis" },
+              { value: "Reviewed", label: "Examiné" },
+              { value: "Approved", label: "Approuvé" },
+              { value: "Rejected", label: "Rejeté" },
+              { value: "Closed", label: "Clôturé" },
+            ],
+          },
+          {
+            id: "type",
+            label: "Type",
+            value: typeFilter,
+            onChange: setTypeFilter,
+            options: [
+              { value: "all", label: "Tous les types" },
+              ...claimTypes.map((t) => ({ value: t, label: t })),
+            ],
+          },
+        ]}
+        sort={{
+          value: sortBy,
+          onChange: setSortBy,
+          options: [
+            { value: "incident_desc", label: "Sinistre le plus récent" },
+            { value: "incident_asc", label: "Sinistre le plus ancien" },
+            { value: "created_desc", label: "Création récente" },
+            { value: "created_asc", label: "Création ancienne" },
+            { value: "cost_desc", label: "Estimation ↓" },
+            { value: "cost_asc", label: "Estimation ↑" },
+          ],
+        }}
+        onExport={exportCSV}
+      />
+
       <div className="rounded-lg border bg-card">
         <Table>
           <TableHeader>
@@ -291,6 +379,7 @@ export const AdminClaimsTable = () => {
               <TableHead>Type</TableHead>
               <TableHead>Police</TableHead>
               <TableHead>Date incident</TableHead>
+              <TableHead>Date déclaration</TableHead>
               <TableHead>Statut</TableHead>
               <TableHead>Courtier</TableHead>
               <TableHead>Estimation</TableHead>
@@ -298,7 +387,7 @@ export const AdminClaimsTable = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredClaims.map((claim) => (
+            {pageItems.map((claim) => (
               <TableRow key={claim.id}>
                 <TableCell>
                   <div>
@@ -317,32 +406,19 @@ export const AdminClaimsTable = () => {
                     ? new Date(claim.incident_date).toLocaleDateString()
                     : "N/A"}
                 </TableCell>
+                <TableCell>
+                  {new Date(claim.created_at).toLocaleDateString()}
+                </TableCell>
                 <TableCell>{getStatusBadge(claim.status)}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    {!claim.assigned_broker_id && (
+                    {claim.assigned_broker_id ? (
+                      <Badge variant="secondary">{getBrokerBadge(claim)}</Badge>
+                    ) : (
                       <Badge variant="outline" className="text-orange-500 border-orange-500">
                         Non assigné
                       </Badge>
                     )}
-                    <Select
-                      value={claim.assigned_broker_id || "unassigned"}
-                      onValueChange={(value) =>
-                        assignBroker(claim.id, value === "unassigned" ? null : value)
-                      }
-                    >
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Non assigné" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="unassigned">Non assigné</SelectItem>
-                        {brokers.map((broker) => (
-                          <SelectItem key={broker.id} value={broker.id}>
-                            {broker.display_name || broker.email}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -404,6 +480,14 @@ export const AdminClaimsTable = () => {
           </TableBody>
         </Table>
       </div>
+      <DataTablePagination
+        page={page}
+        pageSize={pageSize}
+        totalItems={totalItems}
+        setPage={setPage}
+        setPageSize={setPageSize}
+        itemLabel="sinistre"
+      />
 
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">

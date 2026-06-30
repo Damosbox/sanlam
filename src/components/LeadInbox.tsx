@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserPlus, LayoutList, LayoutGrid, Rows3, Search, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
@@ -29,6 +30,8 @@ export const LeadInbox = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editDialogLead, setEditDialogLead] = useState<Lead | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("date_desc");
 
   // Fetch leads
   const { data: leads = [], isLoading } = useQuery({
@@ -43,22 +46,39 @@ export const LeadInbox = () => {
     }
   });
 
-  // Filter leads by status and search query
+  const sources = useMemo(
+    () => Array.from(new Set(leads.map((l) => l.source).filter(Boolean))) as string[],
+    [leads],
+  );
+
+  // Filter leads by status, source, and search query
   const filteredLeads = useMemo(() => {
     let result = leads;
     if (activeStatus !== "all") {
       result = result.filter(l => l.status === activeStatus);
+    }
+    if (sourceFilter !== "all") {
+      result = result.filter(l => l.source === sourceFilter);
     }
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       result = result.filter(l => 
         `${l.first_name} ${l.last_name}`.toLowerCase().includes(query) ||
         l.first_name?.toLowerCase().includes(query) ||
-        l.last_name?.toLowerCase().includes(query)
+        l.last_name?.toLowerCase().includes(query) ||
+        l.source?.toLowerCase().includes(query)
       );
     }
-    return result;
-  }, [leads, activeStatus, searchQuery]);
+    return [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "date_asc": return +new Date(a.created_at ?? 0) - +new Date(b.created_at ?? 0);
+        case "score_desc": return ((b as any).score ?? 0) - ((a as any).score ?? 0);
+        case "score_asc": return ((a as any).score ?? 0) - ((b as any).score ?? 0);
+        case "date_desc":
+        default: return +new Date(b.created_at ?? 0) - +new Date(a.created_at ?? 0);
+      }
+    });
+  }, [leads, activeStatus, sourceFilter, searchQuery, sortBy]);
 
   // Export functions
   const exportToExcel = () => {
@@ -164,6 +184,24 @@ export const LeadInbox = () => {
             />
           </div>
           <div className="flex items-center gap-2">
+            <Select value={sourceFilter} onValueChange={setSourceFilter}>
+              <SelectTrigger className="w-[150px] h-9"><SelectValue placeholder="Source" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes sources</SelectItem>
+                {sources.map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[180px] h-9"><SelectValue placeholder="Trier" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date_desc">Date récente</SelectItem>
+                <SelectItem value="date_asc">Date ancienne</SelectItem>
+                <SelectItem value="score_desc">Score décroissant</SelectItem>
+                <SelectItem value="score_asc">Score croissant</SelectItem>
+              </SelectContent>
+            </Select>
             <Button variant="outline" size="sm" onClick={exportToCSV} className="gap-2">
               <Download className="h-4 w-4" />
               <span className="hidden sm:inline">CSV</span>

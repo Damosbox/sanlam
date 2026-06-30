@@ -11,12 +11,16 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { FileText, User, Phone, Mail, Eye } from "lucide-react";
+import { FileText, User, Phone, Mail, Eye, Download } from "lucide-react";
 import { UnifiedFiltersBar } from "./policies/UnifiedFiltersBar";
 import { ProductType } from "./broker/dashboard/ProductSelector";
 import { QuotationDetailDialog } from "./policies/QuotationDetailDialog";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { exportToCsv, csvDate } from "@/lib/export-csv";
 
 // Unified quotation interface
 interface UnifiedQuotation {
@@ -89,6 +93,7 @@ export const BrokerQuotations = () => {
   const [searchValue, setSearchValue] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<ProductType>("all");
   const [statusFilter, setStatusFilter] = useState<QuotationStatusFilter>("all");
+  const [sortBy, setSortBy] = useState<string>("date_desc");
   const [selectedQuotation, setSelectedQuotation] = useState<UnifiedQuotation | null>(null);
 
   // Fetch quotations from the quotations table
@@ -237,9 +242,9 @@ export const BrokerQuotations = () => {
     );
   }, [quotationsData, legacyQuotations]);
 
-  // Filtered quotations
+  // Filtered & sorted quotations
   const filteredQuotations = useMemo(() => {
-    return allQuotations.filter((quote) => {
+    const filtered = allQuotations.filter((quote) => {
       // Search filter
       if (searchValue) {
         const search = searchValue.toLowerCase();
@@ -266,7 +271,28 @@ export const BrokerQuotations = () => {
       
       return true;
     });
-  }, [allQuotations, searchValue, selectedProduct, statusFilter]);
+    return [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "date_asc": return +new Date(a.createdAt) - +new Date(b.createdAt);
+        case "amount_desc": return (b.premiumAmount ?? 0) - (a.premiumAmount ?? 0);
+        case "amount_asc": return (a.premiumAmount ?? 0) - (b.premiumAmount ?? 0);
+        case "date_desc":
+        default: return +new Date(b.createdAt) - +new Date(a.createdAt);
+      }
+    });
+  }, [allQuotations, searchValue, selectedProduct, statusFilter, sortBy]);
+
+  const handleExport = () => {
+    exportToCsv(
+      "broker-quotations",
+      ["Client", "Email", "Téléphone", "Produit", "Prime", "Statut", "Date", "Validité"],
+      filteredQuotations.map((q) => [
+        q.clientName, q.clientEmail ?? "", q.clientPhone ?? "",
+        q.productName, q.premiumAmount ?? "",
+        q.status, csvDate(q.createdAt), csvDate(q.validUntil),
+      ]),
+    );
+  };
 
   // Product counts
   const productCounts = useMemo(() => {
@@ -281,6 +307,11 @@ export const BrokerQuotations = () => {
     });
     return counts;
   }, [allQuotations]);
+
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    filteredQuotations,
+    { storageKey: "broker-quotations" },
+  );
 
   if (isLoading) {
     return <div className="text-center py-8">Chargement...</div>;
@@ -305,6 +336,21 @@ export const BrokerQuotations = () => {
         showProductFilter={true}
         showStatusFilter={true}
       />
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2">
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="w-[180px] h-9"><SelectValue placeholder="Trier" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="date_desc">Date récente</SelectItem>
+            <SelectItem value="date_asc">Date ancienne</SelectItem>
+            <SelectItem value="amount_desc">Montant décroissant</SelectItem>
+            <SelectItem value="amount_asc">Montant croissant</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button variant="outline" size="sm" onClick={handleExport} className="gap-2">
+          <Download className="h-4 w-4" /> Exporter CSV
+        </Button>
+      </div>
 
       {/* Table */}
       <div className="rounded-md border overflow-x-auto">
@@ -332,7 +378,7 @@ export const BrokerQuotations = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredQuotations.map((quote) => (
+              pageItems.map((quote) => (
                 <TableRow key={quote.id}>
                   <TableCell>
                     <div>
@@ -413,6 +459,14 @@ export const BrokerQuotations = () => {
           </TableBody>
         </Table>
       </div>
+      <DataTablePagination
+        page={page}
+        pageSize={pageSize}
+        totalItems={totalItems}
+        setPage={setPage}
+        setPageSize={setPageSize}
+        itemLabel="cotation"
+      />
 
       {/* Quotation Detail Dialog */}
       {selectedQuotation && (

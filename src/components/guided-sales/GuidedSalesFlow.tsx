@@ -10,6 +10,7 @@ import { SubscriptionFlow } from "./steps/SubscriptionFlow";
 import { MobilePaymentStep } from "./steps/MobilePaymentStep";
 import { SignatureEmissionStep } from "./steps/SignatureEmissionStep";
 import { IssuanceStep } from "./steps/IssuanceStep";
+import { UpsellSidebar } from "./steps/UpsellSidebar";
 
 import { PackObsequesSimulationStep } from "./steps/PackObsequesSimulationStep";
 import { PackObsequesSubscriptionFlow } from "./steps/PackObsequesSubscriptionFlow";
@@ -69,6 +70,7 @@ export const GuidedSalesFlow = () => {
   const [isCalculating, setIsCalculating] = useState(false);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [saveAndQuitDialogOpen, setSaveAndQuitDialogOpen] = useState(false);
+  
   const isMobile = useIsMobile();
   
   // Ref for sub-step back handler from child components
@@ -400,6 +402,38 @@ export const GuidedSalesFlow = () => {
         return false;
       }
 
+      // Check screening_blocked before finalizing
+      const contactId = state.clientIdentification.linkedContactId;
+      const contactType = state.clientIdentification.linkedContactType;
+      
+      if (contactId) {
+        let screeningBlocked = false;
+        
+        if (contactType === "prospect") {
+          const { data: kycResult } = await supabase
+            .from("lead_kyc_compliance")
+            .select("screening_blocked")
+            .eq("lead_id", contactId)
+            .maybeSingle();
+          screeningBlocked = kycResult?.screening_blocked || false;
+        } else {
+          const { data: kycResult } = await supabase
+            .from("client_kyc_compliance")
+            .select("screening_blocked")
+            .eq("client_id", contactId)
+            .maybeSingle();
+          screeningBlocked = kycResult?.screening_blocked || false;
+        }
+
+        if (screeningBlocked) {
+          toast.error("Souscription bloquée", {
+            description: "SanlamAllianz reviendra vers le client afin de compléter la transaction ou mettre à jour des informations sur sa fiche.",
+            duration: 10000,
+          });
+          return false;
+        }
+      }
+
       const product = state.productSelection.selectedProduct;
       const productNameMap: Record<string, string> = {
         auto: "Assurance auto",
@@ -568,7 +602,7 @@ export const GuidedSalesFlow = () => {
         lead_id: finalState.clientIdentification.linkedContactId || null,
         product_type: String(product || "auto"),
         product_name: productNames[product || "auto"] || "Assurance Auto",
-        premium_amount: finalState.calculatedPremium.totalAPayer || 0,
+        premium_amount: finalState.simulationCalculated ? (finalState.calculatedPremium.totalAPayer || 0) : 0,
         premium_frequency: "annuel",
         payment_status: "pending_payment",
         valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
@@ -757,8 +791,9 @@ export const GuidedSalesFlow = () => {
     if (state.currentStep === 1) {
       if (isPackObseques) {
         if (state.simulationSubStep < 4) return "Suivant";
-        if (state.simulationSubStep === 4) return "Calculer la prime";
-        return "Souscrire"; // sub 5
+        if (state.simulationSubStep === 4) return "Voir le récapitulatif";
+        // sub 5: recap
+        return state.simulationCalculated ? "Souscrire" : "Calculer la prime";
       }
       // Auto
       if (state.simulationSubStep === 5) return "Voir les offres";
@@ -780,6 +815,11 @@ export const GuidedSalesFlow = () => {
 
   // Handle next button from SalesAssistant
   const handleSalesAssistantNext = () => {
+    // Pack Obsèques sub-step 5: trigger calculation instead of navigating
+    if (isPackObseques && state.currentStep === 1 && state.simulationSubStep === 5 && !state.simulationCalculated) {
+      handlePackObsequesCalculate();
+      return;
+    }
     nextStep();
   };
 
@@ -907,23 +947,27 @@ export const GuidedSalesFlow = () => {
             }}
           />
 
-          {/* Sales Assistant Sidebar - Desktop */}
+          {/* Sales Assistant Sidebar - Desktop (or Upsell at step 7) */}
           {showSalesAssistant && !isMobile && (
             <div className="hidden lg:block lg:w-[35%] shrink-0">
-              <SalesAssistant
-                state={state}
-                onNext={handleSalesAssistantNext}
-                nextLabel={getNextLabel()}
-                disabled={state.currentStep === 1 && !state.simulationCalculated}
-                onPlanChange={handlePlanChange}
-              />
+              {state.currentStep === 7 ? (
+                <UpsellSidebar state={state} />
+              ) : (
+                <SalesAssistant
+                  state={state}
+                  onNext={handleSalesAssistantNext}
+                  nextLabel={getNextLabel()}
+                  disabled={state.currentStep === 1 && !state.simulationCalculated}
+                  onPlanChange={handlePlanChange}
+                />
+              )}
             </div>
           )}
         </div>
       </main>
 
-      {/* Mobile Sticky Bar with Sales Assistant */}
-      {showSalesAssistant && isMobile && (
+      {/* Mobile Sticky Bar with Sales Assistant (or Upsell at step 7) */}
+      {showSalesAssistant && isMobile && state.currentStep !== 7 && (
         <MobileCoverageStickyBar
           state={state}
           onNext={handleSalesAssistantNext}
@@ -931,6 +975,11 @@ export const GuidedSalesFlow = () => {
           disabled={state.currentStep === 1 && !state.simulationCalculated}
           onPlanChange={handlePlanChange}
         />
+      )}
+      {isMobile && state.currentStep === 7 && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t z-20">
+          <UpsellSidebar state={state} />
+        </div>
       )}
     </div>
   );

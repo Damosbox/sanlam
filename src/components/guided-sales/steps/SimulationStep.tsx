@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,12 +12,18 @@ import {
   Bike, 
   ChevronRight, 
   ChevronLeft,
-  Calendar
+  Calendar,
+  Camera,
+  Loader2,
+  CheckCircle2,
 } from "lucide-react";
 import { GuidedSalesState, QuoteType, EnergyType, GenderType, EmploymentType, ContractPeriodicity } from "../types";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { CameraUploadButton } from "@/components/ui/CameraUploadButton";
 
 
 interface SimulationStepProps {
@@ -79,6 +85,9 @@ export const SimulationStep = ({
   onSubStepChange
 }: SimulationStepProps) => {
   const [subStep, setSubStepLocal] = useState<1 | 2 | 3 | 4 | 5>((initialSubStep ?? 1) as 1 | 2 | 3 | 4 | 5);
+  const [isOCRProcessing, setIsOCRProcessing] = useState(false);
+  const [ocrSuccess, setOcrSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { needsAnalysis, simulationCalculated, calculatedPremium } = state;
 
   const setSubStep = (val: 1 | 2 | 3 | 4 | 5) => {
@@ -153,6 +162,56 @@ export const SimulationStep = ({
   const goNext = () => {
     if (subStep < 5) {
       setSubStep((subStep + 1) as 1 | 2 | 3 | 4 | 5);
+    }
+  };
+
+  // ── OCR Carte Grise handler ──
+  const handleCarteGriseUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsOCRProcessing(true);
+    setOcrSuccess(false);
+
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data, error } = await supabase.functions.invoke("ocr-vehicle-registration", {
+        body: { imageBase64: base64 },
+      });
+
+      if (error) throw error;
+
+      if (data?.extracted) {
+        const ext = data.extracted;
+        const updates: Partial<GuidedSalesState["needsAnalysis"]> = {};
+        const filledFields: string[] = [];
+
+        if (ext.vehicleBrand) { updates.vehicleBrand = ext.vehicleBrand; filledFields.push("Marque"); }
+        if (ext.vehicleModel) { updates.vehicleModel = ext.vehicleModel; filledFields.push("Modèle"); }
+
+        onUpdate(updates);
+        setOcrSuccess(true);
+
+        if (filledFields.length > 0) {
+          toast.success(`Carte grise analysée ! Champs pré-remplis : ${filledFields.join(", ")}`, { duration: 5000 });
+        } else {
+          toast.warning("L'analyse n'a pas pu extraire de données. Vérifiez la qualité de l'image.");
+        }
+      } else {
+        toast.warning("Impossible d'extraire les données de la carte grise.");
+      }
+    } catch (err) {
+      console.error("OCR error:", err);
+      toast.error("Erreur lors de l'analyse de la carte grise");
+    } finally {
+      setIsOCRProcessing(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -354,6 +413,50 @@ export const SimulationStep = ({
         <h1 className="text-2xl font-bold text-foreground">Véhicule</h1>
         <p className="text-muted-foreground mt-1">Étape 3/5 - Caractéristiques techniques</p>
       </div>
+
+      {/* Scanner carte grise en premier */}
+      <Card className="border-primary/30 bg-primary/5">
+        <CardContent className="pt-6">
+          <Label className="text-sm font-medium mb-1 block">Scanner la carte grise (OCR)</Label>
+          <p className="text-xs text-muted-foreground mb-3">
+            Prenez une photo de la carte grise pour pré-remplir automatiquement les informations du véhicule.
+          </p>
+          <div className="flex items-center gap-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleCarteGriseUpload}
+              disabled={isOCRProcessing}
+            />
+            {isOCRProcessing ? (
+              <Button variant="outline" disabled className="gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Analyse en cours...
+              </Button>
+            ) : (
+              <CameraUploadButton
+                id="carte-grise-simulation"
+                onFileSelected={(file) => {
+                  const dt = new DataTransfer();
+                  dt.items.add(file);
+                  const fakeEvent = { target: { files: dt.files } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                  handleCarteGriseUpload(fakeEvent);
+                }}
+                disabled={isOCRProcessing}
+                label="Scanner la carte grise"
+              />
+            )}
+            {ocrSuccess && (
+              <span className="text-sm text-green-600 flex items-center gap-1">
+                <CheckCircle2 className="h-4 w-4" />
+                Données extraites
+              </span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="pt-6 space-y-4">

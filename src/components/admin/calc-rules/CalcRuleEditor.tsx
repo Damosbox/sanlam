@@ -20,7 +20,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Plus, Trash2, Save, Loader2, BookOpen, ChevronDown, Upload } from "lucide-react";
+import { Plus, Trash2, Save, Loader2, BookOpen, ChevronDown, Upload, FileSpreadsheet } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -34,6 +34,7 @@ import type {
   CalcRuleOption, CalcRulePackage, CalcRuleCharge,
 } from "./types";
 import { CalcRuleSimulator } from "./CalcRuleSimulator";
+import { CsvImportDialog } from "./CsvImportDialog";
 
 interface CalcRuleEditorProps {
   rule: CalcRule | null;
@@ -100,6 +101,51 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
   });
   const [catalogueFilter, setCatalogueFilter] = useState("");
   const [form, setForm] = useState(buildInitialForm(rule));
+  const [csvDialogOpen, setCsvDialogOpen] = useState(false);
+
+  const handleCsvApply = (data: any) => {
+    console.log("[CSV Import] Applying data:", data);
+    setForm((f) => {
+      const merged = { ...f };
+      // General info: apply from CSV, overwrite only if CSV provides a value
+      if (data.name) merged.name = data.name;
+      if (data.description) merged.description = data.description;
+      if (data.type) merged.type = data.type;
+      if (data.usage_category) merged.usage_category = data.usage_category;
+      if (data.usage_category_label) merged.usage_category_label = data.usage_category_label;
+      if (data.base_formula) merged.base_formula = data.base_formula;
+
+      // Merge arrays by code (no duplicates), or append if no code
+      const mergeByCode = <T extends { code?: string; id?: string }>(existing: T[], incoming: T[] = []): T[] => {
+        const codes = new Set(existing.map((e) => e.code).filter(Boolean));
+        const ids = new Set(existing.map((e) => e.id).filter(Boolean));
+        return [
+          ...existing,
+          ...incoming.filter((i) => {
+            if (i.code && codes.has(i.code)) return false;
+            if (!i.code && i.id && ids.has(i.id)) return false;
+            // Skip items that are essentially empty (only have id)
+            const keys = Object.keys(i).filter(k => k !== 'id' && k !== 'guarantees' && k !== 'displayOrder' && k !== 'isActive' && k !== 'source');
+            if (keys.length === 0) return false;
+            return true;
+          }),
+        ];
+      };
+
+      if (data.parameters) merged.parameters = mergeByCode(f.parameters, data.parameters);
+      if (data.formulas) merged.formulas = mergeByCode(f.formulas, data.formulas);
+      if (data.taxes) merged.taxes = mergeByCode(f.taxes, data.taxes);
+      if (data.fees) merged.fees = mergeByCode(f.fees, data.fees);
+      if (data.tables_ref) merged.tables_ref = mergeByCode(f.tables_ref, data.tables_ref);
+      if (data.charges) merged.charges = mergeByCode(f.charges, data.charges);
+      if (data.packages) merged.packages = mergeByCode(f.packages, data.packages);
+      if (data.options) merged.options = mergeByCode(f.options, data.options);
+      
+      console.log("[CSV Import] Merged form:", merged);
+
+      return merged;
+    });
+  };
 
   useEffect(() => {
     setForm(buildInitialForm(rule));
@@ -372,6 +418,20 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
         }}
       />
 
+      {/* CSV Import Button */}
+      <div className="flex justify-end">
+        <Button variant="outline" onClick={() => setCsvDialogOpen(true)}>
+          <FileSpreadsheet className="h-4 w-4 mr-2" />
+          Importer un CSV actuariel
+        </Button>
+      </div>
+
+      <CsvImportDialog
+        open={csvDialogOpen}
+        onOpenChange={setCsvDialogOpen}
+        onApply={handleCsvApply}
+      />
+
       <Accordion type="multiple" defaultValue={["general", "parameters"]} className="space-y-2">
         {/* 1. General Info */}
         <AccordionItem value="general" className="border rounded-lg px-4">
@@ -432,7 +492,7 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
                   <div className="flex-1 grid gap-2 grid-cols-3">
                     <Input placeholder="Code" value={p.code} onChange={(e) => updateParameter(idx, { code: e.target.value })} disabled={p.source === "catalogue"} />
                     <Input placeholder="Libellé" value={p.label} onChange={(e) => updateParameter(idx, { label: e.target.value })} />
-                    <Select value={p.type} onValueChange={(v) => updateParameter(idx, { type: v as CalcRuleParameter["type"] })} disabled={p.source === "catalogue"}>
+                    <Select value={p.type || "text"} onValueChange={(v) => updateParameter(idx, { type: v as CalcRuleParameter["type"] })} disabled={p.source === "catalogue"}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="text">Texte</SelectItem>
@@ -455,7 +515,7 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
                     <div className="grid gap-2 grid-cols-3">
                       <div className="space-y-1">
                         <Label className="text-xs">Catégorie</Label>
-                        <Select value={p.category || ""} onValueChange={(v) => updateParameter(idx, { category: v })}>
+                        <Select value={p.category || undefined} onValueChange={(v) => updateParameter(idx, { category: v })}>
                           <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="TECHNIQUE">Technique</SelectItem>
@@ -529,7 +589,7 @@ export function CalcRuleEditor({ rule, onSave, isSaving }: CalcRuleEditorProps) 
                   <Input placeholder="Code" value={c.code} onChange={(e) => updateCharge(idx, { code: e.target.value })} />
                   <Input placeholder="Nom" value={c.name} onChange={(e) => updateCharge(idx, { name: e.target.value })} />
                   <Input placeholder="Valeur (ex: 0.2)" value={c.value} onChange={(e) => updateCharge(idx, { value: e.target.value })} />
-                  <Select value={c.category} onValueChange={(v) => updateCharge(idx, { category: v })}>
+                  <Select value={c.category || "CHARGEMENT"} onValueChange={(v) => updateCharge(idx, { category: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="TECHNIQUE">Technique</SelectItem>

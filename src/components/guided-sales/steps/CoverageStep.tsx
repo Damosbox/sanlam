@@ -106,21 +106,6 @@ const AUTO_PLANS: { tier: PlanTier; name: string; description: string; assistanc
       { name: "Tierce collision plafonnée", included: true },
     ],
   },
-  {
-    tier: "supreme", name: "SUPRÊME", description: "Protection maximale", assistance: "Relax", assistancePrice: 55000,
-    coverages: [
-      { name: "Responsabilité Civile", included: true },
-      { name: "Recours Tiers Incendie", included: true },
-      { name: "Défense Recours", included: true },
-      { name: "IC / IPT", included: true },
-      { name: "Avance sur recours (gratuit)", included: true },
-      { name: "Incendie", included: true },
-      { name: "Vol", included: true },
-      { name: "Vol accessoires", included: true },
-      { name: "Bris de glaces (gratuit)", included: true },
-      { name: "Tierce complète (non plafonnée)", included: true },
-    ],
-  },
 ];
 
 const OBSEQUES_PLANS: { tier: PlanTier; name: string; description: string; price: number; coverages: { name: string; included: boolean }[] }[] = [

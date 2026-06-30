@@ -2,11 +2,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowRight, CheckCircle2, HelpCircle, Lightbulb } from "lucide-react";
+import { ArrowRight, CheckCircle2, HelpCircle, Lightbulb, Download } from "lucide-react";
 import { GuidedSalesState, ProductType } from "./types";
 import { useEffect, useState, useMemo } from "react";
-import { formatFCFA, formatFCFADecimal } from "@/utils/formatCurrency";
+import { formatFCFA } from "@/utils/formatCurrency";
 import { toast } from "@/hooks/use-toast";
+import { generateQuotePdf } from "@/utils/quotePdfGenerator";
 
 interface QuoteSummaryCardProps {
   state: GuidedSalesState;
@@ -85,7 +86,7 @@ const generateRecommendation = (state: GuidedSalesState): AIRecommendation | nul
   }
   
   // Recommandation si le véhicule est ancien et le plan est premium
-  if (needsAnalysis.vehicleFirstCirculationDate && ["evolution", "evolution_plus", "supreme"].includes(coverage.planTier)) {
+  if (needsAnalysis.vehicleFirstCirculationDate && ["evolution", "evolution_plus"].includes(coverage.planTier)) {
     const vehicleYear = new Date(needsAnalysis.vehicleFirstCirculationDate).getFullYear();
     const currentYear = new Date().getFullYear();
     const vehicleAge = currentYear - vehicleYear;
@@ -201,17 +202,17 @@ export const QuoteSummaryCard = ({ state, onNext, nextLabel, disabled, onApplySu
         <div className="space-y-2 text-sm">
           <PremiumLine 
             label="Prime Nette" 
-            value={formatFCFADecimal(premium.primeNette)} 
+            value={formatFCFA(premium.primeNette)} 
             tooltip={tooltips.primeNette} 
           />
           <PremiumLine 
             label="Frais d'accessoires" 
-            value={formatFCFADecimal(premium.fraisAccessoires)} 
+            value={formatFCFA(premium.fraisAccessoires)} 
             tooltip={tooltips.fraisAccessoires} 
           />
           <PremiumLine 
             label="Taxes (14,5%)" 
-            value={formatFCFADecimal(premium.taxes)} 
+            value={formatFCFA(premium.taxes)} 
             tooltip={tooltips.taxes} 
           />
         </div>
@@ -221,18 +222,18 @@ export const QuoteSummaryCard = ({ state, onNext, nextLabel, disabled, onApplySu
         <div className="space-y-2 text-sm">
           <PremiumLine 
             label="Prime TTC" 
-            value={formatFCFADecimal(premium.primeTTC)} 
+            value={formatFCFA(premium.primeTTC)} 
             tooltip={tooltips.primeTTC}
             isBold 
           />
           <PremiumLine 
             label="FGA" 
-            value={formatFCFADecimal(premium.fga)} 
+            value={formatFCFA(premium.fga)} 
             tooltip={tooltips.fga} 
           />
           <PremiumLine 
             label="Carte Brune CEDEAO" 
-            value={formatFCFADecimal(premium.cedeao)} 
+            value={formatFCFA(premium.cedeao)} 
             tooltip={tooltips.cedeao} 
           />
         </div>
@@ -285,6 +286,32 @@ export const QuoteSummaryCard = ({ state, onNext, nextLabel, disabled, onApplySu
         >
           {nextLabel}
           <ArrowRight className="h-4 w-4 shrink-0" />
+        </Button>
+
+        {/* Download PDF — branding Sanlam Allianz strict */}
+        <Button
+          onClick={() => {
+            try {
+              generateQuotePdf(state, {
+                primeNette: premium.primeNette,
+                fraisAccessoires: premium.fraisAccessoires,
+                taxes: premium.taxes,
+                primeTTC: premium.primeTTC,
+                fga: premium.fga,
+                cedeao: premium.cedeao,
+                total: displayTotal,
+              });
+              toast({ title: "Devis PDF téléchargé", description: "Branding Sanlam Allianz appliqué." });
+            } catch (e) {
+              toast({ title: "Erreur de génération", variant: "destructive" });
+            }
+          }}
+          variant="outline"
+          className="w-full gap-2 border-primary/30 text-primary hover:bg-primary/5"
+          size="lg"
+        >
+          <Download className="h-4 w-4 shrink-0" />
+          Télécharger le devis PDF
         </Button>
       </div>
     </Card>

@@ -25,7 +25,11 @@ interface ClaimsConfigTabProps {
 }
 
 export function ClaimsConfigTab({ formData, updateField }: ClaimsConfigTabProps) {
-  const config: ClaimsConfig = (formData as any).claims_config || { claimTypes: [], generalRules: "" };
+  const rawConfig = (formData as any).claims_config;
+  const config: ClaimsConfig = {
+    claimTypes: rawConfig?.claimTypes || [],
+    generalRules: rawConfig?.generalRules || "",
+  };
 
   const setConfig = (updated: ClaimsConfig) => {
     updateField("claims_config" as any, updated);

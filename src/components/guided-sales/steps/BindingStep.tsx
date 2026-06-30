@@ -5,7 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Mail, MessageSquare, Smartphone, PenTool, FileText, CreditCard, Phone, Wallet, Copy, Check, Fingerprint, Send, Banknote, Receipt, Camera } from "lucide-react";
+import { Mail, MessageSquare, Smartphone, PenTool, FileText, CreditCard, Phone, Wallet, Copy, Check, Fingerprint, Send, Banknote, Receipt } from "lucide-react";
+import { CameraUploadButton } from "@/components/ui/CameraUploadButton";
 import { GuidedSalesState, PaymentChannel, IntermediaryStatus } from "../types";
 import { cn } from "@/lib/utils";
 import { formatFCFA } from "@/utils/formatCurrency";
@@ -443,23 +444,17 @@ export const BindingStep = ({
                 {/* Receipt Scan */}
                 <div>
                   <Label className="text-sm">Scan du reçu (optionnel)</Label>
-                  <div className="flex gap-2 mt-1">
-                    <Input 
-                      type="file" 
-                      accept="image/*"
-                      className="flex-1"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          onUpdate({ cashPaymentReceiptImage: file.name });
-                          toast.success(`Fichier "${file.name}" sélectionné`);
-                        }
-                      }}
-                    />
-                    <Button variant="outline" size="icon" onClick={handleReceiptScan}>
-                      <Camera className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <CameraUploadButton
+                    id="receipt-scan"
+                    onFileSelected={(file) => {
+                      onUpdate({ cashPaymentReceiptImage: file.name });
+                      toast.success(`Fichier "${file.name}" sélectionné`);
+                    }}
+                    uploadLabel="Uploader"
+                    cameraLabel="Scanner"
+                    variant="compact"
+                    className="mt-1"
+                  />
                 </div>
               </div>
 

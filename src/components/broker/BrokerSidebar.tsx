@@ -29,9 +29,11 @@ import {
   Megaphone,
   Sparkles,
   FileSearch,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { AnimatedIcon } from "@/components/ui/animated-icon";
 
 interface BadgeCounts {
   newLeads: number;
@@ -196,6 +198,7 @@ export function BrokerSidebar() {
       label: "Performances",
       items: [
         { title: "Statistiques", url: "/b2b/stats", icon: PieChart },
+        { title: "Commissions", url: "/b2b/commissions", icon: Wallet },
         { title: "Rapports", url: "/b2b/reports", icon: FileBarChart, disabled: true },
       ],
     },
@@ -220,14 +223,22 @@ export function BrokerSidebar() {
     <SidebarMenuItem key={item.title}>
       <SidebarMenuButton
         onClick={() => !item.disabled && handleNavigation(item.url)}
+        tooltip={item.title}
         className={cn(
-          "w-full justify-start gap-3 transition-all duration-200",
-          isActive(item.url) && "bg-primary/10 text-primary font-medium border-l-2 border-primary",
+          "w-full justify-start gap-3 transition-all duration-200 relative",
+          isActive(item.url) &&
+            "bg-primary/10 text-primary font-semibold shadow-sm before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-1 before:rounded-r before:bg-primary",
           item.disabled && "opacity-50 cursor-not-allowed"
         )}
       >
         <div className="relative">
-          <item.icon className={cn("h-4 w-4", isActive(item.url) && "text-primary")} />
+          <AnimatedIcon
+            icon={item.icon}
+            className={cn(
+              "h-5 w-5 shrink-0 transition-colors duration-200",
+              isActive(item.url) && "text-primary"
+            )}
+          />
           {collapsed && item.badge && (
             <span className="absolute -top-1 -right-1 w-2 h-2 bg-destructive rounded-full animate-pulse" />
           )}
@@ -259,8 +270,11 @@ export function BrokerSidebar() {
   );
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/50 z-50">
-      <SidebarHeader className="p-3 sm:p-4 border-b border-border/50 bg-primary-foreground">
+    <Sidebar
+      collapsible="icon"
+      className="border-r-2 border-border/70 shadow-[1px_0_0_0_hsl(var(--border)/0.4)] z-50"
+    >
+      <SidebarHeader className="p-3 sm:p-4 border-b border-border/50 bg-[hsl(var(--sidebar-broker))]">
         <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
           <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
             <Sparkles className="h-4 w-4 text-primary" />
@@ -274,7 +288,7 @@ export function BrokerSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="py-4 bg-primary-foreground">
+      <SidebarContent className="py-4 bg-[hsl(var(--sidebar-broker))]">
         {navigationGroups.map((group, groupIndex) => (
           <SidebarGroup key={group.label}>
             {groupIndex > 0 && (
@@ -289,7 +303,7 @@ export function BrokerSidebar() {
         ))}
       </SidebarContent>
 
-      <SidebarFooter className="p-4 border-t border-border/50 bg-primary-foreground">
+      <SidebarFooter className="p-4 border-t border-border/50 bg-[hsl(var(--sidebar-broker))]">
         {!collapsed && (
           <div className="text-xs text-muted-foreground text-center">
             v2.1 • Navigation Pro

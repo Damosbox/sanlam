@@ -5,18 +5,14 @@ import { Plus, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ProductsList } from "@/components/admin/products/ProductsList";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
 
 export default function ProductsPage() {
   const navigate = useNavigate();
+  const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("name_asc");
 
   const { data: categories } = useQuery({
     queryKey: ["product-categories"],
@@ -48,36 +44,41 @@ export default function ProductsPage() {
         </Button>
       </div>
 
-      <div className="flex gap-4">
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Catégorie" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Toutes catégories</SelectItem>
-            {categories?.map((cat) => (
-              <SelectItem key={cat.id} value={cat.name}>
-                {cat.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Statut" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous statuts</SelectItem>
-            <SelectItem value="active">Actif</SelectItem>
-            <SelectItem value="inactive">Inactif</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <DataTableToolbar
+        search={{ value: search, onChange: setSearch, placeholder: "Rechercher un produit..." }}
+        filters={[
+          {
+            id: "category", label: "Catégorie", value: categoryFilter, onChange: setCategoryFilter,
+            options: [
+              { value: "all", label: "Toutes catégories" },
+              ...(categories ?? []).map((cat) => ({ value: cat.name, label: cat.label })),
+            ],
+          },
+          {
+            id: "status", label: "Statut", value: statusFilter, onChange: setStatusFilter,
+            options: [
+              { value: "all", label: "Tous statuts" },
+              { value: "active", label: "Actif" },
+              { value: "inactive", label: "Inactif" },
+            ],
+          },
+        ]}
+        sort={{
+          value: sortBy, onChange: setSortBy,
+          options: [
+            { value: "name_asc", label: "Nom A→Z" },
+            { value: "name_desc", label: "Nom Z→A" },
+            { value: "updated_desc", label: "Mise à jour récente" },
+            { value: "updated_asc", label: "Mise à jour ancienne" },
+          ],
+        }}
+      />
 
       <ProductsList
         categoryFilter={categoryFilter}
         statusFilter={statusFilter}
+        search={search}
+        sortBy={sortBy}
       />
     </div>
   );

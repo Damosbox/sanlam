@@ -5,7 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Camera, X } from "lucide-react";
+import { X } from "lucide-react";
+import { CameraUploadButton } from "@/components/ui/CameraUploadButton";
 import { toast } from "sonner";
 
 interface DamageDetail {
@@ -124,21 +125,19 @@ export const DamageForm = ({ zone, onSave, onCancel, initialDamageType, initialS
 
         <div className="space-y-2">
           <Label>Photo de la zone</Label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="hidden"
+          <CameraUploadButton
             id={`damage-photo-${zone}`}
+            onFileSelected={(file) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                setImagePreview(reader.result as string);
+                toast.success("Photo ajoutée");
+              };
+              reader.readAsDataURL(file);
+            }}
+            uploadLabel={imagePreview ? "Changer" : "Uploader"}
+            cameraLabel="Photo"
           />
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => document.getElementById(`damage-photo-${zone}`)?.click()}
-          >
-            <Camera className="h-4 w-4 mr-2" />
-            {imagePreview ? "Changer la photo" : "Ajouter une photo"}
-          </Button>
           {imagePreview && (
             <img
               src={imagePreview}

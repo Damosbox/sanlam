@@ -8,9 +8,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { GuidedSalesState, PackObsequesData, MaritalStatusType, ProfessionType, IdentityDocType, PrelevementType, PaymentMethodObseques, BeneficiaireType, SignatureMethodType } from "../types";
-import { ChevronLeft, ChevronRight, Upload, User, FileCheck, Stethoscope, Users, CreditCard, FileText, Banknote, Check, Loader2, ScanLine } from "lucide-react";
+import { ChevronLeft, ChevronRight, Upload, User, FileCheck, Stethoscope, Users, CreditCard, FileText, Banknote, Check, Loader2, ScanLine, ShieldCheck, ShieldAlert } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { CameraUploadButton } from "@/components/ui/CameraUploadButton";
 import { formatFCFA } from "@/utils/formatCurrency";
-import { calculatePackObsequesPremium, getPeriodicPremium } from "@/utils/packObsequesPremiumCalculator";
+import { calculatePackObsequesPremium, getPeriodicPremium, MAX_AGE_PRINCIPAL, MAX_AGE_CONJOINT } from "@/utils/packObsequesPremiumCalculator";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -59,21 +62,36 @@ const formatDateFR = (dateStr: string) => {
 
 const MIN_AGE = 18;
 
+const getAge = (dateStr: string) => {
+  if (!dateStr) return 0;
+  const birth = new Date(dateStr);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+};
+
 const getMaxBirthDate = () => {
   const d = new Date();
   d.setFullYear(d.getFullYear() - MIN_AGE);
   return d.toISOString().split("T")[0];
 };
 
-const AgeAlert = ({ value }: { value: string }) => {
+const getMinBirthDateForAge = (maxAge: number) => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - maxAge);
+  return d.toISOString().split("T")[0];
+};
+
+const AgeAlert = ({ value, maxAge, label }: { value: string; maxAge?: number; label?: string }) => {
   if (!value) return null;
-  const birth = new Date(value);
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  const age = getAge(value);
   if (age < MIN_AGE) {
-    return <p className="text-xs text-destructive">L'assuré doit avoir au moins {MIN_AGE} ans</p>;
+    return <p className="text-xs text-destructive">{label || "L'assuré"} doit avoir au moins {MIN_AGE} ans</p>;
+  }
+  if (maxAge && age > maxAge) {
+    return <p className="text-xs text-destructive">{label || "L'assuré"} ne peut pas dépasser {maxAge} ans</p>;
   }
   return null;
 };
@@ -86,7 +104,9 @@ export const PackObsequesSubscriptionFlow = ({
   onSubStepChange
 }: PackObsequesSubscriptionFlowProps) => {
   const [currentStep, setCurrentStepLocal] = useState(initialSubStep || 1);
-  const [isOCRProcessing, setIsOCRProcessing] = useState<"step1" | "step2" | null>(null);
+  const [isOCRProcessing, setIsOCRProcessing] = useState<"step1" | "step2" | "beneficiaire" | null>(null);
+  const [screeningStep1, setScreeningStep1] = useState<"idle" | "processing" | "ok" | "blocked">("idle");
+  const [screeningStep2, setScreeningStep2] = useState<"idle" | "processing" | "ok" | "blocked">("idle");
   const fileInputStep1Ref = useRef<HTMLInputElement>(null);
   const fileInputStep2Ref = useRef<HTMLInputElement>(null);
   const data = state.packObsequesData!;
@@ -144,11 +164,13 @@ export const PackObsequesSubscriptionFlow = ({
       if (result?.extracted) {
         const ext = result.extracted;
         const filledFields: string[] = [];
+        let extractedFirstName = "";
+        let extractedLastName = "";
 
         if (target === "step1") {
           const updates: Partial<PackObsequesData> = {};
-          if (ext.lastName) { updates.lastName = ext.lastName; filledFields.push("Nom"); }
-          if (ext.firstName) { updates.firstName = ext.firstName; filledFields.push("Prénom"); }
+          if (ext.lastName) { updates.lastName = ext.lastName; extractedLastName = ext.lastName; filledFields.push("Nom"); }
+          if (ext.firstName) { updates.firstName = ext.firstName; extractedFirstName = ext.firstName; filledFields.push("Prénom"); }
           if (ext.documentNumber) { updates.identityNumber = ext.documentNumber; filledFields.push("N° pièce"); }
           if (ext.documentType) {
             const typeMap: Record<string, string> = { "CNI": "cni", "Passeport": "passeport", "Permis de conduire": "permis", "Carte consulaire": "carte_sejour" };
@@ -160,8 +182,8 @@ export const PackObsequesSubscriptionFlow = ({
           onUpdate(updates);
         } else {
           const updates: Partial<PackObsequesData> = {};
-          if (ext.lastName) { updates.conjointLastName = ext.lastName; filledFields.push("Nom"); }
-          if (ext.firstName) { updates.conjointFirstName = ext.firstName; filledFields.push("Prénom"); }
+          if (ext.lastName) { updates.conjointLastName = ext.lastName; extractedLastName = ext.lastName; filledFields.push("Nom"); }
+          if (ext.firstName) { updates.conjointFirstName = ext.firstName; extractedFirstName = ext.firstName; filledFields.push("Prénom"); }
           if (ext.documentNumber) { updates.conjointIdNumber = ext.documentNumber; filledFields.push("N° pièce"); }
           if (ext.documentType) {
             const typeMap: Record<string, string> = { "CNI": "cni", "Passeport": "passeport", "Permis de conduire": "permis", "Carte consulaire": "carte_sejour" };
@@ -178,6 +200,28 @@ export const PackObsequesSubscriptionFlow = ({
         } else {
           toast.warning("L'analyse n'a pas pu extraire de données.");
         }
+
+        // Chain LCB-FT screening automatically
+        if (extractedFirstName && extractedLastName) {
+          const setScreening = target === "step1" ? setScreeningStep1 : setScreeningStep2;
+          setScreening("processing");
+          try {
+            const { data: screening, error: screenErr } = await supabase.functions.invoke("screen-ppe", {
+              body: {
+                clientId: "guided-sales-temp",
+                entityType: "lead",
+                firstName: extractedFirstName,
+                lastName: extractedLastName,
+                nationality: target === "step1" ? data.nationality : data.conjointNationality,
+              },
+            });
+            if (screenErr) throw screenErr;
+            setScreening(screening?.result?.screeningBlocked ? "blocked" : "ok");
+          } catch (screenError) {
+            console.error("Screening error:", screenError);
+            setScreening("ok"); // fail-open for demo
+          }
+        }
       } else {
         toast.warning("Impossible d'extraire les données du document.");
       }
@@ -192,18 +236,16 @@ export const PackObsequesSubscriptionFlow = ({
   };
 
   // ===== VALIDATION =====
-  const isAgeValid = (dateStr: string) => {
+  const isAgeValid = (dateStr: string, maxAge?: number) => {
     if (!dateStr) return false;
-    const birth = new Date(dateStr);
-    const today = new Date();
-    let age = today.getFullYear() - birth.getFullYear();
-    const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-    return age >= MIN_AGE;
+    const age = getAge(dateStr);
+    if (age < MIN_AGE) return false;
+    if (maxAge && age > maxAge) return false;
+    return true;
   };
 
-  const isStep1Valid = data.identityDocumentType && data.identityNumber && data.lastName && data.firstName && data.birthDate && isAgeValid(data.birthDate) && data.nationality && data.profession && data.maritalStatus && data.email && data.phone;
-  const isStep2Valid = data.conjointIdType && data.conjointIdNumber && data.conjointLastName && data.conjointFirstName && data.conjointBirthDate && isAgeValid(data.conjointBirthDate) && data.conjointNationality && data.conjointProfession && data.conjointPaysResidence && data.conjointVilleResidence && data.conjointEmail && data.conjointPhone;
+  const isStep1Valid = data.identityDocumentType && data.identityNumber && data.lastName && data.firstName && data.birthDate && isAgeValid(data.birthDate, MAX_AGE_PRINCIPAL) && data.nationality && data.profession && data.maritalStatus && data.email && data.phone && screeningStep1 !== "blocked";
+  const isStep2Valid = data.conjointIdType && data.conjointIdNumber && data.conjointLastName && data.conjointFirstName && data.conjointBirthDate && isAgeValid(data.conjointBirthDate, MAX_AGE_CONJOINT) && data.conjointNationality && data.conjointProfession && data.conjointEmail && data.conjointPhone && screeningStep2 !== "blocked";
   const isStep3Valid = data.taille > 0 && data.poids > 0 && data.medicalQ1 !== undefined && data.medicalQ2 !== undefined && data.medicalQ3 !== undefined && data.medicalQ4 !== undefined && data.medicalQ5 !== undefined && data.medicalQ6 !== undefined && data.medicalQ7 !== undefined && data.medicalQ8 !== undefined && data.medicalQ9 !== undefined && data.medicalQ10 !== undefined;
   const isStep4Valid = !!data.beneficiaireType && (data.beneficiaireType === "ayant_droit" || (data.beneficiaireNom && data.beneficiairePrenom && data.beneficiaireLien));
   const isStep5Valid = data.prelevementAuto === false || (data.prelevementAuto === true && data.typePrelevement && (data.typePrelevement !== "banque" || (data.rib && data.nomBanque && data.titulaireBanque)));
@@ -233,6 +275,66 @@ export const PackObsequesSubscriptionFlow = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* OCR Scanner - FIRST BLOCK */}
+        <div className="space-y-2">
+          <Label className="font-medium">📄 Scanner une pièce d'identité</Label>
+          <input
+            ref={fileInputStep1Ref}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleOCRUpload(e, "step1")}
+            disabled={isOCRProcessing !== null}
+          />
+          {isOCRProcessing === "step1" ? (
+            <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <div>
+                <p className="text-sm font-medium">Analyse en cours...</p>
+                <p className="text-xs text-muted-foreground">Extraction des données d'identité</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Scannez la pièce pour pré-remplir les champs ci-dessous</p>
+              <CameraUploadButton
+                id="ocr-identity-step1"
+                onFileSelected={(file) => {
+                  const dt = new DataTransfer();
+                  dt.items.add(file);
+                  const fakeEvent = { target: { files: dt.files } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                  handleOCRUpload(fakeEvent, "step1");
+                }}
+                disabled={isOCRProcessing !== null}
+                uploadLabel="Uploader"
+                cameraLabel="Scanner"
+              />
+            </div>
+          )}
+          {/* Screening status */}
+          {screeningStep1 === "processing" && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Vérification de conformité...
+            </div>
+          )}
+          {screeningStep1 === "ok" && (
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <ShieldCheck className="h-3 w-3 mr-1" />
+              Conformité validée
+            </Badge>
+          )}
+          {screeningStep1 === "blocked" && (
+            <Alert variant="destructive">
+              <ShieldAlert className="h-4 w-4" />
+              <AlertTitle>Souscription impossible</AlertTitle>
+              <AlertDescription>
+                Un contrôle de conformité empêche la poursuite de cette souscription. Contactez votre responsable.
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+
         <div className="space-y-2">
           <Label>Type de pièce d'identité *</Label>
           <Select value={data.identityDocumentType} onValueChange={(v) => onUpdate({ identityDocumentType: v })}>
@@ -253,35 +355,6 @@ export const PackObsequesSubscriptionFlow = ({
         </div>
 
         <div className="space-y-2">
-          <Label>Scanner la pièce d'identité (OCR)</Label>
-          <input
-            ref={fileInputStep1Ref}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => handleOCRUpload(e, "step1")}
-            disabled={isOCRProcessing !== null}
-          />
-          {isOCRProcessing === "step1" ? (
-            <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <div>
-                <p className="text-sm font-medium">Analyse en cours...</p>
-                <p className="text-xs text-muted-foreground">Extraction des données d'identité</p>
-              </div>
-            </div>
-          ) : (
-            <div
-              className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
-              onClick={() => fileInputStep1Ref.current?.click()}
-            >
-              <ScanLine className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">Scannez la pièce pour pré-remplir les champs</p>
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-2">
           <Label>Nom de famille * {data.lastName && <span className="text-xs text-muted-foreground italic">(pré-rempli)</span>}</Label>
           <Input value={data.lastName} onChange={(e) => onUpdate({ lastName: e.target.value })} placeholder="Écrivez ici" />
         </div>
@@ -291,11 +364,11 @@ export const PackObsequesSubscriptionFlow = ({
           <Input value={data.firstName} onChange={(e) => onUpdate({ firstName: e.target.value })} placeholder="Écrivez ici" />
         </div>
 
-        <div className="space-y-2">
-          <Label>Date de naissance * {data.birthDate && <span className="text-xs text-muted-foreground italic">(pré-rempli)</span>}</Label>
-          <Input type="date" value={data.birthDate} max={getMaxBirthDate()} onChange={(e) => onUpdate({ birthDate: e.target.value })} />
-          <AgeAlert value={data.birthDate} />
-        </div>
+         <div className="space-y-2">
+           <Label>Date de naissance * {data.birthDate && <span className="text-xs text-muted-foreground italic">(pré-rempli)</span>}</Label>
+           <Input type="date" value={data.birthDate} min={getMinBirthDateForAge(MAX_AGE_PRINCIPAL)} max={getMaxBirthDate()} onChange={(e) => onUpdate({ birthDate: e.target.value })} />
+           <AgeAlert value={data.birthDate} maxAge={MAX_AGE_PRINCIPAL} label="L'assuré principal" />
+         </div>
 
         <div className="space-y-2">
           <Label>Nationalité *</Label>
@@ -375,6 +448,66 @@ export const PackObsequesSubscriptionFlow = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* OCR Scanner - FIRST BLOCK */}
+        <div className="space-y-2">
+          <Label className="font-medium">📄 Scanner la pièce d'identité du conjoint</Label>
+          <input
+            ref={fileInputStep2Ref}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleOCRUpload(e, "step2")}
+            disabled={isOCRProcessing !== null}
+          />
+          {isOCRProcessing === "step2" ? (
+            <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <div>
+                <p className="text-sm font-medium">Analyse en cours...</p>
+                <p className="text-xs text-muted-foreground">Extraction des données d'identité du conjoint</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Scannez la pièce pour pré-remplir les champs ci-dessous</p>
+              <CameraUploadButton
+                id="ocr-identity-step2"
+                onFileSelected={(file) => {
+                  const dt = new DataTransfer();
+                  dt.items.add(file);
+                  const fakeEvent = { target: { files: dt.files } } as unknown as React.ChangeEvent<HTMLInputElement>;
+                  handleOCRUpload(fakeEvent, "step2");
+                }}
+                disabled={isOCRProcessing !== null}
+                uploadLabel="Uploader"
+                cameraLabel="Scanner"
+              />
+            </div>
+          )}
+          {/* Screening status */}
+          {screeningStep2 === "processing" && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Vérification de conformité...
+            </div>
+          )}
+          {screeningStep2 === "ok" && (
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <ShieldCheck className="h-3 w-3 mr-1" />
+              Conformité validée
+            </Badge>
+          )}
+          {screeningStep2 === "blocked" && (
+            <Alert variant="destructive">
+              <ShieldAlert className="h-4 w-4" />
+              <AlertTitle>Souscription impossible</AlertTitle>
+              <AlertDescription>
+                Un contrôle de conformité empêche la poursuite de cette souscription. Contactez votre responsable.
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+
         <div className="space-y-2">
           <Label>Type de pièce d'identité *</Label>
           <Select value={data.conjointIdType} onValueChange={(v) => onUpdate({ conjointIdType: v })}>
@@ -395,35 +528,6 @@ export const PackObsequesSubscriptionFlow = ({
         </div>
 
         <div className="space-y-2">
-          <Label>Scanner la pièce d'identité conjoint (OCR)</Label>
-          <input
-            ref={fileInputStep2Ref}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => handleOCRUpload(e, "step2")}
-            disabled={isOCRProcessing !== null}
-          />
-          {isOCRProcessing === "step2" ? (
-            <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <div>
-                <p className="text-sm font-medium">Analyse en cours...</p>
-                <p className="text-xs text-muted-foreground">Extraction des données d'identité du conjoint</p>
-              </div>
-            </div>
-          ) : (
-            <div
-              className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
-              onClick={() => fileInputStep2Ref.current?.click()}
-            >
-              <ScanLine className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">Scannez la pièce pour pré-remplir les champs</p>
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-2">
           <Label>Nom de famille *</Label>
           <Input value={data.conjointLastName} onChange={(e) => onUpdate({ conjointLastName: e.target.value })} placeholder="Écrivez ici" />
         </div>
@@ -433,11 +537,11 @@ export const PackObsequesSubscriptionFlow = ({
           <Input value={data.conjointFirstName} onChange={(e) => onUpdate({ conjointFirstName: e.target.value })} placeholder="Écrivez ici" />
         </div>
 
-        <div className="space-y-2">
-          <Label>Date de naissance *</Label>
-          <Input type="date" value={data.conjointBirthDate} max={getMaxBirthDate()} onChange={(e) => onUpdate({ conjointBirthDate: e.target.value })} />
-          <AgeAlert value={data.conjointBirthDate} />
-        </div>
+         <div className="space-y-2">
+           <Label>Date de naissance *</Label>
+           <Input type="date" value={data.conjointBirthDate} min={getMinBirthDateForAge(MAX_AGE_CONJOINT)} max={getMaxBirthDate()} onChange={(e) => onUpdate({ conjointBirthDate: e.target.value })} />
+           <AgeAlert value={data.conjointBirthDate} maxAge={MAX_AGE_CONJOINT} label="Le conjoint" />
+         </div>
 
         <div className="space-y-2">
           <Label>Nationalité *</Label>
@@ -465,20 +569,20 @@ export const PackObsequesSubscriptionFlow = ({
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label>Pays de résidence *</Label>
-          <Select value={data.conjointPaysResidence} onValueChange={(v) => onUpdate({ conjointPaysResidence: v })}>
-            <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
-            <SelectContent>
-              {COUNTRIES.map(c => <SelectItem key={c} value={c.toLowerCase().replace(/[' ]/g, "_")}>{c}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
+         <div className="space-y-2">
+           <Label>Pays de résidence</Label>
+           <Select value={data.conjointPaysResidence} onValueChange={(v) => onUpdate({ conjointPaysResidence: v })}>
+             <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+             <SelectContent>
+               {COUNTRIES.map(c => <SelectItem key={c} value={c.toLowerCase().replace(/[' ]/g, "_")}>{c}</SelectItem>)}
+             </SelectContent>
+           </Select>
+         </div>
 
-        <div className="space-y-2">
-          <Label>Ville de résidence *</Label>
-          <Input value={data.conjointVilleResidence} onChange={(e) => onUpdate({ conjointVilleResidence: e.target.value })} placeholder="Écrivez ici" />
-        </div>
+         <div className="space-y-2">
+           <Label>Ville de résidence</Label>
+           <Input value={data.conjointVilleResidence} onChange={(e) => onUpdate({ conjointVilleResidence: e.target.value })} placeholder="Écrivez ici" />
+         </div>
 
         <div className="space-y-2">
           <Label>Email *</Label>
@@ -551,6 +655,45 @@ export const PackObsequesSubscriptionFlow = ({
     </Card>
   );
 
+  // ===== OCR handler for beneficiaire =====
+  const handleBeneficiaireOCR = async (file: File) => {
+    setIsOCRProcessing("beneficiaire");
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data: result, error } = await supabase.functions.invoke("ocr-identity", {
+        body: { imageBase64: base64 },
+      });
+      if (error) throw error;
+
+      if (result?.extracted) {
+        const ext = result.extracted;
+        const updates: Partial<PackObsequesData> = {};
+        const filledFields: string[] = [];
+        if (ext.lastName) { updates.beneficiaireNom = ext.lastName; filledFields.push("Nom"); }
+        if (ext.firstName) { updates.beneficiairePrenom = ext.firstName; filledFields.push("Prénom"); }
+        onUpdate(updates);
+        if (filledFields.length > 0) {
+          toast.success(`Pièce analysée ! Champs pré-remplis : ${filledFields.join(", ")}`, { duration: 5000 });
+        } else {
+          toast.warning("L'analyse n'a pas pu extraire de données.");
+        }
+      } else {
+        toast.warning("Impossible d'extraire les données du document.");
+      }
+    } catch (err) {
+      console.error("OCR error:", err);
+      toast.error("Erreur lors de l'analyse du document");
+    } finally {
+      setIsOCRProcessing(null);
+    }
+  };
+
   // ===== STEP 4: Bénéficiaires =====
   const renderStep4 = () => (
     <Card>
@@ -578,12 +721,37 @@ export const PackObsequesSubscriptionFlow = ({
 
         {data.beneficiaireType === "autre" && (
           <div className="space-y-4 pt-4 border-t">
+            {/* OCR Scanner for beneficiary */}
             <div className="space-y-2">
-              <Label>Nom du bénéficiaire *</Label>
+              <Label className="font-medium">📄 Scanner la pièce d'identité du bénéficiaire</Label>
+              {isOCRProcessing === "beneficiaire" ? (
+                <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <div>
+                    <p className="text-sm font-medium">Analyse en cours...</p>
+                    <p className="text-xs text-muted-foreground">Extraction des données d'identité du bénéficiaire</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Scannez la pièce pour pré-remplir nom et prénom</p>
+                  <CameraUploadButton
+                    id="ocr-identity-beneficiaire"
+                    onFileSelected={handleBeneficiaireOCR}
+                    disabled={isOCRProcessing !== null}
+                    uploadLabel="Uploader"
+                    cameraLabel="Scanner"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Nom du bénéficiaire * {data.beneficiaireNom && <span className="text-xs text-muted-foreground italic">(pré-rempli)</span>}</Label>
               <Input value={data.beneficiaireNom || ""} onChange={(e) => onUpdate({ beneficiaireNom: e.target.value })} placeholder="Écrivez ici" />
             </div>
             <div className="space-y-2">
-              <Label>Prénom du bénéficiaire *</Label>
+              <Label>Prénom du bénéficiaire * {data.beneficiairePrenom && <span className="text-xs text-muted-foreground italic">(pré-rempli)</span>}</Label>
               <Input value={data.beneficiairePrenom || ""} onChange={(e) => onUpdate({ beneficiairePrenom: e.target.value })} placeholder="Écrivez ici" />
             </div>
             <div className="space-y-2">
@@ -722,7 +890,12 @@ export const PackObsequesSubscriptionFlow = ({
           </AccordionItem>
 
           <AccordionItem value="assure">
-            <AccordionTrigger>Informations sur l'assuré(e) principal(e)</AccordionTrigger>
+            <div className="flex items-center justify-between">
+              <AccordionTrigger className="flex-1">Informations sur l'assuré(e) principal(e)</AccordionTrigger>
+              <Button variant="ghost" size="sm" onClick={() => setCurrentStep(1)} className="text-muted-foreground hover:text-primary text-xs gap-1 mr-2 shrink-0">
+                <ChevronLeft className="h-3 w-3" />Modifier
+              </Button>
+            </div>
             <AccordionContent>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Nom</span><span>{data.lastName} {data.firstName}</span></div>
@@ -738,7 +911,12 @@ export const PackObsequesSubscriptionFlow = ({
 
           {isMarried && (
             <AccordionItem value="conjoint">
-              <AccordionTrigger>Information sur le conjoint</AccordionTrigger>
+              <div className="flex items-center justify-between">
+                <AccordionTrigger className="flex-1">Information sur le conjoint</AccordionTrigger>
+                <Button variant="ghost" size="sm" onClick={() => setCurrentStep(2)} className="text-muted-foreground hover:text-primary text-xs gap-1 mr-2 shrink-0">
+                  <ChevronLeft className="h-3 w-3" />Modifier
+                </Button>
+              </div>
               <AccordionContent>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between"><span className="text-muted-foreground">Nom</span><span>{data.conjointLastName} {data.conjointFirstName}</span></div>
@@ -767,7 +945,12 @@ export const PackObsequesSubscriptionFlow = ({
           </AccordionItem>
 
           <AccordionItem value="medical">
-            <AccordionTrigger>Questionnaire médical - Assuré principal</AccordionTrigger>
+            <div className="flex items-center justify-between">
+              <AccordionTrigger className="flex-1">Questionnaire médical - Assuré principal</AccordionTrigger>
+              <Button variant="ghost" size="sm" onClick={() => setCurrentStep(3)} className="text-muted-foreground hover:text-primary text-xs gap-1 mr-2 shrink-0">
+                <ChevronLeft className="h-3 w-3" />Modifier
+              </Button>
+            </div>
             <AccordionContent>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Taille</span><span>{data.taille} cm</span></div>
@@ -783,7 +966,12 @@ export const PackObsequesSubscriptionFlow = ({
           </AccordionItem>
 
           <AccordionItem value="beneficiaires">
-            <AccordionTrigger>Information sur les bénéficiaires</AccordionTrigger>
+            <div className="flex items-center justify-between">
+              <AccordionTrigger className="flex-1">Information sur les bénéficiaires</AccordionTrigger>
+              <Button variant="ghost" size="sm" onClick={() => setCurrentStep(4)} className="text-muted-foreground hover:text-primary text-xs gap-1 mr-2 shrink-0">
+                <ChevronLeft className="h-3 w-3" />Modifier
+              </Button>
+            </div>
             <AccordionContent>
               <div className="text-sm">
                 <span className="capitalize">{data.beneficiaireType === "ayant_droit" ? "Ayant droit légaux" : `${data.beneficiaireNom} ${data.beneficiairePrenom} (${data.beneficiaireLien})`}</span>
@@ -792,7 +980,12 @@ export const PackObsequesSubscriptionFlow = ({
           </AccordionItem>
 
           <AccordionItem value="prelevement">
-            <AccordionTrigger>Moyen de prélèvement</AccordionTrigger>
+            <div className="flex items-center justify-between">
+              <AccordionTrigger className="flex-1">Moyen de prélèvement</AccordionTrigger>
+              <Button variant="ghost" size="sm" onClick={() => setCurrentStep(5)} className="text-muted-foreground hover:text-primary text-xs gap-1 mr-2 shrink-0">
+                <ChevronLeft className="h-3 w-3" />Modifier
+              </Button>
+            </div>
             <AccordionContent>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Prélèvement auto</span><span>{data.prelevementAuto ? "Oui" : "Non"}</span></div>
@@ -870,13 +1063,22 @@ export const PackObsequesSubscriptionFlow = ({
     { id: "moov", name: "Moov Money", color: "bg-cyan-500" },
   ];
 
+  const isAutoDebitNonEwallet = data.prelevementAuto && data.typePrelevement && data.typePrelevement !== "ewallet";
+
   const renderStep7 = () => (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <Banknote className="h-5 w-5 text-primary" />
-          Paiement de la souscription
+          {isAutoDebitNonEwallet ? "Paiement de la première prime" : "Paiement de la souscription"}
         </CardTitle>
+        {isAutoDebitNonEwallet && (
+          <p className="text-sm text-muted-foreground mt-1">
+            Les prochaines primes seront prélevées automatiquement via{" "}
+            {data.typePrelevement === "banque" ? "votre compte bancaire" : data.typePrelevement === "solde" ? "votre solde employeur" : "APS"}.
+            Seule la première prime et les frais d'adhésion sont à régler maintenant par paiement mobile.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Financial recap */}

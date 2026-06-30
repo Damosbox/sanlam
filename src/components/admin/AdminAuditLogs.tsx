@@ -4,11 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, FileText, RefreshCw, Download, Search, Clock, User } from "lucide-react";
+import { Loader2, FileText, RefreshCw, Clock, User } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
+import { exportToCsv } from "@/lib/export-csv";
 
 interface AuditLog {
   id: string;
@@ -37,6 +39,7 @@ export const AdminAuditLogs = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [actionFilter, setActionFilter] = useState<string>("all");
   const [resourceFilter, setResourceFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("date_desc");
   const [userEmails, setUserEmails] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -77,27 +80,18 @@ export const AdminAuditLogs = () => {
   };
 
   const exportLogs = () => {
-    const csv = [
-      ["Date", "Utilisateur", "Action", "Resource", "ID Resource", "IP"].join(","),
-      ...filteredLogs.map((log) =>
-        [
-          format(new Date(log.created_at), "yyyy-MM-dd HH:mm:ss"),
-          userEmails[log.user_id || ""] || log.user_id || "Système",
-          log.action,
-          log.resource_type,
-          log.resource_id || "",
-          log.ip_address || "",
-        ].join(",")
-      ),
-    ].join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `audit_logs_${format(new Date(), "yyyy-MM-dd")}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    exportToCsv(
+      "audit_logs",
+      ["Date", "Utilisateur", "Action", "Resource", "ID Resource", "IP"],
+      filteredLogs.map((log) => [
+        format(new Date(log.created_at), "yyyy-MM-dd HH:mm:ss"),
+        userEmails[log.user_id || ""] || log.user_id || "Système",
+        log.action,
+        log.resource_type,
+        log.resource_id || "",
+        log.ip_address || "",
+      ]),
+    );
   };
 
   // Get unique values for filters
@@ -116,7 +110,16 @@ export const AdminAuditLogs = () => {
     const matchesResource = resourceFilter === "all" || log.resource_type === resourceFilter;
 
     return matchesSearch && matchesAction && matchesResource;
+  }).sort((a, b) => {
+    const da = +new Date(a.created_at);
+    const db = +new Date(b.created_at);
+    return sortBy === "date_asc" ? da - db : db - da;
   });
+
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    filteredLogs,
+    { storageKey: "admin-audit-logs" },
+  );
 
   if (loading) {
     return (
@@ -140,10 +143,6 @@ export const AdminAuditLogs = () => {
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Actualiser
               </Button>
-              <Button variant="outline" size="sm" onClick={exportLogs}>
-                <Download className="h-4 w-4 mr-2" />
-                Exporter CSV
-              </Button>
             </div>
           </div>
           <CardDescription>
@@ -151,46 +150,44 @@ export const AdminAuditLogs = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Filters */}
-          <div className="flex flex-wrap gap-4 mb-6">
-            <div className="flex-1 min-w-[200px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-            </div>
-            <Select value={actionFilter} onValueChange={setActionFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Action" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes actions</SelectItem>
-                {actions.map((action) => (
-                  <SelectItem key={action} value={action}>
-                    {action}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={resourceFilter} onValueChange={setResourceFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Resource" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes resources</SelectItem>
-                {resources.map((resource) => (
-                  <SelectItem key={resource} value={resource}>
-                    {resource}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <DataTableToolbar
+            search={{
+              value: searchTerm,
+              onChange: setSearchTerm,
+              placeholder: "Rechercher action, utilisateur, resource...",
+            }}
+            filters={[
+              {
+                id: "action",
+                label: "Action",
+                value: actionFilter,
+                onChange: setActionFilter,
+                options: [
+                  { value: "all", label: "Toutes actions" },
+                  ...actions.map((a) => ({ value: a, label: a })),
+                ],
+              },
+              {
+                id: "resource",
+                label: "Resource",
+                value: resourceFilter,
+                onChange: setResourceFilter,
+                options: [
+                  { value: "all", label: "Toutes resources" },
+                  ...resources.map((r) => ({ value: r, label: r })),
+                ],
+              },
+            ]}
+            sort={{
+              value: sortBy,
+              onChange: setSortBy,
+              options: [
+                { value: "date_desc", label: "Plus récents" },
+                { value: "date_asc", label: "Plus anciens" },
+              ],
+            }}
+            onExport={exportLogs}
+          />
 
           {/* Table */}
           <div className="rounded-md border">
@@ -223,7 +220,7 @@ export const AdminAuditLogs = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredLogs.map((log) => (
+                  pageItems.map((log) => (
                     <TableRow key={log.id}>
                       <TableCell className="text-sm">
                         {format(new Date(log.created_at), "dd MMM yyyy HH:mm", {
@@ -257,10 +254,16 @@ export const AdminAuditLogs = () => {
               </TableBody>
             </Table>
           </div>
-
-          <p className="text-sm text-muted-foreground mt-4">
-            Affichage des {filteredLogs.length} derniers événements (max 100)
-          </p>
+          <div className="mt-4">
+            <DataTablePagination
+              page={page}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              setPage={setPage}
+              setPageSize={setPageSize}
+              itemLabel="événement"
+            />
+          </div>
         </CardContent>
       </Card>
     </div>

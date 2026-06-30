@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, Loader2, Camera } from "lucide-react";
+import { Loader2, Camera } from "lucide-react";
+import { CameraUploadButton } from "@/components/ui/CameraUploadButton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -97,36 +98,31 @@ export const ClaimOCRUploader = ({ onDataExtracted, claimType }: ClaimOCRUploade
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <input
-          type="file"
-          accept="image/*,application/pdf"
-          onChange={handleFileChange}
-          className="hidden"
-          id="ocr-upload"
-          disabled={isProcessing}
-        />
-        
-        <Button
-          variant="outline"
-          className="w-full h-32 border-2 border-dashed hover:border-primary hover:bg-primary/5 transition-all"
-          onClick={() => document.getElementById('ocr-upload')?.click()}
-          disabled={isProcessing}
-        >
-          {isProcessing ? (
-            <div className="flex flex-col items-center gap-2">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <span>Analyse en cours...</span>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-2">
-              <Upload className="h-8 w-8 text-muted-foreground" />
-              <span>Cliquez pour uploader</span>
-              <span className="text-xs text-muted-foreground">
-                JPG, PNG ou PDF (max 20MB)
-              </span>
-            </div>
-          )}
-        </Button>
+        {isProcessing ? (
+          <div className="flex items-center justify-center gap-3 p-6 border-2 border-dashed rounded-lg">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span>Analyse en cours...</span>
+          </div>
+        ) : (
+          <>
+            <p className="text-xs text-muted-foreground mb-2">JPG, PNG ou PDF (max 20MB)</p>
+            <CameraUploadButton
+              id="ocr-upload"
+              accept="image/*,application/pdf"
+              onFileSelected={(file) => {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                const input = document.createElement("input");
+                input.type = "file";
+                Object.defineProperty(input, "files", { value: dt.files });
+                handleFileChange({ target: input } as unknown as React.ChangeEvent<HTMLInputElement>);
+              }}
+              disabled={isProcessing}
+              uploadLabel="Uploader"
+              cameraLabel="Scanner"
+            />
+          </>
+        )}
 
         {previewUrl && (
           <div className="rounded-lg overflow-hidden border">

@@ -7,6 +7,8 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { LeadStatusBadge } from "./LeadStatusBadge";
 import type { Tables } from "@/integrations/supabase/types";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
 
 type Lead = Tables<"leads">;
 
@@ -18,6 +20,10 @@ interface LeadsDataTableProps {
 
 export const LeadsDataTable = ({ leads, density, onSelectLead }: LeadsDataTableProps) => {
   const navigate = useNavigate();
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    leads,
+    { storageKey: "broker-leads" },
+  );
   const handleCall = (e: React.MouseEvent, phone: string | null) => {
     e.stopPropagation();
     if (phone) window.open(`tel:${phone}`, "_blank");
@@ -36,7 +42,7 @@ export const LeadsDataTable = ({ leads, density, onSelectLead }: LeadsDataTableP
   const avatarSize = density === "compact" ? "h-8 w-8" : "h-10 w-10";
   const textSize = density === "compact" ? "text-xs" : "text-sm";
 
-  if (leads.length === 0) {
+  if (totalItems === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
         Aucun lead trouvé
@@ -45,6 +51,7 @@ export const LeadsDataTable = ({ leads, density, onSelectLead }: LeadsDataTableP
   }
 
   return (
+    <div className="space-y-2">
     <div className="rounded-lg border bg-card">
       <Table>
         <TableHeader>
@@ -59,7 +66,7 @@ export const LeadsDataTable = ({ leads, density, onSelectLead }: LeadsDataTableP
           </TableRow>
         </TableHeader>
         <TableBody>
-          {leads.map((lead) => {
+          {pageItems.map((lead) => {
             const initials = `${lead.first_name?.[0] || ""}${lead.last_name?.[0] || ""}`.toUpperCase();
             
             return (
@@ -163,6 +170,15 @@ export const LeadsDataTable = ({ leads, density, onSelectLead }: LeadsDataTableP
           })}
         </TableBody>
       </Table>
+    </div>
+    <DataTablePagination
+      page={page}
+      pageSize={pageSize}
+      totalItems={totalItems}
+      setPage={setPage}
+      setPageSize={setPageSize}
+      itemLabel="lead"
+    />
     </div>
   );
 };

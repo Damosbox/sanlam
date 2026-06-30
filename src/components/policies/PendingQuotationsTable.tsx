@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +12,10 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
+import { exportToCsv, csvDate } from "@/lib/export-csv";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,7 +24,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { 
-  Search, 
   MoreHorizontal, 
   Mail, 
   MessageCircle, 
@@ -87,6 +89,9 @@ const frequencyLabels: Record<string, string> = {
 export const PendingQuotationsTable = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [productFilter, setProductFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("date_desc");
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -134,20 +139,66 @@ export const PendingQuotationsTable = () => {
     },
   });
 
-  const filteredQuotations = quotations.filter((q) => {
-    if (!searchQuery) return true;
+  const productTypes = useMemo(
+    () => Array.from(new Set(quotations.map((q) => q.product_type).filter(Boolean))),
+    [quotations],
+  );
+
+  const filteredQuotations = useMemo(() => {
     const searchLower = searchQuery.toLowerCase();
-    const cdClient = q.coverage_details?.clientInfo;
-    const fullName = q.leads
-      ? `${q.leads.first_name} ${q.leads.last_name}`.toLowerCase()
-      : `${cdClient?.firstName || ""} ${cdClient?.lastName || ""}`.toLowerCase();
-    return (
-      fullName.includes(searchLower) ||
-      q.product_name.toLowerCase().includes(searchLower) ||
-      q.product_type.toLowerCase().includes(searchLower) ||
-      (cdClient?.email || "").toLowerCase().includes(searchLower)
+    const arr = quotations.filter((q) => {
+      if (statusFilter !== "all") {
+        if (statusFilter === "draft" && !q.is_draft) return false;
+        if (statusFilter !== "draft" && q.payment_status !== statusFilter) return false;
+      }
+      if (productFilter !== "all" && q.product_type !== productFilter) return false;
+      if (!searchQuery) return true;
+      const cdClient = q.coverage_details?.clientInfo;
+      const fullName = q.leads
+        ? `${q.leads.first_name} ${q.leads.last_name}`.toLowerCase()
+        : `${cdClient?.firstName || ""} ${cdClient?.lastName || ""}`.toLowerCase();
+      return (
+        fullName.includes(searchLower) ||
+        q.product_name.toLowerCase().includes(searchLower) ||
+        q.product_type.toLowerCase().includes(searchLower) ||
+        (cdClient?.email || "").toLowerCase().includes(searchLower)
+      );
+    });
+    return [...arr].sort((a, b) => {
+      switch (sortBy) {
+        case "date_asc": return +new Date(a.created_at) - +new Date(b.created_at);
+        case "premium_desc": return Number(b.premium_amount) - Number(a.premium_amount);
+        case "premium_asc": return Number(a.premium_amount) - Number(b.premium_amount);
+        case "date_desc":
+        default: return +new Date(b.created_at) - +new Date(a.created_at);
+      }
+    });
+  }, [quotations, searchQuery, statusFilter, productFilter, sortBy]);
+
+  const handleExport = () => {
+    exportToCsv(
+      "pending-quotations",
+      ["Client", "Email", "Produit", "Type", "Prime", "Fréquence", "Statut", "Date cotation"],
+      filteredQuotations.map((q) => {
+        const cd = q.coverage_details?.clientInfo;
+        const name = q.leads
+          ? `${q.leads.first_name} ${q.leads.last_name}`
+          : `${cd?.firstName || ""} ${cd?.lastName || ""}`.trim();
+        return [
+          name, q.leads?.email || cd?.email || "",
+          q.product_name, productTypeLabels[q.product_type] || q.product_type,
+          q.premium_amount, q.premium_frequency,
+          q.is_draft ? "Brouillon" : q.payment_status,
+          csvDate(q.created_at),
+        ];
+      }),
     );
-  });
+  };
+
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    filteredQuotations,
+    { storageKey: "broker-pending-quotations" },
+  );
 
   const getExpirationBadge = (quotation: Quotation) => {
     const { valid_until: validUntil, payment_status: paymentStatus } = quotation;
@@ -303,16 +354,38 @@ export const PendingQuotationsTable = () => {
 
   return (
     <div className="space-y-4">
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Rechercher un prospect ou produit..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9"
-        />
-      </div>
+      <DataTableToolbar
+        search={{ value: searchQuery, onChange: setSearchQuery, placeholder: "Rechercher un prospect ou produit..." }}
+        filters={[
+          {
+            id: "status", label: "Statut", value: statusFilter, onChange: setStatusFilter,
+            options: [
+              { value: "all", label: "Tous statuts" },
+              { value: "draft", label: "Brouillon" },
+              { value: "pending_payment", label: "En attente" },
+              { value: "paid", label: "Payé" },
+              { value: "cancelled", label: "Annulé" },
+            ],
+          },
+          {
+            id: "product", label: "Produit", value: productFilter, onChange: setProductFilter,
+            options: [
+              { value: "all", label: "Tous produits" },
+              ...productTypes.map((p) => ({ value: p, label: productTypeLabels[p] || p })),
+            ],
+          },
+        ]}
+        sort={{
+          value: sortBy, onChange: setSortBy,
+          options: [
+            { value: "date_desc", label: "Date récente" },
+            { value: "date_asc", label: "Date ancienne" },
+            { value: "premium_desc", label: "Prime décroissante" },
+            { value: "premium_asc", label: "Prime croissante" },
+          ],
+        }}
+        onExport={handleExport}
+      />
 
       {/* Table */}
       <div className="rounded-md border overflow-x-auto">
@@ -336,7 +409,7 @@ export const PendingQuotationsTable = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredQuotations.map((quotation) => (
+              pageItems.map((quotation) => (
                 <TableRow key={quotation.id}>
                   <TableCell>
                     <div>
@@ -362,12 +435,18 @@ export const PendingQuotationsTable = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="font-medium text-sm">
-                      {formatFCFA(quotation.premium_amount)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {frequencyLabels[quotation.premium_frequency] || quotation.premium_frequency}
-                    </div>
+                    {quotation.premium_amount > 0 ? (
+                      <>
+                        <div className="font-medium text-sm">
+                          {formatFCFA(quotation.premium_amount)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {frequencyLabels[quotation.premium_frequency] || quotation.premium_frequency}
+                        </div>
+                      </>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-sm">
                     {format(new Date(quotation.created_at), "dd MMM", { locale: fr })}
@@ -510,6 +589,17 @@ export const PendingQuotationsTable = () => {
             Total: {formatFCFA(filteredQuotations.reduce((sum, q) => sum + Number(q.premium_amount), 0))}
           </span>
         </div>
+      )}
+
+      {filteredQuotations.length > 0 && (
+        <DataTablePagination
+          page={page}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          setPage={setPage}
+          setPageSize={setPageSize}
+          itemLabel="cotation"
+        />
       )}
 
       <QuotationDetailDialog

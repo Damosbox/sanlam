@@ -1,9 +1,9 @@
 export type ProductType = "auto" | "vie";
 export type ProductCategory = "vie" | "non-vie";
-export type SelectedProductType = "auto" | "pack_obseques";
+export type SelectedProductType = "auto" | "pack_obseques" | (string & {});
 export type ClientType = "prospect" | "existing";
 export type UsageType = "prive" | "professionnel" | "taxi" | "livraison";
-export type PlanTier = "mini" | "basic" | "medium" | "medium_plus" | "evolution" | "evolution_plus" | "supreme";
+export type PlanTier = "mini" | "basic" | "medium" | "medium_plus" | "evolution" | "evolution_plus";
 export type ContractPeriodicity = "1_month" | "3_months" | "6_months" | "1_year";
 export type SignatureType = "presential" | "electronic";
 export type PaymentChannel = "email" | "sms" | "whatsapp";

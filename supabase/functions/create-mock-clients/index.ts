@@ -23,6 +23,39 @@ serve(async (req) => {
       }
     );
 
+    // Verify caller is authenticated and is an admin
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ success: false, error: 'Non autorisé' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
+    if (userError || !userData?.user) {
+      return new Response(JSON.stringify({ success: false, error: 'Token invalide' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Check admin role
+    const { data: roleData } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userData.user.id)
+      .eq('role', 'admin')
+      .single();
+
+    if (!roleData) {
+      return new Response(JSON.stringify({ success: false, error: 'Accès réservé aux administrateurs' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Récupérer le brokerId depuis le body de la requête
     const { brokerId } = await req.json().catch(() => ({}));
 
@@ -83,7 +116,6 @@ serve(async (req) => {
     for (let i = 0; i < mockClients.length; i++) {
       const client = mockClients[i];
       
-      // Vérifier si l'utilisateur existe déjà
       const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
       const existingUser = existingUsers?.users?.find(u => u.email === client.email);
 
@@ -93,8 +125,7 @@ serve(async (req) => {
         userId = existingUser.id;
         console.log(`Utilisateur ${client.email} existe déjà, mise à jour...`);
       } else {
-        // Créer l'utilisateur
-        const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
+        const { data: newUserData, error: userCreateError } = await supabaseAdmin.auth.admin.createUser({
           email: client.email,
           password: client.password,
           email_confirm: true,
@@ -104,20 +135,18 @@ serve(async (req) => {
           }
         });
 
-        if (userError) {
-          console.error(`Erreur création utilisateur ${client.email}:`, userError);
-          results.push({ email: client.email, success: false, error: userError.message });
+        if (userCreateError) {
+          console.error(`Erreur création utilisateur ${client.email}:`, userCreateError);
+          results.push({ email: client.email, success: false, error: userCreateError.message });
           continue;
         }
 
-        userId = userData.user.id;
+        userId = newUserData.user.id;
 
-        // Attribuer le rôle customer
         await supabaseAdmin
           .from('user_roles')
           .upsert({ user_id: userId, role: 'customer' }, { onConflict: 'user_id' });
 
-        // Mettre à jour le profil
         await supabaseAdmin
           .from('profiles')
           .update({
@@ -127,7 +156,6 @@ serve(async (req) => {
           .eq('id', userId);
       }
 
-      // Lier le client au broker
       await supabaseAdmin
         .from('broker_clients')
         .upsert({
@@ -136,12 +164,10 @@ serve(async (req) => {
           assigned_by: brokerId,
         }, { onConflict: 'broker_id,client_id' });
 
-      // Créer une souscription
       const product = products[i % products.length];
       const policyNumber = `POL-2024-${String(i + 1).padStart(3, '0')}`;
       const monthlyPremium = product.base_premium * (1 + (Math.random() * 0.2 - 0.1));
 
-      // Vérifier si la police existe déjà
       const { data: existingSub } = await supabaseAdmin
         .from('subscriptions')
         .select('id')
@@ -167,7 +193,6 @@ serve(async (req) => {
           });
       }
 
-      // Créer 2-3 sinistres par client
       const claimsToCreate = 2 + (i % 2);
       const claimTypes: Array<'Auto' | 'Santé' | 'Habitation'> = ['Auto', 'Santé', 'Habitation'];
       const claimStatuses: Array<'Submitted' | 'Reviewed' | 'Approved'> = ['Submitted', 'Reviewed', 'Approved'];

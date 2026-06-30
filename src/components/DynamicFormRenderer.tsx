@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -7,6 +7,7 @@ import { DynamicFormField } from "@/components/forms/DynamicFormField";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { User } from "@supabase/supabase-js";
+import { getOcrEdgeFunctionName, OcrDocumentType } from "@/constants/ocrDocumentKeys";
 
 interface FormStep {
   title: string;
@@ -48,7 +49,57 @@ export const DynamicFormRenderer = ({
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
+  const [ocrLoading, setOcrLoading] = useState<string | null>(null); // field id being OCR-processed
   const { toast } = useToast();
+
+  // Handle OCR file upload
+  const handleOcrUpload = useCallback(async (field: any, file: File) => {
+    if (!field.isOcr || !field.ocrConfig?.documentType) return;
+
+    setOcrLoading(field.id);
+    try {
+      const functionName = getOcrEdgeFunctionName(field.ocrConfig.documentType as OcrDocumentType);
+      
+      // Convert file to base64
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve((reader.result as string).split(",")[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data, error } = await supabase.functions.invoke(functionName, {
+        body: { image: base64, fileName: file.name },
+      });
+
+      if (error) throw error;
+
+      // Map OCR results to form fields using ocrConfig.mappings
+      const mappings = field.ocrConfig.mappings || [];
+      const newFormData = { ...formData };
+      
+      for (const mapping of mappings) {
+        if (mapping.targetFieldId && data?.[mapping.ocrKey]) {
+          newFormData[mapping.targetFieldId] = data[mapping.ocrKey];
+        }
+      }
+
+      setFormData(newFormData);
+      toast({
+        title: "OCR terminé",
+        description: "Les champs ont été pré-remplis automatiquement.",
+      });
+    } catch (error) {
+      console.error("OCR error:", error);
+      toast({
+        title: "Erreur OCR",
+        description: "Impossible d'extraire les données du document.",
+        variant: "destructive",
+      });
+    } finally {
+      setOcrLoading(null);
+    }
+  }, [formData, toast]);
 
   useEffect(() => {
     const fetchTemplate = async () => {
@@ -330,10 +381,20 @@ export const DynamicFormRenderer = ({
                   if (errors[field.id]) {
                     setErrors({ ...errors, [field.id]: '' });
                   }
+                  // If this is an OCR file field and a File was uploaded, trigger OCR
+                  if (field.isOcr && field.ocrConfig && value instanceof File) {
+                    handleOcrUpload(field, value);
+                  }
                 }}
                 error={errors[field.id]}
               />
             ))}
+            {ocrLoading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Extraction OCR en cours...
+              </div>
+            )}
           </div>
         </div>
 

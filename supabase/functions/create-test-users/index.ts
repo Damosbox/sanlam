@@ -29,6 +29,39 @@ Deno.serve(async (req) => {
       }
     )
 
+    // Verify caller is authenticated and is an admin
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Non autorisé' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+    const { data: claims, error: claimsError } = await supabaseAdmin.auth.getUser(token)
+    if (claimsError || !claims?.user) {
+      return new Response(JSON.stringify({ error: 'Token invalide' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Check admin role
+    const { data: roleData } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', claims.user.id)
+      .eq('role', 'admin')
+      .single()
+
+    if (!roleData) {
+      return new Response(JSON.stringify({ error: 'Accès réservé aux administrateurs' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     const testUsers: TestUser[] = [
       {
         email: 'b2btest@box.africa',
@@ -53,7 +86,6 @@ Deno.serve(async (req) => {
     const results = []
 
     for (const testUser of testUsers) {
-      // Créer l'utilisateur
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email: testUser.email,
         password: testUser.password,
@@ -73,10 +105,8 @@ Deno.serve(async (req) => {
         continue
       }
 
-      // Attendre un peu pour que le trigger handle_new_user se termine
       await new Promise(resolve => setTimeout(resolve, 1000))
 
-      // Assigner le rôle
       const { error: roleError } = await supabaseAdmin
         .from('user_roles')
         .insert({

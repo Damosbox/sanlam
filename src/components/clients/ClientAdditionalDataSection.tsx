@@ -6,10 +6,22 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Save, User, Briefcase, Home, Car } from "lucide-react";
+import { Save, User, Briefcase, Home, Car, Shield, Phone, Calendar } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useEffect } from "react";
+import {
+  genderOptions,
+  maritalStatusOptions,
+  socioProOptions,
+  incomeOptions,
+  propertyTypeOptions,
+  insuranceTypeOptions,
+  contactMethodOptions,
+  contactTimeOptions,
+  referralSourceOptions,
+} from "@/constants/additionalDataOptions";
 
 interface ClientAdditionalDataSectionProps {
   clientId: string;
@@ -20,6 +32,7 @@ interface FormData {
   gender: string;
   marital_status: string;
   children_count: number;
+  socio_professional_category: string;
   profession: string;
   employer: string;
   monthly_income_range: string;
@@ -32,10 +45,12 @@ interface FormData {
   vehicle_count: number;
   has_drivers_license: boolean;
   drivers_license_date: string;
+  existing_insurances: string[];
   current_insurer: string;
   preferred_contact_method: string;
   preferred_contact_time: string;
   referral_source: string;
+  loyalty_program_interest: boolean;
 }
 
 export const ClientAdditionalDataSection = ({ clientId }: ClientAdditionalDataSectionProps) => {
@@ -61,6 +76,7 @@ export const ClientAdditionalDataSection = ({ clientId }: ClientAdditionalDataSe
       gender: "",
       marital_status: "",
       children_count: 0,
+      socio_professional_category: "",
       profession: "",
       employer: "",
       monthly_income_range: "",
@@ -73,10 +89,12 @@ export const ClientAdditionalDataSection = ({ clientId }: ClientAdditionalDataSe
       vehicle_count: 0,
       has_drivers_license: false,
       drivers_license_date: "",
+      existing_insurances: [],
       current_insurer: "",
       preferred_contact_method: "phone",
       preferred_contact_time: "",
       referral_source: "",
+      loyalty_program_interest: false,
     },
   });
 
@@ -87,6 +105,7 @@ export const ClientAdditionalDataSection = ({ clientId }: ClientAdditionalDataSe
         gender: additionalData.gender || "",
         marital_status: additionalData.marital_status || "",
         children_count: additionalData.children_count || 0,
+        socio_professional_category: (additionalData as any).socio_professional_category || "",
         profession: additionalData.profession || "",
         employer: additionalData.employer || "",
         monthly_income_range: additionalData.monthly_income_range || "",
@@ -99,10 +118,12 @@ export const ClientAdditionalDataSection = ({ clientId }: ClientAdditionalDataSe
         vehicle_count: additionalData.vehicle_count || 0,
         has_drivers_license: additionalData.has_drivers_license || false,
         drivers_license_date: additionalData.drivers_license_date || "",
+        existing_insurances: additionalData.existing_insurances || [],
         current_insurer: additionalData.current_insurer || "",
         preferred_contact_method: additionalData.preferred_contact_method || "phone",
         preferred_contact_time: additionalData.preferred_contact_time || "",
         referral_source: additionalData.referral_source || "",
+        loyalty_program_interest: (additionalData as any).loyalty_program_interest || false,
       });
     }
   }, [additionalData, reset]);
@@ -113,7 +134,20 @@ export const ClientAdditionalDataSection = ({ clientId }: ClientAdditionalDataSe
         client_id: clientId,
         ...formData,
         birth_date: formData.birth_date || null,
+        gender: formData.gender || null,
+        marital_status: formData.marital_status || null,
+        socio_professional_category: formData.socio_professional_category || null,
+        profession: formData.profession || null,
+        employer: formData.employer || null,
+        monthly_income_range: formData.monthly_income_range || null,
+        address: formData.address || null,
+        city: formData.city || null,
+        postal_code: formData.postal_code || null,
         drivers_license_date: formData.drivers_license_date || null,
+        property_type: formData.property_type || null,
+        current_insurer: formData.current_insurer || null,
+        preferred_contact_time: formData.preferred_contact_time || null,
+        referral_source: formData.referral_source || null,
       };
 
       if (additionalData) {
@@ -137,6 +171,14 @@ export const ClientAdditionalDataSection = ({ clientId }: ClientAdditionalDataSe
       toast({ title: "Erreur lors de l'enregistrement", variant: "destructive" });
     },
   });
+
+  const toggleInsurance = (insurance: string) => {
+    const current = watch("existing_insurances") || [];
+    const updated = current.includes(insurance)
+      ? current.filter((i) => i !== insurance)
+      : [...current, insurance];
+    setValue("existing_insurances", updated, { shouldDirty: true });
+  };
 
   const onSubmit = (data: FormData) => {
     saveMutation.mutate(data);
@@ -168,8 +210,9 @@ export const ClientAdditionalDataSection = ({ clientId }: ClientAdditionalDataSe
                 <SelectValue placeholder="Sélectionner" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="homme">Homme</SelectItem>
-                <SelectItem value="femme">Femme</SelectItem>
+                {genderOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -180,10 +223,9 @@ export const ClientAdditionalDataSection = ({ clientId }: ClientAdditionalDataSe
                 <SelectValue placeholder="Sélectionner" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="celibataire">Célibataire</SelectItem>
-                <SelectItem value="marie">Marié(e)</SelectItem>
-                <SelectItem value="divorce">Divorcé(e)</SelectItem>
-                <SelectItem value="veuf">Veuf/Veuve</SelectItem>
+                {maritalStatusOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -199,10 +241,23 @@ export const ClientAdditionalDataSection = ({ clientId }: ClientAdditionalDataSe
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
             <Briefcase className="h-4 w-4" />
-            Informations professionnelles
+            Situation socio-professionnelle
           </CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-3">
+          <div>
+            <Label className="text-xs">Catégorie</Label>
+            <Select value={watch("socio_professional_category")} onValueChange={(v) => setValue("socio_professional_category", v)}>
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Sélectionner" />
+              </SelectTrigger>
+              <SelectContent>
+                {socioProOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div>
             <Label className="text-xs">Profession</Label>
             <Input className="h-8 text-sm" {...register("profession")} />
@@ -211,18 +266,16 @@ export const ClientAdditionalDataSection = ({ clientId }: ClientAdditionalDataSe
             <Label className="text-xs">Employeur</Label>
             <Input className="h-8 text-sm" {...register("employer")} />
           </div>
-          <div className="col-span-2">
-            <Label className="text-xs">Tranche de revenu mensuel</Label>
+          <div>
+            <Label className="text-xs">Revenu mensuel</Label>
             <Select value={watch("monthly_income_range")} onValueChange={(v) => setValue("monthly_income_range", v)}>
               <SelectTrigger className="h-8">
                 <SelectValue placeholder="Sélectionner" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="0-200000">Moins de 200 000 FCFA</SelectItem>
-                <SelectItem value="200000-500000">200 000 - 500 000 FCFA</SelectItem>
-                <SelectItem value="500000-1000000">500 000 - 1 000 000 FCFA</SelectItem>
-                <SelectItem value="1000000-2000000">1 000 000 - 2 000 000 FCFA</SelectItem>
-                <SelectItem value="2000000+">Plus de 2 000 000 FCFA</SelectItem>
+                {incomeOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -264,9 +317,9 @@ export const ClientAdditionalDataSection = ({ clientId }: ClientAdditionalDataSe
                 <SelectValue placeholder="Sélectionner" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="appartement">Appartement</SelectItem>
-                <SelectItem value="maison">Maison</SelectItem>
-                <SelectItem value="villa">Villa</SelectItem>
+                {propertyTypeOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -305,9 +358,24 @@ export const ClientAdditionalDataSection = ({ clientId }: ClientAdditionalDataSe
       {/* Insurance Info */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Assurances</CardTitle>
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            Assurances existantes
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          <div className="flex flex-wrap gap-3">
+            {insuranceTypeOptions.map((opt) => (
+              <div key={opt.value} className="flex items-center gap-2">
+                <Checkbox
+                  id={`client-ins-${opt.value}`}
+                  checked={(watch("existing_insurances") || []).includes(opt.value)}
+                  onCheckedChange={() => toggleInsurance(opt.value)}
+                />
+                <Label htmlFor={`client-ins-${opt.value}`} className="text-xs cursor-pointer">{opt.label}</Label>
+              </div>
+            ))}
+          </div>
           <div>
             <Label className="text-xs">Assureur actuel</Label>
             <Input className="h-8 text-sm" {...register("current_insurer")} />
@@ -318,7 +386,10 @@ export const ClientAdditionalDataSection = ({ clientId }: ClientAdditionalDataSe
       {/* Contact Preferences */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Préférences de contact</CardTitle>
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Phone className="h-4 w-4" />
+            Préférences de contact
+          </CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-3">
           <div>
@@ -328,9 +399,9 @@ export const ClientAdditionalDataSection = ({ clientId }: ClientAdditionalDataSe
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="phone">Téléphone</SelectItem>
-                <SelectItem value="email">Email</SelectItem>
-                <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                {contactMethodOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -341,15 +412,44 @@ export const ClientAdditionalDataSection = ({ clientId }: ClientAdditionalDataSe
                 <SelectValue placeholder="Sélectionner" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="matin">Matin (8h-12h)</SelectItem>
-                <SelectItem value="apres_midi">Après-midi (12h-18h)</SelectItem>
-                <SelectItem value="soir">Soir (18h-21h)</SelectItem>
+                {contactTimeOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
-          <div className="col-span-2">
-            <Label className="text-xs">Source de référencement</Label>
-            <Input className="h-8 text-sm" placeholder="Comment nous a-t-il connu?" {...register("referral_source")} />
+        </CardContent>
+      </Card>
+
+      {/* Acquisition */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            Acquisition
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-3">
+          <div>
+            <Label className="text-xs">Comment nous a-t-il connu ?</Label>
+            <Select value={watch("referral_source")} onValueChange={(v) => setValue("referral_source", v)}>
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Sélectionner" />
+              </SelectTrigger>
+              <SelectContent>
+                {referralSourceOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2 pt-5">
+            <Checkbox
+              id="client-loyalty"
+              checked={watch("loyalty_program_interest")}
+              onCheckedChange={(c) => setValue("loyalty_program_interest", !!c)}
+            />
+            <Label htmlFor="client-loyalty" className="text-xs cursor-pointer">Intéressé programme fidélité</Label>
           </div>
         </CardContent>
       </Card>

@@ -19,9 +19,10 @@ interface KPIStats {
 
 interface DashboardKPIsProps {
   selectedProduct?: ProductType;
+  overrideAgentId?: string;
 }
 
-export const DashboardKPIs = ({ selectedProduct = "all" }: DashboardKPIsProps) => {
+export const DashboardKPIs = ({ selectedProduct = "all", overrideAgentId }: DashboardKPIsProps) => {
   const [stats, setStats] = useState<KPIStats>({
     commissionsMTD: 0,
     totalGWP: 0,
@@ -33,18 +34,22 @@ export const DashboardKPIs = ({ selectedProduct = "all" }: DashboardKPIsProps) =
 
   useEffect(() => {
     fetchStats();
-  }, [selectedProduct]);
+  }, [selectedProduct, overrideAgentId]);
 
   const fetchStats = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      let agentId = overrideAgentId;
+      if (!agentId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        agentId = user.id;
+      }
 
       // Fetch subscriptions with product info
       const { data: subscriptions } = await supabase
         .from("subscriptions")
         .select("monthly_premium, product_id, products(name, category)")
-        .eq("assigned_broker_id", user.id);
+        .eq("assigned_broker_id", agentId);
 
       // Filter by product type if not "all"
       let filteredSubs = subscriptions || [];

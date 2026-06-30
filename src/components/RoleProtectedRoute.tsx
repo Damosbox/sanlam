@@ -61,7 +61,7 @@ export default function RoleProtectedRoute({
           navigate("/b2c");
         } else if (role === "broker") {
           navigate("/b2b");
-        } else if (role === "admin") {
+        } else if (role === "admin" || role === "backoffice_crc" || role === "backoffice_conformite") {
           navigate("/admin");
         } else {
           navigate("/");

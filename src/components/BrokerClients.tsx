@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -22,6 +22,10 @@ import {
 import { Users, UserCheck, Clock, Phone, MessageCircle, Mail, MoreHorizontal, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { ClientDetailSheet } from "./clients/ClientDetailSheet";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
+import { exportToCsv } from "@/lib/export-csv";
 
 interface Client {
   id: string;
@@ -39,6 +43,9 @@ export const BrokerClients = () => {
   const navigate = useNavigate();
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("name_asc");
   const { data: clients = [], isLoading: loading } = useQuery({
     queryKey: ["broker-clients"],
     queryFn: async () => {
@@ -133,6 +140,42 @@ export const BrokerClients = () => {
   const activeClients = clients.filter(c => c.type === "active");
   const pendingClients = clients.filter(c => c.type === "pending");
 
+  const applyFilters = (list: Client[]) => {
+    const q = search.trim().toLowerCase();
+    const filtered = list.filter((c) => {
+      if (statusFilter !== "all" && c.type !== statusFilter) return false;
+      if (!q) return true;
+      return (c.display_name ?? "").toLowerCase().includes(q)
+        || (c.email ?? "").toLowerCase().includes(q)
+        || (c.phone ?? "").includes(q);
+    });
+    return [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "name_desc": return (b.display_name ?? "").localeCompare(a.display_name ?? "");
+        case "claims_desc": return (b.claimsCount ?? 0) - (a.claimsCount ?? 0);
+        case "policies_desc": return (b.subscriptionsCount ?? 0) - (a.subscriptionsCount ?? 0);
+        case "name_asc":
+        default: return (a.display_name ?? "").localeCompare(b.display_name ?? "");
+      }
+    });
+  };
+
+  const filteredAll = useMemo(() => applyFilters(clients), [clients, search, statusFilter, sortBy]);
+  const filteredActive = useMemo(() => applyFilters(activeClients), [clients, search, statusFilter, sortBy]);
+  const filteredPending = useMemo(() => applyFilters(pendingClients), [clients, search, statusFilter, sortBy]);
+
+  const handleExport = () => {
+    exportToCsv(
+      "broker-clients",
+      ["Nom", "Email", "Téléphone", "Sinistres", "Polices", "Statut"],
+      filteredAll.map((c) => [
+        c.display_name ?? "", c.email ?? "", c.phone ?? "",
+        c.claimsCount, c.subscriptionsCount,
+        c.type === "active" ? "Actif" : "En attente",
+      ]),
+    );
+  };
+
   const handleCall = (phone: string | null) => {
     if (phone) {
       window.location.href = `tel:${phone}`;
@@ -167,8 +210,22 @@ export const BrokerClients = () => {
     return <div className="text-center py-8">Chargement...</div>;
   }
 
-  const renderClientTable = (clientList: Client[], showProduct = false) => (
-    <div className="rounded-lg border bg-card overflow-x-auto">
+  const PaginatedClientTable = ({
+    clientList,
+    showProduct = false,
+    storageKey,
+  }: {
+    clientList: Client[];
+    showProduct?: boolean;
+    storageKey: string;
+  }) => {
+    const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+      clientList,
+      { storageKey },
+    );
+    return (
+      <div className="space-y-2">
+        <div className="rounded-lg border bg-card overflow-x-auto">
       <Table className="min-w-[500px]">
         <TableHeader>
           <TableRow>
@@ -194,7 +251,7 @@ export const BrokerClients = () => {
               </TableCell>
             </TableRow>
           ) : (
-            clientList.map((client) => (
+            pageItems.map((client) => (
               <TableRow key={client.id}>
                 <TableCell>
                   <button
@@ -297,37 +354,70 @@ export const BrokerClients = () => {
           )}
         </TableBody>
       </Table>
-    </div>
-  );
+        </div>
+        <DataTablePagination
+          page={page}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          setPage={setPage}
+          setPageSize={setPageSize}
+          itemLabel="client"
+        />
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-4">
+      <DataTableToolbar
+        search={{ value: search, onChange: setSearch, placeholder: "Rechercher un client..." }}
+        filters={[
+          {
+            id: "status", label: "Segment", value: statusFilter, onChange: setStatusFilter,
+            options: [
+              { value: "all", label: "Tous" },
+              { value: "active", label: "Actifs" },
+              { value: "pending", label: "En attente" },
+            ],
+          },
+        ]}
+        sort={{
+          value: sortBy, onChange: setSortBy,
+          options: [
+            { value: "name_asc", label: "Nom A→Z" },
+            { value: "name_desc", label: "Nom Z→A" },
+            { value: "policies_desc", label: "Plus de polices" },
+            { value: "claims_desc", label: "Plus de sinistres" },
+          ],
+        }}
+        onExport={handleExport}
+      />
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="all" className="gap-1.5">
             <Users className="h-4 w-4" />
-            Tous ({clients.length})
+            Tous ({filteredAll.length})
           </TabsTrigger>
           <TabsTrigger value="active" className="gap-1.5">
             <UserCheck className="h-4 w-4" />
-            Actifs ({activeClients.length})
+            Actifs ({filteredActive.length})
           </TabsTrigger>
           <TabsTrigger value="pending" className="gap-1.5">
             <Clock className="h-4 w-4" />
-            En attente ({pendingClients.length})
+            En attente ({filteredPending.length})
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="all">
-          {renderClientTable(clients)}
+          <PaginatedClientTable clientList={filteredAll} storageKey="broker-clients-all" />
         </TabsContent>
         
         <TabsContent value="active">
-          {renderClientTable(activeClients)}
+          <PaginatedClientTable clientList={filteredActive} storageKey="broker-clients-active" />
         </TabsContent>
         
         <TabsContent value="pending">
-          {renderClientTable(pendingClients, true)}
+          <PaginatedClientTable clientList={filteredPending} showProduct storageKey="broker-clients-pending" />
         </TabsContent>
       </Tabs>
 

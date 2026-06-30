@@ -9,18 +9,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatFCFA } from "@/utils/formatCurrency";
+import { usePagination } from "@/hooks/usePagination";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { DataTableToolbar } from "@/components/ui/data-table-toolbar";
+import { exportToCsv, csvDate } from "@/lib/export-csv";
 
 interface Subscription {
   id: string;
@@ -49,7 +45,10 @@ export const AdminSubscriptionsTable = () => {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [brokers, setBrokers] = useState<Broker[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showUnassignedOnly, setShowUnassignedOnly] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [productFilter, setProductFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("date_desc");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -155,9 +154,64 @@ export const AdminSubscriptionsTable = () => {
     );
   };
 
-  const filteredSubscriptions = showUnassignedOnly
-    ? subscriptions.filter((s) => !s.assigned_broker_id)
-    : subscriptions;
+  const products = Array.from(
+    new Set(subscriptions.map((s) => s.products?.name).filter(Boolean) as string[]),
+  );
+
+  const filteredSubscriptions = subscriptions
+    .filter((s) => (statusFilter === "all" ? true : s.status === statusFilter))
+    .filter((s) => (productFilter === "all" ? true : s.products?.name === productFilter))
+    .filter((s) => {
+      if (!searchTerm) return true;
+      const q = searchTerm.toLowerCase();
+      return (
+        (s.profiles?.display_name ?? "").toLowerCase().includes(q) ||
+        (s.profiles?.email ?? "").toLowerCase().includes(q) ||
+        (s.policy_number ?? "").toLowerCase().includes(q)
+      );
+    });
+
+  const sortedSubscriptions = [...filteredSubscriptions].sort((a, b) => {
+    const t = (d?: string) => (d ? new Date(d).getTime() : 0);
+    switch (sortBy) {
+      case "date_desc":
+        return t(b.start_date) - t(a.start_date);
+      case "date_asc":
+        return t(a.start_date) - t(b.start_date);
+      case "premium_desc":
+        return (b.monthly_premium ?? 0) - (a.monthly_premium ?? 0);
+      case "premium_asc":
+        return (a.monthly_premium ?? 0) - (b.monthly_premium ?? 0);
+      default:
+        return 0;
+    }
+  });
+
+  const exportCSV = () => {
+    const headers = ["Client", "Email", "Produit", "Police", "Prime", "Date début", "Statut", "Courtier"];
+    exportToCsv(
+      "souscriptions",
+      headers,
+      sortedSubscriptions.map((s) => {
+        const broker = brokers.find((b) => b.id === s.assigned_broker_id);
+        return [
+          s.profiles?.display_name ?? "",
+          s.profiles?.email ?? "",
+          s.products?.name ?? "",
+          s.policy_number,
+          s.monthly_premium,
+          csvDate(s.start_date),
+          s.status,
+          broker?.display_name ?? broker?.email ?? "Non assigné",
+        ];
+      }),
+    );
+  };
+
+  const { pageItems, page, setPage, pageSize, setPageSize, totalItems } = usePagination(
+    sortedSubscriptions,
+    { storageKey: "admin-subscriptions" },
+  );
 
   if (loading) {
     return <div>Chargement...</div>;
@@ -165,15 +219,48 @@ export const AdminSubscriptionsTable = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button
-          variant={showUnassignedOnly ? "default" : "outline"}
-          onClick={() => setShowUnassignedOnly(!showUnassignedOnly)}
-        >
-          {showUnassignedOnly ? "Voir toutes" : "Non assignées uniquement"}
-        </Button>
-      </div>
-
+      <DataTableToolbar
+        search={{
+          value: searchTerm,
+          onChange: setSearchTerm,
+          placeholder: "Rechercher client, police...",
+        }}
+        filters={[
+          {
+            id: "status",
+            label: "Statut",
+            value: statusFilter,
+            onChange: setStatusFilter,
+            options: [
+              { value: "all", label: "Tous les statuts" },
+              { value: "active", label: "Active" },
+              { value: "cancelled", label: "Annulée" },
+              { value: "expired", label: "Expirée" },
+            ],
+          },
+          {
+            id: "product",
+            label: "Produit",
+            value: productFilter,
+            onChange: setProductFilter,
+            options: [
+              { value: "all", label: "Tous les produits" },
+              ...products.map((p) => ({ value: p, label: p })),
+            ],
+          },
+        ]}
+        sort={{
+          value: sortBy,
+          onChange: setSortBy,
+          options: [
+            { value: "date_desc", label: "Date la plus récente" },
+            { value: "date_asc", label: "Date la plus ancienne" },
+            { value: "premium_desc", label: "Prime ↓" },
+            { value: "premium_asc", label: "Prime ↑" },
+          ],
+        }}
+        onExport={exportCSV}
+      />
       <Table>
         <TableHeader>
           <TableRow>
@@ -184,18 +271,17 @@ export const AdminSubscriptionsTable = () => {
             <TableHead>Date de début</TableHead>
             <TableHead>Statut</TableHead>
             <TableHead>Courtier</TableHead>
-            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredSubscriptions.length === 0 ? (
+          {sortedSubscriptions.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className="text-center">
+              <TableCell colSpan={7} className="text-center">
                 Aucune souscription trouvée
               </TableCell>
             </TableRow>
           ) : (
-            filteredSubscriptions.map((subscription) => (
+            pageItems.map((subscription) => (
               <TableRow key={subscription.id}>
                 <TableCell>
                   <div className="flex flex-col">
@@ -217,34 +303,19 @@ export const AdminSubscriptionsTable = () => {
                 </TableCell>
                 <TableCell>{getStatusBadge(subscription.status)}</TableCell>
                 <TableCell>{getBrokerBadge(subscription)}</TableCell>
-                <TableCell>
-                  <Select
-                    value={subscription.assigned_broker_id || "unassigned"}
-                    onValueChange={(value) =>
-                      assignBroker(
-                        subscription.id,
-                        value === "unassigned" ? null : value
-                      )
-                    }
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Assigner un courtier" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Non assigné</SelectItem>
-                      {brokers.map((broker) => (
-                        <SelectItem key={broker.id} value={broker.id}>
-                          {broker.display_name || broker.email}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
               </TableRow>
             ))
           )}
         </TableBody>
       </Table>
+      <DataTablePagination
+        page={page}
+        pageSize={pageSize}
+        totalItems={totalItems}
+        setPage={setPage}
+        setPageSize={setPageSize}
+        itemLabel="souscription"
+      />
     </div>
   );
 };

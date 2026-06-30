@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_targets: {
+        Row: {
+          agent_id: string
+          created_at: string
+          id: string
+          period_end: string
+          period_start: string
+          target_conversions: number
+          target_premium: number
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          id?: string
+          period_end: string
+          period_start: string
+          target_conversions?: number
+          target_premium?: number
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          id?: string
+          period_end?: string
+          period_start?: string
+          target_conversions?: number
+          target_premium?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -432,6 +465,7 @@ export type Database = {
           gender: string | null
           has_drivers_license: boolean | null
           id: string
+          loyalty_program_interest: boolean | null
           marital_status: string | null
           monthly_income_range: string | null
           postal_code: string | null
@@ -441,6 +475,7 @@ export type Database = {
           property_owner: boolean | null
           property_type: string | null
           referral_source: string | null
+          socio_professional_category: string | null
           updated_at: string | null
           vehicle_count: number | null
         }
@@ -460,6 +495,7 @@ export type Database = {
           gender?: string | null
           has_drivers_license?: boolean | null
           id?: string
+          loyalty_program_interest?: boolean | null
           marital_status?: string | null
           monthly_income_range?: string | null
           postal_code?: string | null
@@ -469,6 +505,7 @@ export type Database = {
           property_owner?: boolean | null
           property_type?: string | null
           referral_source?: string | null
+          socio_professional_category?: string | null
           updated_at?: string | null
           vehicle_count?: number | null
         }
@@ -488,6 +525,7 @@ export type Database = {
           gender?: string | null
           has_drivers_license?: boolean | null
           id?: string
+          loyalty_program_interest?: boolean | null
           marital_status?: string | null
           monthly_income_range?: string | null
           postal_code?: string | null
@@ -497,6 +535,7 @@ export type Database = {
           property_owner?: boolean | null
           property_type?: string | null
           referral_source?: string | null
+          socio_professional_category?: string | null
           updated_at?: string | null
           vehicle_count?: number | null
         }
@@ -574,6 +613,7 @@ export type Database = {
           ppe_screening_reference: string | null
           ppe_screening_source: string | null
           ppe_screening_status: string | null
+          screening_blocked: boolean | null
           updated_at: string
         }
         Insert: {
@@ -596,6 +636,7 @@ export type Database = {
           ppe_screening_reference?: string | null
           ppe_screening_source?: string | null
           ppe_screening_status?: string | null
+          screening_blocked?: boolean | null
           updated_at?: string
         }
         Update: {
@@ -618,6 +659,7 @@ export type Database = {
           ppe_screening_reference?: string | null
           ppe_screening_source?: string | null
           ppe_screening_status?: string | null
+          screening_blocked?: boolean | null
           updated_at?: string
         }
         Relationships: []
@@ -668,6 +710,20 @@ export type Database = {
           score_responsabilite: number | null
           score_sinistre: number | null
           updated_at: string | null
+          vf_is_partial: boolean | null
+          vf_kyc_flag: boolean | null
+          vf_last_recalc_source: string | null
+          vf_manual_override: boolean | null
+          vf_missing_fields: string[] | null
+          vf_niveau: string | null
+          vf_override_approved_by: string | null
+          vf_override_reason: string | null
+          vf_score_action_ponctuelle: number | null
+          vf_score_anciennete: number | null
+          vf_score_global: number | null
+          vf_score_multi_equipements: number | null
+          vf_score_prime: number | null
+          vf_score_sinistre: number | null
         }
         Insert: {
           calculated_at?: string | null
@@ -687,6 +743,20 @@ export type Database = {
           score_responsabilite?: number | null
           score_sinistre?: number | null
           updated_at?: string | null
+          vf_is_partial?: boolean | null
+          vf_kyc_flag?: boolean | null
+          vf_last_recalc_source?: string | null
+          vf_manual_override?: boolean | null
+          vf_missing_fields?: string[] | null
+          vf_niveau?: string | null
+          vf_override_approved_by?: string | null
+          vf_override_reason?: string | null
+          vf_score_action_ponctuelle?: number | null
+          vf_score_anciennete?: number | null
+          vf_score_global?: number | null
+          vf_score_multi_equipements?: number | null
+          vf_score_prime?: number | null
+          vf_score_sinistre?: number | null
         }
         Update: {
           calculated_at?: string | null
@@ -706,6 +776,20 @@ export type Database = {
           score_responsabilite?: number | null
           score_sinistre?: number | null
           updated_at?: string | null
+          vf_is_partial?: boolean | null
+          vf_kyc_flag?: boolean | null
+          vf_last_recalc_source?: string | null
+          vf_manual_override?: boolean | null
+          vf_missing_fields?: string[] | null
+          vf_niveau?: string | null
+          vf_override_approved_by?: string | null
+          vf_override_reason?: string | null
+          vf_score_action_ponctuelle?: number | null
+          vf_score_anciennete?: number | null
+          vf_score_global?: number | null
+          vf_score_multi_equipements?: number | null
+          vf_score_prime?: number | null
+          vf_score_sinistre?: number | null
         }
         Relationships: [
           {
@@ -829,35 +913,44 @@ export type Database = {
       }
       document_templates: {
         Row: {
+          category: string
           content: string | null
           created_at: string | null
           created_by: string | null
+          description: string | null
           dynamic_fields: Json | null
           id: string
           is_active: boolean | null
           name: string
+          product_id: string | null
           type: string
           updated_at: string | null
         }
         Insert: {
+          category?: string
           content?: string | null
           created_at?: string | null
           created_by?: string | null
+          description?: string | null
           dynamic_fields?: Json | null
           id?: string
           is_active?: boolean | null
           name: string
+          product_id?: string | null
           type: string
           updated_at?: string | null
         }
         Update: {
+          category?: string
           content?: string | null
           created_at?: string | null
           created_by?: string | null
+          description?: string | null
           dynamic_fields?: Json | null
           id?: string
           is_active?: boolean | null
           name?: string
+          product_id?: string | null
           type?: string
           updated_at?: string | null
         }
@@ -1073,6 +1166,7 @@ export type Database = {
           ppe_screening_reference: string | null
           ppe_screening_source: string | null
           ppe_screening_status: string | null
+          screening_blocked: boolean | null
           updated_at: string
         }
         Insert: {
@@ -1095,6 +1189,7 @@ export type Database = {
           ppe_screening_reference?: string | null
           ppe_screening_source?: string | null
           ppe_screening_status?: string | null
+          screening_blocked?: boolean | null
           updated_at?: string
         }
         Update: {
@@ -1117,6 +1212,7 @@ export type Database = {
           ppe_screening_reference?: string | null
           ppe_screening_source?: string | null
           ppe_screening_status?: string | null
+          screening_blocked?: boolean | null
           updated_at?: string
         }
         Relationships: [
@@ -1449,6 +1545,72 @@ export type Database = {
         }
         Relationships: []
       }
+      ocr_scan_results: {
+        Row: {
+          agent_id: string | null
+          agent_name: string | null
+          authenticity_details: Json | null
+          authenticity_score: number | null
+          authenticity_status: string
+          confidence_score: number
+          created_at: string
+          document_image_url: string | null
+          document_type: string
+          entity_id: string
+          entity_name: string | null
+          entity_type: string
+          extracted_data: Json
+          id: string
+          review_notes: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          agent_id?: string | null
+          agent_name?: string | null
+          authenticity_details?: Json | null
+          authenticity_score?: number | null
+          authenticity_status?: string
+          confidence_score?: number
+          created_at?: string
+          document_image_url?: string | null
+          document_type: string
+          entity_id: string
+          entity_name?: string | null
+          entity_type: string
+          extracted_data?: Json
+          id?: string
+          review_notes?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string | null
+          agent_name?: string | null
+          authenticity_details?: Json | null
+          authenticity_score?: number | null
+          authenticity_status?: string
+          confidence_score?: number
+          created_at?: string
+          document_image_url?: string | null
+          document_type?: string
+          entity_id?: string
+          entity_name?: string | null
+          entity_type?: string
+          extracted_data?: Json
+          id?: string
+          review_notes?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       otp_verifications: {
         Row: {
           broker_id: string
@@ -1552,6 +1714,143 @@ export type Database = {
             columns: ["subscription_id"]
             isOneToOne: false
             referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pricing_adjustment_approvals: {
+        Row: {
+          adjustment_type: string
+          adjustment_unit: string
+          adjustment_value: number
+          approver_id: string | null
+          client_name: string
+          context: Json
+          created_at: string
+          decided_at: string | null
+          decision_reason: string | null
+          id: string
+          impact_fcfa: number
+          product_id: string | null
+          product_name: string
+          requested_by: string
+          source: string
+          status: string
+          subscription_id: string | null
+          updated_at: string
+          vehicle_value_fcfa: number | null
+        }
+        Insert: {
+          adjustment_type: string
+          adjustment_unit?: string
+          adjustment_value: number
+          approver_id?: string | null
+          client_name: string
+          context?: Json
+          created_at?: string
+          decided_at?: string | null
+          decision_reason?: string | null
+          id?: string
+          impact_fcfa?: number
+          product_id?: string | null
+          product_name: string
+          requested_by: string
+          source: string
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+          vehicle_value_fcfa?: number | null
+        }
+        Update: {
+          adjustment_type?: string
+          adjustment_unit?: string
+          adjustment_value?: number
+          approver_id?: string | null
+          client_name?: string
+          context?: Json
+          created_at?: string
+          decided_at?: string | null
+          decision_reason?: string | null
+          id?: string
+          impact_fcfa?: number
+          product_id?: string | null
+          product_name?: string
+          requested_by?: string
+          source?: string
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+          vehicle_value_fcfa?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_adjustment_approvals_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pricing_adjustments_history: {
+        Row: {
+          adjustment_type: string
+          adjustment_unit: string
+          adjustment_value: number
+          applied_at: string
+          applied_by: string
+          approval_id: string | null
+          context: Json
+          created_at: string
+          id: string
+          impact_fcfa: number
+          product_id: string | null
+          source: string
+          subscription_id: string | null
+        }
+        Insert: {
+          adjustment_type: string
+          adjustment_unit?: string
+          adjustment_value: number
+          applied_at?: string
+          applied_by: string
+          approval_id?: string | null
+          context?: Json
+          created_at?: string
+          id?: string
+          impact_fcfa?: number
+          product_id?: string | null
+          source: string
+          subscription_id?: string | null
+        }
+        Update: {
+          adjustment_type?: string
+          adjustment_unit?: string
+          adjustment_value?: number
+          applied_at?: string
+          applied_by?: string
+          approval_id?: string | null
+          context?: Json
+          created_at?: string
+          id?: string
+          impact_fcfa?: number
+          product_id?: string | null
+          source?: string
+          subscription_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_adjustments_history_approval_id_fkey"
+            columns: ["approval_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_adjustment_approvals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pricing_adjustments_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
@@ -1736,6 +2035,7 @@ export type Database = {
           optional_products: string[] | null
           payment_methods: Json | null
           periodicity: string[] | null
+          pricing_adjustments: Json
           product_code: string | null
           product_type: string | null
           questionnaires: Json | null
@@ -1769,6 +2069,7 @@ export type Database = {
           optional_products?: string[] | null
           payment_methods?: Json | null
           periodicity?: string[] | null
+          pricing_adjustments?: Json
           product_code?: string | null
           product_type?: string | null
           questionnaires?: Json | null
@@ -1802,6 +2103,7 @@ export type Database = {
           optional_products?: string[] | null
           payment_methods?: Json | null
           periodicity?: string[] | null
+          pricing_adjustments?: Json
           product_code?: string | null
           product_type?: string | null
           questionnaires?: Json | null
@@ -1990,6 +2292,159 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      scoring_actions_ponctuelles: {
+        Row: {
+          agent_id: string | null
+          client_id: string
+          created_at: string
+          id: string
+          note: string | null
+          points: number
+          type: string
+        }
+        Insert: {
+          agent_id?: string | null
+          client_id: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          points: number
+          type: string
+        }
+        Update: {
+          agent_id?: string | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          points?: number
+          type?: string
+        }
+        Relationships: []
+      }
+      scoring_history: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          niveau_after: string | null
+          niveau_before: string | null
+          score_after: number | null
+          score_before: number | null
+          trigger: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          niveau_after?: string | null
+          niveau_before?: string | null
+          score_after?: number | null
+          score_before?: number | null
+          trigger: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          niveau_after?: string | null
+          niveau_before?: string | null
+          score_after?: number | null
+          score_before?: number | null
+          trigger?: string
+        }
+        Relationships: []
+      }
+      scoring_job_runs: {
+        Row: {
+          clients_processed: number | null
+          clients_total: number | null
+          clients_unscored: number | null
+          duration_ms: number | null
+          error_log: Json | null
+          errors_count: number | null
+          finished_at: string | null
+          id: string
+          started_at: string
+          status: string
+          trigger: string
+        }
+        Insert: {
+          clients_processed?: number | null
+          clients_total?: number | null
+          clients_unscored?: number | null
+          duration_ms?: number | null
+          error_log?: Json | null
+          errors_count?: number | null
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          trigger?: string
+        }
+        Update: {
+          clients_processed?: number | null
+          clients_total?: number | null
+          clients_unscored?: number | null
+          duration_ms?: number | null
+          error_log?: Json | null
+          errors_count?: number | null
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          trigger?: string
+        }
+        Relationships: []
+      }
+      scoring_manual_override_requests: {
+        Row: {
+          approver_comment: string | null
+          approver_id: string | null
+          client_id: string
+          created_at: string
+          current_niveau: string | null
+          current_score: number | null
+          decided_at: string | null
+          id: string
+          justification: string
+          notified_at: string | null
+          requested_by: string
+          requested_score: number
+          status: string
+        }
+        Insert: {
+          approver_comment?: string | null
+          approver_id?: string | null
+          client_id: string
+          created_at?: string
+          current_niveau?: string | null
+          current_score?: number | null
+          decided_at?: string | null
+          id?: string
+          justification: string
+          notified_at?: string | null
+          requested_by: string
+          requested_score: number
+          status?: string
+        }
+        Update: {
+          approver_comment?: string | null
+          approver_id?: string | null
+          client_id?: string
+          created_at?: string
+          current_niveau?: string | null
+          current_score?: number | null
+          decided_at?: string | null
+          id?: string
+          justification?: string
+          notified_at?: string | null
+          requested_by?: string
+          requested_score?: number
+          status?: string
+        }
+        Relationships: []
       }
       subscriptions: {
         Row: {
@@ -2443,7 +2898,13 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "broker" | "customer"
+      app_role:
+        | "admin"
+        | "broker"
+        | "customer"
+        | "compliance"
+        | "backoffice_crc"
+        | "backoffice_conformite"
       claim_status:
         | "Draft"
         | "Submitted"
@@ -2624,7 +3085,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "broker", "customer"],
+      app_role: [
+        "admin",
+        "broker",
+        "customer",
+        "compliance",
+        "backoffice_crc",
+        "backoffice_conformite",
+      ],
       claim_status: [
         "Draft",
         "Submitted",

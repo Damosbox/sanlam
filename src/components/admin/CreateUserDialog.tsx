@@ -40,7 +40,7 @@ export const CreateUserDialog = ({ onUserCreated }: CreateUserDialogProps) => {
     lastName: "",
     email: "",
     password: "",
-    role: "customer" as "admin" | "broker" | "customer" | "backoffice_crc" | "backoffice_conformite",
+    role: "broker" as "admin" | "broker" | "customer" | "backoffice_crc" | "backoffice_conformite",
     partnerType: null as PartnerType | null,
   });
 
@@ -68,7 +68,7 @@ export const CreateUserDialog = ({ onUserCreated }: CreateUserDialogProps) => {
       lastName: "",
       email: "",
       password: "",
-      role: "customer",
+      role: "broker",
       partnerType: null,
     });
     setShowPassword(false);
@@ -139,6 +139,8 @@ export const CreateUserDialog = ({ onUserCreated }: CreateUserDialogProps) => {
       toast({
         title: "Succès",
         description: `Utilisateur ${formData.firstName} ${formData.lastName} créé avec succès`,
+        duration: 5000,
+        type: "background",
       });
 
       resetForm();
@@ -151,6 +153,8 @@ export const CreateUserDialog = ({ onUserCreated }: CreateUserDialogProps) => {
         title: "Erreur",
         description: error.message || "Impossible de créer l'utilisateur",
         variant: "destructive",
+        duration: Infinity,
+        type: "foreground",
       });
     } finally {
       setLoading(false);

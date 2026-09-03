@@ -151,6 +151,8 @@ const App = () => (
             <Route path="news" element={<NewsPage />} />
             <Route path="campaigns" element={<CampaignsPage />} />
             <Route path="commissions" element={<CommissionsPage />} />
+            <Route path="zo-pme" element={<ZoPmePage />} />
+
           </Route>
 
           {/* Admin Routes with Sidebar Layout */}

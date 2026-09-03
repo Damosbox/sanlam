@@ -47,6 +47,8 @@ import NewsPage from "./pages/broker/NewsPage";
 import ReportsPage from "./pages/broker/ReportsPage";
 import CampaignsPage from "./pages/broker/CampaignsPage";
 import MessagesPage from "./pages/broker/MessagesPage";
+import ZoPmePage from "./pages/broker/ZoPmePage";
+
 
 // Admin pages
 import { AdminLayout } from "./layouts/AdminLayout";
@@ -149,6 +151,8 @@ const App = () => (
             <Route path="news" element={<NewsPage />} />
             <Route path="campaigns" element={<CampaignsPage />} />
             <Route path="commissions" element={<CommissionsPage />} />
+            <Route path="zo-pme" element={<ZoPmePage />} />
+
           </Route>
 
           {/* Admin Routes with Sidebar Layout */}

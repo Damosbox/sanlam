@@ -30,6 +30,8 @@ import {
   Sparkles,
   FileSearch,
   Wallet,
+  Building2,
+
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -175,6 +177,13 @@ export function BrokerSidebar() {
         { title: "Nouvelle Vente", url: "/b2b/sales", icon: Zap },
       ],
     },
+    {
+      label: "Programmes",
+      items: [
+        { title: "Espace Zô PME", url: "/b2b/zo-pme", icon: Building2 },
+      ],
+    },
+
     {
       label: "Gestion",
       items: [

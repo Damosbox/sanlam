@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Card,
@@ -9,7 +10,6 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -677,17 +677,37 @@ function SouscriptionView() {
 /* Page                                                               */
 /* ------------------------------------------------------------------ */
 
+const VUE_LABELS: Record<string, { title: string; subtitle: string }> = {
+  direction: {
+    title: "Pilotage",
+    subtitle: "Pilotage du programme PME : adhésions, cartes, partenaires et conformité",
+  },
+  marketing: {
+    title: "Marketing & animation",
+    subtitle: "Cartes à traiter, catalogue d'avantages, campagnes et événements",
+  },
+  souscription: {
+    title: "Souscription",
+    subtitle: "Dossiers d'adhésion, contrôle de conformité et activation",
+  },
+};
+
 export default function ZoPmePage() {
   const [period, setPeriod] = useState("30d");
+  const [searchParams] = useSearchParams();
+  const vueParam = searchParams.get("vue") ?? "direction";
+  const vue = VUE_LABELS[vueParam] ? vueParam : "direction";
+  const labels = VUE_LABELS[vue];
 
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Espace Zô PME</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Pilotage du programme PME : adhésions, cartes, partenaires et conformité
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Espace Zô PME
           </p>
+          <h1 className="text-2xl sm:text-3xl font-bold">{labels.title}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{labels.subtitle}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Select value={period} onValueChange={setPeriod}>
@@ -722,23 +742,10 @@ export default function ZoPmePage() {
         </div>
       </div>
 
-      <Tabs defaultValue="direction" className="space-y-4 sm:space-y-6">
-        <TabsList className="w-full sm:w-auto overflow-x-auto">
-          <TabsTrigger value="direction">Direction</TabsTrigger>
-          <TabsTrigger value="marketing">Marketing &amp; animation</TabsTrigger>
-          <TabsTrigger value="souscription">Souscription</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="direction" className="m-0">
-          <DirectionView />
-        </TabsContent>
-        <TabsContent value="marketing" className="m-0">
-          <MarketingView />
-        </TabsContent>
-        <TabsContent value="souscription" className="m-0">
-          <SouscriptionView />
-        </TabsContent>
-      </Tabs>
+      {vue === "direction" && <DirectionView />}
+      {vue === "marketing" && <MarketingView />}
+      {vue === "souscription" && <SouscriptionView />}
     </div>
   );
 }
+

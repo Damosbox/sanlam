@@ -27,15 +27,14 @@ import {
   MessageSquare,
   Newspaper,
   Megaphone,
-  Sparkles,
   FileSearch,
   Wallet,
-  Building2,
 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { AnimatedIcon } from "@/components/ui/animated-icon";
+import { SpaceSwitcher } from "@/components/broker/SpaceSwitcher";
 
 interface BadgeCounts {
   newLeads: number;
@@ -177,12 +176,8 @@ export function BrokerSidebar() {
         { title: "Nouvelle Vente", url: "/b2b/sales", icon: Zap },
       ],
     },
-    {
-      label: "Programmes",
-      items: [
-        { title: "Espace Zô PME", url: "/b2b/zo-pme", icon: Building2 },
-      ],
-    },
+
+
 
     {
       label: "Gestion",
@@ -284,18 +279,10 @@ export function BrokerSidebar() {
       className="border-r-2 border-border/70 shadow-[1px_0_0_0_hsl(var(--border)/0.4)] z-50"
     >
       <SidebarHeader className="p-3 sm:p-4 border-b border-border/50 bg-[hsl(var(--sidebar-broker))]">
-        <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
-          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-            <Sparkles className="h-4 w-4 text-primary" />
-          </div>
-          {!collapsed && (
-            <div className="min-w-0">
-              <h2 className="font-semibold text-sm truncate">Espace Courtier</h2>
-              <p className="text-xs text-muted-foreground truncate">Sanlam Allianz</p>
-            </div>
-          )}
-        </div>
+        <SpaceSwitcher current="courtier" />
       </SidebarHeader>
+
+
 
       <SidebarContent className="py-4 bg-[hsl(var(--sidebar-broker))]">
         {navigationGroups.map((group, groupIndex) => (

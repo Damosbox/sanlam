@@ -32,6 +32,7 @@ import Communaute from "./pages/commercial/Communaute";
 
 // Broker pages
 import { BrokerLayout } from "./layouts/BrokerLayout";
+import { ZoPmeLayout } from "./layouts/ZoPmeLayout";
 import DashboardPage from "./pages/broker/DashboardPage";
 import PortfolioPage from "./pages/broker/PortfolioPage";
 import GuidedSalesPage from "./pages/broker/GuidedSalesPage";
@@ -151,8 +152,16 @@ const App = () => (
             <Route path="news" element={<NewsPage />} />
             <Route path="campaigns" element={<CampaignsPage />} />
             <Route path="commissions" element={<CommissionsPage />} />
-            <Route path="zo-pme" element={<ZoPmePage />} />
 
+          </Route>
+
+          {/* Espace Zô PME (sidebar dédiée) */}
+          <Route path="/b2b/zo-pme" element={
+            <RoleProtectedRoute allowedRoles={["broker", "admin"]}>
+              <ZoPmeLayout />
+            </RoleProtectedRoute>
+          }>
+            <Route index element={<ZoPmePage />} />
           </Route>
 
           {/* Admin Routes with Sidebar Layout */}

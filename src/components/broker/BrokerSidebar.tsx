@@ -283,12 +283,7 @@ export function BrokerSidebar() {
         <SpaceSwitcher current="courtier" />
       </SidebarHeader>
 
-              <h2 className="font-semibold text-sm truncate">Espace Courtier</h2>
-              <p className="text-xs text-muted-foreground truncate">Sanlam Allianz</p>
-            </div>
-          )}
-        </div>
-      </SidebarHeader>
+
 
       <SidebarContent className="py-4 bg-[hsl(var(--sidebar-broker))]">
         {navigationGroups.map((group, groupIndex) => (

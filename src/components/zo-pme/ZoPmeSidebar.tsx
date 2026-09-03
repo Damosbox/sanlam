@@ -12,15 +12,17 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { BarChart3, Megaphone, ClipboardCheck } from "lucide-react";
+import { BarChart3, CreditCard, Handshake, Megaphone, FileBarChart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AnimatedIcon } from "@/components/ui/animated-icon";
 import { SpaceSwitcher } from "@/components/broker/SpaceSwitcher";
 
 const items = [
-  { title: "Pilotage", vue: "direction", icon: BarChart3 },
-  { title: "Marketing & animation", vue: "marketing", icon: Megaphone },
-  { title: "Souscription", vue: "souscription", icon: ClipboardCheck },
+  { title: "Pilotage", vue: "pilotage", icon: BarChart3 },
+  { title: "Membres & cartes", vue: "membres", icon: CreditCard },
+  { title: "Partenaires & avantages", vue: "partenaires", icon: Handshake },
+  { title: "Animation", vue: "animation", icon: Megaphone },
+  { title: "Rapports", vue: "rapports", icon: FileBarChart },
 ];
 
 export function ZoPmeSidebar() {
@@ -29,7 +31,7 @@ export function ZoPmeSidebar() {
   const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
 
-  const currentVue = new URLSearchParams(location.search).get("vue") ?? "direction";
+  const currentVue = new URLSearchParams(location.search).get("vue") ?? "pilotage";
 
   const handleNavigation = (vue: string) => {
     navigate(`/b2b/zo-pme?vue=${vue}`);

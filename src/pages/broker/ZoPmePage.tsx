@@ -33,13 +33,15 @@ import {
   AlertTriangle,
   CalendarClock,
   CheckCircle2,
-  Circle,
   CreditCard,
   Download,
   FileSpreadsheet,
   Gift,
   Handshake,
+  Info,
   MessageCircle,
+  Send,
+  ShieldCheck,
   Smile,
   Store,
   Users,
@@ -122,66 +124,113 @@ const SEVERITY_LABELS: Record<Severity, string> = {
   faible: "Faible",
 };
 
-const CARD_STATUSES = [
-  { key: "a_creer", label: "À créer", count: 23, tone: "border-l-[hsl(var(--orange))]" },
-  { key: "a_envoyer", label: "À envoyer", count: 17, tone: "border-l-[hsl(var(--warning))]" },
-  { key: "activee", label: "Activée", count: 1097, tone: "border-l-[hsl(var(--success))]" },
-  { key: "bloquee", label: "Bloquée", count: 9, tone: "border-l-destructive" },
+/* --- Membres & cartes --- */
+
+type CardStage = "a_produire" | "en_production" | "a_envoyer" | "a_remettre";
+
+const CARD_STAGES: { key: CardStage; label: string; tone: string; sla: string }[] = [
+  { key: "a_produire", label: "À produire", tone: "border-l-[hsl(var(--orange))]", sla: "SLA 24 h" },
+  { key: "en_production", label: "En production", tone: "border-l-primary", sla: "SLA 48 h" },
+  { key: "a_envoyer", label: "À envoyer", tone: "border-l-[hsl(var(--warning))]", sla: "SLA 72 h" },
+  { key: "a_remettre", label: "À remettre", tone: "border-l-[hsl(var(--success))]", sla: "SLA 5 j" },
 ];
 
-const BENEFITS_CATALOG = [
-  { name: "-15 % consultations générales", partner: "Clinique Farah", category: "Santé", tier: "Bronze" },
-  { name: "Bilan sanguin -25 %", partner: "Clinique Farah", category: "Santé", tier: "Argent" },
-  { name: "-10 % carburant professionnel", partner: "Total Energies", category: "Carburant", tier: "Bronze" },
-  { name: "Lavage véhicule offert", partner: "Total Energies", category: "Carburant", tier: "Or" },
-  { name: "-20 % forfait data pro", partner: "Orange CI Business", category: "Télécom", tier: "Argent" },
-  { name: "Livraison B2B offerte", partner: "Prosuma", category: "Grande distribution", tier: "Or" },
-  { name: "Conciergerie dédiée", partner: "Sanlam Allianz", category: "Services", tier: "Platine" },
-  { name: "Check-up PME offert", partner: "Pharmacie Danga", category: "Santé", tier: "Platine" },
+type Priority = "critique" | "eleve" | "moyen" | "faible";
+
+const MEMBER_CARDS: {
+  member: string;
+  company: string;
+  cardRef: string;
+  stage: CardStage;
+  age: string;
+  priority: Priority;
+}[] = [
+  { member: "Aristide Kouassi", company: "Ivoire Logistics", cardRef: "ZC-4412", stage: "a_produire", age: "3 j", priority: "critique" },
+  { member: "Mariam Konan", company: "Abidjan Tech Hub", cardRef: "ZC-4413", stage: "a_produire", age: "1 j", priority: "moyen" },
+  { member: "Salif Traoré", company: "Groupe Bâtir CI", cardRef: "ZC-4398", stage: "en_production", age: "2 j", priority: "eleve" },
+  { member: "Adèle Yao", company: "Cacao Export Plus", cardRef: "ZC-4390", stage: "en_production", age: "1 j", priority: "faible" },
+  { member: "Daniel Farah", company: "Clinique Farah", cardRef: "ZC-4377", stage: "a_envoyer", age: "4 j", priority: "critique" },
+  { member: "Léa Bamba", company: "Prosuma Services", cardRef: "ZC-4371", stage: "a_envoyer", age: "2 j", priority: "moyen" },
+  { member: "Yves N'Guessan", company: "Zô Distribution", cardRef: "ZC-4352", stage: "a_remettre", age: "6 j", priority: "eleve" },
+  { member: "Fatou Diallo", company: "Diallo & Fils", cardRef: "ZC-4348", stage: "a_remettre", age: "1 j", priority: "faible" },
 ];
+
+const CARD_STAGE_COUNTS: Record<CardStage, number> = {
+  a_produire: 23,
+  en_production: 31,
+  a_envoyer: 17,
+  a_remettre: 9,
+};
+
+/* --- Partenaires & avantages --- */
+
+const BENEFITS_CATALOG: {
+  name: string;
+  partner: string;
+  category: string;
+  tier: string;
+  published: "publie" | "brouillon" | "a_valider";
+}[] = [
+  { name: "-15 % consultations générales", partner: "Clinique Farah", category: "Santé", tier: "Bronze", published: "publie" },
+  { name: "Bilan sanguin -25 %", partner: "Clinique Farah", category: "Santé", tier: "Argent", published: "a_valider" },
+  { name: "-10 % carburant professionnel", partner: "Total Energies", category: "Carburant", tier: "Bronze", published: "publie" },
+  { name: "Lavage véhicule offert", partner: "Total Energies", category: "Carburant", tier: "Or", published: "brouillon" },
+  { name: "-20 % forfait data pro", partner: "Orange CI Business", category: "Télécom", tier: "Argent", published: "publie" },
+  { name: "Livraison B2B offerte", partner: "Prosuma", category: "Grande distribution", tier: "Or", published: "a_valider" },
+  { name: "Conciergerie dédiée", partner: "Sanlam Allianz", category: "Services", tier: "Platine", published: "publie" },
+  { name: "Check-up PME offert", partner: "Pharmacie Danga", category: "Santé", tier: "Platine", published: "brouillon" },
+];
+
+const PUBLICATION_LABELS: Record<string, string> = {
+  publie: "Publié",
+  brouillon: "Brouillon",
+  a_valider: "À valider",
+};
+
+const PUBLICATION_STYLES: Record<string, string> = {
+  publie: "bg-[hsl(var(--success))]/15 text-[hsl(var(--success))] border-[hsl(var(--success))]/40",
+  brouillon: "bg-muted text-muted-foreground border-border",
+  a_valider: "bg-[hsl(var(--orange))]/10 text-[hsl(var(--orange))] border-[hsl(var(--orange))]/30",
+};
+
+const CONVENTIONS = [
+  { partner: "Clinique Farah", start: "01/02/2026", end: "31/01/2027", status: "Active", benefits: 2 },
+  { partner: "Total Energies", start: "15/03/2026", end: "30/09/2026", status: "À renouveler", benefits: 2 },
+  { partner: "Orange CI Business", start: "01/01/2026", end: "31/12/2026", status: "Active", benefits: 1 },
+  { partner: "Prosuma", start: "10/04/2026", end: "09/10/2026", status: "À renouveler", benefits: 1 },
+  { partner: "Pharmacie Danga", start: "01/06/2026", end: "31/05/2027", status: "Active", benefits: 1 },
+];
+
+const PUBLICATION_RULES = [
+  "Toute nouvelle offre est créée en brouillon par le pôle Marketing.",
+  "Une convention partenaire signée et en cours de validité est obligatoire avant publication.",
+  "La validation finale relève du rôle Admin ; le palier d'éligibilité doit être renseigné.",
+  "Une offre liée à une convention expirée est automatiquement dépubliée.",
+];
+
+/* --- Animation --- */
 
 const CAMPAIGNS = [
-  { name: "Relance cartes non activées", audience: "231 membres", status: "Programmée", date: "08/09" },
-  { name: "Nouveaux avantages santé", audience: "1 097 membres", status: "Envoyée", date: "28/08" },
-  { name: "Enquête satisfaction T3", audience: "612 membres Bronze", status: "Brouillon", date: "—" },
+  { name: "Relance cartes non activées", channel: "WhatsApp", audience: "231 membres", status: "Programmée", date: "08/09", rate: "—" },
+  { name: "Nouveaux avantages santé", channel: "WhatsApp", audience: "1 097 membres", status: "Envoyée", date: "28/08", rate: "62 % lus" },
+  { name: "Enquête satisfaction T3", channel: "E-mail", audience: "612 membres Bronze", status: "Brouillon", date: "—", rate: "—" },
+  { name: "Invitation networking Zô", channel: "SMS", audience: "420 membres Or/Platine", status: "Envoyée", date: "21/08", rate: "48 % clics" },
 ];
 
 const EVENTS = [
-  { name: "Petit-déjeuner PME – Plateau", date: "12 sept. 2026", registered: 48, capacity: 60 },
-  { name: "Atelier gestion des risques", date: "26 sept. 2026", registered: 31, capacity: 40 },
-  { name: "Networking partenaires Zô", date: "10 oct. 2026", registered: 12, capacity: 80 },
+  { name: "Petit-déjeuner PME – Plateau", date: "12 sept. 2026", registered: 48, capacity: 60, city: "Abidjan" },
+  { name: "Atelier gestion des risques", date: "26 sept. 2026", registered: 31, capacity: 40, city: "Bouaké" },
+  { name: "Networking partenaires Zô", date: "10 oct. 2026", registered: 12, capacity: 80, city: "Abidjan" },
 ];
 
-type FileStage = "a_controler" | "conforme" | "active";
+/* --- Rapports --- */
 
-const FILES: {
-  ref: string;
-  company: string;
-  contact: string;
-  members: number;
-  premium: number;
-  stage: FileStage;
-}[] = [
-  { ref: "ZO-2026-0141", company: "Ivoire Logistics SARL", contact: "K. Aristide", members: 24, premium: 3_450_000, stage: "a_controler" },
-  { ref: "ZO-2026-0140", company: "Abidjan Tech Hub", contact: "M. Konan", members: 12, premium: 1_820_000, stage: "a_controler" },
-  { ref: "ZO-2026-0138", company: "Groupe Bâtir CI", contact: "S. Traoré", members: 41, premium: 6_120_000, stage: "conforme" },
-  { ref: "ZO-2026-0135", company: "Cacao Export Plus", contact: "A. Yao", members: 33, premium: 4_780_000, stage: "conforme" },
-  { ref: "ZO-2026-0129", company: "Clinique Farah", contact: "D. Farah", members: 58, premium: 8_940_000, stage: "active" },
-  { ref: "ZO-2026-0124", company: "Prosuma Services", contact: "L. Bamba", members: 76, premium: 11_300_000, stage: "active" },
-];
-
-const STAGE_LABELS: Record<FileStage, string> = {
-  a_controler: "À contrôler",
-  conforme: "Conforme",
-  active: "Activé",
-};
-
-const CHECKLIST = [
-  { label: "Registre de commerce (RCCM) fourni", done: true },
-  { label: "Attestation fiscale à jour", done: true },
-  { label: "Liste nominative des salariés", done: true },
-  { label: "Mandat de prélèvement signé", done: false },
-  { label: "Screening LCB-FT validé", done: false },
+const REPORTS = [
+  { name: "Activité membres & adhésions", scope: "Direction, Admin", freq: "Mensuel" },
+  { name: "Production et logistique des cartes", scope: "Marketing, Admin", freq: "Hebdomadaire" },
+  { name: "Usage des avantages par partenaire", scope: "Marketing, Direction", freq: "Mensuel" },
+  { name: "Conventions et facturation partenaires", scope: "Admin", freq: "Mensuel" },
+  { name: "Satisfaction et animation", scope: "Direction, Marketing", freq: "Trimestriel" },
 ];
 
 const MONTHLY_CONTRACTS = [
@@ -224,11 +273,37 @@ function KpiCard({
   );
 }
 
-function DirectionView() {
+function ScopeNote({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2">
+      <Info className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+      <p className="text-xs text-muted-foreground">{children}</p>
+    </div>
+  );
+}
+
+function PriorityBadge({ priority }: { priority: Priority }) {
+  return (
+    <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", SEVERITY_STYLES[priority])}>
+      {SEVERITY_LABELS[priority]}
+    </Badge>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* 1. Pilotage                                                        */
+/* ------------------------------------------------------------------ */
+
+function PilotageView() {
   const totalMembers = TIERS.reduce((sum, t) => sum + t.members, 0);
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      <ScopeNote>
+        Vue consolidée du programme. Les indicateurs financiers détaillés et la configuration
+        restent réservés aux rôles Direction et Admin.
+      </ScopeNote>
+
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         {KPIS.map((kpi) => (
           <KpiCard key={kpi.label} {...kpi} />
@@ -357,9 +432,141 @@ function DirectionView() {
   );
 }
 
-function MarketingView() {
+/* ------------------------------------------------------------------ */
+/* 2. Membres & cartes                                                */
+/* ------------------------------------------------------------------ */
+
+function MembresCartesView() {
+  const [stage, setStage] = useState<CardStage>("a_produire");
+  const queue = MEMBER_CARDS.filter((c) => c.stage === stage);
+  const stageMeta = CARD_STAGES.find((s) => s.key === stage)!;
+
+  return (
+    <div className="space-y-4 sm:space-y-6">
+      <ScopeNote>
+        Files de traitement individuelles. Les actions de production et d'expédition sont ouvertes
+        aux rôles Marketing et Admin ; la Direction consulte les volumes et le respect des SLA.
+      </ScopeNote>
+
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+        {CARD_STAGES.map((s) => {
+          const active = s.key === stage;
+          return (
+            <button
+              key={s.key}
+              type="button"
+              onClick={() => setStage(s.key)}
+              className={cn(
+                "text-left rounded-lg border border-l-4 border-border bg-muted/30 p-3 sm:p-4 transition-colors",
+                s.tone,
+                active ? "bg-primary/5 border-primary/40" : "hover:bg-muted/60"
+              )}
+            >
+              <p className="text-xs text-muted-foreground">{s.label}</p>
+              <p className="text-2xl font-bold mt-1">
+                {CARD_STAGE_COUNTS[s.key].toLocaleString("fr-FR")}
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-1">{s.sla}</p>
+            </button>
+          );
+        })}
+      </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">File « {stageMeta.label} »</CardTitle>
+          <CardDescription>
+            {queue.length} carte(s) individuelle(s) · {stageMeta.sla}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Carte</TableHead>
+                  <TableHead>Membre</TableHead>
+                  <TableHead className="hidden md:table-cell">Entreprise</TableHead>
+                  <TableHead className="hidden sm:table-cell">Ancienneté</TableHead>
+                  <TableHead>Priorité</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {queue.map((c) => (
+                  <TableRow key={c.cardRef}>
+                    <TableCell className="font-mono text-xs">{c.cardRef}</TableCell>
+                    <TableCell className="font-medium">{c.member}</TableCell>
+                    <TableCell className="hidden md:table-cell text-muted-foreground">
+                      {c.company}
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell text-muted-foreground">
+                      {c.age}
+                    </TableCell>
+                    <TableCell>
+                      <PriorityBadge priority={c.priority} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() =>
+                          toast.info(`Démonstration — suivi de la carte ${c.cardRef}`)
+                        }
+                      >
+                        Suivre
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {queue.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-6">
+                      Aucune carte dans cette file.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Priorités SLA</CardTitle>
+          <CardDescription>Respect des délais par étape du cycle carte</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          {CARD_STAGES.map((s, i) => {
+            const compliance = [72, 88, 64, 95][i];
+            return (
+              <div key={s.key}>
+                <div className="flex items-center justify-between text-sm mb-1.5">
+                  <span className="font-medium">{s.label}</span>
+                  <span className="text-muted-foreground text-xs">
+                    {compliance} % dans le {s.sla}
+                  </span>
+                </div>
+                <Progress value={compliance} className="h-2" />
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* 3. Partenaires & avantages                                         */
+/* ------------------------------------------------------------------ */
+
+function PartenairesView() {
   const [partner, setPartner] = useState("all");
   const [category, setCategory] = useState("all");
+  const [status, setStatus] = useState("all");
 
   const partners = Array.from(new Set(BENEFITS_CATALOG.map((b) => b.partner)));
   const categories = Array.from(new Set(BENEFITS_CATALOG.map((b) => b.category)));
@@ -367,39 +574,16 @@ function MarketingView() {
   const filtered = BENEFITS_CATALOG.filter(
     (b) =>
       (partner === "all" || b.partner === partner) &&
-      (category === "all" || b.category === category)
+      (category === "all" || b.category === category) &&
+      (status === "all" || b.published === status)
   );
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Cartes à traiter</CardTitle>
-          <CardDescription>Répartition du parc de cartes Zô PME par statut</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-          {CARD_STATUSES.map((s) => (
-            <div
-              key={s.key}
-              className={cn(
-                "rounded-lg border border-l-4 border-border bg-muted/30 p-3 sm:p-4",
-                s.tone
-              )}
-            >
-              <p className="text-xs text-muted-foreground">{s.label}</p>
-              <p className="text-2xl font-bold mt-1">{s.count.toLocaleString("fr-FR")}</p>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="mt-2 h-7 px-2 text-xs"
-                onClick={() => toast.info(`Démonstration — file « ${s.label} »`)}
-              >
-                Traiter
-              </Button>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+      <ScopeNote>
+        Le catalogue est visible par tous les rôles. La création reste au pôle Marketing, la
+        validation et la publication au rôle Admin.
+      </ScopeNote>
 
       <Card>
         <CardHeader className="pb-3">
@@ -410,7 +594,7 @@ function MarketingView() {
                 {filtered.length} avantage(s) affiché(s) sur {BENEFITS_CATALOG.length}
               </CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Select value={partner} onValueChange={setPartner}>
                 <SelectTrigger className="w-[160px] h-9">
                   <SelectValue placeholder="Partenaire" />
@@ -437,6 +621,17 @@ function MarketingView() {
                   ))}
                 </SelectContent>
               </Select>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger className="w-[140px] h-9">
+                  <SelectValue placeholder="Publication" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les statuts</SelectItem>
+                  <SelectItem value="publie">Publié</SelectItem>
+                  <SelectItem value="a_valider">À valider</SelectItem>
+                  <SelectItem value="brouillon">Brouillon</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardHeader>
@@ -452,6 +647,12 @@ function MarketingView() {
               <p className="text-xs text-muted-foreground mt-1.5">
                 {b.partner} · {b.category}
               </p>
+              <Badge
+                variant="outline"
+                className={cn("mt-2 text-[10px] px-1.5 py-0", PUBLICATION_STYLES[b.published])}
+              >
+                {PUBLICATION_LABELS[b.published]}
+              </Badge>
             </div>
           ))}
           {filtered.length === 0 && (
@@ -466,35 +667,49 @@ function MarketingView() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <MessageCircle className="h-4 w-4 text-primary" />
-              Campagnes WhatsApp
+              <Handshake className="h-4 w-4 text-primary" />
+              Conventions partenaires
             </CardTitle>
+            <CardDescription>Validité et couverture des accords en cours</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <ul className="divide-y divide-border">
-              {CAMPAIGNS.map((c) => (
-                <li key={c.name} className="flex items-center gap-3 px-4 sm:px-6 py-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{c.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {c.audience} · {c.date}
-                    </p>
-                  </div>
-                  <Badge variant="secondary" className="shrink-0">
-                    {c.status}
-                  </Badge>
-                </li>
-              ))}
-            </ul>
-            <Separator />
-            <div className="p-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => toast.info("Démonstration — création de campagne")}
-              >
-                Nouvelle campagne
-              </Button>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Partenaire</TableHead>
+                    <TableHead className="hidden sm:table-cell">Début</TableHead>
+                    <TableHead>Échéance</TableHead>
+                    <TableHead className="text-right">Offres</TableHead>
+                    <TableHead>Statut</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {CONVENTIONS.map((c) => (
+                    <TableRow key={c.partner}>
+                      <TableCell className="font-medium">{c.partner}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-muted-foreground">
+                        {c.start}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">{c.end}</TableCell>
+                      <TableCell className="text-right">{c.benefits}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-[10px]",
+                            c.status === "Active"
+                              ? PUBLICATION_STYLES.publie
+                              : PUBLICATION_STYLES.a_valider
+                          )}
+                        >
+                          {c.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>
@@ -502,28 +717,19 @@ function MarketingView() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <CalendarClock className="h-4 w-4 text-primary" />
-              Événements à venir
+              <ShieldCheck className="h-4 w-4 text-primary" />
+              Règles de publication & validation
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {EVENTS.map((e) => (
-              <div key={e.name}>
-                <div className="flex items-center justify-between gap-2 text-sm">
-                  <span className="font-medium truncate">{e.name}</span>
-                  <span className="text-xs text-muted-foreground shrink-0">{e.date}</span>
-                </div>
-                <div className="mt-1.5 flex items-center gap-3">
-                  <Progress
-                    value={Math.round((e.registered / e.capacity) * 100)}
-                    className="h-2"
-                  />
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    {e.registered}/{e.capacity}
-                  </span>
-                </div>
-              </div>
-            ))}
+          <CardContent>
+            <ul className="space-y-3">
+              {PUBLICATION_RULES.map((rule) => (
+                <li key={rule} className="flex items-start gap-3">
+                  <CheckCircle2 className="h-4 w-4 text-[hsl(var(--success))] mt-0.5 shrink-0" />
+                  <span className="text-sm text-muted-foreground">{rule}</span>
+                </li>
+              ))}
+            </ul>
           </CardContent>
         </Card>
       </div>
@@ -531,77 +737,204 @@ function MarketingView() {
   );
 }
 
-function SouscriptionView() {
-  const [selectedRef, setSelectedRef] = useState(FILES[0].ref);
-  const selected = FILES.find((f) => f.ref === selectedRef) ?? FILES[0];
-  const maxCount = Math.max(...MONTHLY_CONTRACTS.map((m) => m.count));
+/* ------------------------------------------------------------------ */
+/* 4. Animation                                                       */
+/* ------------------------------------------------------------------ */
 
-  const stageBadge = (stage: FileStage) => {
-    const styles: Record<FileStage, string> = {
-      a_controler: "bg-[hsl(var(--orange))]/10 text-[hsl(var(--orange))] border-[hsl(var(--orange))]/30",
-      conforme: "bg-primary/10 text-primary border-primary/30",
-      active: "bg-[hsl(var(--success))]/15 text-[hsl(var(--success))] border-[hsl(var(--success))]/40",
-    };
-    return (
-      <Badge variant="outline" className={cn("text-[11px]", styles[stage])}>
-        {STAGE_LABELS[stage]}
-      </Badge>
-    );
-  };
-
+function AnimationView() {
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="grid gap-3 grid-cols-3">
-        {(Object.keys(STAGE_LABELS) as FileStage[]).map((stage) => (
-          <Card key={stage}>
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground">{STAGE_LABELS[stage]}</p>
-              <p className="text-2xl font-bold mt-1">
-                {FILES.filter((f) => f.stage === stage).length}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <ScopeNote>
+        L'envoi des campagnes et la gestion des événements sont pilotés par le pôle Marketing ; les
+        autres rôles disposent d'un accès en consultation.
+      </ScopeNote>
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Dossiers Zô PME</CardTitle>
-          <CardDescription>Sélectionnez un dossier pour voir sa checklist de conformité</CardDescription>
+          <CardTitle className="text-base flex items-center gap-2">
+            <MessageCircle className="h-4 w-4 text-primary" />
+            Campagnes & communications
+          </CardTitle>
+          <CardDescription>WhatsApp, SMS et e-mail à destination des membres Zô PME</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Référence</TableHead>
-                  <TableHead>Entreprise</TableHead>
-                  <TableHead className="hidden md:table-cell">Contact</TableHead>
-                  <TableHead className="hidden sm:table-cell text-right">Salariés</TableHead>
-                  <TableHead className="text-right">Prime annuelle</TableHead>
-                  <TableHead>Étape</TableHead>
+                  <TableHead>Campagne</TableHead>
+                  <TableHead className="hidden sm:table-cell">Canal</TableHead>
+                  <TableHead className="hidden md:table-cell">Audience</TableHead>
+                  <TableHead className="hidden lg:table-cell">Performance</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Statut</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {FILES.map((f) => (
-                  <TableRow
-                    key={f.ref}
-                    onClick={() => setSelectedRef(f.ref)}
-                    className={cn(
-                      "cursor-pointer",
-                      f.ref === selectedRef && "bg-primary/5"
-                    )}
-                  >
-                    <TableCell className="font-mono text-xs">{f.ref}</TableCell>
-                    <TableCell className="font-medium">{f.company}</TableCell>
+                {CAMPAIGNS.map((c) => (
+                  <TableRow key={c.name}>
+                    <TableCell className="font-medium">{c.name}</TableCell>
+                    <TableCell className="hidden sm:table-cell text-muted-foreground">
+                      {c.channel}
+                    </TableCell>
                     <TableCell className="hidden md:table-cell text-muted-foreground">
-                      {f.contact}
+                      {c.audience}
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell text-right">{f.members}</TableCell>
-                    <TableCell className="text-right whitespace-nowrap">
-                      {formatFCFA(f.premium)}
+                    <TableCell className="hidden lg:table-cell text-muted-foreground">
+                      {c.rate}
                     </TableCell>
-                    <TableCell>{stageBadge(f.stage)}</TableCell>
+                    <TableCell className="whitespace-nowrap">{c.date}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{c.status}</Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <Separator />
+          <div className="p-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => toast.info("Démonstration — création de campagne")}
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Nouvelle campagne
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <CalendarClock className="h-4 w-4 text-primary" />
+            Événements à venir
+          </CardTitle>
+          <CardDescription>Suivi de participation par événement</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {EVENTS.map((e) => (
+            <div key={e.name}>
+              <div className="flex items-center justify-between gap-2 text-sm">
+                <span className="font-medium truncate">{e.name}</span>
+                <span className="text-xs text-muted-foreground shrink-0">
+                  {e.city} · {e.date}
+                </span>
+              </div>
+              <div className="mt-1.5 flex items-center gap-3">
+                <Progress value={Math.round((e.registered / e.capacity) * 100)} className="h-2" />
+                <span className="text-xs text-muted-foreground shrink-0">
+                  {e.registered}/{e.capacity} inscrits
+                </span>
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* 5. Rapports                                                        */
+/* ------------------------------------------------------------------ */
+
+function RapportsView() {
+  const [region, setRegion] = useState("all");
+  const [segment, setSegment] = useState("all");
+  const maxCount = Math.max(...MONTHLY_CONTRACTS.map((m) => m.count));
+
+  return (
+    <div className="space-y-4 sm:space-y-6">
+      <ScopeNote>
+        Le périmètre des données exportées dépend du rôle : la Direction et l'Admin accèdent à
+        l'ensemble du programme, le Marketing aux données d'animation, la Souscription aux dossiers
+        d'adhésion.
+      </ScopeNote>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Filtres de restitution</CardTitle>
+          <CardDescription>La période se règle dans l'en-tête de l'espace</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <Select value={region} onValueChange={setRegion}>
+            <SelectTrigger className="w-[180px] h-9">
+              <SelectValue placeholder="Région" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toutes les régions</SelectItem>
+              <SelectItem value="abidjan">Abidjan</SelectItem>
+              <SelectItem value="bouake">Bouaké</SelectItem>
+              <SelectItem value="san-pedro">San-Pédro</SelectItem>
+              <SelectItem value="korhogo">Korhogo</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={segment} onValueChange={setSegment}>
+            <SelectTrigger className="w-[180px] h-9">
+              <SelectValue placeholder="Segment" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les segments</SelectItem>
+              <SelectItem value="bronze">Bronze</SelectItem>
+              <SelectItem value="argent">Argent</SelectItem>
+              <SelectItem value="or">Or</SelectItem>
+              <SelectItem value="platine">Platine</SelectItem>
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Rapports disponibles</CardTitle>
+          <CardDescription>Export par type, au format PDF ou Excel</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Rapport</TableHead>
+                  <TableHead className="hidden md:table-cell">Visibilité</TableHead>
+                  <TableHead className="hidden sm:table-cell">Fréquence</TableHead>
+                  <TableHead className="text-right">Exports</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {REPORTS.map((r) => (
+                  <TableRow key={r.name}>
+                    <TableCell className="font-medium">{r.name}</TableCell>
+                    <TableCell className="hidden md:table-cell text-muted-foreground text-xs">
+                      {r.scope}
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell text-muted-foreground">
+                      {r.freq}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => toast.info(`Démonstration — export PDF : ${r.name}`)}
+                        >
+                          <Download className="h-3.5 w-3.5 mr-1" />
+                          PDF
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => toast.info(`Démonstration — export Excel : ${r.name}`)}
+                        >
+                          <FileSpreadsheet className="h-3.5 w-3.5 mr-1" />
+                          Excel
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -610,65 +943,26 @@ function SouscriptionView() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Checklist de conformité</CardTitle>
-            <CardDescription>
-              {selected.company} · {selected.ref}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-3">
-              {CHECKLIST.map((item) => (
-                <li key={item.label} className="flex items-start gap-3">
-                  {item.done ? (
-                    <CheckCircle2 className="h-4 w-4 text-[hsl(var(--success))] mt-0.5 shrink-0" />
-                  ) : (
-                    <Circle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                  )}
-                  <span
-                    className={cn(
-                      "text-sm",
-                      item.done ? "text-foreground" : "text-muted-foreground"
-                    )}
-                  >
-                    {item.label}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <Button
-              size="sm"
-              className="mt-4"
-              onClick={() => toast.info("Démonstration — validation de conformité")}
-            >
-              Valider la conformité
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Contrats validés par mois</CardTitle>
-            <CardDescription>Historique des 6 derniers mois</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-end justify-between gap-2 h-40">
-              {MONTHLY_CONTRACTS.map((m) => (
-                <div key={m.month} className="flex-1 flex flex-col items-center gap-2">
-                  <span className="text-xs font-semibold">{m.count}</span>
-                  <div
-                    className="w-full rounded-t bg-primary/80 transition-all"
-                    style={{ height: `${(m.count / maxCount) * 100}%` }}
-                  />
-                  <span className="text-xs text-muted-foreground">{m.month}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Adhésions validées par mois</CardTitle>
+          <CardDescription>Historique des 6 derniers mois</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-end justify-between gap-2 h-40">
+            {MONTHLY_CONTRACTS.map((m) => (
+              <div key={m.month} className="flex-1 flex flex-col items-center gap-2">
+                <span className="text-xs font-semibold">{m.count}</span>
+                <div
+                  className="w-full rounded-t bg-primary/80 transition-all"
+                  style={{ height: `${(m.count / maxCount) * 100}%` }}
+                />
+                <span className="text-xs text-muted-foreground">{m.month}</span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -678,25 +972,33 @@ function SouscriptionView() {
 /* ------------------------------------------------------------------ */
 
 const VUE_LABELS: Record<string, { title: string; subtitle: string }> = {
-  direction: {
+  pilotage: {
     title: "Pilotage",
-    subtitle: "Pilotage du programme PME : adhésions, cartes, partenaires et conformité",
+    subtitle: "Indicateurs clés, fidélité, alertes et performance partenaires",
   },
-  marketing: {
-    title: "Marketing & animation",
-    subtitle: "Cartes à traiter, catalogue d'avantages, campagnes et événements",
+  membres: {
+    title: "Membres & cartes",
+    subtitle: "Files de production et de remise des cartes, priorités SLA et suivi individuel",
   },
-  souscription: {
-    title: "Souscription",
-    subtitle: "Dossiers d'adhésion, contrôle de conformité et activation",
+  partenaires: {
+    title: "Partenaires & avantages",
+    subtitle: "Catalogue, publication des offres et conventions partenaires",
+  },
+  animation: {
+    title: "Animation",
+    subtitle: "Campagnes, communications et événements du Club Zô PME",
+  },
+  rapports: {
+    title: "Rapports",
+    subtitle: "Restitutions filtrables et exports PDF / Excel par type",
   },
 };
 
 export default function ZoPmePage() {
   const [period, setPeriod] = useState("30d");
   const [searchParams] = useSearchParams();
-  const vueParam = searchParams.get("vue") ?? "direction";
-  const vue = VUE_LABELS[vueParam] ? vueParam : "direction";
+  const vueParam = searchParams.get("vue") ?? "pilotage";
+  const vue = VUE_LABELS[vueParam] ? vueParam : "pilotage";
   const labels = VUE_LABELS[vue];
 
   return (
@@ -742,10 +1044,11 @@ export default function ZoPmePage() {
         </div>
       </div>
 
-      {vue === "direction" && <DirectionView />}
-      {vue === "marketing" && <MarketingView />}
-      {vue === "souscription" && <SouscriptionView />}
+      {vue === "pilotage" && <PilotageView />}
+      {vue === "membres" && <MembresCartesView />}
+      {vue === "partenaires" && <PartenairesView />}
+      {vue === "animation" && <AnimationView />}
+      {vue === "rapports" && <RapportsView />}
     </div>
   );
 }
-

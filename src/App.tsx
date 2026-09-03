@@ -47,6 +47,8 @@ import NewsPage from "./pages/broker/NewsPage";
 import ReportsPage from "./pages/broker/ReportsPage";
 import CampaignsPage from "./pages/broker/CampaignsPage";
 import MessagesPage from "./pages/broker/MessagesPage";
+import ZoPmePage from "./pages/broker/ZoPmePage";
+
 
 // Admin pages
 import { AdminLayout } from "./layouts/AdminLayout";

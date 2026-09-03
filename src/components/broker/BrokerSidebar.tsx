@@ -176,6 +176,13 @@ export function BrokerSidebar() {
       ],
     },
     {
+      label: "Programmes",
+      items: [
+        { title: "Espace Zô PME", url: "/b2b/zo-pme", icon: Building2 },
+      ],
+    },
+
+    {
       label: "Gestion",
       items: [
         { 

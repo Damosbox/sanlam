@@ -83,15 +83,23 @@ export function NewPmeDialog({ open, onOpenChange, lockedIntermediaire, onSubmit
     form.responsable.prenom.trim().length < 2 ||
     form.responsable.fonction.trim().length < 2 ||
     !form.responsable.email.includes("@") ||
-    form.responsable.telephone.trim().length < 8 ||
-    form.produitsSouscrits.length === 0;
+    form.responsable.telephone.trim().length < 8;
 
-  const toggleProduit = (produit: string) =>
+  const addProduit = () => {
+    const value = produitDraft.trim();
+    if (value.length < 2) return;
+    setForm((f) =>
+      f.produitsSouscrits.includes(value)
+        ? f
+        : { ...f, produitsSouscrits: [...f.produitsSouscrits, value] }
+    );
+    setProduitDraft("");
+  };
+
+  const removeProduit = (produit: string) =>
     setForm((f) => ({
       ...f,
-      produitsSouscrits: f.produitsSouscrits.includes(produit)
-        ? f.produitsSouscrits.filter((p) => p !== produit)
-        : [...f.produitsSouscrits, produit],
+      produitsSouscrits: f.produitsSouscrits.filter((p) => p !== produit),
     }));
 
   return (

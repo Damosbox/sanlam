@@ -49,6 +49,8 @@ import { KpiCard } from "../shared/KpiCard";
 import { CardStatusBadge, LifecycleBadge, TierBadge } from "../shared/badges";
 import { EmptyState, ScopeNote } from "../shared/states";
 import { ConfirmActionDialog } from "../shared/ConfirmActionDialog";
+import { NewPmeDialog } from "../dialogs/NewPmeDialog";
+import { IssueCardDialog } from "../dialogs/IssueCardDialog";
 import { useZoPme } from "../ZoPmeProvider";
 import {
   Building2,
@@ -56,6 +58,7 @@ import {
   FileWarning,
   Mail,
   Phone,
+  Plus,
   Search,
   Sparkles,
   UserRound,
@@ -65,7 +68,17 @@ import { toast } from "sonner";
 
 export function MembresView() {
   const navigate = useNavigate();
-  const { pmes, cards, can, setPmeLifecycle } = useZoPme();
+  const {
+    pmes,
+    visiblePmes,
+    perimetre,
+    cards,
+    can,
+    setPmeLifecycle,
+    createPme,
+    setPmeTier,
+    issueCard,
+  } = useZoPme();
 
   const [search, setSearch] = useState("");
   const [tier, setTier] = useState("all");
@@ -74,6 +87,9 @@ export function MembresView() {
   const [sort, setSort] = useState("score_desc");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [transition, setTransition] = useState<PmeLifecycle | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [issuing, setIssuing] = useState(false);
+  const [tierTarget, setTierTarget] = useState<Tier | null>(null);
 
   const cardsByPme = useMemo(() => {
     const map = new Map<string, typeof cards>();
@@ -92,7 +108,7 @@ export function MembresView() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const list = pmes.filter((p) => {
+    const list = visiblePmes.filter((p) => {
       const matchesSearch =
         q === "" ||
         p.raisonSociale.toLowerCase().includes(q) ||
@@ -122,22 +138,27 @@ export function MembresView() {
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pmes, cardsByPme, search, tier, lifecycle, cardFilter, sort]);
+  }, [visiblePmes, cardsByPme, search, tier, lifecycle, cardFilter, sort]);
 
   const pagination = usePagination(filtered, { storageKey: "zo-pme-membres" });
 
   const kpis = useMemo(() => {
-    const actives = pmes.filter((p) => p.cycleVie === "actif").length;
-    const aCompleter = pmes.filter(
+    const actives = visiblePmes.filter((p) => p.cycleVie === "actif").length;
+    const aCompleter = visiblePmes.filter(
       (p) => p.cycleVie === "adhesion_en_cours" || !p.conformiteComplete
     ).length;
-    const nouveaux = pmes.filter((p) => p.adhesionLe.includes("/08/2026") || p.adhesionLe.includes("/09/2026")).length;
-    const sansCarte = pmes.filter((p) => !hasActiveCard(p.id)).length;
+    const nouveaux = visiblePmes.filter(
+      (p) => p.adhesionLe.includes("/08/2026") || p.adhesionLe.includes("/09/2026")
+    ).length;
+    const sansCarte = visiblePmes.filter((p) => !hasActiveCard(p.id)).length;
     return { actives, aCompleter, nouveaux, sansCarte };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pmes, cardsByPme]);
+  }, [visiblePmes, cardsByPme]);
 
   const selected = pmes.find((p) => p.id === selectedId) ?? null;
+  const canCreate = can("members.create");
+  const canIssue = can("cards.issue");
+  const canTier = can("members.tier");
   const selectedCards = selected ? cardsByPme.get(selected.id) ?? [] : [];
   const allowedTransitions = selected ? LIFECYCLE_TRANSITIONS[selected.cycleVie] : [];
 
@@ -150,10 +171,26 @@ export function MembresView() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <ScopeNote>
-        Un membre est une PME identifiée par son matricule. Les personnes (dont le directeur) sont
-        des contacts rattachés à la PME.
-      </ScopeNote>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex-1 space-y-2">
+          <ScopeNote>
+            Un membre est une PME identifiée par son matricule. Les personnes (dont le directeur)
+            sont des contacts rattachés à la PME.
+          </ScopeNote>
+          {perimetre && (
+            <ScopeNote>
+              Périmètre commercial appliqué : vous ne voyez que les PME rattachées à{" "}
+              <span className="font-medium">{perimetre}</span>.
+            </ScopeNote>
+          )}
+        </div>
+        {canCreate && (
+          <Button size="sm" className="shrink-0" onClick={() => setCreating(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nouvelle PME
+          </Button>
+        )}
+      </div>
 
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         <KpiCard label="PME actives" value={String(kpis.actives)} icon={Building2} />
@@ -169,7 +206,8 @@ export function MembresView() {
             Annuaire des PME
           </CardTitle>
           <CardDescription>
-            {filtered.length} PME sur {pmes.length} · fidélité affichée en score /100 et palier
+            {filtered.length} PME sur {visiblePmes.length} · fidélité affichée en score /100 et
+            palier
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -371,6 +409,48 @@ export function MembresView() {
                   </p>
                 </div>
 
+                <div className="rounded-lg border border-border p-3 space-y-1.5">
+                  <p className="text-sm font-medium">Identification</p>
+                  <p className="text-xs text-muted-foreground">
+                    Matricule <span className="font-mono">{selected.matricule}</span> ·
+                    intermédiaire {selected.intermediaire ?? "—"}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {(selected.produitsSouscrits ?? []).map((prod) => (
+                      <Badge key={prod} variant="outline" className="text-[10px] px-1.5 py-0">
+                        {prod}
+                      </Badge>
+                    ))}
+                    {(selected.produitsSouscrits ?? []).length === 0 && (
+                      <span className="text-xs text-muted-foreground">
+                        Aucun produit déclaré
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {canTier && (
+                  <div className="rounded-lg border border-border p-3 space-y-2">
+                    <p className="text-sm font-medium">Ajustement manuel du palier</p>
+                    <p className="text-xs text-muted-foreground">
+                      Le palier de fidélité peut être corrigé manuellement avec motif. Le score
+                      /100 et la segmentation RFM ne sont pas modifiés.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {TIER_ORDER.filter((t) => t !== selected.fidelite.palier).map((t) => (
+                        <Button
+                          key={t}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setTierTarget(t)}
+                        >
+                          Forcer {t}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="rounded-lg border border-dashed border-border p-3 space-y-2">
                   <p className="text-sm font-medium">Segmentation RFM</p>
                   <p className="text-xs text-muted-foreground">
@@ -420,16 +500,24 @@ export function MembresView() {
                 <Separator />
 
                 <div>
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
                     <p className="text-sm font-medium">Cartes rattachées</p>
-                    <Button
-                      variant="link"
-                      size="sm"
-                      className="h-auto p-0 text-xs"
-                      onClick={() => navigate("/b2b/zo-pme?vue=cartes")}
-                    >
-                      Ouvrir le cycle des cartes
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {canIssue && (
+                        <Button size="sm" variant="outline" onClick={() => setIssuing(true)}>
+                          <CreditCard className="h-3.5 w-3.5 mr-2" />
+                          Émettre une carte
+                        </Button>
+                      )}
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 text-xs"
+                        onClick={() => navigate("/b2b/zo-pme?vue=cartes")}
+                      >
+                        Ouvrir le cycle des cartes
+                      </Button>
+                    </div>
                   </div>
                   {selectedCards.length === 0 ? (
                     <EmptyState
@@ -490,6 +578,49 @@ export function MembresView() {
           )}
         </SheetContent>
       </Sheet>
+
+      <NewPmeDialog
+        open={creating}
+        onOpenChange={setCreating}
+        lockedIntermediaire={perimetre}
+        onSubmit={(input) => {
+          const pme = createPme(input);
+          toast.success(`${pme.raisonSociale} créée — matricule ${pme.matricule}`);
+          setSelectedId(pme.id);
+        }}
+      />
+
+      <IssueCardDialog
+        open={issuing}
+        onOpenChange={setIssuing}
+        pme={selected}
+        onSubmit={(input) => {
+          if (!selected) return;
+          const reference = issueCard(selected.id, input);
+          toast.success(`Carte ${reference} émise pour ${selected.raisonSociale}`);
+        }}
+      />
+
+      <ConfirmActionDialog
+        open={!!tierTarget}
+        onOpenChange={(o) => !o && setTierTarget(null)}
+        title="Modifier manuellement le palier de fidélité"
+        description={
+          selected && tierTarget
+            ? `${selected.raisonSociale} passera du palier ${selected.fidelite.palier} au palier ${tierTarget}. Le score /100 et le RFM restent inchangés.`
+            : ""
+        }
+        confirmLabel="Appliquer le palier"
+        reason="required"
+        reasonLabel="Motif de l'ajustement"
+        onConfirm={(motif) => {
+          if (selected && tierTarget && motif) {
+            setPmeTier(selected.id, tierTarget, motif);
+            toast.success(`${selected.raisonSociale} — palier ${tierTarget}`);
+          }
+          setTierTarget(null);
+        }}
+      />
 
       <ConfirmActionDialog
         open={!!transition}

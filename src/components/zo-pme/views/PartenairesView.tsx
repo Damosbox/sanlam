@@ -38,18 +38,27 @@ import { formatFCFA } from "@/utils/formatCurrency";
 import {
   CONVENTION_LABELS,
   CONVENTION_STYLES,
-  PARTNERS,
   PUBLICATION_LABELS,
   PUBLICATION_STYLES,
+  SEVERITY_LABELS,
+  SEVERITY_STYLES,
+  type Partner,
 } from "@/data/zoPme";
 import { EmptyState, ScopeNote } from "../shared/states";
 import { TierBadge } from "../shared/badges";
 import { useZoPme } from "../ZoPmeProvider";
-import { Handshake, Mail, Phone, Search, Store } from "lucide-react";
+import { ConfirmActionDialog } from "../shared/ConfirmActionDialog";
+import { PartnerFormDialog } from "../dialogs/PartnerFormDialog";
+import { toast } from "sonner";
+import { Handshake, Mail, Pencil, Phone, Plus, RefreshCw, Search, Store } from "lucide-react";
 
 export function PartenairesView() {
   const navigate = useNavigate();
-  const { benefits } = useZoPme();
+  const { benefits, partners, can, createPartner, updatePartner, renewConvention } = useZoPme();
+  const canManage = can("partners.manage");
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<Partner | null>(null);
+  const [renewing, setRenewing] = useState<Partner | null>(null);
 
   const [search, setSearch] = useState("");
   const [categorie, setCategorie] = useState("all");
@@ -57,13 +66,13 @@ export function PartenairesView() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const categories = useMemo(
-    () => Array.from(new Set(PARTNERS.map((p) => p.categorie))).sort(),
-    []
+    () => Array.from(new Set(partners.map((p) => p.categorie))).sort(),
+    [partners]
   );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return PARTNERS.filter(
+    return partners.filter(
       (p) =>
         (q === "" ||
           p.nom.toLowerCase().includes(q) ||
@@ -72,19 +81,43 @@ export function PartenairesView() {
         (categorie === "all" || p.categorie === categorie) &&
         (convention === "all" || p.convention.statut === convention)
     );
-  }, [search, categorie, convention]);
+  }, [partners, search, categorie, convention]);
 
-  const selected = PARTNERS.find((p) => p.id === selectedId) ?? null;
+  const selected = partners.find((p) => p.id === selectedId) ?? null;
   const selectedBenefits = selected
-    ? benefits.filter((b) => b.partnerId === selected.id)
+    ? benefits.filter(
+        (b) => b.partnerId === selected.id || (b.partnerIds ?? []).includes(selected.id)
+      )
     : [];
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <ScopeNote tone="backend">
-        Conventions, taux négociés et facturation restent gérés hors plateforme : les statuts
-        affichés sont un reflet de suivi, pas la source contractuelle.
-      </ScopeNote>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex-1 space-y-2">
+          <ScopeNote tone="backend">
+            Conventions, taux négociés, import en masse de partenaires et notifications partenaires
+            restent des dépendances back-end : les statuts affichés sont un reflet de suivi, pas la
+            source contractuelle.
+          </ScopeNote>
+          <ScopeNote>
+            Section à valider par le métier : les champs d'accord servent au pilotage interne et
+            n'ajoutent aucune règle contractuelle.
+          </ScopeNote>
+        </div>
+        {canManage && (
+          <Button
+            size="sm"
+            className="shrink-0"
+            onClick={() => {
+              setEditing(null);
+              setFormOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nouveau partenaire
+          </Button>
+        )}
+      </div>
 
       <Card>
         <CardHeader className="pb-3">
@@ -264,10 +297,79 @@ export function PartenairesView() {
                     Du {selected.convention.debut} au {selected.convention.fin} · remise négociée{" "}
                     {selected.convention.tauxRemise} %
                   </p>
+                  {selected.accord && (
+                    <div className="pt-1 space-y-1">
+                      <p className="text-xs text-muted-foreground">
+                        Accord : {selected.accord.type}
+                      </p>
+                      {selected.accord.contreparties && (
+                        <p className="text-xs text-muted-foreground">
+                          Contreparties : {selected.accord.contreparties}
+                        </p>
+                      )}
+                      {selected.accord.clauses && (
+                        <p className="text-xs text-muted-foreground">
+                          Clauses : {selected.accord.clauses}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {canManage && (
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditing(selected);
+                          setFormOpen(true);
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5 mr-2" />
+                        Modifier la fiche
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => setRenewing(selected)}>
+                        <RefreshCw className="h-3.5 w-3.5 mr-2" />
+                        Renouveler la convention
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
+                {(selected.ciblage || selected.responsableInterne) && (
+                  <div className="rounded-lg border border-border p-3 space-y-1.5">
+                    <p className="text-sm font-medium">Pilotage interne</p>
+                    {selected.responsableInterne && (
+                      <p className="text-xs text-muted-foreground">
+                        Responsable : {selected.responsableInterne}
+                      </p>
+                    )}
+                    {selected.ciblage && (
+                      <p className="text-xs text-muted-foreground">
+                        Ciblage : {selected.ciblage.produits || "—"} ·{" "}
+                        {selected.ciblage.segment || "—"} · {selected.ciblage.zone || "—"}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <Badge variant="secondary" className="text-[10px]">
+                        KPI {selected.kpiRealise ?? 0} / {selected.kpiCible ?? 0}
+                      </Badge>
+                      {selected.risque && (
+                        <Badge
+                          variant="outline"
+                          className={cn("text-[10px] px-1.5 py-0", SEVERITY_STYLES[selected.risque])}
+                        >
+                          Risque {SEVERITY_LABELS[selected.risque]}
+                        </Badge>
+                      )}
+                    </div>
+                    {selected.planB && (
+                      <p className="text-xs text-muted-foreground">Plan B : {selected.planB}</p>
+                    )}
+                  </div>
+                )}
+
                 <div className="rounded-lg border border-border p-3 space-y-1.5">
-                  <p className="text-sm font-medium">Contact partenaire</p>
+                  <p className="text-sm font-medium">Contact principal</p>
                   <p className="text-xs text-muted-foreground">{selected.contact.nom}</p>
                   <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                     <Mail className="h-3 w-3" /> {selected.contact.email}
@@ -275,6 +377,11 @@ export function PartenairesView() {
                   <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                     <Phone className="h-3 w-3" /> {selected.contact.telephone}
                   </p>
+                  {selected.contactSupport?.nom && (
+                    <p className="text-xs text-muted-foreground pt-1">
+                      Support : {selected.contactSupport.nom} · {selected.contactSupport.email}
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -332,11 +439,66 @@ export function PartenairesView() {
                     </ul>
                   )}
                 </div>
+
+                {(selected.historique ?? []).length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">Historique de la relation</p>
+                    <ul className="space-y-1.5">
+                      {(selected.historique ?? []).map((h, i) => (
+                        <li
+                          key={`${h.date}-${i}`}
+                          className="text-xs text-muted-foreground border-l-2 border-border pl-3"
+                        >
+                          <span className="font-medium text-foreground">{h.date}</span> — {h.libelle}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </>
           )}
         </SheetContent>
       </Sheet>
+
+      <PartnerFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        partner={editing}
+        onSubmit={(input) => {
+          if (editing) {
+            updatePartner(editing.id, input);
+            toast.success(`${input.nom} mis à jour`);
+          } else {
+            createPartner(input);
+            toast.success(`${input.nom} ajouté aux partenaires`);
+          }
+        }}
+      />
+
+      <ConfirmActionDialog
+        open={!!renewing}
+        onOpenChange={(o) => !o && setRenewing(null)}
+        title="Renouveler la convention"
+        description={
+          renewing
+            ? `La convention ${renewing.convention.reference} de ${renewing.nom} sera prolongée de 12 mois et l'opération sera ajoutée à l'historique. La signature du contrat reste hors plateforme.`
+            : ""
+        }
+        confirmLabel="Renouveler"
+        reason="required"
+        reasonLabel="Motif / conditions retenues"
+        onConfirm={(motif) => {
+          if (renewing && motif) {
+            const [d, m, y] = renewing.convention.fin.split("/").map(Number);
+            const debut = renewing.convention.fin;
+            const fin = `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}/${y + 1}`;
+            renewConvention(renewing.id, debut, fin, motif);
+            toast.success(`Convention ${renewing.convention.reference} renouvelée`);
+          }
+          setRenewing(null);
+        }}
+      />
     </div>
   );
 }

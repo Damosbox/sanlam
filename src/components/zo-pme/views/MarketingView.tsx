@@ -35,6 +35,7 @@ import { KpiCard } from "../shared/KpiCard";
 import { SeverityBadge, SlaBadge, TierBadge } from "../shared/badges";
 import { EmptyState, ScopeNote } from "../shared/states";
 import { ConfirmActionDialog } from "../shared/ConfirmActionDialog";
+import { CampaignFormDialog } from "../dialogs/CampaignFormDialog";
 import { useZoPme } from "../ZoPmeProvider";
 import {
   AlertTriangle,
@@ -56,6 +57,7 @@ export function MarketingView() {
     can,
     moveCard,
     setCampaignStatus,
+    createCampaign,
     toggleEventRegistration,
   } = useZoPme();
 

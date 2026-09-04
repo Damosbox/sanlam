@@ -20,7 +20,6 @@ import {
   PERMISSION_LABELS,
   ROLE_DEFINITIONS,
   ROLE_ORDER,
-  PRODUITS_REFERENTIEL,
   VIEW_LABELS,
   type ZoPmeView,
 } from "@/data/zoPme";
@@ -46,26 +45,17 @@ export function AdministrationView() {
             <AlertTriangle className="h-4 w-4 text-warning" />
             Référentiel produit à valider
           </CardTitle>
-          <CardDescription>
-            Décision métier ouverte — aucune liste complémentaire ni grille de commissions n'est
-            créée dans la plateforme tant que l'arbitrage n'est pas rendu.
-          </CardDescription>
+          <CardDescription>Constat de cadrage — aucune action disponible ici.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-2">
           <p className="text-sm">
-            Le cadrage mentionne 17 produits, le fichier produit actuel en liste{" "}
-            {PRODUITS_REFERENTIEL.length}.
+            Le cadrage mentionne 17 produits ; le fichier produit actuel en liste 7. Référentiel à
+            valider.
           </p>
-          <div className="flex flex-wrap gap-1.5">
-            {PRODUITS_REFERENTIEL.map((prod) => (
-              <Badge key={prod} variant="outline" className="text-[10px] px-1.5 py-0">
-                {prod}
-              </Badge>
-            ))}
-          </div>
           <p className="text-xs text-muted-foreground">
-            Conséquence : production, commissions et rattachement des campagnes aux produits
-            restent bloqués côté back-end jusqu'à la validation du référentiel.
+            Conséquence : produits, production et commissions restent bloqués et dépendants de cette
+            décision métier. Aucune liste, aucun badge produit et aucune grille de commissions ne
+            sont affichés tant que l'arbitrage n'est pas rendu.
           </p>
         </CardContent>
       </Card>

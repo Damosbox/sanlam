@@ -10,7 +10,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -18,11 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { X } from "lucide-react";
 import { ScopeNote } from "../shared/states";
-import {
-  INTERMEDIAIRES,
-  PRODUITS_REFERENTIEL,
-} from "@/data/zoPme/members";
+import { INTERMEDIAIRES } from "@/data/zoPme/members";
 import type { NewPmeInput } from "../ZoPmeProvider";
 
 const SECTEURS = [
@@ -57,6 +54,7 @@ interface Props {
 
 export function NewPmeDialog({ open, onOpenChange, lockedIntermediaire, onSubmit }: Props) {
   const [form, setForm] = useState<NewPmeInput>(emptyForm);
+  const [produitDraft, setProduitDraft] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -66,6 +64,7 @@ export function NewPmeDialog({ open, onOpenChange, lockedIntermediaire, onSubmit
         responsable: { ...emptyForm.responsable },
         produitsSouscrits: [],
       });
+      setProduitDraft("");
     }
   }, [open, lockedIntermediaire]);
 
@@ -83,15 +82,23 @@ export function NewPmeDialog({ open, onOpenChange, lockedIntermediaire, onSubmit
     form.responsable.prenom.trim().length < 2 ||
     form.responsable.fonction.trim().length < 2 ||
     !form.responsable.email.includes("@") ||
-    form.responsable.telephone.trim().length < 8 ||
-    form.produitsSouscrits.length === 0;
+    form.responsable.telephone.trim().length < 8;
 
-  const toggleProduit = (produit: string) =>
+  const addProduit = () => {
+    const value = produitDraft.trim();
+    if (value.length < 2) return;
+    setForm((f) =>
+      f.produitsSouscrits.includes(value)
+        ? f
+        : { ...f, produitsSouscrits: [...f.produitsSouscrits, value] }
+    );
+    setProduitDraft("");
+  };
+
+  const removeProduit = (produit: string) =>
     setForm((f) => ({
       ...f,
-      produitsSouscrits: f.produitsSouscrits.includes(produit)
-        ? f.produitsSouscrits.filter((p) => p !== produit)
-        : [...f.produitsSouscrits, produit],
+      produitsSouscrits: f.produitsSouscrits.filter((p) => p !== produit),
     }));
 
   return (
@@ -204,24 +211,43 @@ export function NewPmeDialog({ open, onOpenChange, lockedIntermediaire, onSubmit
           </div>
 
           <div className="space-y-2">
-            <Label>Produits souscrits *</Label>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {PRODUITS_REFERENTIEL.map((p) => (
-                <label
-                  key={p}
-                  className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm cursor-pointer"
-                >
-                  <Checkbox
-                    checked={form.produitsSouscrits.includes(p)}
-                    onCheckedChange={() => toggleProduit(p)}
-                  />
-                  {p}
-                </label>
-              ))}
+            <Label htmlFor="pme-produit">Produits souscrits (déclaratif)</Label>
+            <div className="flex gap-2">
+              <Input
+                id="pme-produit"
+                value={produitDraft}
+                onChange={(e) => setProduitDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addProduit();
+                  }
+                }}
+                placeholder="Saisir un produit puis Entrée"
+              />
+              <Button type="button" variant="outline" onClick={addProduit}>
+                Ajouter
+              </Button>
             </div>
+            {form.produitsSouscrits.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {form.produitsSouscrits.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => removeProduit(p)}
+                    className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs hover:bg-muted"
+                    aria-label={`Retirer ${p}`}
+                  >
+                    {p}
+                    <X className="h-3 w-3" />
+                  </button>
+                ))}
+              </div>
+            )}
             <ScopeNote tone="backend">
-              Référentiel produit à valider : le cadrage mentionne 17 produits, le référentiel
-              actuel en liste 7. Aucun produit complémentaire n'est inventé ici.
+              Référentiel produit à valider — données déclaratives de démonstration. Aucune liste de
+              produits n'est proposée tant que la décision métier n'est pas rendue.
             </ScopeNote>
           </div>
         </div>

@@ -463,30 +463,13 @@ export const INTERMEDIAIRES = [
 export const COMMERCIAL_COURANT = INTERMEDIAIRES[0];
 
 /**
- * Produits souscrits : le référentiel définitif est une décision métier ouverte
- * (le cadrage cite 17 produits, le référentiel produit actuel en liste 7).
+ * Aucun référentiel produit n'est codé ici : la liste officielle est une décision
+ * métier ouverte. Les produits éventuellement présents sont purement déclaratifs.
  */
-export const PRODUITS_REFERENTIEL = [
-  "Auto",
-  "Pack Obsèques",
-  "Multirisque habitation",
-  "Santé collective",
-  "Prévoyance",
-  "Responsabilité civile",
-  "Transport de marchandises",
-];
-
-const PRODUIT_SETS: string[][] = [
-  ["Auto", "Pack Obsèques"],
-  ["Auto"],
-  ["Santé collective", "Prévoyance"],
-  ["Auto", "Multirisque habitation", "Responsabilité civile"],
-];
-
 export const PMES: Pme[] = RAW_PMES.map((p, i) => ({
   ...p,
   intermediaire: p.intermediaire ?? INTERMEDIAIRES[i % INTERMEDIAIRES.length],
-  produitsSouscrits: p.produitsSouscrits ?? PRODUIT_SETS[i % PRODUIT_SETS.length],
+  produitsSouscrits: p.produitsSouscrits ?? [],
 }));
 
 export const findPme = (id: string) => PMES.find((p) => p.id === id);

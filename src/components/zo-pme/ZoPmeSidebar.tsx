@@ -65,9 +65,16 @@ export function ZoPmeSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { state, isMobile, setOpenMobile } = useSidebar();
+  const { canSeeView, roleDefinition } = useZoPme();
   const collapsed = state === "collapsed";
 
-  const currentVue = new URLSearchParams(location.search).get("vue") ?? "pilotage";
+  const currentVue =
+    new URLSearchParams(location.search).get("vue") ?? roleDefinition.views[0];
+
+  // Seules les vues du périmètre du rôle sont proposées.
+  const visibleGroups = groups
+    .map((g) => ({ ...g, items: g.items.filter((i) => canSeeView(i.vue)) }))
+    .filter((g) => g.items.length > 0);
 
   const handleNavigation = (vue: string) => {
     navigate(`/b2b/zo-pme?vue=${vue}`);

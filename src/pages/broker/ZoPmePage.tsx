@@ -1556,7 +1556,9 @@ export default function ZoPmePage() {
       </div>
 
       {vue === "pilotage" && <PilotageView />}
-      {vue === "membres" && <MembresCartesView />}
+      {vue === "membres" && <MembresView />}
+      {vue === "cartes" && <CartesView />}
+
       {vue === "partenaires" && <PartenairesView />}
       {vue === "animation" && <AnimationView />}
       {vue === "rapports" && <RapportsView />}

@@ -10,7 +10,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -18,11 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { X } from "lucide-react";
 import { ScopeNote } from "../shared/states";
-import {
-  INTERMEDIAIRES,
-  PRODUITS_REFERENTIEL,
-} from "@/data/zoPme/members";
+import { INTERMEDIAIRES } from "@/data/zoPme/members";
 import type { NewPmeInput } from "../ZoPmeProvider";
 
 const SECTEURS = [
@@ -57,6 +54,7 @@ interface Props {
 
 export function NewPmeDialog({ open, onOpenChange, lockedIntermediaire, onSubmit }: Props) {
   const [form, setForm] = useState<NewPmeInput>(emptyForm);
+  const [produitDraft, setProduitDraft] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -66,6 +64,7 @@ export function NewPmeDialog({ open, onOpenChange, lockedIntermediaire, onSubmit
         responsable: { ...emptyForm.responsable },
         produitsSouscrits: [],
       });
+      setProduitDraft("");
     }
   }, [open, lockedIntermediaire]);
 

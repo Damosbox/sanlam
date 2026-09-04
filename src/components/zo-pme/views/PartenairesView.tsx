@@ -440,16 +440,17 @@ export function PartenairesView() {
                   )}
                 </div>
 
-                {(selected.historique ?? []).length > 0 && (
+                {(selected.historiqueConvention ?? []).length > 0 && (
                   <div>
-                    <p className="text-sm font-medium mb-2">Historique de la relation</p>
+                    <p className="text-sm font-medium mb-2">Historique de la convention</p>
                     <ul className="space-y-1.5">
-                      {(selected.historique ?? []).map((h, i) => (
+                      {(selected.historiqueConvention ?? []).map((h, i) => (
                         <li
                           key={`${h.date}-${i}`}
                           className="text-xs text-muted-foreground border-l-2 border-border pl-3"
                         >
-                          <span className="font-medium text-foreground">{h.date}</span> — {h.libelle}
+                          <span className="font-medium text-foreground">{h.date}</span> — {h.action}
+                          {h.motif ? ` · ${h.motif}` : ""} ({h.acteur})
                         </li>
                       ))}
                     </ul>

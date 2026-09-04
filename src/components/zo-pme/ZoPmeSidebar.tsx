@@ -12,17 +12,33 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { BarChart3, CreditCard, Handshake, Megaphone, FileBarChart } from "lucide-react";
+import { BarChart3, CreditCard, Handshake, Megaphone, FileBarChart, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AnimatedIcon } from "@/components/ui/animated-icon";
 import { SpaceSwitcher } from "@/components/broker/SpaceSwitcher";
 
-const items = [
-  { title: "Pilotage", vue: "pilotage", icon: BarChart3 },
-  { title: "Membres & cartes", vue: "membres", icon: CreditCard },
-  { title: "Partenaires & avantages", vue: "partenaires", icon: Handshake },
-  { title: "Animation", vue: "animation", icon: Megaphone },
-  { title: "Rapports", vue: "rapports", icon: FileBarChart },
+type Item = { title: string; vue: string; icon: typeof BarChart3 };
+
+const groups: { label: string; items: Item[] }[] = [
+  {
+    label: "Programme PME",
+    items: [{ title: "Pilotage", vue: "pilotage", icon: BarChart3 }],
+  },
+  {
+    label: "Gestion du programme",
+    items: [
+      { title: "Membres", vue: "membres", icon: Users },
+      { title: "Cartes", vue: "cartes", icon: CreditCard },
+    ],
+  },
+  {
+    label: "Écosystème",
+    items: [
+      { title: "Partenaires & avantages", vue: "partenaires", icon: Handshake },
+      { title: "Animation", vue: "animation", icon: Megaphone },
+      { title: "Rapports", vue: "rapports", icon: FileBarChart },
+    ],
+  },
 ];
 
 export function ZoPmeSidebar() {
@@ -48,38 +64,42 @@ export function ZoPmeSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="py-4 bg-[hsl(var(--sidebar-broker))]">
-        <SidebarGroup>
-          <SidebarGroupLabel className={cn(collapsed && "sr-only")}>Programme PME</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => {
-                const isActive = currentVue === item.vue;
-                return (
-                  <SidebarMenuItem key={item.vue}>
-                    <SidebarMenuButton
-                      onClick={() => handleNavigation(item.vue)}
-                      tooltip={item.title}
-                      className={cn(
-                        "w-full justify-start gap-3 transition-all duration-200 relative",
-                        isActive &&
-                          "bg-primary/10 text-primary font-semibold shadow-sm before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-1 before:rounded-r before:bg-primary"
-                      )}
-                    >
-                      <AnimatedIcon
-                        icon={item.icon}
+        {groups.map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel className={cn(collapsed && "sr-only")}>
+              {group.label}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => {
+                  const isActive = currentVue === item.vue;
+                  return (
+                    <SidebarMenuItem key={item.vue}>
+                      <SidebarMenuButton
+                        onClick={() => handleNavigation(item.vue)}
+                        tooltip={item.title}
                         className={cn(
-                          "h-5 w-5 shrink-0 transition-colors duration-200",
-                          isActive && "text-primary"
+                          "w-full justify-start gap-3 transition-all duration-200 relative",
+                          isActive &&
+                            "bg-primary/10 text-primary font-semibold shadow-sm before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-1 before:rounded-r before:bg-primary"
                         )}
-                      />
-                      {!collapsed && <span className="flex-1 truncate">{item.title}</span>}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                      >
+                        <AnimatedIcon
+                          icon={item.icon}
+                          className={cn(
+                            "h-5 w-5 shrink-0 transition-colors duration-200",
+                            isActive && "text-primary"
+                          )}
+                        />
+                        {!collapsed && <span className="flex-1 truncate">{item.title}</span>}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
 
       <SidebarFooter className="p-4 border-t border-border/50 bg-[hsl(var(--sidebar-broker))]">

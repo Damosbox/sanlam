@@ -20,7 +20,6 @@ import {
   PERMISSION_LABELS,
   ROLE_DEFINITIONS,
   ROLE_ORDER,
-  PRODUITS_REFERENTIEL,
   VIEW_LABELS,
   type ZoPmeView,
 } from "@/data/zoPme";

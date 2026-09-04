@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Card,
@@ -622,6 +622,7 @@ function PilotageView() {
 /* ------------------------------------------------------------------ */
 
 function MembresView() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [tier, setTier] = useState("all");
   const [membership, setMembership] = useState("all");
@@ -903,7 +904,7 @@ function MembresView() {
                       className="h-7 px-2 text-xs"
                       onClick={() => {
                         setSelectedId(null);
-                        window.location.assign("/b2b/zo-pme?vue=cartes");
+                        navigate("/b2b/zo-pme?vue=cartes");
                       }}
                     >
                       Voir dans Cartes

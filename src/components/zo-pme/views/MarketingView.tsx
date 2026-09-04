@@ -43,6 +43,7 @@ import {
   CreditCard,
   Megaphone,
   MessageCircle,
+  Plus,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";

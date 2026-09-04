@@ -27,10 +27,19 @@ import {
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { formatFCFA } from "@/utils/formatCurrency";
 import {
   AlertTriangle,
+  Building2,
   CalendarClock,
   CheckCircle2,
   CreditCard,
@@ -39,13 +48,18 @@ import {
   Gift,
   Handshake,
   Info,
+  Mail,
   MessageCircle,
+  Phone,
+  Search,
   Send,
   ShieldCheck,
   Smile,
   Store,
+  UserRound,
   Users,
 } from "lucide-react";
+
 
 /* ------------------------------------------------------------------ */
 /* Données de démonstration                                            */

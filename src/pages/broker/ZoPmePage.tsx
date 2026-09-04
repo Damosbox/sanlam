@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Card,
@@ -27,10 +27,19 @@ import {
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { formatFCFA } from "@/utils/formatCurrency";
 import {
   AlertTriangle,
+  Building2,
   CalendarClock,
   CheckCircle2,
   CreditCard,
@@ -39,13 +48,18 @@ import {
   Gift,
   Handshake,
   Info,
+  Mail,
   MessageCircle,
+  Phone,
+  Search,
   Send,
   ShieldCheck,
   Smile,
   Store,
+  UserRound,
   Users,
 } from "lucide-react";
+
 
 /* ------------------------------------------------------------------ */
 /* Données de démonstration                                            */
@@ -161,6 +175,177 @@ const CARD_STAGE_COUNTS: Record<CardStage, number> = {
   a_envoyer: 17,
   a_remettre: 9,
 };
+
+/* --- Membres (annuaire) --- */
+
+type MembershipStatus = "actif" | "a_completer" | "suspendu";
+type CardStatus = "active" | "en_cours" | "aucune";
+type Tier = "Bronze" | "Argent" | "Or" | "Platine";
+
+const MEMBERSHIP_LABELS: Record<MembershipStatus, string> = {
+  actif: "Actif",
+  a_completer: "À compléter",
+  suspendu: "Suspendu",
+};
+
+const MEMBERSHIP_STYLES: Record<MembershipStatus, string> = {
+  actif: "bg-[hsl(var(--success))]/15 text-[hsl(var(--success))] border-[hsl(var(--success))]/40",
+  a_completer: "bg-[hsl(var(--orange))]/10 text-[hsl(var(--orange))] border-[hsl(var(--orange))]/30",
+  suspendu: "bg-destructive/10 text-destructive border-destructive/30",
+};
+
+const CARD_STATUS_LABELS: Record<CardStatus, string> = {
+  active: "Carte active",
+  en_cours: "En cours",
+  aucune: "Aucune carte",
+};
+
+const CARD_STATUS_STYLES: Record<CardStatus, string> = {
+  active: "bg-[hsl(var(--success))]/15 text-[hsl(var(--success))] border-[hsl(var(--success))]/40",
+  en_cours: "bg-primary/10 text-primary border-primary/30",
+  aucune: "bg-muted text-muted-foreground border-border",
+};
+
+const MEMBERS: {
+  id: string;
+  name: string;
+  company: string;
+  role: string;
+  email: string;
+  phone: string;
+  city: string;
+  tier: Tier;
+  membership: MembershipStatus;
+  cardStatus: CardStatus;
+  joinedAt: string;
+  lastActivity: string;
+  cards: { ref: string; issuedAt: string; status: string }[];
+}[] = [
+  {
+    id: "ZM-1041",
+    name: "Aristide Kouassi",
+    company: "Ivoire Logistics",
+    role: "Directeur général",
+    email: "a.kouassi@ivoire-logistics.ci",
+    phone: "+225 07 45 21 88 12",
+    city: "Abidjan",
+    tier: "Or",
+    membership: "actif",
+    joinedAt: "12/02/2026",
+    lastActivity: "02/09/2026",
+    cardStatus: "en_cours",
+    cards: [
+      { ref: "ZC-4412", issuedAt: "01/09/2026", status: "À produire" },
+      { ref: "ZC-3980", issuedAt: "14/02/2026", status: "Remplacée" },
+    ],
+  },
+  {
+    id: "ZM-1042",
+    name: "Mariam Konan",
+    company: "Abidjan Tech Hub",
+    role: "Responsable administrative",
+    email: "m.konan@abjtechhub.ci",
+    phone: "+225 05 11 74 09 33",
+    city: "Abidjan",
+    tier: "Argent",
+    membership: "a_completer",
+    joinedAt: "28/08/2026",
+    lastActivity: "01/09/2026",
+    cardStatus: "en_cours",
+    cards: [{ ref: "ZC-4413", issuedAt: "02/09/2026", status: "À produire" }],
+  },
+  {
+    id: "ZM-1043",
+    name: "Salif Traoré",
+    company: "Groupe Bâtir CI",
+    role: "Gérant",
+    email: "s.traore@batir-ci.com",
+    phone: "+225 01 88 42 17 05",
+    city: "Bouaké",
+    tier: "Bronze",
+    membership: "actif",
+    joinedAt: "05/04/2026",
+    lastActivity: "29/08/2026",
+    cardStatus: "en_cours",
+    cards: [{ ref: "ZC-4398", issuedAt: "30/08/2026", status: "En production" }],
+  },
+  {
+    id: "ZM-1044",
+    name: "Adèle Yao",
+    company: "Cacao Export Plus",
+    role: "Directrice financière",
+    email: "a.yao@cacaoexport.ci",
+    phone: "+225 07 63 90 24 71",
+    city: "San-Pédro",
+    tier: "Platine",
+    membership: "actif",
+    joinedAt: "19/01/2026",
+    lastActivity: "03/09/2026",
+    cardStatus: "active",
+    cards: [{ ref: "ZC-4390", issuedAt: "22/01/2026", status: "Activée" }],
+  },
+  {
+    id: "ZM-1045",
+    name: "Daniel Farah",
+    company: "Clinique Farah",
+    role: "Directeur médical",
+    email: "d.farah@cliniquefarah.ci",
+    phone: "+225 27 22 41 60 18",
+    city: "Abidjan",
+    tier: "Or",
+    membership: "actif",
+    joinedAt: "02/03/2026",
+    lastActivity: "31/08/2026",
+    cardStatus: "active",
+    cards: [{ ref: "ZC-4377", issuedAt: "06/03/2026", status: "Activée" }],
+  },
+  {
+    id: "ZM-1046",
+    name: "Léa Bamba",
+    company: "Prosuma Services",
+    role: "Responsable achats",
+    email: "l.bamba@prosuma-services.ci",
+    phone: "+225 05 44 12 87 60",
+    city: "Abidjan",
+    tier: "Argent",
+    membership: "a_completer",
+    joinedAt: "21/08/2026",
+    lastActivity: "30/08/2026",
+    cardStatus: "aucune",
+    cards: [],
+  },
+  {
+    id: "ZM-1047",
+    name: "Yves N'Guessan",
+    company: "Zô Distribution",
+    role: "Fondateur",
+    email: "y.nguessan@zo-distribution.ci",
+    phone: "+225 01 27 55 34 92",
+    city: "Korhogo",
+    tier: "Bronze",
+    membership: "suspendu",
+    joinedAt: "11/12/2025",
+    lastActivity: "12/06/2026",
+    cardStatus: "aucune",
+    cards: [{ ref: "ZC-4352", issuedAt: "15/12/2025", status: "Bloquée" }],
+  },
+  {
+    id: "ZM-1048",
+    name: "Fatou Diallo",
+    company: "Diallo & Fils",
+    role: "Directrice générale",
+    email: "f.diallo@diallo-fils.ci",
+    phone: "+225 07 90 61 22 44",
+    city: "Abidjan",
+    tier: "Platine",
+    membership: "actif",
+    joinedAt: "30/08/2026",
+    lastActivity: "03/09/2026",
+    cardStatus: "active",
+    cards: [{ ref: "ZC-4348", issuedAt: "31/08/2026", status: "Activée" }],
+  },
+];
+
 
 /* --- Partenaires & avantages --- */
 
@@ -433,10 +618,332 @@ function PilotageView() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 2. Membres & cartes                                                */
+/* 2. Membres (annuaire)                                              */
 /* ------------------------------------------------------------------ */
 
-function MembresCartesView() {
+function MembresView() {
+  const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+  const [tier, setTier] = useState("all");
+  const [membership, setMembership] = useState("all");
+  const [cardStatus, setCardStatus] = useState("all");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const filtered = MEMBERS.filter((m) => {
+    const q = search.trim().toLowerCase();
+    return (
+      (q === "" ||
+        m.name.toLowerCase().includes(q) ||
+        m.company.toLowerCase().includes(q) ||
+        m.id.toLowerCase().includes(q)) &&
+      (tier === "all" || m.tier === tier) &&
+      (membership === "all" || m.membership === membership) &&
+      (cardStatus === "all" || m.cardStatus === cardStatus)
+    );
+  });
+
+  const selected = MEMBERS.find((m) => m.id === selectedId) ?? null;
+
+  const kpis = [
+    {
+      label: "Membres actifs",
+      value: MEMBERS.filter((m) => m.membership === "actif").length.toLocaleString("fr-FR"),
+      trend: "Adhésions en cours de validité",
+      icon: Users,
+    },
+    {
+      label: "Adhésions à compléter",
+      value: MEMBERS.filter((m) => m.membership === "a_completer").length.toLocaleString("fr-FR"),
+      trend: "Pièces ou informations manquantes",
+      icon: AlertTriangle,
+    },
+    {
+      label: "Nouveaux membres",
+      value: "2",
+      trend: "Sur la période sélectionnée",
+      icon: UserRound,
+    },
+    {
+      label: "Sans carte active",
+      value: MEMBERS.filter((m) => m.cardStatus !== "active").length.toLocaleString("fr-FR"),
+      trend: "À orienter vers la file Cartes",
+      icon: CreditCard,
+    },
+  ];
+
+  const resetFilters = () => {
+    setSearch("");
+    setTier("all");
+    setMembership("all");
+    setCardStatus("all");
+  };
+
+  return (
+    <div className="space-y-4 sm:space-y-6">
+      <ScopeNote>
+        Annuaire des membres du programme. La Souscription complète les adhésions, le Marketing
+        anime, la Direction et l'Admin consultent l'ensemble du périmètre.
+      </ScopeNote>
+
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+        {kpis.map((kpi) => (
+          <KpiCard key={kpi.label} {...kpi} />
+        ))}
+      </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <CardTitle className="text-base">Annuaire des membres</CardTitle>
+              <CardDescription>
+                {filtered.length} membre(s) affiché(s) sur {MEMBERS.length}
+              </CardDescription>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <div className="relative w-full sm:w-[220px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Nom, entreprise, n° membre…"
+                  className="pl-9 h-9"
+                />
+              </div>
+              <Select value={tier} onValueChange={setTier}>
+                <SelectTrigger className="w-[130px] h-9">
+                  <SelectValue placeholder="Palier" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les paliers</SelectItem>
+                  <SelectItem value="Bronze">Bronze</SelectItem>
+                  <SelectItem value="Argent">Argent</SelectItem>
+                  <SelectItem value="Or">Or</SelectItem>
+                  <SelectItem value="Platine">Platine</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={membership} onValueChange={setMembership}>
+                <SelectTrigger className="w-[150px] h-9">
+                  <SelectValue placeholder="Adhésion" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les adhésions</SelectItem>
+                  <SelectItem value="actif">Actif</SelectItem>
+                  <SelectItem value="a_completer">À compléter</SelectItem>
+                  <SelectItem value="suspendu">Suspendu</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={cardStatus} onValueChange={setCardStatus}>
+                <SelectTrigger className="w-[150px] h-9">
+                  <SelectValue placeholder="Carte" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les cartes</SelectItem>
+                  <SelectItem value="active">Carte active</SelectItem>
+                  <SelectItem value="en_cours">En cours</SelectItem>
+                  <SelectItem value="aucune">Aucune carte</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Membre</TableHead>
+                  <TableHead className="hidden md:table-cell">Entreprise</TableHead>
+                  <TableHead>Palier</TableHead>
+                  <TableHead className="hidden sm:table-cell">Adhésion</TableHead>
+                  <TableHead className="hidden lg:table-cell">Carte</TableHead>
+                  <TableHead className="hidden lg:table-cell">Dernière activité</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((m) => (
+                  <TableRow key={m.id}>
+                    <TableCell>
+                      <p className="font-medium">{m.name}</p>
+                      <p className="text-xs text-muted-foreground font-mono">{m.id}</p>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell text-muted-foreground">
+                      {m.company}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px]">
+                        {m.tier}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      <Badge
+                        variant="outline"
+                        className={cn("text-[10px] px-1.5 py-0", MEMBERSHIP_STYLES[m.membership])}
+                      >
+                        {MEMBERSHIP_LABELS[m.membership]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      <Badge
+                        variant="outline"
+                        className={cn("text-[10px] px-1.5 py-0", CARD_STATUS_STYLES[m.cardStatus])}
+                      >
+                        {CARD_STATUS_LABELS[m.cardStatus]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell text-muted-foreground whitespace-nowrap">
+                      {m.lastActivity}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => setSelectedId(m.id)}
+                      >
+                        Ouvrir fiche
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {filtered.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7} className="py-10">
+                      <div className="flex flex-col items-center gap-2 text-center">
+                        <Users className="h-6 w-6 text-muted-foreground" />
+                        <p className="text-sm font-medium">Aucun membre ne correspond</p>
+                        <p className="text-xs text-muted-foreground max-w-sm">
+                          Aucun membre Zô PME ne correspond à cette combinaison de recherche et de
+                          filtres. Élargissez le palier ou le statut d'adhésion.
+                        </p>
+                        <Button variant="outline" size="sm" className="mt-1" onClick={resetFilters}>
+                          Réinitialiser les filtres
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Sheet open={!!selected} onOpenChange={(open) => !open && setSelectedId(null)}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          {selected && (
+            <>
+              <SheetHeader>
+                <SheetTitle>{selected.name}</SheetTitle>
+                <SheetDescription>
+                  {selected.role} · {selected.company}
+                </SheetDescription>
+              </SheetHeader>
+
+              <div className="mt-5 space-y-5">
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline" className="text-[10px]">
+                    {selected.tier}
+                  </Badge>
+                  <Badge
+                    variant="outline"
+                    className={cn("text-[10px]", MEMBERSHIP_STYLES[selected.membership])}
+                  >
+                    {MEMBERSHIP_LABELS[selected.membership]}
+                  </Badge>
+                  <Badge
+                    variant="outline"
+                    className={cn("text-[10px]", CARD_STATUS_STYLES[selected.cardStatus])}
+                  >
+                    {CARD_STATUS_LABELS[selected.cardStatus]}
+                  </Badge>
+                </div>
+
+                <div className="rounded-lg border border-border divide-y divide-border text-sm">
+                  <div className="flex items-center gap-3 px-3 py-2">
+                    <UserRound className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground">N° membre</span>
+                    <span className="ml-auto font-mono text-xs">{selected.id}</span>
+                  </div>
+                  <div className="flex items-center gap-3 px-3 py-2">
+                    <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground">Entreprise</span>
+                    <span className="ml-auto text-right">
+                      {selected.company} · {selected.city}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 px-3 py-2">
+                    <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground">E-mail</span>
+                    <span className="ml-auto text-right truncate">{selected.email}</span>
+                  </div>
+                  <div className="flex items-center gap-3 px-3 py-2">
+                    <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground">Téléphone</span>
+                    <span className="ml-auto whitespace-nowrap">{selected.phone}</span>
+                  </div>
+                  <div className="flex items-center gap-3 px-3 py-2">
+                    <CalendarClock className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground">Adhésion depuis</span>
+                    <span className="ml-auto">{selected.joinedAt}</span>
+                  </div>
+                  <div className="flex items-center gap-3 px-3 py-2">
+                    <CheckCircle2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground">Dernière activité</span>
+                    <span className="ml-auto">{selected.lastActivity}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium">Résumé des cartes</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => {
+                        setSelectedId(null);
+                        navigate("/b2b/zo-pme?vue=cartes");
+                      }}
+                    >
+                      Voir dans Cartes
+                    </Button>
+                  </div>
+                  {selected.cards.length === 0 ? (
+                    <p className="text-xs text-muted-foreground rounded-lg border border-border bg-muted/30 px-3 py-3">
+                      Aucune carte émise pour ce membre à ce jour.
+                    </p>
+                  ) : (
+                    <ul className="rounded-lg border border-border divide-y divide-border">
+                      {selected.cards.map((c) => (
+                        <li key={c.ref} className="flex items-center gap-3 px-3 py-2 text-sm">
+                          <CreditCard className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <span className="font-mono text-xs">{c.ref}</span>
+                          <span className="text-xs text-muted-foreground">{c.issuedAt}</span>
+                          <Badge variant="secondary" className="ml-auto text-[10px]">
+                            {c.status}
+                          </Badge>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* 2 bis. Cartes                                                      */
+/* ------------------------------------------------------------------ */
+
+function CartesView() {
+
   const [stage, setStage] = useState<CardStage>("a_produire");
   const queue = MEMBER_CARDS.filter((c) => c.stage === stage);
   const stageMeta = CARD_STAGES.find((s) => s.key === stage)!;
@@ -977,9 +1484,14 @@ const VUE_LABELS: Record<string, { title: string; subtitle: string }> = {
     subtitle: "Indicateurs clés, fidélité, alertes et performance partenaires",
   },
   membres: {
-    title: "Membres & cartes",
+    title: "Membres",
+    subtitle: "Annuaire des membres, adhésions, paliers de fidélité et suivi d'activité",
+  },
+  cartes: {
+    title: "Cartes",
     subtitle: "Files de production et de remise des cartes, priorités SLA et suivi individuel",
   },
+
   partenaires: {
     title: "Partenaires & avantages",
     subtitle: "Catalogue, publication des offres et conventions partenaires",
@@ -1045,7 +1557,9 @@ export default function ZoPmePage() {
       </div>
 
       {vue === "pilotage" && <PilotageView />}
-      {vue === "membres" && <MembresCartesView />}
+      {vue === "membres" && <MembresView />}
+      {vue === "cartes" && <CartesView />}
+
       {vue === "partenaires" && <PartenairesView />}
       {vue === "animation" && <AnimationView />}
       {vue === "rapports" && <RapportsView />}

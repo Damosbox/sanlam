@@ -18,23 +18,32 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
-  PARTNERS,
   PUBLICATION_LABELS,
   PUBLICATION_RULES,
   PUBLICATION_STYLES,
   PUBLICATION_TRANSITIONS,
   TIER_ORDER,
+  type Benefit,
   type PublicationStatus,
 } from "@/data/zoPme";
 import { TierBadge } from "../shared/badges";
 import { EmptyState, ScopeNote } from "../shared/states";
 import { ConfirmActionDialog } from "../shared/ConfirmActionDialog";
+import { BenefitFormDialog } from "../dialogs/BenefitFormDialog";
 import { useZoPme } from "../ZoPmeProvider";
-import { Gift, Search, ShieldCheck } from "lucide-react";
+import { Gift, Pencil, Plus, Search, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 export function AvantagesView() {
-  const { benefits, can, setBenefitPublication } = useZoPme();
+  const {
+    benefits,
+    partners,
+    can,
+    setBenefitPublication,
+    createBenefit,
+    updateBenefit,
+    retireBenefit,
+  } = useZoPme();
 
   const [search, setSearch] = useState("");
   const [partner, setPartner] = useState("all");
@@ -42,6 +51,10 @@ export function AvantagesView() {
   const [tier, setTier] = useState("all");
   const [publication, setPublication] = useState("all");
   const [pending, setPending] = useState<{ id: string; next: PublicationStatus } | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<Benefit | null>(null);
+  const [retiring, setRetiring] = useState<Benefit | null>(null);
+  const canManage = can("benefits.manage");
 
   const categories = useMemo(
     () => Array.from(new Set(benefits.map((b) => b.categorie))).sort(),
@@ -53,7 +66,9 @@ export function AvantagesView() {
     return benefits.filter(
       (b) =>
         (q === "" || b.libelle.toLowerCase().includes(q)) &&
-        (partner === "all" || b.partnerId === partner) &&
+        (partner === "all" ||
+          b.partnerId === partner ||
+          (b.partnerIds ?? []).includes(partner)) &&
         (categorie === "all" || b.categorie === categorie) &&
         (tier === "all" || b.paliersEligibles.includes(tier as never)) &&
         (publication === "all" || b.publication === publication)
@@ -64,10 +79,25 @@ export function AvantagesView() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <ScopeNote>
-        Catalogue des avantages et règles d'éligibilité par palier. La publication suit le circuit
-        brouillon → à valider → publié, avec suspension possible.
-      </ScopeNote>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <ScopeNote>
+          Catalogue des avantages et règles d'éligibilité par palier. La publication suit le
+          circuit brouillon → à valider → publié, avec suspension possible.
+        </ScopeNote>
+        {canManage && (
+          <Button
+            size="sm"
+            className="shrink-0"
+            onClick={() => {
+              setEditing(null);
+              setFormOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nouvel avantage
+          </Button>
+        )}
+      </div>
 
       <Card>
         <CardHeader className="pb-3">
@@ -114,7 +144,7 @@ export function AvantagesView() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les partenaires</SelectItem>
-                {PARTNERS.map((p) => (
+                {partners.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.nom}
                   </SelectItem>
@@ -185,7 +215,10 @@ export function AvantagesView() {
           ) : (
             <div className="grid gap-3 md:grid-cols-2">
               {filtered.map((b) => {
-                const p = PARTNERS.find((x) => x.id === b.partnerId);
+                const linked = (b.partnerIds ?? [b.partnerId])
+                  .map((id) => partners.find((x) => x.id === id))
+                  .filter(Boolean);
+                const p = linked[0];
                 const transitions = can("benefits.publish")
                   ? PUBLICATION_TRANSITIONS[b.publication]
                   : [];
@@ -196,8 +229,18 @@ export function AvantagesView() {
                       <div className="min-w-0">
                         <p className="text-sm font-semibold">{b.libelle}</p>
                         <p className="text-xs text-muted-foreground">
-                          {p?.nom} · {b.categorie} · {b.valeur}
+                          {linked.map((x) => x!.nom).join(", ") || "Partenaire à rattacher"} ·{" "}
+                          {b.categorie}
+                          {b.secteur ? ` · ${b.secteur}` : ""} · {b.valeur}
                         </p>
+                        {(b.dateDebut || b.dateFin) && (
+                          <p className="text-xs text-muted-foreground">
+                            Validité {b.dateDebut || "—"} → {b.dateFin || "—"}
+                          </p>
+                        )}
+                        {b.description && (
+                          <p className="text-xs text-muted-foreground mt-1">{b.description}</p>
+                        )}
                       </div>
                       <Badge
                         variant="outline"
@@ -224,9 +267,36 @@ export function AvantagesView() {
                     </ul>
 
                     <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <Badge variant="secondary" className="text-[10px]">
-                        {b.usagesPeriode} usages
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-[10px]">
+                          {b.usagesPeriode} usages sur la période
+                        </Badge>
+                        {canManage && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2"
+                              aria-label={`Modifier ${b.libelle}`}
+                              onClick={() => {
+                                setEditing(b);
+                                setFormOpen(true);
+                              }}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-destructive hover:text-destructive"
+                              aria-label={`Retirer ${b.libelle}`}
+                              onClick={() => setRetiring(b)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                       <div className="flex flex-wrap gap-2">
                         {transitions.length === 0 ? (
                           <span className="text-xs text-muted-foreground">
@@ -267,6 +337,44 @@ export function AvantagesView() {
           )}
         </CardContent>
       </Card>
+
+      <BenefitFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        partners={partners}
+        benefit={editing}
+        onSubmit={(input) => {
+          if (editing) {
+            updateBenefit(editing.id, input);
+            toast.success(`Avantage « ${input.libelle} » mis à jour`);
+          } else {
+            createBenefit(input);
+            toast.success(`Avantage « ${input.libelle} » créé en brouillon`);
+          }
+        }}
+      />
+
+      <ConfirmActionDialog
+        open={!!retiring}
+        onOpenChange={(o) => !o && setRetiring(null)}
+        title="Retirer l'avantage du catalogue"
+        description={
+          retiring
+            ? `« ${retiring.libelle} » sera retiré du catalogue et ne sera plus proposé aux porteurs. L'action est consignée au journal.`
+            : ""
+        }
+        confirmLabel="Retirer l'avantage"
+        destructive
+        reason="required"
+        reasonLabel="Motif du retrait"
+        onConfirm={(motif) => {
+          if (retiring && motif) {
+            retireBenefit(retiring.id, motif);
+            toast.success(`« ${retiring.libelle} » retiré du catalogue`);
+          }
+          setRetiring(null);
+        }}
+      />
 
       <ConfirmActionDialog
         open={!!pending}

@@ -415,18 +415,12 @@ export function MembresView() {
                     Matricule <span className="font-mono">{selected.matricule}</span> ·
                     intermédiaire {selected.intermediaire ?? "—"}
                   </p>
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {(selected.produitsSouscrits ?? []).map((prod) => (
-                      <Badge key={prod} variant="outline" className="text-[10px] px-1.5 py-0">
-                        {prod}
-                      </Badge>
-                    ))}
-                    {(selected.produitsSouscrits ?? []).length === 0 && (
-                      <span className="text-xs text-muted-foreground">
-                        Aucun produit déclaré
-                      </span>
-                    )}
-                  </div>
+                  <p className="text-xs text-muted-foreground pt-1">
+                    Produits déclarés (déclaratif, référentiel produit à valider) :{" "}
+                    {(selected.produitsSouscrits ?? []).length > 0
+                      ? (selected.produitsSouscrits ?? []).join(", ")
+                      : "aucun produit déclaré"}
+                  </p>
                 </div>
 
                 {canTier && (

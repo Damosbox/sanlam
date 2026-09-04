@@ -35,11 +35,15 @@ import { Separator } from "@/components/ui/separator";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
 import { usePagination } from "@/hooks/usePagination";
 import {
+  CARD_DIGITAL_LABELS,
+  CARD_PRINT_LABELS,
   CARD_STATUS_LABELS,
   CARD_STATUS_ORDER,
   CARD_TRANSITIONS,
   PRIORITY_ORDER,
   isSlaBreached,
+  type CardDigitalState,
+  type CardPrintState,
   type CardStatus,
   type Priority,
 } from "@/data/zoPme";
@@ -49,7 +53,14 @@ import { CardStatusBadge, SeverityBadge, SlaBadge } from "../shared/badges";
 import { EmptyState, ScopeNote } from "../shared/states";
 import { ConfirmActionDialog } from "../shared/ConfirmActionDialog";
 import { useZoPme } from "../ZoPmeProvider";
-import { AlertTriangle, CreditCard, History, Search, ShieldCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  CreditCard,
+  FileCheck,
+  History,
+  Search,
+  ShieldCheck,
+} from "lucide-react";
 import { toast } from "sonner";
 
 export function CartesView() {

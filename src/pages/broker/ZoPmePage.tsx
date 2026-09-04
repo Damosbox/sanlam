@@ -162,6 +162,177 @@ const CARD_STAGE_COUNTS: Record<CardStage, number> = {
   a_remettre: 9,
 };
 
+/* --- Membres (annuaire) --- */
+
+type MembershipStatus = "actif" | "a_completer" | "suspendu";
+type CardStatus = "active" | "en_cours" | "aucune";
+type Tier = "Bronze" | "Argent" | "Or" | "Platine";
+
+const MEMBERSHIP_LABELS: Record<MembershipStatus, string> = {
+  actif: "Actif",
+  a_completer: "À compléter",
+  suspendu: "Suspendu",
+};
+
+const MEMBERSHIP_STYLES: Record<MembershipStatus, string> = {
+  actif: "bg-[hsl(var(--success))]/15 text-[hsl(var(--success))] border-[hsl(var(--success))]/40",
+  a_completer: "bg-[hsl(var(--orange))]/10 text-[hsl(var(--orange))] border-[hsl(var(--orange))]/30",
+  suspendu: "bg-destructive/10 text-destructive border-destructive/30",
+};
+
+const CARD_STATUS_LABELS: Record<CardStatus, string> = {
+  active: "Carte active",
+  en_cours: "En cours",
+  aucune: "Aucune carte",
+};
+
+const CARD_STATUS_STYLES: Record<CardStatus, string> = {
+  active: "bg-[hsl(var(--success))]/15 text-[hsl(var(--success))] border-[hsl(var(--success))]/40",
+  en_cours: "bg-primary/10 text-primary border-primary/30",
+  aucune: "bg-muted text-muted-foreground border-border",
+};
+
+const MEMBERS: {
+  id: string;
+  name: string;
+  company: string;
+  role: string;
+  email: string;
+  phone: string;
+  city: string;
+  tier: Tier;
+  membership: MembershipStatus;
+  cardStatus: CardStatus;
+  joinedAt: string;
+  lastActivity: string;
+  cards: { ref: string; issuedAt: string; status: string }[];
+}[] = [
+  {
+    id: "ZM-1041",
+    name: "Aristide Kouassi",
+    company: "Ivoire Logistics",
+    role: "Directeur général",
+    email: "a.kouassi@ivoire-logistics.ci",
+    phone: "+225 07 45 21 88 12",
+    city: "Abidjan",
+    tier: "Or",
+    membership: "actif",
+    joinedAt: "12/02/2026",
+    lastActivity: "02/09/2026",
+    cardStatus: "en_cours",
+    cards: [
+      { ref: "ZC-4412", issuedAt: "01/09/2026", status: "À produire" },
+      { ref: "ZC-3980", issuedAt: "14/02/2026", status: "Remplacée" },
+    ],
+  },
+  {
+    id: "ZM-1042",
+    name: "Mariam Konan",
+    company: "Abidjan Tech Hub",
+    role: "Responsable administrative",
+    email: "m.konan@abjtechhub.ci",
+    phone: "+225 05 11 74 09 33",
+    city: "Abidjan",
+    tier: "Argent",
+    membership: "a_completer",
+    joinedAt: "28/08/2026",
+    lastActivity: "01/09/2026",
+    cardStatus: "en_cours",
+    cards: [{ ref: "ZC-4413", issuedAt: "02/09/2026", status: "À produire" }],
+  },
+  {
+    id: "ZM-1043",
+    name: "Salif Traoré",
+    company: "Groupe Bâtir CI",
+    role: "Gérant",
+    email: "s.traore@batir-ci.com",
+    phone: "+225 01 88 42 17 05",
+    city: "Bouaké",
+    tier: "Bronze",
+    membership: "actif",
+    joinedAt: "05/04/2026",
+    lastActivity: "29/08/2026",
+    cardStatus: "en_cours",
+    cards: [{ ref: "ZC-4398", issuedAt: "30/08/2026", status: "En production" }],
+  },
+  {
+    id: "ZM-1044",
+    name: "Adèle Yao",
+    company: "Cacao Export Plus",
+    role: "Directrice financière",
+    email: "a.yao@cacaoexport.ci",
+    phone: "+225 07 63 90 24 71",
+    city: "San-Pédro",
+    tier: "Platine",
+    membership: "actif",
+    joinedAt: "19/01/2026",
+    lastActivity: "03/09/2026",
+    cardStatus: "active",
+    cards: [{ ref: "ZC-4390", issuedAt: "22/01/2026", status: "Activée" }],
+  },
+  {
+    id: "ZM-1045",
+    name: "Daniel Farah",
+    company: "Clinique Farah",
+    role: "Directeur médical",
+    email: "d.farah@cliniquefarah.ci",
+    phone: "+225 27 22 41 60 18",
+    city: "Abidjan",
+    tier: "Or",
+    membership: "actif",
+    joinedAt: "02/03/2026",
+    lastActivity: "31/08/2026",
+    cardStatus: "active",
+    cards: [{ ref: "ZC-4377", issuedAt: "06/03/2026", status: "Activée" }],
+  },
+  {
+    id: "ZM-1046",
+    name: "Léa Bamba",
+    company: "Prosuma Services",
+    role: "Responsable achats",
+    email: "l.bamba@prosuma-services.ci",
+    phone: "+225 05 44 12 87 60",
+    city: "Abidjan",
+    tier: "Argent",
+    membership: "a_completer",
+    joinedAt: "21/08/2026",
+    lastActivity: "30/08/2026",
+    cardStatus: "aucune",
+    cards: [],
+  },
+  {
+    id: "ZM-1047",
+    name: "Yves N'Guessan",
+    company: "Zô Distribution",
+    role: "Fondateur",
+    email: "y.nguessan@zo-distribution.ci",
+    phone: "+225 01 27 55 34 92",
+    city: "Korhogo",
+    tier: "Bronze",
+    membership: "suspendu",
+    joinedAt: "11/12/2025",
+    lastActivity: "12/06/2026",
+    cardStatus: "aucune",
+    cards: [{ ref: "ZC-4352", issuedAt: "15/12/2025", status: "Bloquée" }],
+  },
+  {
+    id: "ZM-1048",
+    name: "Fatou Diallo",
+    company: "Diallo & Fils",
+    role: "Directrice générale",
+    email: "f.diallo@diallo-fils.ci",
+    phone: "+225 07 90 61 22 44",
+    city: "Abidjan",
+    tier: "Platine",
+    membership: "actif",
+    joinedAt: "30/08/2026",
+    lastActivity: "03/09/2026",
+    cardStatus: "active",
+    cards: [{ ref: "ZC-4348", issuedAt: "31/08/2026", status: "Activée" }],
+  },
+];
+
+
 /* --- Partenaires & avantages --- */
 
 const BENEFITS_CATALOG: {

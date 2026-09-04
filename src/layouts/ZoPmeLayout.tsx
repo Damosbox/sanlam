@@ -21,11 +21,13 @@ function ZoPmeLayoutContent() {
 
 export function ZoPmeLayout() {
   return (
-    <div className="min-h-screen bg-background">
-      <SidebarProvider defaultOpen={true}>
-        <ZoPmeLayoutContent />
-      </SidebarProvider>
-      <BrokerAIChatWidget />
-    </div>
+    <ZoPmeProvider>
+      <div className="min-h-screen bg-background">
+        <SidebarProvider defaultOpen={true}>
+          <ZoPmeLayoutContent />
+        </SidebarProvider>
+        <BrokerAIChatWidget />
+      </div>
+    </ZoPmeProvider>
   );
 }

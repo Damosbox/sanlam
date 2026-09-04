@@ -1483,9 +1483,14 @@ const VUE_LABELS: Record<string, { title: string; subtitle: string }> = {
     subtitle: "Indicateurs clés, fidélité, alertes et performance partenaires",
   },
   membres: {
-    title: "Membres & cartes",
+    title: "Membres",
+    subtitle: "Annuaire des membres, adhésions, paliers de fidélité et suivi d'activité",
+  },
+  cartes: {
+    title: "Cartes",
     subtitle: "Files de production et de remise des cartes, priorités SLA et suivi individuel",
   },
+
   partenaires: {
     title: "Partenaires & avantages",
     subtitle: "Catalogue, publication des offres et conventions partenaires",

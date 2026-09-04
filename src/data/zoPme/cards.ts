@@ -85,7 +85,7 @@ export const KANBAN_STAGES: CardStatus[] = [
 
 export const PRIORITY_ORDER: Priority[] = ["critique", "eleve", "moyen", "faible"];
 
-export const CARDS: ZoCard[] = [
+const RAW_CARDS: ZoCard[] = [
   {
     reference: "ZC-4412",
     pmeId: "PME-1041",

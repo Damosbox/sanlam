@@ -65,7 +65,7 @@ const rfm = (
   segment: string
 ) => ({ recence, frequence, montant, segment, disponible: false });
 
-export const PMES: Pme[] = [
+const RAW_PMES: Pme[] = [
   {
     id: "PME-1041",
     matricule: "ZP-CI-1041",

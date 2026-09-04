@@ -12,17 +12,32 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { BarChart3, CreditCard, Handshake, Megaphone, FileBarChart, Users } from "lucide-react";
+import {
+  BarChart3,
+  CreditCard,
+  FileBarChart,
+  FileCheck2,
+  Gift,
+  Handshake,
+  Megaphone,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AnimatedIcon } from "@/components/ui/animated-icon";
 import { SpaceSwitcher } from "@/components/broker/SpaceSwitcher";
+import { useZoPme } from "@/components/zo-pme/ZoPmeProvider";
+import type { ZoPmeView } from "@/data/zoPme";
 
-type Item = { title: string; vue: string; icon: typeof BarChart3 };
+type Item = { title: string; vue: ZoPmeView; icon: typeof BarChart3 };
 
 const groups: { label: string; items: Item[] }[] = [
   {
     label: "Programme PME",
-    items: [{ title: "Pilotage", vue: "pilotage", icon: BarChart3 }],
+    items: [
+      { title: "Pilotage", vue: "pilotage", icon: BarChart3 },
+      { title: "Souscription", vue: "souscription", icon: FileCheck2 },
+    ],
   },
   {
     label: "Gestion du programme",
@@ -34,10 +49,15 @@ const groups: { label: string; items: Item[] }[] = [
   {
     label: "Écosystème",
     items: [
-      { title: "Partenaires & avantages", vue: "partenaires", icon: Handshake },
+      { title: "Partenaires", vue: "partenaires", icon: Handshake },
+      { title: "Avantages", vue: "avantages", icon: Gift },
       { title: "Animation", vue: "animation", icon: Megaphone },
       { title: "Rapports", vue: "rapports", icon: FileBarChart },
     ],
+  },
+  {
+    label: "Administration",
+    items: [{ title: "Droits & rôles", vue: "administration", icon: ShieldCheck }],
   },
 ];
 
@@ -45,9 +65,16 @@ export function ZoPmeSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { state, isMobile, setOpenMobile } = useSidebar();
+  const { canSeeView, roleDefinition } = useZoPme();
   const collapsed = state === "collapsed";
 
-  const currentVue = new URLSearchParams(location.search).get("vue") ?? "pilotage";
+  const currentVue =
+    new URLSearchParams(location.search).get("vue") ?? roleDefinition.views[0];
+
+  // Seules les vues du périmètre du rôle sont proposées.
+  const visibleGroups = groups
+    .map((g) => ({ ...g, items: g.items.filter((i) => canSeeView(i.vue)) }))
+    .filter((g) => g.items.length > 0);
 
   const handleNavigation = (vue: string) => {
     navigate(`/b2b/zo-pme?vue=${vue}`);
@@ -64,7 +91,7 @@ export function ZoPmeSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="py-4 bg-[hsl(var(--sidebar-broker))]">
-        {groups.map((group) => (
+        {visibleGroups.map((group) => (
           <SidebarGroup key={group.label}>
             <SidebarGroupLabel className={cn(collapsed && "sr-only")}>
               {group.label}

@@ -53,7 +53,8 @@ import { AlertTriangle, CreditCard, History, Search, ShieldCheck } from "lucide-
 import { toast } from "sonner";
 
 export function CartesView() {
-  const { cards, pmes, can, moveCard, setCardPriority } = useZoPme();
+  const { cards, pmes, can, moveCard, setCardPriority, updateCardIssuance } = useZoPme();
+  const canIssue = can("cards.issue");
 
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
@@ -307,6 +308,144 @@ export function CartesView() {
                   <CardStatusBadge status={selected.statut} />
                   <SeverityBadge severity={selected.priorite} />
                   <SlaBadge card={selected} />
+                </div>
+
+                <div className="rounded-lg border border-border p-3 space-y-1.5">
+                  <p className="text-sm font-medium">Émission</p>
+                  <p className="text-xs text-muted-foreground">
+                    Motif : {selected.motifEmission ?? "—"} · version{" "}
+                    {selected.version ?? "—"}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                      Digital :{" "}
+                      {CARD_DIGITAL_LABELS[selected.etatDigital ?? "non_genere"]}
+                    </Badge>
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                      {CARD_PRINT_LABELS[selected.etatImpression ?? "non_lancee"]}
+                    </Badge>
+                  </div>
+                  {canIssue && (
+                    <div className="grid gap-2 sm:grid-cols-2 pt-2">
+                      <Select
+                        value={selected.etatDigital ?? "non_genere"}
+                        onValueChange={(v) => {
+                          updateCardIssuance(
+                            selected.reference,
+                            { etatDigital: v as CardDigitalState },
+                            `État digital : ${CARD_DIGITAL_LABELS[v as CardDigitalState]}`
+                          );
+                          toast.success("État digital mis à jour");
+                        }}
+                      >
+                        <SelectTrigger className="h-9" aria-label="État digital de la carte">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(CARD_DIGITAL_LABELS).map(([k, label]) => (
+                            <SelectItem key={k} value={k}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={selected.etatImpression ?? "non_lancee"}
+                        onValueChange={(v) => {
+                          updateCardIssuance(
+                            selected.reference,
+                            { etatImpression: v as CardPrintState },
+                            `Impression / remise : ${CARD_PRINT_LABELS[v as CardPrintState]}`
+                          );
+                          toast.success("État d'impression mis à jour");
+                        }}
+                      >
+                        <SelectTrigger className="h-9" aria-label="État d'impression de la carte">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(CARD_PRINT_LABELS).map(([k, label]) => (
+                            <SelectItem key={k} value={k}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-lg border border-border p-3 space-y-2">
+                  <p className="text-sm font-medium">Preuve d'envoi / remise</p>
+                  {selected.preuveEnvoi ? (
+                    <p className="text-xs text-muted-foreground">
+                      {selected.preuveEnvoi.type.replace(/_/g, " ")} ·{" "}
+                      <span className="font-mono">{selected.preuveEnvoi.reference}</span> ·{" "}
+                      {selected.preuveEnvoi.date}
+                      <Badge variant="secondary" className="ml-2 text-[10px]">
+                        Démonstration
+                      </Badge>
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Aucune preuve enregistrée.</p>
+                  )}
+                  {canIssue && !selected.preuveEnvoi && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        updateCardIssuance(
+                          selected.reference,
+                          {
+                            preuveEnvoi: {
+                              type: "bordereau",
+                              reference: `DEMO-${selected.reference}`,
+                              date: new Date().toLocaleDateString("fr-FR"),
+                              demo: true,
+                            },
+                          },
+                          "Preuve de remise (démonstration) attachée"
+                        );
+                        toast.success("Preuve de démonstration attachée");
+                      }}
+                    >
+                      <FileCheck className="h-3.5 w-3.5 mr-2" />
+                      Attacher une preuve de démonstration
+                    </Button>
+                  )}
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <p className="text-xs text-muted-foreground">
+                      Courrier de bienvenue :{" "}
+                      {selected.courrierBienvenue?.envoye
+                        ? `envoyé le ${selected.courrierBienvenue.date ?? "—"}`
+                        : "non envoyé"}
+                    </p>
+                    {canIssue && !selected.courrierBienvenue?.envoye && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          updateCardIssuance(
+                            selected.reference,
+                            {
+                              courrierBienvenue: {
+                                envoye: true,
+                                date: new Date().toLocaleDateString("fr-FR"),
+                              },
+                            },
+                            "Courrier de bienvenue marqué comme envoyé"
+                          );
+                          toast.success("Courrier de bienvenue marqué comme envoyé");
+                        }}
+                      >
+                        Marquer comme envoyé
+                      </Button>
+                    )}
+                  </div>
+                  <ScopeNote tone="backend">
+                    L'archivage documentaire des preuves et l'envoi réel du courrier restent des
+                    dépendances back-end : les éléments ci-dessus sont des états de démonstration.
+                  </ScopeNote>
                 </div>
 
                 <div className="space-y-2">

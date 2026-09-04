@@ -14,12 +14,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Check, Minus, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Check, Minus, ShieldCheck } from "lucide-react";
 import {
   ALL_PERMISSIONS,
   PERMISSION_LABELS,
   ROLE_DEFINITIONS,
   ROLE_ORDER,
+  PRODUITS_REFERENTIEL,
   VIEW_LABELS,
   type ZoPmeView,
 } from "@/data/zoPme";
@@ -38,6 +39,36 @@ export function AdministrationView() {
         Matrice de droits mock : la persistance des rôles Zô PME et leur application côté données
         (RLS) restent une dépendance back-end. Aucune modification n'est enregistrée ici.
       </ScopeNote>
+
+      <Card className="border-warning/40 bg-warning/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-warning" />
+            Référentiel produit à valider
+          </CardTitle>
+          <CardDescription>
+            Décision métier ouverte — aucune liste complémentaire ni grille de commissions n'est
+            créée dans la plateforme tant que l'arbitrage n'est pas rendu.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm">
+            Le cadrage mentionne 17 produits, le fichier produit actuel en liste{" "}
+            {PRODUITS_REFERENTIEL.length}.
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {PRODUITS_REFERENTIEL.map((prod) => (
+              <Badge key={prod} variant="outline" className="text-[10px] px-1.5 py-0">
+                {prod}
+              </Badge>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Conséquence : production, commissions et rattachement des campagnes aux produits
+            restent bloqués côté back-end jusqu'à la validation du référentiel.
+          </p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="pb-3">

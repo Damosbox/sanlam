@@ -19,6 +19,12 @@ export type ZoPmeView =
   | "administration";
 
 export type ZoPmePermission =
+  | "members.create"
+  | "members.tier"
+  | "cards.issue"
+  | "benefits.manage"
+  | "partners.manage"
+  | "files.create"
   | "cards.move"
   | "cards.priority"
   | "cards.block"
@@ -42,6 +48,12 @@ export interface ZoPmeRoleDefinition {
 }
 
 export const ALL_PERMISSIONS: ZoPmePermission[] = [
+  "members.create",
+  "members.tier",
+  "cards.issue",
+  "benefits.manage",
+  "partners.manage",
+  "files.create",
   "cards.move",
   "cards.priority",
   "cards.block",
@@ -57,6 +69,12 @@ export const ALL_PERMISSIONS: ZoPmePermission[] = [
 ];
 
 export const PERMISSION_LABELS: Record<ZoPmePermission, string> = {
+  "members.create": "Créer une PME membre",
+  "members.tier": "Modifier manuellement le palier de fidélité",
+  "cards.issue": "Émettre une carte pour une PME",
+  "benefits.manage": "Créer, modifier ou retirer un avantage",
+  "partners.manage": "Créer un partenaire et renouveler sa convention",
+  "files.create": "Créer un nouveau dossier de souscription",
   "cards.move": "Faire avancer une carte dans le cycle",
   "cards.priority": "Modifier la priorité d'une carte",
   "cards.block": "Bloquer / débloquer une carte",
@@ -122,14 +140,22 @@ export const ROLE_DEFINITIONS: Record<ZoPmeRole, ZoPmeRoleDefinition> = {
   marketing: {
     key: "marketing",
     label: "Marketing / Animation",
-    description: "Production des cartes, catalogue d'avantages, campagnes et événements.",
+    description:
+      "Gestion complète métier : membres, statuts, cartes, avantages, partenaires, campagnes et événements.",
     lectureSeule: false,
     views: ["animation", "cartes", "avantages", "partenaires", "membres"],
     permissions: [
+      "members.create",
+      "members.update",
+      "members.tier",
+      "cards.issue",
       "cards.move",
       "cards.priority",
       "cards.block",
       "benefits.publish",
+      "benefits.manage",
+      "partners.update",
+      "partners.manage",
       "campaigns.manage",
       "events.manage",
     ],
@@ -140,15 +166,16 @@ export const ROLE_DEFINITIONS: Record<ZoPmeRole, ZoPmeRoleDefinition> = {
     description: "Contrôle de conformité, validation des dossiers et cycle de vie des PME.",
     lectureSeule: false,
     views: ["souscription", "membres", "cartes"],
-    permissions: ["files.decide", "members.update"],
+    permissions: ["files.decide", "members.update", "cards.move"],
   },
   commercial: {
     key: "commercial",
     label: "Commercial",
-    description: "Consultation de l'annuaire PME et du catalogue d'avantages.",
-    lectureSeule: true,
-    views: ["membres", "avantages", "cartes"],
-    permissions: [],
+    description:
+      "Crée les PME et les dossiers de son portefeuille, consulte son périmètre et le catalogue.",
+    lectureSeule: false,
+    views: ["membres", "avantages", "cartes", "souscription"],
+    permissions: ["members.create", "files.create"],
   },
   admin_zo_pme: {
     key: "admin_zo_pme",

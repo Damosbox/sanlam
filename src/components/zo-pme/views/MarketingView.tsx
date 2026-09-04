@@ -35,6 +35,7 @@ import { KpiCard } from "../shared/KpiCard";
 import { SeverityBadge, SlaBadge, TierBadge } from "../shared/badges";
 import { EmptyState, ScopeNote } from "../shared/states";
 import { ConfirmActionDialog } from "../shared/ConfirmActionDialog";
+import { CampaignFormDialog } from "../dialogs/CampaignFormDialog";
 import { useZoPme } from "../ZoPmeProvider";
 import {
   AlertTriangle,
@@ -42,6 +43,7 @@ import {
   CreditCard,
   Megaphone,
   MessageCircle,
+  Plus,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -56,11 +58,14 @@ export function MarketingView() {
     can,
     moveCard,
     setCampaignStatus,
+    createCampaign,
     toggleEventRegistration,
   } = useZoPme();
 
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [pendingMove, setPendingMove] = useState<{ ref: string; next: CardStatus } | null>(null);
+  const [campaignOpen, setCampaignOpen] = useState(false);
+  const canManageCampaigns = can("campaigns.manage");
 
   const pmeById = useMemo(() => new Map(pmes.map((p) => [p.id, p])), [pmes]);
 
@@ -245,12 +250,20 @@ export function MarketingView() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Megaphone className="h-4 w-4 text-primary" />
-              Campagnes
-            </CardTitle>
-            <CardDescription>Ciblage par palier de fidélité</CardDescription>
+          <CardHeader className="pb-3 flex-row items-start justify-between gap-3 flex-wrap">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Megaphone className="h-4 w-4 text-primary" />
+                Campagnes
+              </CardTitle>
+              <CardDescription>Ciblage par palier de fidélité</CardDescription>
+            </div>
+            {canManageCampaigns && (
+              <Button size="sm" variant="outline" onClick={() => setCampaignOpen(true)}>
+                <Plus className="h-3.5 w-3.5 mr-2" />
+                Nouvelle campagne
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="space-y-3">
             {campaigns.map((c) => {
@@ -412,6 +425,15 @@ export function MarketingView() {
           </Card>
         </div>
       </div>
+
+      <CampaignFormDialog
+        open={campaignOpen}
+        onOpenChange={setCampaignOpen}
+        onSubmit={(input) => {
+          createCampaign(input);
+          toast.success(`Campagne « ${input.nom} » créée`);
+        }}
+      />
 
       <ConfirmActionDialog
         open={!!pendingMove}

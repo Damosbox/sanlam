@@ -68,6 +68,10 @@ export interface Pme {
   adhesionLe: string;
   derniereActivite: string;
   conformiteComplete: boolean;
+  /** Intermédiaire / apporteur rattaché (périmètre commercial). */
+  intermediaire?: string;
+  /** Produits souscrits déclarés (référentiel produit à arbitrer côté métier). */
+  produitsSouscrits?: string[];
 }
 
 /* --- Cartes --- */
@@ -93,6 +97,17 @@ export interface CardEvent {
   motif?: string;
 }
 
+export type CardDigitalState = "non_genere" | "genere" | "actif" | "revoque";
+export type CardPrintState = "non_lancee" | "imprimee" | "remise";
+
+export interface CardProof {
+  type: "bordereau" | "accuse_reception" | "photo_remise";
+  reference: string;
+  date: string;
+  /** Preuve de démonstration : aucune GED branchée sur ce lot. */
+  demo: true;
+}
+
 export interface ZoCard {
   reference: string;
   pmeId: string;
@@ -103,6 +118,14 @@ export interface ZoCard {
   slaEcouleHeures: number;
   demandeeLe: string;
   historique: CardEvent[];
+  /** Motif d'émission (première émission, renouvellement, perte, remplacement…). */
+  motifEmission?: string;
+  /** Version de la carte (V1, V2…). */
+  version?: string;
+  etatDigital?: CardDigitalState;
+  etatImpression?: CardPrintState;
+  preuveEnvoi?: CardProof | null;
+  courrierBienvenue?: { envoye: boolean; date?: string };
 }
 
 /* --- Partenaires, conventions, avantages --- */
@@ -126,6 +149,22 @@ export interface Partner {
   usagesPeriode: number;
   volumePeriode: number;
   slaTraitement: string;
+  /** Type de partenaire (enseigne, prestataire, institutionnel…). */
+  type?: string;
+  categories?: string[];
+  responsableInterne?: string;
+  contactSupport?: { nom: string; email: string; telephone: string };
+  accord?: {
+    type: string;
+    contreparties: string;
+    clauses: string;
+  };
+  ciblage?: { produits: string; segment: string; zone: string };
+  kpiCible?: number;
+  kpiRealise?: number;
+  risque?: Severity;
+  planB?: string;
+  historiqueConvention?: { date: string; acteur: string; action: string; motif?: string }[];
 }
 
 export type PublicationStatus = "brouillon" | "a_valider" | "publie" | "suspendu";
@@ -140,6 +179,13 @@ export interface Benefit {
   regles: string[];
   publication: PublicationStatus;
   usagesPeriode: number;
+  /** Partenaires associés (un avantage peut être porté par plusieurs partenaires). */
+  partnerIds?: string[];
+  secteur?: string;
+  description?: string;
+  conditions?: string;
+  dateDebut?: string;
+  dateFin?: string;
 }
 
 /* --- Souscription --- */
@@ -187,6 +233,8 @@ export interface Campaign {
   envoyes: number;
   lus: number;
   clics: number;
+  objectif?: string;
+  budget?: number;
 }
 
 export interface ZoEvent {

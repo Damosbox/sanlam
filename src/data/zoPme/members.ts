@@ -65,7 +65,7 @@ const rfm = (
   segment: string
 ) => ({ recence, frequence, montant, segment, disponible: false });
 
-export const PMES: Pme[] = [
+const RAW_PMES: Pme[] = [
   {
     id: "PME-1041",
     matricule: "ZP-CI-1041",
@@ -452,4 +452,49 @@ export const PMES: Pme[] = [
   },
 ];
 
+/** Intermédiaires / apporteurs du programme (périmètre commercial mock). */
+export const INTERMEDIAIRES = [
+  "Agence Abidjan Plateau — D. Koffi",
+  "Agence Yopougon — M. Touré",
+  "Cabinet Zô Partenaires — R. Aké",
+];
+
+/** Commercial connecté dans ce prototype : ne voit que son portefeuille. */
+export const COMMERCIAL_COURANT = INTERMEDIAIRES[0];
+
+/**
+ * Produits souscrits : le référentiel définitif est une décision métier ouverte
+ * (le cadrage cite 17 produits, le référentiel produit actuel en liste 7).
+ */
+export const PRODUITS_REFERENTIEL = [
+  "Auto",
+  "Pack Obsèques",
+  "Multirisque habitation",
+  "Santé collective",
+  "Prévoyance",
+  "Responsabilité civile",
+  "Transport de marchandises",
+];
+
+const PRODUIT_SETS: string[][] = [
+  ["Auto", "Pack Obsèques"],
+  ["Auto"],
+  ["Santé collective", "Prévoyance"],
+  ["Auto", "Multirisque habitation", "Responsabilité civile"],
+];
+
+export const PMES: Pme[] = RAW_PMES.map((p, i) => ({
+  ...p,
+  intermediaire: p.intermediaire ?? INTERMEDIAIRES[i % INTERMEDIAIRES.length],
+  produitsSouscrits: p.produitsSouscrits ?? PRODUIT_SETS[i % PRODUIT_SETS.length],
+}));
+
 export const findPme = (id: string) => PMES.find((p) => p.id === id);
+
+/** Matricule au format ZoPME-AAMM-###### (numérotation séquentielle mock). */
+export function genererMatricule(index: number): string {
+  const now = new Date();
+  const aa = String(now.getFullYear()).slice(2);
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  return `ZoPME-${aa}${mm}-${String(index).padStart(6, "0")}`;
+}

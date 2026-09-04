@@ -1,4 +1,10 @@
-import type { CardStatus, Priority, ZoCard } from "./types";
+import type {
+  CardDigitalState,
+  CardPrintState,
+  CardStatus,
+  Priority,
+  ZoCard,
+} from "./types";
 
 export const CARD_STATUS_ORDER: CardStatus[] = [
   "demandee",
@@ -85,7 +91,7 @@ export const KANBAN_STAGES: CardStatus[] = [
 
 export const PRIORITY_ORDER: Priority[] = ["critique", "eleve", "moyen", "faible"];
 
-export const CARDS: ZoCard[] = [
+const RAW_CARDS: ZoCard[] = [
   {
     reference: "ZC-4412",
     pmeId: "PME-1041",
@@ -251,6 +257,63 @@ export const CARDS: ZoCard[] = [
     ],
   },
 ];
+
+export const CARD_DIGITAL_LABELS: Record<CardDigitalState, string> = {
+  non_genere: "Non générée",
+  genere: "Générée",
+  actif: "Active",
+  revoque: "Révoquée",
+};
+
+export const CARD_PRINT_LABELS: Record<CardPrintState, string> = {
+  non_lancee: "Impression non lancée",
+  imprimee: "Imprimée",
+  remise: "Remise au porteur",
+};
+
+export const CARD_MOTIFS_EMISSION = [
+  "Première émission",
+  "Renouvellement",
+  "Perte ou vol",
+  "Remplacement (données erronées)",
+  "Carte additionnelle (porteur supplémentaire)",
+];
+
+const digitalFor = (statut: CardStatus): CardDigitalState => {
+  if (statut === "bloquee") return "revoque";
+  if (statut === "activee") return "actif";
+  if (statut === "demandee" || statut === "a_produire") return "non_genere";
+  return "genere";
+};
+
+const printFor = (statut: CardStatus): CardPrintState => {
+  if (statut === "remise" || statut === "activee") return "remise";
+  if (["produite", "a_envoyer", "expediee", "a_remettre"].includes(statut)) return "imprimee";
+  return "non_lancee";
+};
+
+export const CARDS: ZoCard[] = RAW_CARDS.map((c, i) => ({
+  ...c,
+  motifEmission: c.motifEmission ?? (i % 4 === 0 ? "Renouvellement" : "Première émission"),
+  version: c.version ?? (i % 4 === 0 ? "V2" : "V1"),
+  etatDigital: c.etatDigital ?? digitalFor(c.statut),
+  etatImpression: c.etatImpression ?? printFor(c.statut),
+  preuveEnvoi:
+    c.preuveEnvoi ??
+    (["expediee", "a_remettre", "remise", "activee"].includes(c.statut)
+      ? {
+          type: "bordereau",
+          reference: `BRD-DEMO-${c.reference.replace(/\D/g, "")}`,
+          date: c.demandeeLe,
+          demo: true as const,
+        }
+      : null),
+  courrierBienvenue:
+    c.courrierBienvenue ??
+    (["remise", "activee"].includes(c.statut)
+      ? { envoye: true, date: c.demandeeLe }
+      : { envoye: false }),
+}));
 
 export const isSlaBreached = (card: ZoCard) =>
   card.slaCibleHeures > 0 && card.slaEcouleHeures > card.slaCibleHeures;

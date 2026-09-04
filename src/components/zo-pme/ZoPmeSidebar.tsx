@@ -91,7 +91,7 @@ export function ZoPmeSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="py-4 bg-[hsl(var(--sidebar-broker))]">
-        {groups.map((group) => (
+        {visibleGroups.map((group) => (
           <SidebarGroup key={group.label}>
             <SidebarGroupLabel className={cn(collapsed && "sr-only")}>
               {group.label}

@@ -12,17 +12,32 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { BarChart3, CreditCard, Handshake, Megaphone, FileBarChart, Users } from "lucide-react";
+import {
+  BarChart3,
+  CreditCard,
+  FileBarChart,
+  FileCheck2,
+  Gift,
+  Handshake,
+  Megaphone,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AnimatedIcon } from "@/components/ui/animated-icon";
 import { SpaceSwitcher } from "@/components/broker/SpaceSwitcher";
+import { useZoPme } from "@/components/zo-pme/ZoPmeProvider";
+import type { ZoPmeView } from "@/data/zoPme";
 
-type Item = { title: string; vue: string; icon: typeof BarChart3 };
+type Item = { title: string; vue: ZoPmeView; icon: typeof BarChart3 };
 
 const groups: { label: string; items: Item[] }[] = [
   {
     label: "Programme PME",
-    items: [{ title: "Pilotage", vue: "pilotage", icon: BarChart3 }],
+    items: [
+      { title: "Pilotage", vue: "pilotage", icon: BarChart3 },
+      { title: "Souscription", vue: "souscription", icon: FileCheck2 },
+    ],
   },
   {
     label: "Gestion du programme",
@@ -34,10 +49,15 @@ const groups: { label: string; items: Item[] }[] = [
   {
     label: "Écosystème",
     items: [
-      { title: "Partenaires & avantages", vue: "partenaires", icon: Handshake },
+      { title: "Partenaires", vue: "partenaires", icon: Handshake },
+      { title: "Avantages", vue: "avantages", icon: Gift },
       { title: "Animation", vue: "animation", icon: Megaphone },
       { title: "Rapports", vue: "rapports", icon: FileBarChart },
     ],
+  },
+  {
+    label: "Administration",
+    items: [{ title: "Droits & rôles", vue: "administration", icon: ShieldCheck }],
   },
 ];
 

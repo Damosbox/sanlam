@@ -285,7 +285,7 @@ export function BrokerSidebar() {
       collapsible="icon"
       className="border-r border-[hsl(var(--sanlam-blue))]/20 z-50"
     >
-      <SidebarHeader className="p-3 sm:p-4 border-b border-white/10 bg-[hsl(var(--allianz-blue))]/55 backdrop-blur-sm">
+      <SidebarHeader className="p-3 sm:p-4 border-b border-white/10 bg-[hsl(var(--allianz-blue))]">
         <SpaceSwitcher current="courtier" tone="dark" />
       </SidebarHeader>
 

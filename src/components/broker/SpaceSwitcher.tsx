@@ -41,20 +41,47 @@ export function SpaceSwitcher({ current, tone = "light" }: SpaceSwitcherProps) {
         aria-label="Changer d'espace"
         className={cn(
           "flex items-center gap-3 w-full rounded-lg p-1 text-left transition-colors",
-          "hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          dark
+            ? "hover:bg-white/10 text-white"
+            : "hover:bg-primary/5",
           collapsed && "justify-center"
         )}
       >
-        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-          <Sparkles className="h-4 w-4 text-primary" />
+        <div
+          className={cn(
+            "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+            dark ? "bg-white/15" : "bg-primary/10"
+          )}
+        >
+          <Sparkles className={cn("h-4 w-4", dark ? "text-white" : "text-primary")} />
         </div>
         {!collapsed && (
           <>
             <div className="min-w-0 flex-1">
-              <h2 className="font-semibold text-sm truncate">{active.title}</h2>
-              <p className="text-xs text-muted-foreground truncate">{active.subtitle}</p>
+              <h2
+                className={cn(
+                  "font-semibold text-sm truncate",
+                  dark ? "text-white" : "text-foreground"
+                )}
+              >
+                {active.title}
+              </h2>
+              <p
+                className={cn(
+                  "text-xs truncate",
+                  dark ? "text-white/70" : "text-muted-foreground"
+                )}
+              >
+                {active.subtitle}
+              </p>
             </div>
-            <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <ChevronsUpDown
+              className={cn(
+                "h-4 w-4 shrink-0",
+                dark ? "text-white/70" : "text-muted-foreground"
+              )}
+            />
           </>
         )}
       </DropdownMenuTrigger>

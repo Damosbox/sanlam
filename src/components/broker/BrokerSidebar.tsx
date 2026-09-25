@@ -223,15 +223,19 @@ export function BrokerSidebar() {
     }
   };
 
-  const renderMenuItem = (item: NavItem) => (
+  const renderMenuItem = (item: NavItem) => {
+    const active = isActive(item.url);
+    return (
     <SidebarMenuItem key={item.title}>
       <SidebarMenuButton
         onClick={() => !item.disabled && handleNavigation(item.url)}
         tooltip={item.title}
         className={cn(
-          "w-full justify-start gap-3 transition-all duration-200 relative",
-          isActive(item.url) &&
-            "bg-primary/10 text-primary font-semibold shadow-sm before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-1 before:rounded-r before:bg-primary",
+          "w-full justify-start gap-3 transition-colors duration-200 rounded-md relative",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--sanlam-blue))]/40",
+          active
+            ? "bg-[hsl(var(--sanlam-blue))] text-white font-semibold"
+            : "text-foreground hover:bg-[hsl(var(--sanlam-blue))]/8",
           item.disabled && "opacity-50 cursor-not-allowed"
         )}
       >
@@ -240,7 +244,7 @@ export function BrokerSidebar() {
             icon={item.icon}
             className={cn(
               "h-5 w-5 shrink-0 transition-colors duration-200",
-              isActive(item.url) && "text-primary"
+              active ? "text-white" : "text-foreground/80"
             )}
           />
           {collapsed && item.badge && (
@@ -255,7 +259,9 @@ export function BrokerSidebar() {
                 variant="secondary"
                 className={cn(
                   "h-5 min-w-[20px] px-1.5 text-xs font-semibold",
-                  "bg-destructive/10 text-destructive border border-destructive/20",
+                  active
+                    ? "bg-white/20 text-white border border-white/30"
+                    : "bg-destructive/10 text-destructive border border-destructive/20",
                   "animate-fade-in"
                 )}
               >
@@ -271,24 +277,28 @@ export function BrokerSidebar() {
         )}
       </SidebarMenuButton>
     </SidebarMenuItem>
-  );
+    );
+  };
 
   return (
     <Sidebar
       collapsible="icon"
-      className="border-r-2 border-border/70 shadow-[1px_0_0_0_hsl(var(--border)/0.4)] z-50"
+      className="border-r border-[hsl(var(--sanlam-blue))]/20 z-50"
     >
-      <SidebarHeader className="p-3 sm:p-4 border-b border-border/50 bg-[hsl(var(--sidebar-broker))]">
-        <SpaceSwitcher current="courtier" />
+      <SidebarHeader className="p-3 sm:p-4 border-b border-white/10 bg-[hsl(var(--allianz-blue))]">
+        <SpaceSwitcher current="courtier" tone="dark" />
       </SidebarHeader>
 
-
-
-      <SidebarContent className="py-4 bg-[hsl(var(--sidebar-broker))]">
+      <SidebarContent className="py-3 bg-[hsl(var(--sidebar-broker))]">
         {navigationGroups.map((group, groupIndex) => (
           <SidebarGroup key={group.label}>
             {groupIndex > 0 && (
-              <SidebarGroupLabel className={cn(collapsed && "sr-only")}>
+              <SidebarGroupLabel
+                className={cn(
+                  "text-[10px] font-semibold uppercase tracking-[0.08em] text-foreground/55 px-2",
+                  collapsed && "sr-only"
+                )}
+              >
                 {group.label}
               </SidebarGroupLabel>
             )}

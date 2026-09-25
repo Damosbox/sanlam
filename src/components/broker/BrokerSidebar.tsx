@@ -283,19 +283,22 @@ export function BrokerSidebar() {
   return (
     <Sidebar
       collapsible="icon"
-      className="border-r-2 border-border/70 shadow-[1px_0_0_0_hsl(var(--border)/0.4)] z-50"
+      className="border-r border-[hsl(var(--sanlam-blue))]/20 z-50"
     >
-      <SidebarHeader className="p-3 sm:p-4 border-b border-border/50 bg-[hsl(var(--sidebar-broker))]">
-        <SpaceSwitcher current="courtier" />
+      <SidebarHeader className="p-3 sm:p-4 border-b border-white/10 bg-[hsl(var(--allianz-blue))]">
+        <SpaceSwitcher current="courtier" tone="dark" />
       </SidebarHeader>
 
-
-
-      <SidebarContent className="py-4 bg-[hsl(var(--sidebar-broker))]">
+      <SidebarContent className="py-3 bg-[hsl(var(--sidebar-broker))]">
         {navigationGroups.map((group, groupIndex) => (
           <SidebarGroup key={group.label}>
             {groupIndex > 0 && (
-              <SidebarGroupLabel className={cn(collapsed && "sr-only")}>
+              <SidebarGroupLabel
+                className={cn(
+                  "text-[10px] font-semibold uppercase tracking-[0.08em] text-foreground/55 px-2",
+                  collapsed && "sr-only"
+                )}
+              >
                 {group.label}
               </SidebarGroupLabel>
             )}

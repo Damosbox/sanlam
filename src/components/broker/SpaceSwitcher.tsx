@@ -19,9 +19,12 @@ const SPACES: { key: SpaceKey; title: string; subtitle: string; url: string }[] 
 
 interface SpaceSwitcherProps {
   current: SpaceKey;
+  /** "dark" = posé sur un en-tête foncé (bleu Allianz), "light" = surface claire. */
+  tone?: "light" | "dark";
 }
 
-export function SpaceSwitcher({ current }: SpaceSwitcherProps) {
+export function SpaceSwitcher({ current, tone = "light" }: SpaceSwitcherProps) {
+  const dark = tone === "dark";
   const navigate = useNavigate();
   const { state, isMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed" && !isMobile;

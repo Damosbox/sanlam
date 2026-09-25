@@ -234,7 +234,7 @@ export function BrokerSidebar() {
           "w-full justify-start gap-3 transition-colors duration-200 rounded-md relative",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--sanlam-blue))]/40",
           active
-            ? "bg-[hsl(var(--sanlam-blue))]/14 text-[hsl(var(--allianz-blue))] font-semibold"
+            ? "bg-[hsl(var(--sanlam-blue))]/20 text-[hsl(var(--allianz-blue))] font-semibold"
             : "text-foreground hover:bg-[hsl(var(--sanlam-blue))]/8",
           item.disabled && "opacity-50 cursor-not-allowed"
         )}

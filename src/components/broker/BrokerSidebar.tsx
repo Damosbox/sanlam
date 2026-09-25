@@ -234,7 +234,7 @@ export function BrokerSidebar() {
           "w-full justify-start gap-3 transition-colors duration-200 rounded-md relative",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--sanlam-blue))]/40",
           active
-            ? "bg-[hsl(var(--sanlam-blue))] text-white font-semibold"
+            ? "bg-[hsl(var(--sanlam-blue))]/14 text-[hsl(var(--allianz-blue))] font-semibold"
             : "text-foreground hover:bg-[hsl(var(--sanlam-blue))]/8",
           item.disabled && "opacity-50 cursor-not-allowed"
         )}
@@ -244,7 +244,7 @@ export function BrokerSidebar() {
             icon={item.icon}
             className={cn(
               "h-5 w-5 shrink-0 transition-colors duration-200",
-              active ? "text-white" : "text-foreground/80"
+              active ? "text-[hsl(var(--sanlam-blue))]" : "text-foreground/80"
             )}
           />
           {collapsed && item.badge && (
@@ -260,7 +260,7 @@ export function BrokerSidebar() {
                 className={cn(
                   "h-5 min-w-[20px] px-1.5 text-xs font-semibold",
                   active
-                    ? "bg-white/20 text-white border border-white/30"
+                    ? "bg-[hsl(var(--sanlam-blue))]/15 text-[hsl(var(--allianz-blue))] border border-[hsl(var(--sanlam-blue))]/25"
                     : "bg-destructive/10 text-destructive border border-destructive/20",
                   "animate-fade-in"
                 )}

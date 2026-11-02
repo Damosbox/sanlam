@@ -56,7 +56,7 @@ export const DashboardPreview = () => {
               </div>
               <img 
                 src={dashboardPreview} 
-                alt="Aperçu du dashboard courtier Sanlam Allianz" 
+                alt="Aperçu du dashboard diapazon Pro SanlamAllianz" 
                 className="w-full h-auto"
               />
             </div>

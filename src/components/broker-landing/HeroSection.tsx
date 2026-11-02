@@ -50,7 +50,7 @@ export const HeroSection = () => {
               </Button>
               <Button size="lg" variant="outline" asChild>
                 <Link to="/auth?broker=true">
-                  Accès espace courtier
+                  Accès diapazon Pro
                 </Link>
               </Button>
             </div>

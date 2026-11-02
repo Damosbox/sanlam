@@ -167,7 +167,7 @@ export default function PartnerAuth() {
         <CardContent className="pt-6 pb-6 px-8">
           {/* Logo */}
           <div className="flex justify-center mb-6">
-            <img src={sanlamLogo} alt="Sanlam Allianz" className="h-12 w-auto" />
+            <img src={sanlamLogo} alt="SanlamAllianz" className="h-12 w-auto" />
           </div>
 
           {/* Space Badge */}

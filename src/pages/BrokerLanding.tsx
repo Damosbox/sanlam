@@ -25,7 +25,7 @@ const BrokerLanding = () => {
         <div className="container">
           <div className="grid gap-8 md:grid-cols-4">
             <div className="space-y-4">
-              <img src={sanlamLogo} alt="Sanlam Allianz" className="h-8" />
+              <img src={sanlamLogo} alt="SanlamAllianz" className="h-8" />
               <p className="text-sm text-muted-foreground">
                 Leader de l'assurance en Afrique de l'Ouest. 
                 Innovation, confiance et proximité depuis 1989.
@@ -63,7 +63,7 @@ const BrokerLanding = () => {
           </div>
           
           <div className="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">
-            <p>© {new Date().getFullYear()} Sanlam Allianz. Tous droits réservés.</p>
+            <p>© {new Date().getFullYear()} SanlamAllianz. Tous droits réservés.</p>
           </div>
         </div>
       </footer>

@@ -320,7 +320,7 @@ export const CreateUserDialog = ({ onUserCreated }: CreateUserDialogProps) => {
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="agent_sanlam" id="agent_sanlam" />
                     <Label htmlFor="agent_sanlam" className="font-normal cursor-pointer">
-                      Agent Sanlam Allianz
+                      Agent SanlamAllianz
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">

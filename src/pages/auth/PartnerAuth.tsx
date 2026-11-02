@@ -174,7 +174,7 @@ export default function PartnerAuth() {
           <div className="flex justify-center mb-4">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-orange-100 text-orange-700">
               <Briefcase className="h-4 w-4" />
-              Espace Partenaire
+              diapazon Pro
             </div>
           </div>
 

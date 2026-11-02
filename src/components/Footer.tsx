@@ -45,7 +45,7 @@ export const Footer = () => {
           {/* Logo & Contact */}
           <div className="col-span-2 lg:col-span-2">
             <Link to="/" className="inline-block mb-6">
-              <img src={sanlamLogo} alt="Sanlam Allianz" className="h-10 brightness-0 invert" />
+              <img src={sanlamLogo} alt="SanlamAllianz" className="h-10 brightness-0 invert" />
             </Link>
             
             <div className="space-y-3 text-sm text-white/80">
@@ -158,7 +158,7 @@ export const Footer = () => {
       <div className="border-t border-white/10">
         <div className="container py-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-white/60">
-            <p>© {new Date().getFullYear()} Sanlam Allianz. Tous droits réservés.</p>
+            <p>© {new Date().getFullYear()} SanlamAllianz. Tous droits réservés.</p>
             <p>
               Société d'assurance agréée par la CIMA sous le n° SA-001
             </p>

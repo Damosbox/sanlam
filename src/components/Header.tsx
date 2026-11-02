@@ -71,10 +71,15 @@ export const Header = () => {
             <Link to="/" className="flex items-center gap-2 min-w-0">
               <img
                 src={sanlamLogo}
-                alt="Sanlam Allianz"
+                alt="SanlamAllianz"
                 className="h-6 sm:h-10 w-auto max-w-[160px] sm:max-w-none object-contain"
               />
             </Link>
+            {location.pathname.startsWith("/b2b") && !location.pathname.startsWith("/b2b/zo-pme") && (
+              <span className="hidden sm:inline-flex items-center border-l pl-3 ml-1 text-sm font-semibold text-foreground whitespace-nowrap">
+                diapazon Pro
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-1 sm:gap-3 shrink-0">

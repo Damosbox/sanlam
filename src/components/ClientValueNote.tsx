@@ -330,7 +330,7 @@ function generateEmailTemplate(analysis: any, competitorName: string, clientCont
   
   return `Bonjour [Nom],
 
-Suite à notre échange, voici une analyse comparative ${competitorName ? `avec ${competitorName}` : 'de votre couverture actuelle'} et notre solution Sanlam Allianz.
+Suite à notre échange, voici une analyse comparative ${competitorName ? `avec ${competitorName}` : 'de votre couverture actuelle'} et notre solution SanlamAllianz.
 
 ${analysis.teaching_insight ? `
 ${analysis.teaching_insight.recadrage_probleme}
@@ -353,7 +353,7 @@ Cordialement,
 [Signature]
 
 ---
-Note : Cette analyse est fournie à titre informatif. Sanlam Allianz respecte les exigences CIMA de transparence et d'adéquation.
+Note : Cette analyse est fournie à titre informatif. SanlamAllianz respecte les exigences CIMA de transparence et d'adéquation.
 Date : ${new Date().toLocaleDateString('fr-FR')}
 `;
 }

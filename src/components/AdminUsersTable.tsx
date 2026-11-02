@@ -300,7 +300,7 @@ export const AdminUsersTable = ({ roleFilter }: AdminUsersTableProps) => {
       case "agent_mandataire":
         return "Agent Mandataire";
       case "agent_sanlam":
-        return "Agent Sanlam Allianz";
+        return "Agent SanlamAllianz";
       case "banquier":
         return "Banquier";
       default:

@@ -301,7 +301,7 @@ export const QuoteSummaryCard = ({ state, onNext, nextLabel, disabled, onApplySu
                 cedeao: premium.cedeao,
                 total: displayTotal,
               });
-              toast({ title: "Devis PDF téléchargé", description: "Branding Sanlam Allianz appliqué." });
+              toast({ title: "Devis PDF téléchargé", description: "Branding SanlamAllianz appliqué." });
             } catch (e) {
               toast({ title: "Erreur de génération", variant: "destructive" });
             }

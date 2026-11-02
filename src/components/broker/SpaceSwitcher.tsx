@@ -13,7 +13,7 @@ import { useSidebar } from "@/components/ui/sidebar";
 export type SpaceKey = "courtier" | "zo-pme";
 
 const SPACES: { key: SpaceKey; title: string; subtitle: string; url: string }[] = [
-  { key: "courtier", title: "Espace Courtier", subtitle: "Sanlam Allianz", url: "/b2b/dashboard" },
+  { key: "courtier", title: "diapazon Pro", subtitle: "SanlamAllianz", url: "/b2b/dashboard" },
   { key: "zo-pme", title: "Espace Zô PME", subtitle: "Programme PME", url: "/b2b/zo-pme" },
 ];
 

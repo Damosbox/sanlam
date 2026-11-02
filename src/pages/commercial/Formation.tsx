@@ -112,7 +112,7 @@ const Formation = () => {
               <div className="flex items-center gap-4 mb-6">
                 <Award className="h-12 w-12 text-primary" />
                 <div>
-                  <div className="font-semibold">Certificat Sanlam Allianz</div>
+                  <div className="font-semibold">Certificat SanlamAllianz</div>
                   <div className="text-sm text-muted-foreground">Validez vos acquis</div>
                 </div>
               </div>

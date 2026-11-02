@@ -30,7 +30,7 @@ interface MonthlyCA { month: string; ca: number; }
 
 const PARTNER_TYPE_LABELS: Record<string, string> = {
   courtier: "Courtier", agent_general: "Agent Général", agent_mandataire: "Agent Mandataire",
-  agent_sanlam: "Agent Sanlam Allianz", banquier: "Banquier",
+  agent_sanlam: "Agent SanlamAllianz", banquier: "Banquier",
 };
 
 export default function AgentsPortfolioPage() {

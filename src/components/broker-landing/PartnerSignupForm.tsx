@@ -83,7 +83,7 @@ export const PartnerSignupForm = () => {
           <div className="space-y-8 animate-fade-in">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               Rejoignez le réseau{" "}
-              <span className="text-primary">Sanlam Allianz</span>
+              <span className="text-primary">SanlamAllianz</span>
             </h2>
             <p className="text-lg text-muted-foreground">
               Remplissez le formulaire et notre équipe partenariat vous contactera 
@@ -228,7 +228,7 @@ export const PartnerSignupForm = () => {
                 />
                 <Label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed">
                   J'accepte les conditions générales du programme partenaire et 
-                  la politique de confidentialité de Sanlam Allianz.
+                  la politique de confidentialité de SanlamAllianz.
                 </Label>
               </div>
               

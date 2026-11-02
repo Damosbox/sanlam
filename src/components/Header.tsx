@@ -138,7 +138,7 @@ export const Header = () => {
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center gap-3">
-              <img src={sanlamLogo} alt="Sanlam Allianz" className="h-8 w-auto sm:h-10" />
+              <img src={sanlamLogo} alt="SanlamAllianz" className="h-8 w-auto sm:h-10" />
             </Link>
 
           </div>

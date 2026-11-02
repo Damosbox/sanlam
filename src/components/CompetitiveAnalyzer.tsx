@@ -44,7 +44,7 @@ export const CompetitiveAnalyzer = () => {
   const [companyStrengths, setCompanyStrengths] = useState(`- Délai moyen de règlement < 10 jours sur sinistres simples
 - Réseau garages agréés 300+ en Côte d'Ivoire
 - Application mobile sinistre 24/7 avec géolocalisation
-- Solidité financière avérée (Sanlam Allianz)
+- Solidité financière avérée (SanlamAllianz)
 - Notation locale excellente
 - Partenariats santé exclusifs`);
 
@@ -384,7 +384,7 @@ export const CompetitiveAnalyzer = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="company-strengths">Atouts Sanlam Allianz (modifiable)</Label>
+            <Label htmlFor="company-strengths">Atouts SanlamAllianz (modifiable)</Label>
             <Textarea
               id="company-strengths"
               value={companyStrengths}

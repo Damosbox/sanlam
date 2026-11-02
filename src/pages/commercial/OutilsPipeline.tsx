@@ -120,7 +120,7 @@ const OutilsPipeline = () => {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-4">Prêt à booster votre productivité ?</h2>
           <p className="text-xl opacity-90 mb-8 max-w-2xl mx-auto">
-            Rejoignez les commerciaux Sanlam Allianz qui utilisent déjà notre plateforme.
+            Rejoignez les commerciaux SanlamAllianz qui utilisent déjà notre plateforme.
           </p>
           <Button size="lg" variant="secondary" onClick={() => navigate("/auth?broker=true")}>
             Accéder à mon espace

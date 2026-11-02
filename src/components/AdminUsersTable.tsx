@@ -300,7 +300,7 @@ export const AdminUsersTable = ({ roleFilter }: AdminUsersTableProps) => {
       case "agent_mandataire":
         return "Agent Mandataire";
       case "agent_sanlam":
-        return "Agent Sanlam Allianz";
+        return "Agent SanlamAllianz";
       case "banquier":
         return "Banquier";
       default:
@@ -477,7 +477,7 @@ export const AdminUsersTable = ({ roleFilter }: AdminUsersTableProps) => {
                           <SelectItem value="courtier">Courtier</SelectItem>
                           <SelectItem value="agent_general">Agent Général</SelectItem>
                           <SelectItem value="agent_mandataire">Agent Mandataire</SelectItem>
-                          <SelectItem value="agent_sanlam">Agent Sanlam Allianz</SelectItem>
+                          <SelectItem value="agent_sanlam">Agent SanlamAllianz</SelectItem>
                           <SelectItem value="banquier">Banquier</SelectItem>
                         </SelectContent>
                       </Select>

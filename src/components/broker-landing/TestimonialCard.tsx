@@ -89,7 +89,7 @@ export const TestimonialsSection = () => {
           </h2>
           <p className="text-lg text-muted-foreground">
             Découvrez comment nos courtiers partenaires ont multiplié leurs performances 
-            grâce à la plateforme Sanlam Allianz.
+            grâce à la plateforme SanlamAllianz.
           </p>
         </div>
         

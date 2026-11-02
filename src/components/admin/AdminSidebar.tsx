@@ -185,8 +185,8 @@ export function AdminSidebar() {
           </div>
           {!collapsed && (
             <div>
-              <p className="font-semibold text-sm text-sidebar-foreground">Console Admin</p>
-              <p className="text-xs text-sidebar-foreground/60">Sanlam Allianz</p>
+              <p className="font-semibold text-sm text-sidebar-foreground">diapazon Hub</p>
+              <p className="text-xs text-sidebar-foreground/60">SanlamAllianz</p>
             </div>
           )}
         </div>

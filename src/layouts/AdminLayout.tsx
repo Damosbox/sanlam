@@ -13,7 +13,7 @@ export function AdminLayout() {
             <SidebarTrigger />
             <Separator orientation="vertical" className="h-4" />
             <span className="text-sm text-muted-foreground">
-              Administration
+              diapazon Hub
             </span>
           </div>
           <main className="p-6">

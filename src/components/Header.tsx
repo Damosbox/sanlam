@@ -19,6 +19,11 @@ import {
 // Routes where we hide the public navigation (inside platforms)
 const platformRoutes = ["/b2b", "/b2c", "/admin", "/claim"];
 
+// Routes whose layout wraps the page in a SidebarProvider. The sidebar toggle
+// only exists there — rendering it elsewhere throws ("useSidebar must be used
+// within a SidebarProvider") and blanks the page.
+const sidebarRoutes = ["/b2b", "/admin"];
+
 export const Header = () => {
   const location = useLocation();
   const [user, setUser] = useState<SupabaseUser | null>(null);

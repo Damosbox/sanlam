@@ -30,6 +30,7 @@ export const Header = () => {
 
   // Check if we're inside a platform
   const isInsidePlatform = platformRoutes.some(route => location.pathname.startsWith(route));
+  const hasSidebar = sidebarRoutes.some(route => location.pathname.startsWith(route));
   
   // Check if we're on public pages
   const isPublicPage = location.pathname === "/" || location.pathname.startsWith("/simulateur") || location.pathname.startsWith("/assurance") || location.pathname.startsWith("/sinistres") || location.pathname.startsWith("/commercial/");

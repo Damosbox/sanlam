@@ -73,7 +73,7 @@ export const Header = () => {
       <header className="sticky top-0 z-30 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <div className="flex h-14 sm:h-16 items-center justify-between gap-2 px-2 sm:px-6 w-full">
           <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
-            <SidebarTrigger className="-ml-1 shrink-0" />
+            {hasSidebar && <SidebarTrigger className="-ml-1 shrink-0" />}
             <Link to="/" className="flex items-center gap-2 min-w-0">
               <img
                 src={sanlamLogo}

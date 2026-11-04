@@ -19,12 +19,18 @@ import {
 // Routes where we hide the public navigation (inside platforms)
 const platformRoutes = ["/b2b", "/b2c", "/admin", "/claim"];
 
+// Routes whose layout wraps the page in a SidebarProvider. The sidebar toggle
+// only exists there — rendering it elsewhere throws ("useSidebar must be used
+// within a SidebarProvider") and blanks the page.
+const sidebarRoutes = ["/b2b", "/admin"];
+
 export const Header = () => {
   const location = useLocation();
   const [user, setUser] = useState<SupabaseUser | null>(null);
 
   // Check if we're inside a platform
   const isInsidePlatform = platformRoutes.some(route => location.pathname.startsWith(route));
+  const hasSidebar = sidebarRoutes.some(route => location.pathname.startsWith(route));
   
   // Check if we're on public pages
   const isPublicPage = location.pathname === "/" || location.pathname.startsWith("/simulateur") || location.pathname.startsWith("/assurance") || location.pathname.startsWith("/sinistres") || location.pathname.startsWith("/commercial/");
@@ -67,7 +73,7 @@ export const Header = () => {
       <header className="sticky top-0 z-30 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <div className="flex h-14 sm:h-16 items-center justify-between gap-2 px-2 sm:px-6 w-full">
           <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
-            <SidebarTrigger className="-ml-1 shrink-0" />
+            {hasSidebar && <SidebarTrigger className="-ml-1 shrink-0" />}
             <Link to="/" className="flex items-center gap-2 min-w-0">
               <img
                 src={sanlamLogo}
